@@ -1,0 +1,142 @@
+#!/bin/bash
+
+BASEDIR=$(basename "$0")
+ETCPATH="$HOME/etc/opensim:/etc/opensim:$BASEDIR/etc"
+
+PATH="$PATH:$(dirname "$0")"
+. $(which helpers) 2>/dev/null
+
+HELP="
+      -s start
+      -h display this help
+      -v verbose mode
+      -q quiet mode
+
+sorry, helpman is in a minimalist mood"
+
+OPTS="shvq"
+
+while getopts $OPTS PARAM
+do
+    case $PARAM in
+	"?")
+	    ERROR=1
+	        ;;
+	-)
+	    case $OPTARG in
+		help)
+		    help
+		    end
+		    ;;
+		*)
+		    printf "$PGM: illegal option -- $OPTARG"
+#    ERROR=1
+	    esac
+	    ;;
+	s)
+	    action=start
+	    ;;
+	h)
+	    help
+	    end
+	    ;;
+	v)
+	    STDERR="&1"
+            DEBUG=yes
+	    QUIET=no
+	    ;;
+	q)
+	    STDOUT="/dev/null"
+	    QUIET=yes
+	    DEBUG=no
+	    ;;
+	*)
+	    VALUES="$VALUES $PARAM"
+	    LASTVAL=$PARAM
+    esac
+    
+done 2>/dev/null
+shift `expr $OPTIND - 1`
+
+ini_parser="$(which ini_parser)"
+[ -n "$ini_parser" ] || end 1 no ini parser
+log "ini_parser: $ini_parser"
+
+realpath() {
+readlink -f "$@" 2>/dev/null && return
+cd "$@" 2>/dev/null && pwd -P && return
+}
+
+startSim() {
+    for sim in "$@"
+    do
+	ini=$(buildIni "$sim")
+	[ ! -e "$ini" ] && continue
+
+	ini_parser "$ini" || continue
+	#2>/dev/null || continue
+
+	ini_section_Launch || continue
+	#2>/dev/null || continue
+
+	log "starting $sim with $ini"
+	echo " BinDir     $BinDir"
+	echo " Executable $Executable"
+	echo " logfile    $logfile"
+	echo " prompt     $prompt"
+    done
+}
+
+buildIni() {
+    unset ini
+    sim="$@"
+    ini=$(
+    IFS=":"
+    for etc in $ETCPATH
+    do
+	log "looking in $etc"
+	ls "$etc/"*-enabled/"$sim.ini" 2>/dev/null && break
+#	lookup="$etc/simulators-enabled/$sim.ini"
+#	log "looking for $lookup"
+#	[ -f "$lookup" ] || continue
+#	log "gotcha $lookup"
+#	ini="$lookup"
+#	break
+    done
+    )
+
+    if [ ! -n "$ini" ]
+    then
+	log 1 "no ini file found for $sim"
+	continue
+    fi
+    log "$sim ini $ini"
+    echo "$ini"
+}
+
+IFS=":"
+for etc in $ETCPATH
+do
+    folder=$(realpath "$etc")
+    [ "$folder" ] || continue
+    echo ":$LOOKUP:" | grep -q ":$folder:" && log "ignoring duplicate $etc" && continue
+    LOOKUP="$LOOKUP:$folder" && continue
+done
+unset IFS
+LOOKUP="$(echo $LOOKUP | sed "s/^:*//")"
+
+if [ ! -n "$LOOKUP" ]
+then
+    end 1 "No valid folder found in $ETCPATH"
+fi
+ETCPATH=$LOOKUP
+log "ETCPATH: $ETCPATH"
+
+case $action in
+    start)
+	if [ -n "$1" ]
+	then
+	    startSim "$@"
+	fi
+	;;
+esac
