@@ -41,3 +41,23 @@ So we created some scripts which:
 We have developed and used this setup for 5 years in Speculoos Grid 
 and wanted to share. Although this was working for us, we don't push the whole
 thing as is, as we want to make sure the methods are as globals as they can.
+
+Installation
+------------
+
+Note: the project is not complete, these instructions will not work yet, but
+this shows you the way it works.
+
+```shell
+git clone https://github.com/magicoli/opensim-debian.git
+sudo mv opensim-debian /opt/
+export PATH=$PATH:/opt/opensim-debian/bin
+```
+
+Adjust 
+  - /opt/opensim-debian/etc/OpenSim.ini 
+  - the simulators in /opt/opensim-debian/etc/opensim-enabled 
+
+```shell
+opensim start
+```
