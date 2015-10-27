@@ -52,11 +52,12 @@ this shows you the way it works.
 git clone https://github.com/magicoli/opensim-debian.git
 sudo mv opensim-debian /opt/
 export PATH=$PATH:/opt/opensim-debian/bin
+opensim-install
 ```
 
 Adjust 
-  - /opt/opensim-debian/etc/OpenSim.ini 
-  - the simulators in /opt/opensim-debian/etc/opensim-enabled 
+  - /etc/opensim/OpenSim.ini 
+  - the simulators in /etc/opensim/opensim-enabled 
 
 ```shell
 opensim start
