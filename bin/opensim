@@ -2,7 +2,6 @@
 
 DELAY=60
 
-OPTS="shvq"
 
 ETCPATH="$HOME/etc/opensim:/etc/opensim:/opt/opensim/etc"
 
@@ -11,13 +10,14 @@ PATH="$PATH:$(dirname "$0")"
 
 HELP="
       -s start
-      -h display this help		for ini in $(ls "$etc"/*-enabled/*.ini 2>/dev/null | sort -n) 
+      -h display this help
       -v verbose mode
       -q quiet mode
 
 sorry, helpman is in a minimalist mood"
 
 
+OPTS="shvq"
 while getopts $OPTS PARAM
 do
     case $PARAM in
@@ -75,8 +75,8 @@ startSim() {
     for arg in $@
     do
 	ls -d "$arg" 2>/dev/null | grep -q "\.ini$" \
-	    && { inifile=$arg; instance=$(basename $arg .ini); } \
-	    || { instance=$arg; inifile=$(buildIni "$instance"); }
+	    && { inifile=$arg; instance=$(basename $arg .ini | tr "[:upper:]" "[:lower:]"); } \
+	    || { instance=$(echo $arg | tr "[:upper:]" "[:lower:]"); inifile=$(buildIni "$instance"); }
 
 	[ ! -e "$inifile" ] && continue
 
@@ -130,6 +130,7 @@ startSim() {
 			cmd="$cmd -logconfig=$logconfig"
 		fi
 	fi
+	touch $TMP.wait
 	log "launching $instance "
 	log "$cmd"
 	eval "screen -S $instance -d -m $cmd"
@@ -158,7 +159,8 @@ buildIni() {
     for etc in $ETCPATH
     do
 	log "looking in $etc"
-	ls "$etc/"*-enabled/"$sim.ini" 2>/dev/null && break
+	ls "$etc/"*-enabled/*".ini" 2>/dev/null \
+		| grep -i "/$sim.ini$" && break
 #	lookup="$etc/simulators-enabled/$sim.ini"
 #	log "looking for $lookup"
 #	[ -f "$lookup" ] || continue
@@ -246,7 +248,7 @@ case "$1" in
 esac
 
 case $action in
-    start)
+	start)
 	if [ -n "$1" ]
 	then
 	    startSim "$@"
@@ -256,11 +258,14 @@ case $action in
 	    for etc in $ETCPATH
 	    do
 		unset IFS
-		for ini in $(ls "$etc"/*-enabled/*.ini 2>/dev/null | sort -n) 
+		for ini in $(
+			ls "$etc"/robust-enabled/*.ini 2>/dev/null | sort -n
+			ls "$etc"/simulators-enabled/*.ini 2>/dev/null | sort -n
+			)
 		do
-		    [ "$wait" -a "$DELAY" ] && read -p "waiting $DELAY seconds between instances " -t $DELAY
+		    [ -f "$TMP.wait" -a "$DELAY" ] && read -p "waiting $DELAY seconds between instances " -t $DELAY
+		    rm -f "$TMP.wait"
 		    startSim "$ini"
-		    wait=true
 		done
 	    done
 	    unset IFS
