@@ -1,0 +1,19 @@
+#!/bin/sh
+
+[ ! "$OPENSIM" ] && OPENSIM=opensim
+[ ! "$PGM" ] && PGM=$(basename "$0")
+
+BIN=$(dirname "$0")
+ETC=/etc/$OPENSIM
+
+. $(which helpers) || exit 1
+. $ETC/opensim.conf 2>/dev/null
+
+INSTALLDIR=$(dirname "$BIN")
+LIB=$INSTALLDIR/lib
+CACHE=$INSTALLDIR/cache
+SHARE=$INSTALLDIR/share
+OSBIN="$SHARE/$OPENSIM/bin"
+OSLOG=$INSTALLDIR/logs
+
+[ -f "$OSBIN/OpenSim.exe" ] || end 1 opensim library not found

@@ -1,0 +1,132 @@
+#!/bin/sh
+
+DEBUG=yes
+
+export PATH=$PATH:$(dirname "$0")
+which os-helpers | grep -q helper || exit 1
+. $(which os-helpers)
+
+if [ ! -d $ETC ]
+then
+	log  "create /etc/opensim"
+	sudo mkdir $ETC || end 3
+	sudo chown $USER:$USER $ETC || sudo chown $USER $ETC || end 3
+fi
+
+cd "$OSBIN" || end 2
+
+(
+find -name "*.ini" 
+find -name "*.ini.example" 
+) | sed "s%\./%%" | sed "s/\.example$//" | sort -u | while read file
+do
+	[ -f "$ETC/$file" ] && continue
+	folder="$(dirname "$ETC/$file")"
+	[ -d "$folder" ] || mkdir -p "$folder" || end 4 could not create $folder
+	cp $OSBIN/$file $ETC/$file 2>/dev/null \
+		|| cp $OSBIN/$file.example $ETC/$file 2>/dev/null \
+		|| end 4 could not copy $file
+done
+
+mkdir -p $ETC/robust-available $ETC/robust-enabled $ETC/simulator-available $ETC/simulator-enabled || end 6
+mkdir -p $LIB $CACHE || end 6
+
+cd "$ETC"
+echo "## Configuration de Robust"
+
+hostname=$(hostname -f)
+echo "$PGM: choose your server address"
+(
+ip addr show | grep "inet " | cut -d "/" -f 1 | sed "s/.*inet *//"
+echo $hostname 
+) | sed "s/^/   /"
+
+read -p "newhost [$myhost] " newhost || newhost=$myhost
+read -p "mydb [$mydb] " newdb || newdb=$mydb
+read -p "myuser [$myuser] " newuser || newuser=$myuser
+read -p "mypass [$mypass] " newpass || newpass=$mypass
+
+read -p "ConfigName [Robust] " ConfigName
+[ "$ConfigName" ] || ConfigName=Robust
+
+read -p "BaseURL [$hostname] " BaseURL
+[ "$BaseURL" ] || BaseURL=$hostname
+echo "$BaseURL" | grep -q "^https*://" || BaseURL="http://$BaseURL"
+echo "BaseURL $BaseURL" >> $TMP.vars
+
+
+read -p "Type the base url [http://$hostname] " BaseURL
+[ "$BaseURL" ] || BaseURL=$hostname
+echo "$BaseURL" | grep -q "^https*://" || BaseURL="http://$BaseURL"
+echo "BaseURL $BaseURL" >> $TMP.vars
+
+
+read -p "PublicPort [8002] " PublicPort
+echo "$" | grep -q "^[0-9][0-9]*$" || PublicPort=8002
+echo "PublicPort $PublicPort" >> $TMP.vars
+
+read -p "PrivatePort [8003] " PrivatePort
+echo "$PrivatePort" | grep -q "^[0-9][0-9]*$" || PrivatePort=8003
+echo "PrivatePort $PrivatePort" >> $TMP.vars
+
+
+
+echo "ConfigDirectory $LIB/ConfigDirectory" >> $TMP.vars
+echo "RegistryLocation $LIB/RegistryLocation" >> $TMP.vars
+echo "MapTileDirectory $CACHE/maptiles" >> $TMP.vars
+echo "BaseDirectory $CACHE/bakes" >> $TMP.vars
+echo "BinDir $OSBIN" >> $TMP.vars
+echo "ConnectionString Data Source=$myhost;Database=$mydb;User ID=$myuser;Password=$mypass;Old Guids=true;" >> $TMP.vars
+echo "ConnectionString Data Source=$myhost;Database=$mydb;User ID=$myuser;Password=$mypass;Old Guids=true;"
+
+(
+	echo "[Launch]"
+	echo "  BinDir = "";"
+	echo "  Executable = \"Robust.exe\""
+	echo "  logfile = \"$OSLOG/Robust.HG.log\""
+	echo "  ConsolePrompt = \"$ConfigName ($hostname:$PublicPort/$PrivatePort) \""
+) > $TMP.Robust.HG.ini
+cat $ETC/Robust.HG.ini >> $TMP.Robust.HG.ini
+
+printf "inigrep \"" > $TMP.inigrep
+
+for var in HomeURI BinDir Executable logfile ConsolePrompt MapTileDirectory SearchURL DestinationGuide AvatarPicker welcome economy about register help password 
+do
+	sed -i -e "s%^\([[:blank:]]*\);;* *$var *=%\\1$var =%" $TMP.Robust.HG.ini
+	printf "$var =|" >> $TMP.inigrep
+done
+
+cat $TMP.vars | while read var value
+do
+	sed -i "s%\([[:blank:];]*$var\) *=.*%\\1 = \"$value\"%" $TMP.Robust.HG.ini
+	printf "$var =|" >> $TMP.inigrep
+done
+echo  "^no more args\" $TMP.Robust.HG.ini" >> $TMP.inigrep
+
+echo
+echo "## Main values after changes"
+. $TMP.inigrep 2>/dev/null
+
+config="$ETC/robust-available/$ConfigName.ini"
+if [ -f "$config" ]
+then
+	read -p "File $config exists, override? (y/N)" yesno 
+else
+	read -p "Save in $config file? (y/N)" yesno 
+fi
+[ "$yesno" = "y" ] || end Aborted
+
+mv $TMP.Robust.HG.ini "$ETC/robust-available/$ConfigName.ini" \
+	&& echo "$config saved"
+
+end ""
+
+if [ ! -f "$ETC/robust-available/Robust.HG.ini" ]
+then
+	inigrep "BaseURL =|127.0.0.1|PublicPort =|8002|PrivatePort =|8003|\"\.\"|RegistryLocation|ConfigDirectory|ConsolePrompt" \
+		$ETC/Robust.HG.ini 2>/dev/null \
+		> "$ETC/robust-available/Robust.HG.ini"
+fi
+cat "$ETC/robust-available/Robust.HG.ini"
+
+end ""
