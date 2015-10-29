@@ -1,7 +1,10 @@
 #!/bin/bash
 
-BASEDIR=$(basename "$0")
-ETCPATH="$HOME/etc/opensim:/etc/opensim:$BASEDIR/etc"
+DELAY=60
+
+OPTS="shvq"
+
+ETCPATH="$HOME/etc/opensim:/etc/opensim:/opt/opensim/etc"
 
 PATH="$PATH:$(dirname "$0")"
 . $(which helpers) 2>/dev/null
@@ -14,7 +17,6 @@ HELP="
 
 sorry, helpman is in a minimalist mood"
 
-OPTS="shvq"
 
 while getopts $OPTS PARAM
 do
@@ -58,9 +60,10 @@ do
 done 2>/dev/null
 shift `expr $OPTIND - 1`
 
-ini_parser="$(which ini_parser)"
-[ -n "$ini_parser" ] || end 1 no ini parser
-log "ini_parser: $ini_parser"
+#ini_parser="$(which ini_parser)"
+#[ -n "$ini_parser" ] || end 1 no ini parser
+#log "ini_parser: $ini_parser"
+. "$(which ini_parser)" || end 2 could not launch ini parser
 
 realpath() {
 readlink -f "$@" 2>/dev/null && return
@@ -68,22 +71,82 @@ cd "$@" 2>/dev/null && pwd -P && return
 }
 
 startSim() {
-    for sim in "$@"
+    unset IFS
+    for arg in $@
     do
-	ini=$(buildIni "$sim")
-	[ ! -e "$ini" ] && continue
+	ls -d "$arg" 2>/dev/null | grep -q "\.ini$" \
+	    && { inifile=$arg; instance=$(basename $arg .ini); } \
+	    || { instance=$arg; inifile=$(buildIni "$instance"); }
 
-	ini_parser "$ini" || continue
+	[ ! -e "$inifile" ] && continue
+
+	instance=$(echo "$instance" | sed "s/[^a-zA-Z]*//g")
+
+	log "$instance ($ini)"
+
+	screen -ls | egrep -q "[0-9][0-9]*\.$instance[[:blank:]]" 
+	if [ $? -eq 0 ]
+		then
+		log 1 "An instance of $instance is already running"
+		continue
+	fi
+	
+	for default in $(echo "$ETCPATH:" | sed "s|/*:|/default.ini |g")
+	do
+		[ -f "$default" ] || continue
+		ini_parser "$default" || continue
+		ini_section_Startup 2>/dev/null
+		ini_section_Launch 2>/dev/null
+	done
+	log "BinDir: $BinDir"
+	log extracting launch info from $inifile file
+
+	cat "$inifile" | sed '/\[Launch]/,/^\[/!d' | sed "$ d" > $TMP.ini
+	cat "$inifile" | sed '/\[Startup]/,/^\[/!d' | sed "$ d" >> $TMP.ini
+	# echo foo=bar >> $TMP.ini
+	log reading $inifile file
+	ini_parser "$TMP.ini" || continue
+	# ini_parser "$inifile" || continue
 	#2>/dev/null || continue
+	log reading section Launch
 
-	ini_section_Launch || continue
-	#2>/dev/null || continue
-
-	log "starting $sim with $ini"
-	echo " BinDir     $BinDir"
-	echo " Executable $Executable"
-	echo " logfile    $logfile"
-	echo " prompt     $prompt"
+	# ini_section_Startup 2>/dev/null
+	ini_section_Launch 2>/dev/null
+	log "starting $instance with $inifile"
+	cd $BinDir 2>/dev/null || log 2 $instance Cannot cd to $BinDir
+	log "BinDir $BinDir"
+	[ -f $Executable ] || log 3 Executable $Executable not found
+	
+	cmd="mono $Executable -inifile='$inifile'"
+	if [ $Executable = "Robust.exe" ]
+		then
+		[ ! "$ConsolePrompt" ] && ConsolePrompt="Robust ($instance) "
+		cmd="$cmd -logfile='$logfile' -prompt '$ConsolePrompt'"
+	else
+		[ ! "$ConsolePrompt" ] && ConsolePrompt="$instance (\R) "
+		logconfig=${inifile/.ini/.logconfig}
+		if [ -e "$logconfig" ]
+			then
+			cmd="$cmd -logconfig=$logconfig"
+		fi
+	fi
+	log "launching $instance "
+	log "$cmd"
+	eval "screen -S $instance -d -m $cmd"
+	screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]"
+	# echo screen -S robust -d -m mono Robust.exe -inifile='/etc/opensim/robust-enabled/robust.ini' -logfile='/var/log/opensim/Robust.HG.log' -prompt 'Robust (robust) '
+	
+	# screen -S $instance -d -m $cmd || log $? "screen error"
+	# sleep 1
+	# log "still launching"
+	# sleep 1
+	# sleep 1
+	# continue
+	# 	sleep 1
+	# 	printf "launching\n"
+	# 	sleep 1
+	# 	screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]" 
+	# 	sleep 1
     done
 }
 
@@ -102,7 +165,7 @@ buildIni() {
 #	log "gotcha $lookup"
 #	ini="$lookup"
 #	break
-    done
+    done | head -1
     )
 
     if [ ! -n "$ini" ]
@@ -113,6 +176,49 @@ buildIni() {
     log "$sim ini $ini"
     echo "$ini"
 }
+
+cleanpath() {
+    IFS=:
+    printf "" > $TMP.realpath
+    for etc in $@
+    do
+	real=$(realpath "$etc")
+#	echo path $etc >&2
+#	echo real $real >&2
+	[ ! -d "$real" ] && continue
+	grep -q "^$real$" $TMP.realpath && continue
+	echo "$real" >> $TMP.realpath
+    done
+    unset IFS
+
+    newpath=$(cat $TMP.realpath | tr "\n" ":" | sed "s/:$//")
+    rm "$TMP.realpath"
+    echo $newpath
+}
+
+B="[[:blank:]]*"
+
+getRobustPath() {
+    IFS=:
+    for etc in $ETCPATH
+    do
+	unset IFS
+	for ini in $(
+	    egrep -li "^[[:blank:]]*Executable[[:blank:]]*=[[:blank:]]*Robust.exe[[:blank:]]*$" "$etc"/*-enabled/*.ini 2>/dev/null | sort -n
+	    ls "$etc"/default.ini 2>/dev/null
+	)
+	do
+	    egrep "^${B}BinDir${B}=" "$ini";
+	done
+    done | head -1 | sed "s/^[[:blank:]]*BinDir[[:blank:]]*=[[:blank:]]*//"
+    unset IFS
+}
+
+ETCPATH=$(cleanpath "$ETCPATH")
+
+#getRobustPath
+#end
+
 
 IFS=":"
 for etc in $ETCPATH
@@ -132,11 +238,34 @@ fi
 ETCPATH=$LOOKUP
 log "ETCPATH: $ETCPATH"
 
+case "$1" in 
+    "start")
+    action=$1
+    shift
+    ;;
+esac
+
 case $action in
     start)
 	if [ -n "$1" ]
 	then
 	    startSim "$@"
+	else
+	    log Starting all
+	    IFS=:
+	    for etc in $ETCPATH
+	    do
+		unset IFS
+		for ini in $(ls "$etc"/*-enabled/*.ini 2>/dev/null | sort -n) 
+		do
+		    [ "$wait" -a "$DELAY" ] && read -p "waiting $DELAY seconds between instances " -t $DELAY
+		    startSim "$ini"
+		    wait=true
+		done
+	    done
+	    unset IFS
 	fi
 	;;
+    connections)
+	
 esac
