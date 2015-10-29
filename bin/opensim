@@ -7,11 +7,11 @@ OPTS="shvq"
 ETCPATH="$HOME/etc/opensim:/etc/opensim:/opt/opensim/etc"
 
 PATH="$PATH:$(dirname "$0")"
-. $(which helpers) 2>/dev/null
+. $(which os-helpers) 2>/dev/null
 
 HELP="
       -s start
-      -h display this help
+      -h display this help		for ini in $(ls "$etc"/*-enabled/*.ini 2>/dev/null | sort -n) 
       -v verbose mode
       -q quiet mode
 
