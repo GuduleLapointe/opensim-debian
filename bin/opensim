@@ -118,18 +118,23 @@ startSim() {
 	[ -f $Executable ] || log 3 Executable $Executable not found
 	
 	cmd="mono $Executable -inifile='$inifile'"
-	if [ $Executable = "Robust.exe" ]
-		then
+#	if [ $Executable = "Robust.exe" ]
+#		then
 		[ ! "$ConsolePrompt" ] && ConsolePrompt="Robust ($instance) "
 		cmd="$cmd -logfile='$logfile' -prompt '$ConsolePrompt'"
-	else
-		[ ! "$ConsolePrompt" ] && ConsolePrompt="$instance (\R) "
-		logconfig=${inifile/.ini/.logconfig}
-		if [ -e "$logconfig" ]
+#	else
+#		[ ! "$ConsolePrompt" ] && ConsolePrompt="$instance (\R) "
+		logconfig=$(echo "$inifile" | sed -e "s/\.ini$/.logconfig/" -e "s%/[a-z]*-enabled/%/%")
+#		logconfig=${inifile/.ini/.logconfig}
+		echo "logconfig $logconfig"
+		ls  $logconfig
+		if [ -f "$logconfig" ]
 			then
 			cmd="$cmd -logconfig=$logconfig"
 		fi
-	fi
+#	fi
+	echo "$cmd"
+	
 	touch $TMP.wait
 	log "launching $instance "
 	log "$cmd"
