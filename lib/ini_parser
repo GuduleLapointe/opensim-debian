@@ -10,11 +10,12 @@ ini.parser ()
     ini=$(cat $1 \
 	| sed "s/[[:blank:]]*=[[:blank:]]*/=/g" \
 	| sed "s/^[[:blank:]]*;.*//" \
-	| sed "s/^[[:blank:]]*;.*//" \
+	| sed "s/;[[:blank:]]*$//" \
+	| sed "s/;/%%SEMICOLON%%/g" \
+	| egrep -v "^[[:blank:]]*;//" \
+	| sed "s/^[[:blank:]]*$//" \
 	| sed "s/\([{\\$]\)/\\\\\1/g" \
-	| sed "s/=\([^\"].*[|{}\\$].*\)\"*$/=\"\\1\"/g" \
-	| sed "s/lost/found/g" \
-	| egrep -v "^[[:blank:]]*;//"
+	| sed "s/=\([^\"].*[|{}\\$].*\)\"*$/=\"\\1\"/g"
     )
     ini="${ini//[/\[}"          # escape [
     ini="${ini//]/\]}"          # escape ]
@@ -33,7 +34,7 @@ ini.parser ()
     ini[0]="" # remove first element
     ini[${#ini[*]} + 1]='}'    # add the last brace
 #    eval "$(echo "${ini[*]}")" # eval the result
-    eval "$(echo "${ini[*]}" | sed 's/\\$\\{/\\\${/g')"
+    eval "$(echo "${ini[*]}" | sed -e 's/\\$\\{/\\\${/g' -e 's/%%SEMICOLON%%/;/g')"
     IFS=$OLDIFS
 }
 ini_parser_saved()
