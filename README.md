@@ -45,19 +45,17 @@ thing as is, as we want to make sure the methods are as globals as they can.
 Installation
 ------------
 
-Note: the project is not complete, these instructions will not work yet, but
-this shows you the way it works.
-
 ```shell
 git clone https://github.com/magicoli/opensim-debian.git
 sudo mv opensim-debian /opt/
 export PATH=$PATH:/opt/opensim-debian/bin
-opensim-install
+os-install
 ```
 
-Adjust 
-  - /etc/opensim/OpenSim.ini 
-  - the simulators in /etc/opensim/opensim-enabled 
+Configuration should be working as is, but you will probably want to adjust
+  - /etc/opensim/opensim.conf 
+  - /etc/opensim/robust-available/Robust.ini
+  - /etc/opensim/simulator-available/*.ini 
 
 ```shell
 opensim start
