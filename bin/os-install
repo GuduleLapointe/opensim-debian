@@ -13,21 +13,24 @@ then
 	sudo chown $USER:$USER $ETC || sudo chown $USER $ETC || end 3 could not set etc user
 fi
 
-cd "$OSBIN" || end 2 could not cd to $OSBIN
-(
-find -name "*.ini" 
-find -name "*.ini.example" 
-find -name "*.config" 
-) | sed "s%\./%%" | sed "s/\.example$//" | sort -u | while read file
-do
-	[ -f "$ETC/$file" ] && continue
-	folder="$(dirname "$ETC/$file")"
-	[ -d "$folder" ] || mkdir -p "$folder" || end 4 could not create $folder
-	cp $OSBIN/$file $ETC/$file 2>/dev/null \
-		|| cp $OSBIN/$file.example $ETC/$file 2>/dev/null \
-		|| end 4 could not copy $file
-done
+log "loading submodules"
+git submodule init
+git submodule update
 
+#cd "$OSBIN" || end 2 could not cd to $OSBIN
+#(
+#find -name "*.ini" 
+#find -name "*.ini.example" 
+#find -name "*.config" 
+#) | sed "s%\./%%" | sed "s/\.example$//" | sort -u | while read file
+#do
+#	[ -f "$ETC/$file" ] && continue
+#	folder="$(dirname "$ETC/$file")"
+#	[ -d "$folder" ] || mkdir -p "$folder" || end 4 could not create $folder
+#	cp $OSBIN/$file $ETC/$file 2>/dev/null \
+#		|| cp $OSBIN/$file.example $ETC/$file 2>/dev/null \
+#		|| end 4 could not copy $file
+#done
 
 mkdir -p $ETC/robust-available $ETC/robust-enabled $ETC/simulator-available $ETC/simulator-enabled || end 6
 mkdir -p $LIB $CACHE $OSLOG || end 6 lib cache oslos
@@ -47,7 +50,7 @@ echo $hostname
 read -p "ConfigName [Robust] " ConfigName
 [ "$ConfigName" ] || ConfigName=Robust
 
-default=$ETC/Robust.HG.ini
+default=$OSBIN/Robust.HG.ini
 config="$ETC/robust-available/$ConfigName.ini"
 enable="$ETC/robust-enabled/$ConfigName.ini"
 
@@ -84,7 +87,6 @@ read -p "Type the base url [http://$hostname] " BaseURL
 echo "$BaseURL" | grep -q "^https*://" || BaseURL="http://$BaseURL"
 echo "BaseURL $BaseURL" >> $TMP.vars
 
-
 read -p "PublicPort [8002] " PublicPort
 echo "$" | grep -q "^[0-9][0-9]*$" || PublicPort=8002
 echo "PublicPort $PublicPort" >> $TMP.vars
@@ -95,8 +97,8 @@ echo "PrivatePort $PrivatePort" >> $TMP.vars
 
 echo "Logfile $OSLOG/$ConfigName.log" >> $TMP.vars
 echo "ConsoleHistoryFile $OSLOG/RobustConsoleHistory.txt" >> $TMP.vars
-echo "ConfigDirectory $LIB/ConfigDirectory" >> $TMP.vars
-echo "RegistryLocation $LIB/RegistryLocation" >> $TMP.vars
+echo "ConfigDirectory $VAR/Config" >> $TMP.vars
+echo "RegistryLocation $VAR/Registry" >> $TMP.vars
 echo "MapTileDirectory $CACHE/maptiles" >> $TMP.vars
 echo "TilesStoragePath $CACHE/maptiles" >> $TMP.vars
 echo "BaseDirectory $CACHE/bakes" >> $TMP.vars

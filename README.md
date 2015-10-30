@@ -21,13 +21,12 @@ So, we reorganised the files and folders, matching the general Linux standards.
   /usr/share/opensim if we make a package)
   - Scripts and utilities are in bin/
   - The main code (latest stable OpenSim release) is located in lib/opensim
-  (yes, in lib, not in bin, because they are not directly executable on all OSes,
-  and they rely on lot of other files around them)
-  - Preferences are read from etc/ /etc/ and ~/etc/ )
-  - Cache is stored in var/cache
-  - Logs in var/log
+  (yes, in lib, not in bin, because they are not directly executable on all OSes, and they rely on lot of other files around them)
+  - Preferences are read from /OSDDIR/etc/ /etc/ and ~/etc/, each one overriding the precedent
+  - Cache is stored in /OSDDIR/cache
+  - Logs in /OSDDIR/logs
   - Databases (if using sqlite) should be store in var/db (but we don't use
-  sqlite, so this could be done later)
+  sqlite, so this could be fixed later)
   - If using other stable release(s) that the one included, they should be
   stored in share/
   - Git clone and other works in progress should go in dev/
