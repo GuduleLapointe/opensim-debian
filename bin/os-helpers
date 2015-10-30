@@ -10,9 +10,9 @@ ETC=/etc/$OPENSIM
 
 INSTALLDIR=$(dirname "$BIN")
 LIB=$INSTALLDIR/lib
+VAR=$INSTALLDIR/var
 CACHE=$INSTALLDIR/cache
-SHARE=$INSTALLDIR/share
-OSBIN="$SHARE/$OPENSIM/bin"
+OSBIN="$LIB/$OPENSIM/bin"
 OSLOG=$INSTALLDIR/logs
 
 [ -f "$OSBIN/OpenSim.exe" ] || end 1 opensim library not found
