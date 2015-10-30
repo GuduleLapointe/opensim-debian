@@ -1,17 +1,21 @@
 #!/bin/bash
 
-# Inspired by http://theoldschooldevops.com/2008/02/09/bash-ini-parser/
-# and some other works
-# Fixed ini_writer to include current values 
-# and show more thant two per section
-
 shopt -s compat42
 [ ! "$TAB" ] && TAB="   "
 
-ini_parser ()
+ini.parser ()
 {
-    OLD_IFS=$IFS
-    ini="$(<$1)"                # read the file
+    SAVED_IFS=$IFS
+    # ini="$(<$1)"                # read the file
+    ini=$(cat $1 \
+	| sed "s/[[:blank:]]*=[[:blank:]]*/=/g" \
+	| sed "s/^[[:blank:]]*;.*//" \
+	| sed "s/^[[:blank:]]*;.*//" \
+	| sed "s/\([{\\$]\)/\\\\\1/g" \
+	| sed "s/=\([^\"].*[|{}\\$].*\)\"*$/=\"\\1\"/g" \
+	| sed "s/lost/found/g" \
+	| egrep -v "^[[:blank:]]*;//"
+    )
     ini="${ini//[/\[}"          # escape [
     ini="${ini//]/\]}"          # escape ]
     IFS=$'\n' && ini=( ${ini} ) # convert to line-array
@@ -21,6 +25,29 @@ ini_parser ()
     ini=( ${ini[*]/\ =\ /=} )   # remove anything with a space around =
     ini=( ${ini[*]/#\\[/\}$'\n'ini.section.} ) # set section prefix
     ini=( ${ini[*]/%\\]/ \(} )    # convert text2function (1)
+    ini=( ${ini[*]/=/=\(} )    # convert item to array
+    ini=( ${ini[*]/%/ \)} )     # close array parenthesis
+    ini=( ${ini[*]/%\\ \)/ \\} ) # the multiline trick
+    ini=( ${ini[*]/%\( \)/\(\) \{} ) # convert text2function (2)
+    ini=( ${ini[*]/%\} \)/\}} ) # remove extra parenthesis
+    ini[0]="" # remove first element
+    ini[${#ini[*]} + 1]='}'    # add the last brace
+#    eval "$(echo "${ini[*]}")" # eval the result
+    eval "$(echo "${ini[*]}" | sed 's/\\$\\{/\\\${/g')"
+    IFS=$OLDIFS
+}
+ini_parser_saved()
+{
+    ini="$(<$1)"                # read the file
+    ini="${ini//[/\[}"          # escape [
+    ini="${ini//]/\]}"          # escape ]
+    IFS=$'\n' && ini=( ${ini} ) # convert to line-array
+    ini=( ${ini[*]//;*/} )      # remove comments with ;
+    ini=( ${ini[*]/\    =/=} )  # remove tabs before =
+    ini=( ${ini[*]/=\    /=} )   # remove tabs be =
+    ini=( ${ini[*]/\ =\ /=} )   # remove anything with a space around =
+    ini=( ${ini[*]/#\\[/\}$'\n'ini.section.} ) # set section prefix
+    ini=( ${ini[*]/%\\]/\(\) \{} )    # convert text2function (1)
     ini=( ${ini[*]/=/=\( } )    # convert item to array
     ini=( ${ini[*]/%/ \)} )     # close array parenthesis
     ini=( ${ini[*]/%\\ \)/ \\} ) # the multiline trick
@@ -29,48 +56,56 @@ ini_parser ()
     ini[0]="" # remove first element
     ini[${#ini[*]} + 1]='}'    # add the last brace
     eval "$(echo "${ini[*]}")" # eval the result
-    IFS=$OLDIFS
+    IFS=$SAVED_IFS
 }
-ini_fetchall ()
+
+ini.writer ()
 {
-    OLD_IFS=$IFS
+    SAVED_IFS=$IFS
     IFS=' '$'\n'
     fun="$(declare -F)"
     fun="${fun//declare -f/}"
-    for f in $fun; do
-	[ "${f#ini.section}" == "${f}" ] && continue
-        eval $f
-    done
-}
-ini_writer ()
-{
-    IFS=' '$'\n'
-    fun="$(declare -F)"
-    fun="${fun//declare -f/}"
+    tmp=$(mktemp)
     for f in $fun; do
         [ "${f#ini.section}" == "${f}" ] && continue
 	[ "$1" ] && [ "$f" != "ini.section.$1" ] && continue
-        item="$(declare -f ${f})"
-        item="${item##*\{}"
+#        item="$(declare -f ${f})"
+        item="$(declare -f ${f} | sed 's/\\${.*}/BRACE/g')"
+        item="${item##*[^\\]\{}"
         item="${item%\}}"
 #        item="${item//=*;/}"
 #        vars="${item//=*/}"
-        echo "[${f#ini.section.}]"
  	vars="$item"
-	tmp=$(mktemp)
-        for var in $vars; do
+        echo "[${f#ini.section.}]"
+	for var in $vars; do
+	    echo "$var" | grep -q "=" || continue
 	    var="${var%=*}"
-            echo "$INITAB"$var=\"${!var}\" | grep -v ');*=""'
-        done > $tmp
-	eval $f
+            echo "$TAB"$var=\"${!var}\" | grep -v ');*=""'
+        done | sed 's/${/$\\{/g' > $tmp
+	eval $f 2>/dev/null
 	. $tmp
 	rm -f $tmp
         for var in $vars; do
+	    echo "$var" | grep -q "=" || continue
 	    var="${var%=*}"
-            echo "$TAB"$var=\"${!var}\" | grep -v ');*=""'
-        done
-	rm -f $TMP.saved
+            echo "$TAB"$var = \"${!var}\" | grep -v ');*=""'
+        done | sed "s/\$\\\{/$\{/"
+# | sed "s/found/relost" | sed "s/\\\([|{}\\$]\)/\\1/g"
 	echo
     done
-    IFS=$OLDIFS
+    IFS=$SAVED_IFS
 }
+
+# parse the config file called 'myfile.ini', with the following
+# contents::
+#   [sec2]
+#   var2='something'
+# ini.parser 'myfile.ini'
+ 
+# enable section called 'sec2' (in the file [sec2]) for reading
+# ini.section.sec2
+ 
+# read the content of the variable called 'var2' (in the file
+# var2=XXX). If your var2 is an array, then you can use
+# ${var[index]}
+# echo "$var2"
