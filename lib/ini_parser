@@ -25,12 +25,19 @@
 # To fetch all values and output .ini format:
 #     ini.load.all
 #     ini.writer SECTION
+#
+# MERGE VALUES
+# Load values of a section from serveral ini files
+#     ini.merge SECTION FILE1 FILE2 [FILE3..]
+#     FILE1 overrides FILE2, which override FILE3...
+#     Values not present in a FILE1 are kept from FILE2, FILE3...
 
 shopt -s compat42
 [ ! "$TAB" ] && TAB="   "
 
 ini.parser ()
 {
+    [ ! -f "$1" ] && return 1
     SAVED_IFS=$IFS
     # ini="$(<$1)"                # read the file
     ini=$(cat $1 \
@@ -59,7 +66,6 @@ ini.parser ()
     ini=( ${ini[*]/%\} \)/\}} ) # remove extra parenthesis
     ini[0]="" # remove first element
     ini[${#ini[*]} + 1]='}'    # add the last brace
-#    eval "$(echo "${ini[*]}")" # eval the result
     eval "$(echo "${ini[*]}" | sed -e 's/\\$\\{/\\\${/g' -e 's/%%SEMICOLON%%/;/g')"
     IFS=$OLDIFS
 }
@@ -101,6 +107,7 @@ ini.load.all ()
 
 ini.writer ()
 {
+    [ "$1" = "-a" ] && APPEND=yes && shift || unset APPEND
     SAVED_IFS=$IFS
     IFS=' '$'\n'
     fun="$(declare -F)"
@@ -116,7 +123,7 @@ ini.writer ()
 #        item="${item//=*;/}"
 #        vars="${item//=*/}"
  	vars="$item"
-        echo "[${f#ini.section.}]"
+        [ ! "$APPEND" ] && echo "[${f#ini.section.}]"
 	for var in $vars; do
 	    echo "$var" | grep -q "=" || continue
 	    var="${var%=*}"
@@ -131,7 +138,31 @@ ini.writer ()
             echo "$TAB"$var = \"${!var}\" | grep -v ');*=""'
         done | sed "s/\$\\\{/$\{/"
 # | sed "s/found/relost" | sed "s/\\\([|{}\\$]\)/\\1/g"
-	echo
     done
     IFS=$SAVED_IFS
+}
+
+ini.merge()
+{
+    [ "$3" ] || return
+    section=$1
+    shift
+    merge=$(mktemp)
+    echo "[$section]" >> $merge
+    for file in $@
+    do
+	[ -f "$file" ] || continue
+	ini.parser $file 2>/dev/null
+	ini.section.$section
+	ini.writer -a $section
+    done | while read line
+    do
+	var="${line%=*}"
+	grep -q "^[[:blank:]]*$var[[:blank:]]*=" $merge && continue
+	echo $line >> $merge
+    done
+    [ -f "$merge" ] || return
+    ini.parser $merge
+    ini.section.$section
+    rm -f "$merge"
 }
