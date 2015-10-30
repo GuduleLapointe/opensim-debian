@@ -60,6 +60,19 @@ ini_parser_saved()
     IFS=$SAVED_IFS
 }
 
+ini.load.all ()
+{
+    SAVED_IFS=$IFS
+    IFS=' '$'\n'
+    fun="$(declare -F)"
+    fun="${fun//declare -f/}"
+    for f in $fun; do
+        [ "${f#ini.section}" == "${f}" ] && continue
+	eval $f
+    done
+    IFS=$SAVED_IFS
+}
+
 ini.writer ()
 {
     SAVED_IFS=$IFS
