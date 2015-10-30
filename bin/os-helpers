@@ -2,17 +2,22 @@
 
 [ ! "$OPENSIM" ] && OPENSIM=opensim
 [ ! "$PGM" ] && PGM=$(basename "$0")
-BIN=$(dirname "$0")
-ETC=/etc/$OPENSIM
 
 . $(which helpers) || exit 1
-[ -f "$ETC/opensim.conf" ] && . $ETC/opensim.conf 2>/dev/null
 
-INSTALLDIR=$(dirname "$BIN")
-LIB=$INSTALLDIR/lib
-VAR=$INSTALLDIR/var
-CACHE=$INSTALLDIR/cache
+BIN=$(dirname  $(readlink -f "$0"))
+OSDDIR=$(dirname "$BIN")
+for etc in $OSDDIR/etc /etc/$OPENSIM ~/etc/$OPENSIM
+do
+    [ -d "$etc" ] && ETC=$etc
+    [ -f "$etc/opensim.conf" ] && . $ETC/opensim.conf 2>/dev/null
+done
+
+LIB=$OSDDIR/lib
 OSBIN="$LIB/$OPENSIM/bin"
-OSLOG=$INSTALLDIR/logs
+VAR=$OSDDIR/var
+SRC=$OSDDIR/src
+CACHE=$OSDDIR/cache
+LOGS=$OSDDIR/logs
 
-[ -f "$OSBIN/OpenSim.exe" ] || end 1 opensim library not found
+[ -f "$OSBIN/OpenSim.exe" ] || log 1 "$OSBIN/OpenSim.exe" opensim library not found
