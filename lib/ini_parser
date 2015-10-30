@@ -48,14 +48,16 @@ ini.parse ()
 	| egrep -v "^[[:blank:]]*;//" \
 	| sed "s/^[[:blank:]]*$//" \
 	| sed "s/\([{\\$]\)/\\\\\1/g" \
-	| sed "s/=\([^\"].*[|{}\\$].*\)\"*$/=\"\\1\"/g"
+	| sed "s/=\([^\"].*[|{}\\$].*\)\"*$/=\"\\1\"/g" \
+	| sed "s/=/%3D/g" \
+	| sed "s/%3D/=/"
     )
     ini="${ini//[/\[}"          # escape [
     ini="${ini//]/\]}"          # escape ]
     IFS=$'\n' && ini=( ${ini} ) # convert to line-array
     ini=( ${ini[*]//;*/} )      # remove comments with ;
     ini=( ${ini[*]/\    =/=} )  # remove tabs before =
-    ini=( ${ini[*]/=\   /=} )   # remove tabs be =
+    ini=( ${ini[*]/=\   /=} )   # remove tabs after =
     ini=( ${ini[*]/\ =\ /=} )   # remove anything with a space around =
     ini=( ${ini[*]/#\\[/\}$'\n'ini.section.} ) # set section prefix
     ini=( ${ini[*]/%\\]/ \(} )    # convert text2function (1)
@@ -66,7 +68,22 @@ ini.parse ()
     ini=( ${ini[*]/%\} \)/\}} ) # remove extra parenthesis
     ini[0]="" # remove first element
     ini[${#ini[*]} + 1]='}'    # add the last brace
-    eval "$(echo "${ini[*]}" | sed -e 's/\\$\\{/\\\${/g' -e 's/%%SEMICOLON%%/;/g')"
+    echo "${ini[*]}" \
+            | sed -e 's/\\$\\{/\\\${/g' \
+              -e 's/%%SEMICOLON%%/;/g' \
+              -e 's/%3B/;/g' \
+              -e 's/%3D/=/g' > /tmp/evalini
+    . /tmp/evalini
+    IFS=OLDIFS
+    echo "finished parsing"
+    return
+    eval "$(echo "${ini[*]}" \
+            | sed -e 's/\\$\\{/\\\${/g' \
+              -e 's/%%SEMICOLON%%/;/g' \
+              -e 's/%3B/;/g' \
+              -e 's/%3D/=/g'
+
+    )"
     IFS=$OLDIFS
 }
 
@@ -95,7 +112,7 @@ ini.write ()
         [ "${f#ini.section}" == "${f}" ] && continue
 	[ "$1" ] && [ "$f" != "ini.section.$1" ] && continue
 #        item="$(declare -f ${f})"
-        item="$(declare -f ${f} | sed 's/\\${.*}/BRACE/g')"
+        item="$(declare -f ${f} | sed -e 's/\\${.*}/BRACE/g' -e "s/=/%3D/g" -e "s/%3D/=/")"
         item="${item##*[^\\]\{}"
         item="${item%\}}"
 #        item="${item//=*;/}"
@@ -104,6 +121,7 @@ ini.write ()
         [ ! "$APPEND" ] && echo "[${f#ini.section.}]"
 	for var in $vars; do
 	    echo "$var" | grep -q "=" || continue
+	    var=$(echo $var | sed -e "s/=/%3D/g" -e "s/%3D/=/") 
 	    var="${var%=*}"
             echo "$TAB"$var=\"${!var}\" | grep -v ');*=""'
         done | sed 's/${/$\\{/g' > $tmp
