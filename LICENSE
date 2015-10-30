@@ -1,4 +1,14 @@
 Copyright (c) 2015, Olivier van Helden, Gudule Lapointe
+
+This work relies on
+  - OpenSimulator, under the BSD license
+  - Shini, by Matthew Hall, under MIT license
+  - Part of codes with other licences may be included to the external libraries/. Information about their licences should be joined.
+
+OpenSimulator and other libraries are included or downloaded to be used with this software, in the form provided by their respective authors.
+
+For our own work, a proper licence will be chosen in a near future. In the meantime, as of 30.10.2015:
+
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
