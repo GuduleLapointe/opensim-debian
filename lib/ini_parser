@@ -4,13 +4,13 @@
 #
 # LOAD VALUES:
 # Put this line in your script, before the first use:
-# (pay attention to the dot, do not execute parser directly)
-#     . /PATH/TO/ini_parser
+# (pay attention to the dot, do not execute parse directly)
+#     . /PATH/TO/ini_parse
 # Then, initiate an ini file
-#     ini.parser /PATH/TO/YOUR.ini
+#     ini.parse /PATH/TO/YOUR.ini
 # And to fetch values in SECTION
 #     ini.section.SECTION
-# You can repeat ini.parser and ini.section.*
+# You can repeat ini.parse and ini.section.*
 # Values already present will be replaced
 # For example
 #     ini.section.Default
@@ -18,13 +18,13 @@
 
 # WRITE VALUES:
 # To output loaded values in .ini format:
-#     ini.writer
+#     ini.write
 # To write only a specific section's values:
 #     ini.section.SECTION
-#     ini.writer SECTION
+#     ini.write SECTION
 # To fetch all values and output .ini format:
 #     ini.load.all
-#     ini.writer SECTION
+#     ini.write SECTION
 #
 # MERGE VALUES
 # Load values of a section from serveral ini files
@@ -35,7 +35,7 @@
 shopt -s compat42
 [ ! "$TAB" ] && TAB="   "
 
-ini.parser ()
+ini.parse ()
 {
     [ ! -f "$1" ] && return 1
     SAVED_IFS=$IFS
@@ -83,7 +83,7 @@ ini.load.all ()
     IFS=$SAVED_IFS
 }
 
-ini.writer ()
+ini.write ()
 {
     [ "$1" = "-a" ] && APPEND=yes && shift || unset APPEND
     SAVED_IFS=$IFS
@@ -129,9 +129,9 @@ ini.merge()
     for file in $@
     do
 	[ -f "$file" ] || continue
-	ini.parser $file 2>/dev/null
+	ini.parse $file 2>/dev/null
 	ini.section.$section
-	ini.writer -a $section
+	ini.write -a $section
     done | while read line
     do
 	var="${line%=*}"
@@ -139,7 +139,7 @@ ini.merge()
 	echo $line >> $merge
     done
     [ -f "$merge" ] || return
-    ini.parser $merge
+    ini.parse $merge
     ini.section.$section
     rm -f "$merge"
 }
