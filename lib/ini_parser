@@ -1,5 +1,31 @@
 #!/bin/bash
 
+# Parses .ini files and load values in bash
+#
+# LOAD VALUES:
+# Put this line in your script, before the first use:
+# (pay attention to the dot, do not execute parser directly)
+#     . /PATH/TO/ini_parser
+# Then, initiate an ini file
+#     ini.parser /PATH/TO/YOUR.ini
+# And to fetch values in SECTION
+#     ini.section.SECTION
+# You can repeat ini.parser and ini.section.*
+# Values already present will be replaced
+# For example
+#     ini.section.Default
+#     ini.section.Host1
+
+# WRITE VALUES:
+# To output loaded values in .ini format:
+#     ini.writer
+# To write only a specific section's values:
+#     ini.section.SECTION
+#     ini.writer SECTION
+# To fetch all values and output .ini format:
+#     ini.load.all
+#     ini.writer SECTION
+
 shopt -s compat42
 [ ! "$TAB" ] && TAB="   "
 
@@ -109,17 +135,3 @@ ini.writer ()
     done
     IFS=$SAVED_IFS
 }
-
-# parse the config file called 'myfile.ini', with the following
-# contents::
-#   [sec2]
-#   var2='something'
-# ini.parser 'myfile.ini'
- 
-# enable section called 'sec2' (in the file [sec2]) for reading
-# ini.section.sec2
- 
-# read the content of the variable called 'var2' (in the file
-# var2=XXX). If your var2 is an array, then you can use
-# ${var[index]}
-# echo "$var2"
