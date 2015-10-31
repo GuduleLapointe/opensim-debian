@@ -1,21 +1,55 @@
 #!/bin/bash
 
+# Copyright 2015 Olivier van Helden <olivier@van-helden.net>
+# Released under GNU Affero GPL v3.0 license
+#    http://www.gnu.org/licenses/agpl-3.0.html
+
+#AUTOMATIC=yes
+OSDOWNLOAD=http://opensimulator.org/dist/opensim-0.8.1.2.tar.gz
+
 DEBUG=yes
 
 export PATH=$PATH:$(dirname "$0")
 which os-helpers | grep -q helper || exit 1
 . $(which os-helpers)
 
-if [ ! -d $ETC ]
+[ -f "$LIB/ini_parser" ] || end 2 "Missing ini_parser librarie"
+. "$LIB/ini_parser"
+
+if [ ! -d "$ETC" ]
 then
-	log  "create /etc/opensim"
-	sudo mkdir $ETC || end 3 could not mkdir etc
-	sudo chown $USER:$USER $ETC || sudo chown $USER $ETC || end 3 could not set etc user
+    log No preferences folder, trying to create one
+    for etc in $OSDDIR/etc /etc/$OPENSIM ~/etc/$OPENSIM
+    do
+	mkdir "$etc" 2>/dev/null && ETC=$etc && break
+    done
+    [ ! "$ETC" ] && end 1 "Could not create preferences folder"
+fi
+log "preferences folder is $ETC"
+
+if [ ! -f "$OSBIN/OpenSim.exe" ]
+then
+    log "OpenSim binaries missing, lets fix that"
+    mkdir -p "$SRC" || end $? "Could not create $SRC"
+    tar=$(basename "$OSDOWNLOAD")
+    if [ ! -f "$SRC/$tar" ]
+    then
+	log "loading OpenSimulator supported release"
+	log "$OSDOWNLOAD"
+	wget -nd -P "$SRC" "$OSDOWNLOAD" \
+	    || end $? Error $? while downloading OpenSim
+    fi
+    log "unpacking OpenSimulator"
+    mkdir -p "$LIB/$OPENSIM" \
+	&& log extracting OpenSimulator archive to "$LIB/$OPENSIM" \
+	&& tar xvfz "$SRC/$tar" -C "$LIB/$OPENSIM" --strip-components 1 \
+	|| end $? Error $? while unpacking OpenSim
 fi
 
-log "loading submodules"
-git submodule init
-git submodule update
+## No more submodules for now, we keep this during development in case
+# log "checking submodules"
+# git submodule init
+# git submodule update
 
 #cd "$OSBIN" || end 2 could not cd to $OSBIN
 #(
@@ -32,123 +66,152 @@ git submodule update
 #		|| end 4 could not copy $file
 #done
 
-mkdir -p $ETC/robust-available $ETC/robust-enabled $ETC/simulator-available $ETC/simulator-enabled || end 6
-mkdir -p $LIB $CACHE $OSLOG || end 6 lib cache oslos
-
-cd "$ETC"
-echo "## Configuration de Robust"
-
-hostname=$(hostname -f)
-echo "$PGM: choose your server address"
-(
-ip addr show | grep "inet " | cut -d "/" -f 1 | sed "s/.*inet *//"
-echo $hostname 
-) | sed "s/^/   /"
-
-. "$(which ini_parser)" || end 2 could not launch ini parser
-
-read -p "ConfigName [Robust] " ConfigName
-[ "$ConfigName" ] || ConfigName=Robust
-
-default=$OSBIN/Robust.HG.ini
-config="$ETC/robust-available/$ConfigName.ini"
-enable="$ETC/robust-enabled/$ConfigName.ini"
-
-#cat "$config" | sed '/\[Launch]/,/^\[/!d' | sed "$ d" > $TMP.ini
-cat "$config" | sed '/\[GridInfoService]/,/^\[/!d' | sed "$ d" | inigrep "gridname|gridnick" >> $TMP.ini
-ini_parser "$TMP.ini" || continue
-ini_section_GridInfoService
-
-read -p "Grid name (long) [$gridname] " newgridname
-[ ! "$newgridname" ] && newgridname=$gridname
-echo "gridname $newgridname" >> $TMP.vars
-read -p "Grid name (short)  [$gridnick] " newgridnick
-[ ! "$newgridnick" ] && newgridnick=$gridnick
-echo "gridnick $newgridnick" >> $TMP.vars
-
-read -p "myshost [$myhost] " newhost
-[ "$newhost" ] || newhost=$myhost
-read -p "mydb [$mydb] " newdb
-[ "$newdb" ] || newdb=$mydb
-read -p "myuser [$myuser] " newuser
-[ "$newuser" ] || newuser=$myuser
-read -p "mypass [$mypass] " newpass
-[ "$newpass" ] || newpass=$mypass
-
-
-read -p "BaseURL [$hostname] " BaseURL
-[ "$BaseURL" ] || BaseURL=$hostname
-echo "$BaseURL" | grep -q "^https*://" || BaseURL="http://$BaseURL"
-echo "BaseURL $BaseURL" >> $TMP.vars
-
-
-read -p "Type the base url [http://$hostname] " BaseURL
-[ "$BaseURL" ] || BaseURL=$hostname
-echo "$BaseURL" | grep -q "^https*://" || BaseURL="http://$BaseURL"
-echo "BaseURL $BaseURL" >> $TMP.vars
-
-read -p "PublicPort [8002] " PublicPort
-echo "$" | grep -q "^[0-9][0-9]*$" || PublicPort=8002
-echo "PublicPort $PublicPort" >> $TMP.vars
-
-read -p "PrivatePort [8003] " PrivatePort
-echo "$PrivatePort" | grep -q "^[0-9][0-9]*$" || PrivatePort=8003
-echo "PrivatePort $PrivatePort" >> $TMP.vars
-
-echo "Logfile $OSLOG/$ConfigName.log" >> $TMP.vars
-echo "ConsoleHistoryFile $OSLOG/RobustConsoleHistory.txt" >> $TMP.vars
-echo "ConfigDirectory $VAR/Config" >> $TMP.vars
-echo "RegistryLocation $VAR/Registry" >> $TMP.vars
-echo "MapTileDirectory $CACHE/maptiles" >> $TMP.vars
-echo "TilesStoragePath $CACHE/maptiles" >> $TMP.vars
-echo "BaseDirectory $CACHE/bakes" >> $TMP.vars
-echo "BinDir $OSBIN" >> $TMP.vars
-echo "ConnectionString Data Source=$newhost;Database=$newdb;User ID=$newuser;Password=$newpass;Old Guids=true;" >> $TMP.vars
-
-(
-	echo "[Launch]"
-	echo "  BinDir = "$OSBIN";"
-	echo "  Executable = \"Robust.exe\""
-	echo "  logfile = \"$OSLOG/$ConfigName.log\""
-	echo "  ConsolePrompt = \"$ConfigName ($hostname:$PublicPort/$PrivatePort) \""
-) > $TMP.Robust.HG.ini
-cat $default >> $TMP.Robust.HG.ini
-
-printf "inigrep \"" > $TMP.inigrep
-
-for var in HomeURI TilesStoragePath BinDir Executable logfile ConsolePrompt MapTileDirectory SearchURL DestinationGuide AvatarPicker welcome economy about register help password 
+log "Checking standard directories presence"
+for dir in $LIB $VAR $SRC $CACHE $LOGS $ETC/robust-available $ETC/robust-enabled $ETC/simulator-available $ETC/simulator-enabled
 do
-	sed -i -e "s%^\([[:blank:]]*\);;* *$var *=%\\1$var =%" $TMP.Robust.HG.ini
-	printf "$var =|" >> $TMP.inigrep
+    [ -d "$dir" ] && continue
+    mkdir -p "$dir" \
+	&& log "Created $dir" \
+	|| end $? "Could not create $dir"
 done
-unset IFS
-cat $TMP.vars | while read var value
+
+log "## Choose robust config"
+
+default=$OSBIN/Robust.HG.ini.example
+
+robustconfig=$ETC/robust-available/$(
+    (
+	ls $ETC/robust-enabled | grep "\.ini$" | sort -n
+	ls $ETC/robust-available | grep "\.ini$" | sort -n
+	echo "NewRobust.ini" 
+    ) | head -1
+)
+robustconfig=$ETC/robust-available/$( (ls $ETC/robust-enabled | grep "\.ini$" || echo "Robust.ini" ) | sort -n | head -1)
+#[ ! "$robustconfig" ] && robustconfig=Robust.ini
+
+log 1 "Please choose the Robust .ini file location"
+log 1 "  If present, it will be read, and overriden after settings completion"
+log 2 "  If not present, it will be created"
+readvar robustconfig
+#read -e -p "$PGM: Robust config file: " -i $robustconfig robustconfig
+[ "$robustconfig" ] || end 1 "You have to choose a file"
+
+## Database configuration
+log 1 "## Database configuration"
+cat >> $TMP.db <<EOF
+[DatabaseService]
+ConnectionString = "Data Source=localhost;Database=opensim;User ID=opensim;Password=password;Old Guids=true;"
+EOF
+ini.merge DatabaseService $default $TMP.db  $robustconfig
+DatabaseHost=$(echo "$ConnectionString;" | sed "s/.*Data Source=//" | cut -d ';' -f 1)
+DatabaseName=$(echo "$ConnectionString;" | sed "s/.*Database=//" | cut -d ';' -f 1)
+DatabaseUser=$(echo "$ConnectionString;" | sed "s/.*User ID=//" | cut -d ';' -f 1)
+DatabasePassword=$(echo "$ConnectionString;" | sed "s/.*Password=//" | cut -d ';' -f 1)
+readvar DatabaseHost DatabaseName DatabaseUser DatabasePassword
+
+cat >> $TMP.installdefault <<EOF
+[DatabaseService]
+ConnectionString = "Data Source=$DatabaseHost;Database=$DatabaseName;User ID=$DatabaseUser;Password=$DatabasePassword;Old Guids=true;"
+EOF
+ini.merge DatabaseService $robustconfig $TMP.installdefault $default
+echo "ConnectionString $ConnectionString"
+
+## Set robust name based on confif filename
+robustname=$(basename $robustconfig .ini)
+enable="$ETC/robust-enabled/$robustname.ini"
+
+log 1 "## General settings"
+cat > $TMP.installdefault <<EOF
+[Const]
+BaseURL = "http://$(hostname -f)"
+EOF
+
+ini.merge Const $default $TMP.installdefault $robustconfig
+readvar BaseURL PublicPort PrivatePort
+echo "$BaseURL" | grep -q "^https*://" || BaseURL="http://$BaseURL"
+
+hostname=$(echo "$BaseURL" | sed "s%.*://%%" | cut -d "/" -f 1)
+
+log "## Setting Launcher info"
+cat >> $TMP.installdefault <<EOF
+[Launch]
+   BinDir = "$OSBIN"
+   Executable = "Robust.exe"
+   LogFile = "$LOGS/$robustname.log"
+   ConsolePrompt = "$robustname ($hostname:$PublicPort)"
+EOF
+ini.merge Launch $TMP.installdefault $robustconfig
+
+log "## Startup section"
+cat >> $TMP.installdefault <<EOF
+[Startup]
+RegistryLocation=$VAR/Registry
+ConfigDirectory=$VAR/Config
+ConsoleHistoryFile=$LOGS/$ConsoleHistoryFile
+ConfigDirectory=$VAR/Config
+EOF
+ini.merge Startup $default $TMP.installdefault $robustconfig
+ini.write Launch >> $TMP.ini
+ini.write Const >> $TMP.ini
+ini.write Startup >> $TMP.ini
+ini.write DatabaseService >> $TMP.ini
+
+log "## Grid info"
+cat >> $TMP.installdefault <<EOF
+[GridInfoService]
+   GridName = "$(ucfirst $hostname) (Powered by opensim-debian)"
+   GridNick = "$(ucfirst $hostname)"
+   welcome = "\${Const|BaseURL}:\${Const|PublicPort}/welcome"
+   ; economy = "\${Const|BaseURL}:\${Const|PublicPort}/economy"
+   ; about = "\${Const|BaseURL}/about/"
+   ; register = "\${Const|BaseURL}/register"
+   ; help = "\${Const|BaseURL}/help"
+   ; password = "\${Const|BaseURL}/password"
+EOF
+ini.merge GridInfoService $default $TMP.installdefault $robustconfig
+readvar GridName GridNick
+ini.write GridInfoService >> $TMP.ini
+
+cat >> $TMP.installdefault <<EOF
+[GridService]
+    MapTileDirectory = "$CACHE/maptiles"
+[MapImageService]
+    TilesStoragePath = "$CACHE/maptiles"
+[BakedTextureService]
+    BaseDirectory = "$CACHE/bakes"
+[LoginService]
+    SearchURL = "\${Const|BaseURL}:\${Const|PublicPort}/";
+[UserProfilesService]
+    Enabled = true
+EOF
+for section in GridService LoginService UserProfilesService MapImageService BakedTextureService
 do
-	log "adding $var=$value"
-	sed -i "s%\([[:blank:];]*$var\) *=.*%\\1 = \"$value\"%" $TMP.Robust.HG.ini
-	printf "$var =|" >> $TMP.inigrep
+    ini.merge $section $default $TMP.installdefault $robustconfig
+    ini.write $section >> $TMP.ini
 done
-echo  "^no more args\" $TMP.Robust.HG.ini" >> $TMP.inigrep
 
 echo
-echo "## Main values after changes"
-. $TMP.inigrep 2>/dev/null
+echo "# Generated configuration:"
+echo
+cat $TMP.ini
+echo
 
-if [ -f "$config" ]
+if [ -f "$robustconfig" ]
 then
-	read -p "File $config exists, override? (y/N)" yesno 
+    yesno "File $robustconfig exists, override?" || end Aborted
 else
-	read -p "Save in $config file? (y/N)" yesno 
+    yesno "Save $robustconfig file?" || end Aborted 
 fi
-[ "$yesno" = "y" ] || end Aborted
 
-mv $TMP.Robust.HG.ini "$ETC/robust-available/$ConfigName.ini" \
-	&& echo "$config saved"
-[ ! -f "$enable" ] && ln -s "$config" "$enable"
+mv $TMP.ini "$robustconfig" \
+	&& echo "$robustconfig saved"
+end
+
+[ ! -f "$enable" ] && ln -s "$robustconfig" "$enable"
 
 cat $ETC/Robust.exe.config \
-	| sed "s%\(<file value=\"\)Robust%\\1$OSLOG/$ConfigName%" \
-	> "$ETC/$ConfigName.logconfig"
+	| sed "s%\(<file value=\"\)Robust%\\1$LOGS/$robustname%" \
+	> "$ETC/$robustname.logconfig"
 
 if [ ! -f "$ETC/opensim.conf" ]
 then
