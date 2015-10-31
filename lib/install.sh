@@ -4,10 +4,9 @@
 # Released under GNU Affero GPL v3.0 license
 #    http://www.gnu.org/licenses/agpl-3.0.html
 
-#AUTOMATIC=yes
 OSDOWNLOAD=http://opensimulator.org/dist/opensim-0.8.1.2.tar.gz
-
 DEBUG=yes
+#AUTOMATIC=yes
 
 export PATH=$PATH:$(dirname "$0")
 which os-helpers | grep -q helper || exit 1
