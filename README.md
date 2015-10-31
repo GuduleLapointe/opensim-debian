@@ -45,6 +45,8 @@ Installation
 
 ```shell
 git clone --recursive https://github.com/GuduleLapointe/opensim-debian.git
+# use --recursive to download git submodules
+# if you don't use recursive, they will be downloaded during installation
 sudo mv opensim-debian /opt/
 export PATH=$PATH:/opt/opensim-debian/bin
 cd /opt/opensim-debian
