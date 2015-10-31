@@ -68,15 +68,6 @@ ini.parse ()
     ini=( ${ini[*]/%\} \)/\}} ) # remove extra parenthesis
     ini[0]="" # remove first element
     ini[${#ini[*]} + 1]='}'    # add the last brace
-    echo "${ini[*]}" \
-            | sed -e 's/\\$\\{/\\\${/g' \
-              -e 's/%%SEMICOLON%%/;/g' \
-              -e 's/%3B/;/g' \
-              -e 's/%3D/=/g' > /tmp/evalini
-    . /tmp/evalini
-    IFS=OLDIFS
-    echo "finished parsing"
-    return
     eval "$(echo "${ini[*]}" \
             | sed -e 's/\\$\\{/\\\${/g' \
               -e 's/%%SEMICOLON%%/;/g' \
