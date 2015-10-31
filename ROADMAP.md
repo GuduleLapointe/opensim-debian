@@ -28,9 +28,9 @@ environment. They are not included in this repository because
 we still need to test their general usability and stability.
 
 
+`    opensim stop [instance1] [instance2] [...]
 `
-    opensim stop [instance1] [instance2] [...]
-    opensim restart [instance1] [instance2] [...]
+`    opensim restart [instance1] [instance2] [...]
 `
 
 -  Stop/Restart all instances or matching instances
