@@ -1,13 +1,19 @@
 #!/bin/bash
 
+# Copyright 2015 Olivier van Helden <olivier@van-helden.net>
+# Released under GNU Affero GPL v3.0 license
+#    http://www.gnu.org/licenses/agpl-3.0.html
+
 DELAY=60
+DEBUG=yes
 
+# End of user configurable data
 
-ETCPATH="$HOME/etc/opensim:/etc/opensim:/opt/opensim/etc"
-
-PATH="$PATH:$(dirname "$0")"
-. $(which os-helpers) 2>/dev/null
-
+BASEDIR=$(dirname $(dirname $(readlink -f "$0")))
+LIB=$BASEDIR/lib
+. $LIB/os-helpers || exit 1 
+. $LIB/bash-helpers/ini_parser 2>/dev/null || end 1 "Missing ini_parser library"
+ 
 HELP="
       -s start
       -h display this help
@@ -226,9 +232,10 @@ ETCPATH=$(cleanpath "$ETCPATH")
 #getRobustPath
 #end
 
+log looking in $ETC
 
 IFS=":"
-for etc in $ETCPATH
+for etc in $ETC $ETCPATH 
 do
     folder=$(realpath "$etc")
     [ "$folder" ] || continue

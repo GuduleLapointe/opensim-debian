@@ -1,0 +1,25 @@
+#!/bin/sh
+
+[ ! "$OPENSIM" ] && OPENSIM=opensim
+[ ! "$PGM" ] && PGM=$(basename "$0")
+
+BIN=$(dirname  $(readlink -f "$0"))
+OSDDIR=$(dirname "$BIN")
+[ ! "$LIB" ] && LIB=$OSDDIR/lib
+
+. $LIB/bash-helpers/helpers || echo "$PGM: Missing helpers library, run install.sh"
+
+for etc in $OSDDIR/etc /etc/$OPENSIM ~/etc/$OPENSIM
+do
+    [ -d "$etc" ] && ETC=$etc
+    [ -f "$etc/opensim.conf" ] && . $ETC/opensim.conf 2>/dev/null
+done
+
+[ ! "$LIB" ] && LIB=$OSDDIR/lib
+[ ! "$OSBIN" ] && OSBIN="$LIB/$OPENSIM/bin"
+[ ! "$VAR" ] && VAR=$OSDDIR/var
+[ ! "$SRC" ] && SRC=$OSDDIR/src
+[ ! "$CACHE" ] && CACHE=$OSDDIR/cache
+[ ! "$LOGS" ] && LOGS=$OSDDIR/logs
+
+[ -f "$OSBIN/OpenSim.exe" ] || echo "$PGM: Missing $OSBIN/OpenSim.exe, run install.sh"

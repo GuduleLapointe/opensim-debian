@@ -1,0 +1,3 @@
+[submodule "lib/bash-helpers"]
+	path = lib/bash-helpers
+	url = https://github.com/magicoli/bash-helpers.git
