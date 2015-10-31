@@ -7,13 +7,15 @@
 - create basic directory structure, download OpenSim and other needed libraries
 - read Robust default configuration, ask a few questions and build a working configuration in etc/robust-available
 
-`opensim start`
+`
+opensim start
+`
 
 - Start all instances, first in etc/robust-enabled, then in etc/simulators-enabled
 
-``
+`
 opensim start example1 example2 ...
-``
+`
 
 - Start only example1 and example2 instances.
   The config will be the first match in etc/*-enabled/<name>.ini
@@ -26,8 +28,10 @@ environment. They are not included in this repository because
 we still need to test their general usability and stability.
 
 
+`
     opensim stop [instance1] [instance2] [...]
     opensim restart [instance1] [instance2] [...]
+`
 
 -  Stop/Restart all instances or matching instances
 
