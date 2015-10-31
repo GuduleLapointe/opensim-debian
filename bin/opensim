@@ -1,0 +1,281 @@
+#!/bin/bash
+
+DELAY=60
+
+
+ETCPATH="$HOME/etc/opensim:/etc/opensim:/opt/opensim/etc"
+
+PATH="$PATH:$(dirname "$0")"
+. $(which os-helpers) 2>/dev/null
+
+HELP="
+      -s start
+      -h display this help
+      -v verbose mode
+      -q quiet mode
+
+sorry, helpman is in a minimalist mood"
+
+
+OPTS="shvq"
+while getopts $OPTS PARAM
+do
+    case $PARAM in
+	"?")
+	    ERROR=1
+	        ;;
+	-)
+	    case $OPTARG in
+		help)
+		    help
+		    end
+		    ;;
+		*)
+		    printf "$PGM: illegal option -- $OPTARG"
+#    ERROR=1
+	    esac
+	    ;;
+	s)
+	    action=start
+	    ;;
+	h)
+	    help
+	    end
+	    ;;
+	v)
+	    STDERR="&1"
+            DEBUG=yes
+	    QUIET=no
+	    ;;
+	q)
+	    STDOUT="/dev/null"
+	    QUIET=yes
+	    DEBUG=no
+	    ;;
+	*)
+	    VALUES="$VALUES $PARAM"
+	    LASTVAL=$PARAM
+    esac
+    
+done 2>/dev/null
+shift `expr $OPTIND - 1`
+
+#ini_parser="$(which ini_parser)"
+#[ -n "$ini_parser" ] || end 1 no ini parser
+#log "ini_parser: $ini_parser"
+. "$(which ini_parser)" || end 2 could not launch ini parser
+
+realpath() {
+readlink -f "$@" 2>/dev/null && return
+cd "$@" 2>/dev/null && pwd -P && return
+}
+
+startSim() {
+    unset IFS
+    for arg in $@
+    do
+	ls -d "$arg" 2>/dev/null | grep -q "\.ini$" \
+	    && { inifile=$arg; instance=$(basename $arg .ini | tr "[:upper:]" "[:lower:]"); } \
+	    || { instance=$(echo $arg | tr "[:upper:]" "[:lower:]"); inifile=$(buildIni "$instance"); }
+
+	[ ! -e "$inifile" ] && continue
+
+	instance=$(echo "$instance" | sed "s/[^a-zA-Z]*//g")
+
+	log "$instance ($ini)"
+
+	screen -ls | egrep -q "[0-9][0-9]*\.$instance[[:blank:]]" 
+	if [ $? -eq 0 ]
+		then
+		log 1 "An instance of $instance is already running"
+		continue
+	fi
+	
+	for default in $(echo "$ETCPATH:" | sed "s|/*:|/default.ini |g")
+	do
+		[ -f "$default" ] || continue
+		ini_parser "$default" || continue
+		ini_section_Startup 2>/dev/null
+		ini_section_Launch 2>/dev/null
+	done
+	log "BinDir: $BinDir"
+	log extracting launch info from $inifile file
+
+	cat "$inifile" | sed '/\[Launch]/,/^\[/!d' | sed "$ d" > $TMP.ini
+	cat "$inifile" | sed '/\[Startup]/,/^\[/!d' | sed "$ d" >> $TMP.ini
+	# echo foo=bar >> $TMP.ini
+	log reading $inifile file
+	ini_parser "$TMP.ini" || continue
+	# ini_parser "$inifile" || continue
+	#2>/dev/null || continue
+	log reading section Launch
+
+	# ini_section_Startup 2>/dev/null
+	ini_section_Launch 2>/dev/null
+	log "starting $instance with $inifile"
+	cd $BinDir 2>/dev/null || log 2 $instance Cannot cd to $BinDir
+	log "BinDir $BinDir"
+	[ -f $Executable ] || log 3 Executable $Executable not found
+	
+	cmd="mono $Executable -inifile='$inifile'"
+#	if [ $Executable = "Robust.exe" ]
+#		then
+		[ ! "$ConsolePrompt" ] && ConsolePrompt="Robust ($instance) "
+		cmd="$cmd -logfile='$logfile' -prompt '$ConsolePrompt'"
+#	else
+#		[ ! "$ConsolePrompt" ] && ConsolePrompt="$instance (\R) "
+		logconfig=$(echo "$inifile" | sed -e "s/\.ini$/.logconfig/" -e "s%/[a-z]*-enabled/%/%")
+#		logconfig=${inifile/.ini/.logconfig}
+		echo "logconfig $logconfig"
+		ls  $logconfig
+		if [ -f "$logconfig" ]
+			then
+			cmd="$cmd -logconfig=$logconfig"
+		fi
+#	fi
+	echo "$cmd"
+	
+	touch $TMP.wait
+	log "launching $instance "
+	log "$cmd"
+	eval "screen -S $instance -d -m $cmd"
+	screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]"
+	# echo screen -S robust -d -m mono Robust.exe -inifile='/etc/opensim/robust-enabled/robust.ini' -logfile='/var/log/opensim/Robust.HG.log' -prompt 'Robust (robust) '
+	
+	# screen -S $instance -d -m $cmd || log $? "screen error"
+	# sleep 1
+	# log "still launching"
+	# sleep 1
+	# sleep 1
+	# continue
+	# 	sleep 1
+	# 	printf "launching\n"
+	# 	sleep 1
+	# 	screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]" 
+	# 	sleep 1
+    done
+}
+
+buildIni() {
+    unset ini
+    sim="$@"
+    ini=$(
+    IFS=":"
+    for etc in $ETCPATH
+    do
+	log "looking in $etc"
+	ls "$etc/"*-enabled/*".ini" 2>/dev/null \
+		| grep -i "/$sim.ini$" && break
+#	lookup="$etc/simulators-enabled/$sim.ini"
+#	log "looking for $lookup"
+#	[ -f "$lookup" ] || continue
+#	log "gotcha $lookup"
+#	ini="$lookup"
+#	break
+    done | head -1
+    )
+
+    if [ ! -n "$ini" ]
+    then
+	log 1 "no ini file found for $sim"
+	continue
+    fi
+    log "$sim ini $ini"
+    echo "$ini"
+}
+
+cleanpath() {
+    IFS=:
+    printf "" > $TMP.realpath
+    for etc in $@
+    do
+	real=$(realpath "$etc")
+#	echo path $etc >&2
+#	echo real $real >&2
+	[ ! -d "$real" ] && continue
+	grep -q "^$real$" $TMP.realpath && continue
+	echo "$real" >> $TMP.realpath
+    done
+    unset IFS
+
+    newpath=$(cat $TMP.realpath | tr "\n" ":" | sed "s/:$//")
+    rm "$TMP.realpath"
+    echo $newpath
+}
+
+B="[[:blank:]]*"
+
+getRobustPath() {
+    IFS=:
+    for etc in $ETCPATH
+    do
+	unset IFS
+	for ini in $(
+	    egrep -li "^[[:blank:]]*Executable[[:blank:]]*=[[:blank:]]*Robust.exe[[:blank:]]*$" "$etc"/*-enabled/*.ini 2>/dev/null | sort -n
+	    ls "$etc"/default.ini 2>/dev/null
+	)
+	do
+	    egrep "^${B}BinDir${B}=" "$ini";
+	done
+    done | head -1 | sed "s/^[[:blank:]]*BinDir[[:blank:]]*=[[:blank:]]*//"
+    unset IFS
+}
+
+ETCPATH=$(cleanpath "$ETCPATH")
+
+#getRobustPath
+#end
+
+
+IFS=":"
+for etc in $ETCPATH
+do
+    folder=$(realpath "$etc")
+    [ "$folder" ] || continue
+    echo ":$LOOKUP:" | grep -q ":$folder:" && log "ignoring duplicate $etc" && continue
+    LOOKUP="$LOOKUP:$folder" && continue
+done
+unset IFS
+LOOKUP="$(echo $LOOKUP | sed "s/^:*//")"
+
+if [ ! -n "$LOOKUP" ]
+then
+    end 1 "No valid folder found in $ETCPATH"
+fi
+ETCPATH=$LOOKUP
+log "ETCPATH: $ETCPATH"
+
+case "$1" in 
+    "start")
+    action=$1
+    shift
+    ;;
+esac
+
+case $action in
+	start)
+	if [ -n "$1" ]
+	then
+	    startSim "$@"
+	else
+	    log Starting all
+	    IFS=:
+	    for etc in $ETCPATH
+	    do
+		unset IFS
+		for ini in $(
+			ls "$etc"/robust-enabled/*.ini 2>/dev/null | sort -n
+			ls "$etc"/simulators-enabled/*.ini 2>/dev/null | sort -n
+			)
+		do
+		    [ -f "$TMP.wait" -a "$DELAY" ] && read -p "waiting $DELAY seconds between instances " -t $DELAY
+		    rm -f "$TMP.wait"
+		    startSim "$ini"
+		done
+	    done
+	    unset IFS
+	fi
+	;;
+    connections)
+	
+esac

@@ -1,0 +1,160 @@
+#!/bin/bash
+
+# Copyright 2015 Olivier van Helden <olivier@van-helden.net>
+# Released under GNU Affero GPL v3.0 license
+#    http://www.gnu.org/licenses/agpl-3.0.html
+
+# Parses .ini files and load values in bash
+#
+# LOAD VALUES:
+# Put this line in your script, before the first use:
+# (pay attention to the dot, do not execute parse directly)
+#     . /PATH/TO/ini_parse
+# Then, initiate an ini file
+#     ini.parse /PATH/TO/YOUR.ini
+# And to fetch values in SECTION
+#     ini.section.SECTION
+# You can repeat ini.parse and ini.section.*
+# Values already present will be replaced
+# For example
+#     ini.section.Default
+#     ini.section.Host1
+#
+# WRITE VALUES:
+# To output loaded values in .ini format:
+#     ini.write
+# To write only a specific section's values:
+#     ini.section.SECTION
+#     ini.write SECTION
+# To fetch all values and output .ini format:
+#     ini.load.all
+#     ini.write SECTION
+#
+# MERGE VALUES
+# Load values of a section from serveral ini files
+#     ini.merge SECTION FILE1 FILE2 [FILE3..]
+#     Files are loaded in order provided, overriding previous values
+#     Values not defined in next file are kept
+
+shopt -s compat42
+[ ! "$TAB" ] && TAB="   "
+
+ini.parse ()
+{
+    [ ! -f "$1" ] && return 1
+    SAVED_IFS=$IFS
+    # ini="$(<$1)"                # read the file
+    ini=$(cat $1 \
+	| sed "s/[[:blank:]]*=[[:blank:]]*/=/g" \
+	| sed "s/^[[:blank:]]*;.*//" \
+	| sed "s/;[[:blank:]]*$//" \
+	| sed "s/;/%%SEMICOLON%%/g" \
+	| egrep -v "^[[:blank:]]*;//" \
+	| sed "s/^[[:blank:]]*$//" \
+	| sed "s/\([{\\$]\)/\\\\\1/g" \
+	| sed "s/=\([^\"].*[|{}\\$].*\)\"*$/=\"\\1\"/g" \
+	| sed "s/=/%3D/g" \
+	| sed "s/%3D/=/"
+    )
+    ini="${ini//[/\[}"          # escape [
+    ini="${ini//]/\]}"          # escape ]
+    IFS=$'\n' && ini=( ${ini} ) # convert to line-array
+    ini=( ${ini[*]//;*/} )      # remove comments with ;
+    ini=( ${ini[*]/\    =/=} )  # remove tabs before =
+    ini=( ${ini[*]/=\   /=} )   # remove tabs after =
+    ini=( ${ini[*]/\ =\ /=} )   # remove anything with a space around =
+    ini=( ${ini[*]/#\\[/\}$'\n'ini.section.} ) # set section prefix
+    ini=( ${ini[*]/%\\]/ \(} )    # convert text2function (1)
+    ini=( ${ini[*]/=/=\(} )    # convert item to array
+    ini=( ${ini[*]/%/ \)} )     # close array parenthesis
+    ini=( ${ini[*]/%\\ \)/ \\} ) # the multiline trick
+    ini=( ${ini[*]/%\( \)/\(\) \{} ) # convert text2function (2)
+    ini=( ${ini[*]/%\} \)/\}} ) # remove extra parenthesis
+    ini[0]="" # remove first element
+    ini[${#ini[*]} + 1]='}'    # add the last brace
+    eval "$(echo "${ini[*]}" \
+            | sed -e 's/\\$\\{/\\\${/g' \
+              -e 's/%%SEMICOLON%%/;/g' \
+              -e 's/%3B/;/g' \
+              -e 's/%3D/=/g'
+
+    )"
+    IFS=$OLDIFS
+}
+
+ini.load.all ()
+{
+    SAVED_IFS=$IFS
+    IFS=' '$'\n'
+    fun="$(declare -F)"
+    fun="${fun//declare -f/}"
+    for f in $fun; do
+        [ "${f#ini.section}" == "${f}" ] && continue
+	eval $f
+    done
+    IFS=$SAVED_IFS
+}
+
+ini.write ()
+{
+    [ "$1" = "-a" ] && APPEND=yes && shift || unset APPEND
+    SAVED_IFS=$IFS
+    IFS=' '$'\n'
+    fun="$(declare -F)"
+    fun="${fun//declare -f/}"
+    tmp=$(mktemp)
+    for f in $fun; do
+        [ "${f#ini.section}" == "${f}" ] && continue
+	[ "$1" ] && [ "$f" != "ini.section.$1" ] && continue
+#        item="$(declare -f ${f})"
+        item="$(declare -f ${f} | sed -e 's/\\${.*}/BRACE/g' -e "s/=/%3D/g" -e "s/%3D/=/")"
+        item="${item##*[^\\]\{}"
+        item="${item%\}}"
+#        item="${item//=*;/}"
+#        vars="${item//=*/}"
+ 	vars="$item"
+        [ ! "$APPEND" ] && echo "[${f#ini.section.}]"
+	for var in $vars; do
+	    echo "$var" | grep -q "=" || continue
+	    var=$(echo $var | sed -e "s/=/%3D/g" -e "s/%3D/=/") 
+	    var="${var%=*}"
+            echo "$TAB"$var=\"${!var}\" | grep -v ');*=""'
+        done | sed 's/${/$\\{/g' > $tmp
+	eval $f 2>/dev/null
+	. $tmp
+	rm -f $tmp
+        for var in $vars; do
+	    echo "$var" | grep -q "=" || continue
+	    var="${var%=*}"
+            echo "$TAB"$var = \"${!var}\" | grep -v ');*=""'
+        done | sed "s/\$\\\{/$\{/"
+    done
+    IFS=$SAVED_IFS
+}
+
+ini.merge()
+{
+    [ "$2" ] || return
+    section=$1; shift
+    merge=$(mktemp)
+    echo "[$section]" >> $merge
+    for file in $@
+    do
+	i=$(($i + 1))
+	[ -f "$file" ] || continue
+	ini.parse $file 2>/dev/null
+	ini.section.$section 2>/dev/null || continue
+	ini.write -a $section > $merge.$i
+    done
+
+    cat "" $(ls $merge.* 2>/dev/null | sort -r) 2>/dev/null | while read line
+    do
+	var="${line%=*}"
+	grep -q "^[[:blank:]]*$var[[:blank:]]*=" $merge && continue
+	echo $line >> $merge
+    done
+    [ -f "$merge" ] || return
+    ini.parse $merge 2>/dev/null
+    ini.section.$section 2>/dev/null
+    rm -f "$merge" $merge.*
+}
