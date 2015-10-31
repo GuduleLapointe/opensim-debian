@@ -1,9 +1,12 @@
 #*#
 *~
-\#*\#
+\#*#
+.#*
 ._*
 cache/*
 logs/*
 var/*
 src/*
 etc/*
+dev/*
+lib/opensim/*
