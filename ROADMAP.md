@@ -11,8 +11,9 @@
 
 - Start all instances, first in etc/robust-enabled, then in etc/simulators-enabled
 
-
-    opensim start example1 example2 ...
+``
+opensim start example1 example2 ...
+``
 
 - Start only example1 and example2 instances.
   The config will be the first match in etc/*-enabled/<name>.ini
