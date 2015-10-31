@@ -13,13 +13,7 @@ DEBUG=yes
 BASEDIR=$(dirname $(dirname $(readlink -f "$0")))
 LIB=$BASEDIR/lib
 . $LIB/os-helpers || exit 1 
-
-#export PATH=$PATH:$(dirname "$0")
-#which os-helpers | grep -q helper || exit 1
-#. $(which os-helpers)
-
-[ -f "$LIB/ini_parser" ] || end 2 "Missing ini_parser librarie"
-. "$LIB/ini_parser"
+. $LIB/bash-helpers/ini_parser || end 2 "Missing ini_parser librarie"
 
 if [ ! -d "$ETC" ]
 then
