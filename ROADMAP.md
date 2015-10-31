@@ -1,9 +1,8 @@
-Roadmap as of 31/10/2015
+# Roadmap as of 31/10/2015
 
-Working
--------
+## Working
 
-$ ./lib/install.sh
+    ./lib/install.sh
 
 - create basic directory structure, download OpenSim and other needed libraries
 - read Robust default configuration, ask a few questions and build a working configuration in etc/robust-available
