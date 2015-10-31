@@ -8,9 +8,15 @@ OSDOWNLOAD=http://opensimulator.org/dist/opensim-0.8.1.2.tar.gz
 DEBUG=yes
 #AUTOMATIC=yes
 
-export PATH=$PATH:$(dirname "$0")
-which os-helpers | grep -q helper || exit 1
-. $(which os-helpers)
+# End of user configurable data
+
+BASEDIR=$(dirname $(dirname $(readlink -f "$0")))
+LIB=$BASEDIR/lib
+. $LIB/os-helpers || exit 1 
+
+#export PATH=$PATH:$(dirname "$0")
+#which os-helpers | grep -q helper || exit 1
+#. $(which os-helpers)
 
 [ -f "$LIB/ini_parser" ] || end 2 "Missing ini_parser librarie"
 . "$LIB/ini_parser"
