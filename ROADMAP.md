@@ -7,7 +7,7 @@
 - create basic directory structure, download OpenSim and other needed libraries
 - read Robust default configuration, ask a few questions and build a working configuration in etc/robust-available
 
-´    opensim start´
+`opensim start`
 
 - Start all instances, first in etc/robust-enabled, then in etc/simulators-enabled
 
