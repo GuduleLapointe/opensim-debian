@@ -3,7 +3,7 @@ OpenSim Debian Distribution
 
 This is an framework to facilitate installation and use of OpenSim with Debian.
 
-    http://speculoos.magiiic.com/en/opensim-toolbox
+http://speculoos.magiiic.com/en/opensim-toolbox
 
 Main motivation
 ---------------
