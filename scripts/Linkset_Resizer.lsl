@@ -1,5 +1,11 @@
-// Script Name: Linkset_Resizer.lsl
-// Author: Brilliant Scientist
+// Script Name: Linkset_Resizer-2016.lsl
+//      also found as resize_script.lsl
+// Authors: Brilliant Scientist
+//          Ferd Frederix
+//          Ann Otoole
+//          Gudule Lapointe
+// Version: 2016.14
+//
 //This script uses the llGetLinkPrimitiveParams() and llSetLinkPrimitiveParamsFast() functions introduced in server 1.38 to rescale every prim in an arbitrary linkset. Based on Linkset resizer script by Maestro Linden.
 //
 //The main differences between the two scripts are:
@@ -9,6 +15,12 @@
 //    * more comments in the code for beginner scripters
 //    * it's just less chatty
 //
+// Gudule Lapointe's additions:
+//    * Fix wrong position when the script is reset while worn
+//    * Add "Hide" and "Show" options to minimize the object when hidden
+//      (not recommended if only using menus)
+//    * To add: option to use Hide and Show buttons
+//    * To add: option to show on rez
 //
 //Special thanks to:
 //Ann Otoole for contributing with a script removal function. 
@@ -59,17 +71,25 @@ float MAX_DIMENSION=10.0; // the maximum scale of a prim allowed, in any dimensi
  
 float max_scale;
 float min_scale;
- 
+
 float   cur_scale = 1.0;
 integer handle;
 integer menuChan;
+
+integer showDebugMessages = TRUE;
+integer shown = TRUE;
  
 float min_original_scale=10.0; // minimum x/y/z component of the scales in the linkset
 float max_original_scale=0.0; // minimum x/y/z component of the scales in the linkset
  
 list link_scales = [];
 list link_positions = [];
- 
+
+debug(string text) {
+    if(! showDebugMessages) return;
+    llOwnerSay("/me debug: " + text);
+}
+
 makeMenu()
 {
     llListenRemove(handle);
@@ -78,16 +98,31 @@ makeMenu()
  
     //the button values can be changed i.e. you can set a value like "-1.00" or "+2.00"
     //and it will work without changing anything else in the script
+    list buttons;
+    if(shown) {
+        buttons=[
+            "-0.05","-0.10","-0.25",
+            "+0.05","+0.10","+0.25",
+            "MIN SIZE","RESTORE","MAX SIZE",
+            "Hide", "Show", "Delete script"
+        ];
+    } else {
+        buttons=["Show"]; 
+    }
     llDialog(llGetOwner(),"Max scale: "+(string)max_scale+"\nMin scale: "+(string)min_scale+"\n \nCurrent scale: "+
-        (string)cur_scale,["-0.05","-0.10","-0.25","+0.05","+0.10","+0.25","MIN SIZE","RESTORE","MAX SIZE","DELETE..."],menuChan);
+        (string)cur_scale,buttons,menuChan);
 }
  
 integer scanLinkset()
 {
+    debug("Scanning");
     integer link_qty = llGetNumberOfPrims();
     integer link_idx;
     vector link_pos;
     vector link_scale;
+
+    link_scales = [];
+    link_positions = [];
  
     //script made specifically for linksets, not for single prims
     if (link_qty > 1)
@@ -95,7 +130,8 @@ integer scanLinkset()
         //link numbering in linksets starts with 1
         for (link_idx=1; link_idx <= link_qty; link_idx++)
         {
-            link_pos=llList2Vector(llGetLinkPrimitiveParams(link_idx,[PRIM_POSITION]),0);
+            vector global_pos=llList2Vector(llGetLinkPrimitiveParams(link_idx,[PRIM_POSITION]),0);
+            link_pos=llList2Vector(llGetLinkPrimitiveParams(link_idx,[PRIM_POS_LOCAL]),0);
             link_scale=llList2Vector(llGetLinkPrimitiveParams(link_idx,[PRIM_SIZE]),0);
  
             // determine the minimum and maximum prim scales in the linkset,
@@ -107,8 +143,18 @@ integer scanLinkset()
             if(link_scale.z<min_original_scale) min_original_scale=link_scale.z;
             else if(link_scale.z>max_original_scale) max_original_scale=link_scale.z;
  
+            vector rel_pos = (global_pos-llGetRootPosition())/llGetRootRotation();
+
+            debug(
+                "link " + link_idx 
+                + " scale " + (string)link_scale
+                + " at " + (string)rel_pos
+                + " local " + (string)link_pos
+                + " absolute " + (string)global_pos
+            );
             link_scales    += [link_scale];
-            link_positions += [(link_pos-llGetRootPosition())/llGetRootRotation()];
+//            link_positions += [(link_pos-llGetRootPosition())/llGetRootRotation()];
+            link_positions += [link_pos];
         }
     }
     else
@@ -125,6 +171,22 @@ integer scanLinkset()
  
 resizeObject(float scale)
 {
+    if(link_scales == [] || link_positions == [])
+    {
+        debug("List empty, rescanning");
+        scanLinkset();
+    } else if(llGetListLength(link_scales) == 0)
+    {
+        debug("List length zero, rescanning");
+        scanLinkset();
+    } else if(llGetListLength(link_positions) == 0)
+    {
+        debug("List length zero, rescanning");
+        scanLinkset();
+    } else {
+        debug("should have a list... " + (string)link_scales);
+    }
+    debug("not actually resizing, for debbuging purpose");
     integer link_qty = llGetNumberOfPrims();
     integer link_idx;
     vector new_size;
@@ -135,16 +197,22 @@ resizeObject(float scale)
         //link numbering in linksets starts with 1
         for (link_idx=1; link_idx <= link_qty; link_idx++)
         {
-            new_size   = scale * llList2Vector(link_scales, link_idx-1);
-            new_pos    = scale * llList2Vector(link_positions, link_idx-1);
- 
+            if(shown) {
+                new_size   = scale * llList2Vector(link_scales, link_idx-1);
+                new_pos    = scale * llList2Vector(link_positions, link_idx-1);
+            } else {
+                new_size   = <MIN_DIMENSION,MIN_DIMENSION,MIN_DIMENSION>;
+                new_pos    = <0,0,0>;
+            }
             if (link_idx == 1)
             {
                 //because we don't really want to move the root prim as it moves the whole object
+//                debug("would reset link " + (string)link_idx + " to " + (string)new_size);
                 llSetLinkPrimitiveParamsFast(link_idx, [PRIM_SIZE, new_size]);
             }
             else
             {
+//                debug("would reset link " + link_idx + " to " + (string)new_size + " at " + (string)new_pos);
                 llSetLinkPrimitiveParamsFast(link_idx, [PRIM_SIZE, new_size, PRIM_POSITION, new_pos]);
             }
         }
@@ -157,14 +225,14 @@ default
     {
         if (scanLinkset())
         {
-            //llOwnerSay("resizer script ready");
+            //debug("resizer script ready");
         }
         else
         {
             llRemoveInventory(llGetScriptName());
         }
     }
- 
+
     touch_start(integer total)
     {
         if (llDetectedKey(0) == llGetOwner()) makeMenu();
@@ -187,15 +255,23 @@ default
             {
                 cur_scale = max_scale;
             }
-            else if (msg == "DELETE...")
+            else if (msg == "Hide")
+            {
+                shown = FALSE;
+            }
+            else if (msg == "Show")
+            {
+                shown = TRUE;
+            }
+            else if (msg == "Delete script")
             {                
                            llDialog(llGetOwner(),"Are you sure you want to delete the resizer script?", 
                            ["DELETE","CANCEL"],menuChan);
                            return;                
             }                
-            else if (msg == "DELETE")
+            else if (msg == "Delete Script")
             {                
-                           llOwnerSay("deleting resizer script...");
+               llOwnerSay("deleting " + llGetScriptName() + " script...");
                llRemoveInventory(llGetScriptName());                
             }            
             else
@@ -211,5 +287,3 @@ default
         }
     }
 }
-
-
