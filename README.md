@@ -56,7 +56,12 @@ cd /opt/opensim-debian
 ```
 
 Configuration should be working as is, but you will probably want to adjust
-  - /etc/opensim/opensim.conf 
+  - ./etc/opensim/opensim.conf
+  (main database configuration)
+  - ./etc/opensim/opensim.d/*.ini
+  (Robust and simulators ini files)
+
+Legacy folders, deprecated but still recognised::
   - /etc/opensim/robust-available/Robust.ini
   - /etc/opensim/simulator-available/*.ini 
 
