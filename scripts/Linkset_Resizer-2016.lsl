@@ -4,7 +4,7 @@
 //          Ferd Frederix
 //          Ann Otoole
 //          Gudule Lapointe
-// Version: 2016.15
+// Version: 2016.16
 //
 //This script uses the llGetLinkPrimitiveParams() and llSetLinkPrimitiveParamsFast() functions introduced in server 1.38 to rescale every prim in an arbitrary linkset. Based on Linkset resizer script by Maestro Linden.
 //
@@ -76,8 +76,9 @@ float   cur_scale = 1.0;
 integer handle;
 integer menuChan;
 
-integer showDebugMessages = FALSE;
+integer allowHiding = TRUE;
 integer shown = TRUE;
+integer showDebugMessages = FALSE;
  
 float min_original_scale=10.0; // minimum x/y/z component of the scales in the linkset
 float max_original_scale=0.0; // minimum x/y/z component of the scales in the linkset
@@ -104,8 +105,9 @@ makeMenu()
             "-0.05","-0.10","-0.25",
             "+0.05","+0.10","+0.25",
             "MIN SIZE","RESTORE","MAX SIZE",
-            "Hide", "Delete Script"
+            "Delete Script"
         ];
+        if(allowHiding) buttons += "Hide";
     } else {
         buttons=["Show"]; 
     }
@@ -171,7 +173,7 @@ resizeObject(float scale)
         //link numbering in linksets starts with 1
         for (link_idx=1; link_idx <= link_qty; link_idx++)
         {
-            if(shown) {
+            if(shown |! allowHiding) {
                 new_size   = scale * llList2Vector(link_scales, link_idx-1);
                 new_pos    = scale * llList2Vector(link_positions, link_idx-1);
             } else {
@@ -228,7 +230,7 @@ default
             {
                 cur_scale = max_scale;
             }
-            else if (msg == "Hide")
+            else if (msg == "Hide" && allowHiding)
             {
                 shown = FALSE;
                 makeMenu();
