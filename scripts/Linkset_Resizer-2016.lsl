@@ -104,7 +104,7 @@ makeMenu()
             "-0.05","-0.10","-0.25",
             "+0.05","+0.10","+0.25",
             "MIN SIZE","RESTORE","MAX SIZE",
-            "Hide", "Show", "Delete script"
+            "Hide", "Delete Script"
         ];
     } else {
         buttons=["Show"]; 
@@ -258,6 +258,7 @@ default
             else if (msg == "Hide")
             {
                 shown = FALSE;
+                makeMenu();
             }
             else if (msg == "Show")
             {
