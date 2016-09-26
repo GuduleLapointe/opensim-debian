@@ -1,0 +1,229 @@
+// fetchTextureWidhOsDraw
+// Copyright Gudule Lapointe 2011-2016 - Speculoos.world
+//
+// Fetch texture with osDraw
+// replaces old method based on an external library
+
+integer updateTexture = TRUE;
+
+string fontName = "Impact";
+
+integer fontSize = 20;
+integer lineHeight = 24;
+string textColor = "black";
+string backgroundColor = "white"; // does not work actually
+
+integer textureWidth = 512;
+integer textureHeight = 512;
+integer margin = 24;
+string position = "center";
+integer cropToFit = FALSE;
+
+// Parameters below should not be modified
+// I mean it
+
+integer internalUpdateChannel = 17;
+
+integer startY;
+key httpRequest;
+string forceText;
+
+string textGenURL = "http://www.speculoos.co.uk/lib/textgen.php?string=";
+
+string  dynTextureDynamicID="";
+string  dynTextureType="image";
+string  dynTextureOptions="";
+integer dynTextureRefresh = 0;
+string otherTexture = TEXTURE_BLANK;
+
+string cropText(string in, string fontname, integer fontsize,integer width)
+{
+    if(!cropToFit) return in;
+    integer i;
+    integer trimmed = FALSE;
+    string suffix="";
+                
+    for(;llStringLength(in)>0;in=llGetSubString(in,0,-2)) {
+        if(trimmed) suffix="...";
+        vector extents = osGetDrawStringSize("vector",in+suffix,fontname,fontsize);
+        
+        if(extents.x<=width) {
+                return in+suffix;
+        }
+        
+        trimmed = TRUE;
+    }
+
+    return "";
+}
+
+cleanup()
+{
+        llRemoveInventory("fetchTextureFromTextgen 0.7");
+        llRemoveInventory("fetchTextureWithOsDraw 1.0");
+        llRemoveInventory("fetchTextureWithOsDraw 1.1");
+        llRemoveInventory("fetchTextureWithOsDraw 1.2");
+        llRemoveInventory("fetchTextureWithOsDraw 1.2 Transparent");
+        llRemoveInventory("fetchTextureWithOsDraw 1.3");
+        llRemoveInventory("fetchTextureWithOsDraw 1.3 direction sign");
+        llRemoveInventory("fetchTextureWithOsDraw 1.3.1");
+        llRemoveInventory("fetchTextureWithOsDraw 1.3.1 Transparent");
+        llRemoveInventory("fetchTextureWithOsDraw 1.3.2");
+        llRemoveInventory("fetchTextureWithOsDraw 1.3.2 Transparent");
+}
+
+debug(string text) {
+    llOwnerSay("/me debug: " + text);
+}
+fetchTexture(string text)
+{
+    debug("Showing " + text);
+    if(llStringTrim(forceText,STRING_TRIM)!="")
+    {
+        text=forceText;
+llOwnerSay("using '" + text + "'");
+    } else if(llStringTrim(text,STRING_TRIM) =="")
+    {
+        llSetTexture(otherTexture, ALL_SIDES);
+        return;
+    }
+
+    string commandList = "";
+    integer x = margin;
+    integer y = margin;
+    integer drawWidth = textureWidth - 2*margin;
+    integer drawHeight = textureHeight - 2*margin;
+    vector extents;
+    extents = osGetDrawStringSize("vector",text,fontName,fontSize);
+    if(extents.x > drawWidth)
+    {
+        if(cropToFit)
+        {
+            text = cropText(text, fontName, fontSize, drawWidth);
+        } else {
+            fontSize = (integer)(fontSize * drawWidth / extents.x);
+        }
+    } else {
+        x += (integer)((drawWidth - extents.x) / 2);
+    }
+    extents = osGetDrawStringSize("vector",text,fontName,fontSize);
+//    extents = osGetDrawStringSize("vector",text,fontName,fontSize);
+//    if(extents.y > drawHeight)
+//    {
+//        textureHeight = (integer)extents.y + 2*margin;
+//    } else {
+        y += (integer)((drawHeight - extents.y) / 2);
+//    }
+    commandList = osSetPenColor(commandList, textColor);
+    commandList = osSetFontName(commandList, fontName);
+    commandList = osSetFontSize(commandList, fontSize);
+    commandList = osMovePen(commandList, x, y);
+    commandList = osDrawText(commandList, text);
+
+    integer alpha = 256;
+    if(backgroundColor == "transparent") 
+    {
+        alpha = 0;
+        otherTexture = TEXTURE_TRANSPARENT;
+    }
+    llSetTexture(otherTexture, ALL_SIDES);
+
+    osSetDynamicTextureData("", "vector", commandList, "width:"+(string)textureWidth+",height:"+(string)textureHeight+",bgcolor:" + backgroundColor + ",alpha:"+alpha, 0);
+/*
+    forget this for now
+    llSetTexture(otherTexture, 0);
+    llSetTexture(otherTexture, 5);
+*/
+}
+   
+oldFetchTexture(string text)
+{
+    
+    string fetchedTexture = osSetDynamicTextureURL(
+        dynTextureDynamicID,
+        dynTextureType,
+        textGenURL + llEscapeURL(text) + "&color=" + textColor + "&background=" + backgroundColor,
+        dynTextureOptions,
+        dynTextureRefresh
+        );
+}
+
+resetScript()
+{
+    llResetScript();
+}
+
+integer boolean(string val)
+{
+    if(llToUpper(val) == "TRUE" | (integer)val == TRUE)
+    {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+processLinkMessage(integer sender_num, integer channel, string str, key id)
+{
+    integer timerDelay=3;
+    if(channel == internalUpdateChannel)
+    {
+        llSetTimerEvent(timerDelay);
+        string var = llToLower((string)id);
+        string val = str;
+        if(var == "fontname") fontName = (string)val;
+        if(var == "fontsize") fontSize = (integer)val;
+        if(var == "lineheight") lineHeight = (integer)val;
+        if(var == "textcolor") textColor = (string)val;
+        if(var == "backgroundcolor") backgroundColor = (string)val;
+        if(var == "texturewidth") textureWidth = (integer)val;
+        if(var == "texturewidth") textureWidth = (integer)val;
+        if(var == "margin") margin = (integer)val;
+        if(var == "position") position = (string)val;
+        if(var == "croptofit") cropToFit = boolean(val);
+        if(var == "forcetext") forceText = (string)val;
+        llSetTimerEvent(timerDelay);
+    }
+}
+
+default
+{
+    state_entry()
+    {
+        llMessageLinked(LINK_SET, -1, "status request", "");
+        cleanup();
+//        if(updateTexture) {
+//            fetchTexture(llGetObjectName());   
+//        }
+    }
+    on_rez(integer start_param)
+    {
+        resetScript();
+    }
+    timer()
+    {
+        llSetTimerEvent(0);
+        fetchTexture(llGetObjectName());   
+    }
+    
+    changed(integer change)
+    {
+        if(change & CHANGED_OWNER)
+            resetScript();
+        if (change & CHANGED_REGION_START)
+            resetScript();
+//        if (change & CHANGED_INVENTORY)
+//            resetScript();
+    }
+    
+    link_message(integer sender, integer channel, string message, key id)
+    {
+        if(channel == internalUpdateChannel)
+        {
+            if (message == "reset") {
+                llResetScript();
+            } else {
+                processLinkMessage(sender, channel, message, id);
+            }
+        }
+    }
+}
