@@ -76,7 +76,7 @@ float   cur_scale = 1.0;
 integer handle;
 integer menuChan;
 
-integer showDebugMessages = TRUE;
+integer showDebugMessages = FALSE;
 integer shown = TRUE;
  
 float min_original_scale=10.0; // minimum x/y/z component of the scales in the linkset
