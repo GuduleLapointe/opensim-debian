@@ -1,5 +1,5 @@
 // OpenSimulator version display
-// Version 1.0.1
+// Version 1.0.0
 
 // Copyright (C) 2010-2016  Gudule Lapointe gudule@speculoos.world
 // 
@@ -24,7 +24,7 @@
 
 integer decimalPrecision = 3;
 
-integer showHoverText = FALSE;
+integer showHoverText = TRUE;
 integer showTexture = TRUE;
 integer sayPublic = FALSE;
 integer internalUpdateChannel = 17;
@@ -74,16 +74,44 @@ string formatMemory(string mem, integer precision) {
     
     formatted = formatDecimal(floatMem, precision) + " " + unit + " (" + mem + "B)";
     return formatted;
+/*
+// Old, tricky method
+    integer Len = llStringLength((string)mem);
+    if(Len == 8) // ##.### MB
+    {
+        string Mem1 = llSubStringIndex(mem,0,1);
+        string Mem2 = llGetSubString(mem,2,4);
+        mem = Mem1 + "." + Mem2 + " Mb";
+    } else if(Len == 9) //###.### MB
+    {
+        string Mem1 = llGetSubString(mem,0,2);
+        string Mem2 = llGetSubString(mem,3,5);
+        mem = Mem1 + "." + Mem2 + " Mb";
+    } else if(Len == 10) //#.### GB
+    {
+    string Mem1 = llGetSubString(mem,0,0);
+    string Mem2 = llGetSubString(mem,1,3);
+    mem = Mem1 + "." + Mem2 + " Gb";
+    } else if(Len == 11) //##.### GB
+    {
+        string Mem1 = llGetSubString(mem,0,1);
+        string Mem2 = llGetSubString(mem,2,4);
+        mem = Mem1 + "." + Mem2 + " Gb";
+    }
+    formatted += "\nold style:" + mem;
+    return formatted;
+*/
 }
 
 GenStats()
 {
     display("Loading");
+    // Get Memory and format it
     string text;
     string memoryUsed;
 
-//    memoryUsed = (string)osGetSimulatorMemory();
-//    text += "Memory Use: " + formatMemory(memoryUsed, decimalPrecision);
+    memoryUsed = (string)osGetSimulatorMemory();
+    text += "Memory Use: " + formatMemory(memoryUsed, decimalPrecision);
     text += "\nVersion: " + strReplaceUntilNoMatch(osGetSimulatorVersion(), "  ", " ");
     display(text);
 }
