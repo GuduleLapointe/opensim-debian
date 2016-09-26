@@ -4,7 +4,7 @@
 //          Ferd Frederix
 //          Ann Otoole
 //          Gudule Lapointe
-// Version: 2016.14
+// Version: 2016.15
 //
 //This script uses the llGetLinkPrimitiveParams() and llSetLinkPrimitiveParamsFast() functions introduced in server 1.38 to rescale every prim in an arbitrary linkset. Based on Linkset resizer script by Maestro Linden.
 //
@@ -115,7 +115,6 @@ makeMenu()
  
 integer scanLinkset()
 {
-    debug("Scanning");
     integer link_qty = llGetNumberOfPrims();
     integer link_idx;
     vector link_pos;
@@ -130,7 +129,8 @@ integer scanLinkset()
         //link numbering in linksets starts with 1
         for (link_idx=1; link_idx <= link_qty; link_idx++)
         {
-            vector global_pos=llList2Vector(llGetLinkPrimitiveParams(link_idx,[PRIM_POSITION]),0);
+            // We use PRIM_POS_LOCAL instead of PRIM_POSITION, to avoid broken 
+            // positions when resetting the script while the object is worn.
             link_pos=llList2Vector(llGetLinkPrimitiveParams(link_idx,[PRIM_POS_LOCAL]),0);
             link_scale=llList2Vector(llGetLinkPrimitiveParams(link_idx,[PRIM_SIZE]),0);
  
@@ -143,17 +143,7 @@ integer scanLinkset()
             if(link_scale.z<min_original_scale) min_original_scale=link_scale.z;
             else if(link_scale.z>max_original_scale) max_original_scale=link_scale.z;
  
-            vector rel_pos = (global_pos-llGetRootPosition())/llGetRootRotation();
-
-            debug(
-                "link " + link_idx 
-                + " scale " + (string)link_scale
-                + " at " + (string)rel_pos
-                + " local " + (string)link_pos
-                + " absolute " + (string)global_pos
-            );
             link_scales    += [link_scale];
-//            link_positions += [(link_pos-llGetRootPosition())/llGetRootRotation()];
             link_positions += [link_pos];
         }
     }
@@ -171,22 +161,6 @@ integer scanLinkset()
  
 resizeObject(float scale)
 {
-    if(link_scales == [] || link_positions == [])
-    {
-        debug("List empty, rescanning");
-        scanLinkset();
-    } else if(llGetListLength(link_scales) == 0)
-    {
-        debug("List length zero, rescanning");
-        scanLinkset();
-    } else if(llGetListLength(link_positions) == 0)
-    {
-        debug("List length zero, rescanning");
-        scanLinkset();
-    } else {
-        debug("should have a list... " + (string)link_scales);
-    }
-    debug("not actually resizing, for debbuging purpose");
     integer link_qty = llGetNumberOfPrims();
     integer link_idx;
     vector new_size;
@@ -207,12 +181,10 @@ resizeObject(float scale)
             if (link_idx == 1)
             {
                 //because we don't really want to move the root prim as it moves the whole object
-//                debug("would reset link " + (string)link_idx + " to " + (string)new_size);
                 llSetLinkPrimitiveParamsFast(link_idx, [PRIM_SIZE, new_size]);
             }
             else
             {
-//                debug("would reset link " + link_idx + " to " + (string)new_size + " at " + (string)new_pos);
                 llSetLinkPrimitiveParamsFast(link_idx, [PRIM_SIZE, new_size, PRIM_POSITION, new_pos]);
             }
         }
@@ -229,6 +201,7 @@ default
         }
         else
         {
+            llOwnerSay("Script will be deleted from the prim");
             llRemoveInventory(llGetScriptName());
         }
     }
