@@ -10,3 +10,4 @@ src/*
 etc/*
 dev/*
 lib/opensim/*
+tmp/
