@@ -84,7 +84,7 @@ GenStats()
 
 //    memoryUsed = (string)osGetSimulatorMemory();
 //    text += "Memory Use: " + formatMemory(memoryUsed, decimalPrecision);
-    text += "\nVersion: " + strReplaceUntilNoMatch(osGetSimulatorVersion(), "  ", " ");
+    text = strReplaceUntilNoMatch(osGetSimulatorVersion(), "  ", " ");
     display(text);
 }
 
