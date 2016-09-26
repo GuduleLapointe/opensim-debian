@@ -1,12 +1,38 @@
 // fetchTextureWidhOsDraw
-// Copyright Gudule Lapointe 2011-2016 - Speculoos.world
+// Version: 1.3.8
+// Author: Gudule Lapointe gudule@speculoos.world
 //
-// Fetch texture with osDraw
-// replaces old method based on an external library
+// Create a texture from given text, using osSetDynamicTextureData
+// set of functions (hence "osdraw" in name)
+// "Fetch" is ketp in name by reference to my initial script, using an external
+// web browser generator.
+
+// Style parameters can be updated by another script with a link message:
+//    llMessageLinked(LINK_THIS, internalUpdateChannel, val, (key)var);
+// "var" can be any of 
+//    font-name, font-size, line-height, font-color, background-color,
+//    texture-width, texture-heigth, margin, position, croptofit
+// Other ones are ignored
+
+
+// Copyright (C) 2010-2016  Gudule Lapointe gudule@speculoos.world
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+// 
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 integer updateTexture = TRUE;
 
-string fontName = "Impact";
+string fontName = "Default"; // Depends on the fonts available on your simulator's computer
 
 integer fontSize = 20;
 integer lineHeight = 24;
@@ -19,16 +45,15 @@ integer margin = 24;
 string position = "center";
 integer cropToFit = FALSE;
 
+string textGenURL = "http://www.example.com/cgi-bin/your-generator.php?string=";
+integer internalUpdateChannel = 17;
+
 // Parameters below should not be modified
 // I mean it
-
-integer internalUpdateChannel = 17;
 
 integer startY;
 key httpRequest;
 string forceText;
-
-string textGenURL = "http://www.speculoos.co.uk/lib/textgen.php?string=";
 
 string  dynTextureDynamicID="";
 string  dynTextureType="image";
