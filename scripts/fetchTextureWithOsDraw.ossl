@@ -1,5 +1,5 @@
 // fetchTextureWidhOsDraw
-// Version: 1.3.10
+// Version: 1.3.11
 // Author: Gudule Lapointe gudule@speculoos.world
 //
 // Create a texture from given text, using osSetDynamicTextureData
@@ -7,12 +7,19 @@
 // "Fetch" is ketp in name by reference to my initial script, using an external
 // web browser generator.
 
-// Style parameters can be updated by another script with a link message:
-//    llMessageLinked(LINK_THIS, internalUpdateChannel, val, (key)var);
-// "var" can be any of 
-//    font-name, font-size, line-height, font-color, background-color,
-//    texture-width, texture-heigth, margin, position, croptofit
-// Other ones are ignored
+//  Slave mode (default):
+//    Style parameters can be updated by another script with a link message:
+//      llMessageLinked(LINK_THIS, internalUpdateChannel, val, (key)var);
+//    The update script should anwser to "status request" message
+//    "var" can be any of 
+//      fontname, fontsize, lineheight, fontcolor, backgroundcolor,
+//      texturewidth, textureheigth, margin, position, croptofit
+//    Other values are ignored
+//
+//  Standalone mode (fallback)
+//    If "standalone" variable is set to TRUE or if no answer received after
+//    sendig a "status request" message, this script falls back to standalone
+//    The object name is used as text and default style values are used.
 
 
 // Copyright (C) 2010-2016  Gudule Lapointe gudule@speculoos.world
@@ -30,14 +37,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-integer updateTexture = TRUE;
+integer updateTextureOnStartup = TRUE;
+integer standalone = FALSE; // set FALSE to control only from the script, TRUE to receive instructions from external script like ComboReadPrefs. If no instruction is received after the status request, it will fallback to TRUE.
 
 string fontName = "Default"; // Depends on the fonts available on your simulator's computer
 
-integer fontSize = 20;
+integer fontSize = 24;
 integer lineHeight = 24;
-string textColor = "black";
-string backgroundColor = "white"; // does not work actually
+string textColor = "white";
+string backgroundColor = "transparent"; // does not work actually
+
+key inactiveTexture = TEXTURE_TRANSPARENT;
+key otherTexture = TEXTURE_BLANK;
 
 integer textureWidth = 512;
 integer textureHeight = 512;
@@ -51,15 +62,15 @@ integer internalUpdateChannel = 17;
 // Parameters below should not be modified
 // I mean it
 
+integer statusReceived = FALSE;
 integer startY;
 key httpRequest;
-string forceText;
+string text;
 
 string  dynTextureDynamicID="";
 string  dynTextureType="image";
 string  dynTextureOptions="";
 integer dynTextureRefresh = 0;
-string otherTexture = TEXTURE_BLANK;
 
 string cropText(string in, string fontname, integer fontsize,integer width)
 {
@@ -100,14 +111,14 @@ cleanup()
 debug(string text) {
     llOwnerSay("/me debug: " + text);
 }
-fetchTexture(string text)
+fetchTexture()
 {
-    if(llStringTrim(forceText,STRING_TRIM)!="")
+    if(standalone) {
+        text = llGetObjectName();
+    }
+    if(llStringTrim(text,STRING_TRIM) =="")
     {
-        text=forceText;
-    } else if(llStringTrim(text,STRING_TRIM) =="")
-    {
-        llSetTexture(otherTexture, ALL_SIDES);
+        llSetTexture(inactiveTexture, ALL_SIDES);
         return;
     }
 
@@ -203,20 +214,25 @@ processLinkMessage(integer sender_num, integer channel, string str, key id)
         if(var == "margin") margin = (integer)val;
         if(var == "position") position = (string)val;
         if(var == "croptofit") cropToFit = boolean(val);
-        if(var == "forcetext") forceText = (string)val;
+        if(var == "text" || var == "forcetext") text = (string)val;
         llSetTimerEvent(timerDelay);
     }
+}
+
+statusRequest() {
+    statusReceived = FALSE;
+    llMessageLinked(LINK_SET, -1, "status request", "");
+    llSetTimerEvent(1);
 }
 
 default
 {
     state_entry()
     {
-        llMessageLinked(LINK_SET, -1, "status request", "");
+        if(updateTextureOnStartup) {
+            statusRequest();
+        }
         cleanup();
-//        if(updateTexture) {
-//            fetchTexture(llGetObjectName());   
-//        }
     }
     on_rez(integer start_param)
     {
@@ -225,7 +241,10 @@ default
     timer()
     {
         llSetTimerEvent(0);
-        fetchTexture(llGetObjectName());   
+        if(! statusReceived) {
+            standalone = TRUE;
+        }
+        fetchTexture();
     }
     
     changed(integer change)
@@ -234,17 +253,19 @@ default
             resetScript();
         if (change & CHANGED_REGION_START)
             resetScript();
-//        if (change & CHANGED_INVENTORY)
-//            resetScript();
+        if (change & CHANGED_INVENTORY && standalone)
+            resetScript();
     }
     
     link_message(integer sender, integer channel, string message, key id)
     {
+        if(message == "status request") return; // own initial request
         if(channel == internalUpdateChannel)
         {
             if (message == "reset") {
                 llResetScript();
             } else {
+                statusReceived = TRUE;
                 processLinkMessage(sender, channel, message, id);
             }
         }
