@@ -1,9 +1,11 @@
 // comboReadPrefs
-string version = "1.7.2";
+string version = "1.8.0";
 // Author: Gudule Lapointe gudule@speculoos.world
 //
 // Read preferences from a notecard and send values to internalChannel
 // for other scripts
+// Default preferences file is set by prefsFile variable, but if not present
+// look if there is only one notecard and use it instead.
 
 // Copyright (C) 2010-2016  Gudule Lapointe gudule@speculoos.world
 // 
@@ -45,7 +47,7 @@ integer setPrefsFile() {
 //        debug("prefs file set to " + prefsFile);
         return TRUE;
     } else {
-        debug ("no notecard found");
+//        debug ("no notecard found");
         prefsFile = "";
         return FALSE;
     }
