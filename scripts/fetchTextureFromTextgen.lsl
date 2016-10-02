@@ -1,4 +1,4 @@
-// fetchTextureWidhOsDraw
+// fetchTextureFromTextgen
 // Version: 0.7
 // Author: Gudule Lapointe gudule@speculoos.world
 //
