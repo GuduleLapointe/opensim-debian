@@ -1,5 +1,5 @@
 // comboReadPrefs
-// Version: 1.7.1
+string version = "1.7.2";
 // Author: Gudule Lapointe gudule@speculoos.world
 //
 // Read preferences from a notecard and send values to internalChannel
@@ -21,34 +21,45 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 integer prefsChannel=17;
-string version = "2.1";
 string prefsFile = "!Combo-preferences";
 integer currentLine;
 key requestID;
 
 integer setObjectName = FALSE;
-string objectName = "NPC Vendor";
-string objectDesc = "Touch for rental information";
+string objectBaseName = "Object";
+string objectDesc = "";
+string objectName;
 
-string newline="\n\t\t\t";
-integer rentRate;
-integer groupRebate;
-integer restrictToGroup;
-integer tipsPercent;
-string advertiserName;
+list allowedVars = []; // don't use for now, avoid hardcoded values
 
-list allowedVars = ["rentRate", "groupRebate", "tipsPercent", "advertiserName", "restrictToGroup"];
+debug(string message)
+{
+    llOwnerSay("/me DEBUG: " + message);
+}
+integer setPrefsFile() {
+    if(llGetInventoryType(prefsFile) == INVENTORY_NOTECARD) {
+//        debug("default prefs file " + prefsFile);
+        return TRUE;
+    } else if (llGetInventoryNumber(INVENTORY_NOTECARD) == 1) {
+        prefsFile = llGetInventoryName(INVENTORY_NOTECARD, 0);
+//        debug("prefs file set to " + prefsFile);
+        return TRUE;
+    } else {
+        debug ("no notecard found");
+        prefsFile = "";
+        return FALSE;
+    }
+}
 
 parsePrefs()
 {
-    llMessageLinked(LINK_THIS, 17, prefsFile, (key)"prefsFile");
-//    prefsFile = "!Combo-preferences";
+    if (! setPrefsFile()) return;
     if(llGetInventoryType(prefsFile) == INVENTORY_NOTECARD)
     {
+        llMessageLinked(LINK_THIS, 17, prefsFile, (key)prefsFile);
         currentLine = 0;
-        advertiserName="";
+        objectName="";
         requestID = llGetNotecardLine(prefsFile, currentLine);
-//    llSay(0, "preferences parsed");
         llSetTimerEvent(5);
     }
 }
@@ -66,15 +77,13 @@ parsePrefsLine(string line)
             llList2ListStrided(parsedLine, 1, -1, 1),
             " "
             );
-//        llSay(0, "var " + var + " = \"" + val + "\"");
-
-        if(llListFindList(allowedVars, [var]) != -1) 
-        {
-//            llSay(0, "the var " + var + " is allowed, passing " + val);
+//        if(llListFindList(allowedVars, [var]) != -1) 
+//        {
+//            debug("the var " + var + " is allowed, passing " + val);
             llMessageLinked(LINK_THIS, 17, val, (key)var);
             if(llToLower(var) == "advertisername")
-                advertiserName = (string)val;
-        }
+                objectName = (string)val;
+//        }
     }
 }
 
@@ -93,16 +102,16 @@ default {
         
     timer()
     {
-        string originalName = objectName + " " + version + " (" + llGetRegionName() + ")";
-        if(advertiserName == "")
+        string originalName = objectBaseName + " " + version + " (" + llGetRegionName() + ")";
+        if(objectName == "")
         {
             string objectOwner = llKey2Name(llGetOwner()); 
-            advertiserName = originalName;
+            objectName = originalName;
         }
         if(setObjectName)
         {
-            llSetObjectName(advertiserName);
-            llSetObjectDesc(objectDesc + ". " + objectName + " " + version + " by Gudule Lapointe");
+            llSetObjectName(objectName);
+            llSetObjectDesc(objectDesc + ". " + objectBaseName + " " + version + " by Gudule Lapointe");
         }
         llSetTimerEvent(0);
     }
