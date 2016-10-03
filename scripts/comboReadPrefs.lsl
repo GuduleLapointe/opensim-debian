@@ -1,5 +1,5 @@
 // comboReadPrefs
-string version = "1.8.0";
+string version = "1.8.1";
 // Author: Gudule Lapointe gudule@speculoos.world
 //
 // Read preferences from a notecard and send values to internalChannel
@@ -71,14 +71,16 @@ parsePrefsLine(string line)
     list parsedLine;
     string var;
     string val;
-    parsedLine = llParseString2List(line, [" "], []);
+    parsedLine = llParseString2List(line, ["="], []);
+    if(llGetListLength(parsedLine) == 1)
+        parsedLine = llParseString2List(line, [" "], []);
     if(llGetListLength(parsedLine) > 1)
     {
-        var = llList2String(parsedLine, 0);
-        val = llDumpList2String(
+        var = llStringTrim(llList2String(parsedLine, 0), STRING_TRIM);
+        val =  llStringTrim(llDumpList2String(
             llList2ListStrided(parsedLine, 1, -1, 1),
             " "
-            );
+            ), STRING_TRIM);
 //        if(llListFindList(allowedVars, [var]) != -1)
 //        {
 //            debug("the var " + var + " is allowed, passing " + val);
