@@ -1,5 +1,5 @@
 // Gudule's Gate
-// Version: 2.11
+// Version: 2.12
 // Copyright Gudule Lapointe 2011,2012 - Speculoos.net
 //
 // Advanced teleport script, configurable in two modes: touch and pass through (aka blam gate).
@@ -78,11 +78,11 @@ string message;
 string landmark;
 string myGatekeeper;
 string me;
-integer debug = TRUE;
+integer showDebug = TRUE;
 
-sayDebug(string str)
+debug(string str)
 {
-    if(debug == TRUE)
+    if(showDebug == TRUE)
     {
         llOwnerSay(me + str);
     }
@@ -119,6 +119,47 @@ string strReplace(string str, string search, string replace) {
     return llDumpList2String(llParseStringKeepNulls((str),[search],[]),replace);
 }
 
+upgrade() {
+    // Self Upgrading function by Cron Stardust based upon work by Markov Brodsky and Jippen Faddoul.
+    // If this code is used, these header lines MUST be kept.
+    //Get the name of the script
+    string self = llGetScriptName();
+    string basename = self;
+
+    // If there is a space in the name, find out if it's a copy number and correct the basename.
+    if (llSubStringIndex(self, " ") >= 0) {
+        // Get the section of the string that would match this RegEx: /[ ][0-9]+$/
+        integer start = 2; // If there IS a version tail it will have a minimum of 2 characters.
+        string tail = llGetSubString(self, llStringLength(self) - start, -1);
+        while (llGetSubString(tail, 0, 0) != " ") {
+            start++;
+            tail = llGetSubString(self, llStringLength(self) - start, -1);
+        }
+
+        // If the tail is a positive, non-zero number then it's a version code to be removed from the basename.
+        if ((integer)tail > 0) {
+            basename = llGetSubString(self, 0, -llStringLength(tail) - 1);
+        }
+    }
+
+    // Remove all other like named scripts.
+    integer n = llGetInventoryNumber(INVENTORY_SCRIPT);
+    while (n-- > 0) {
+        string item = llGetInventoryName(INVENTORY_SCRIPT, n);
+
+        // Remove scripts with same name (except myself, of course)
+        if (item != self && 0 == llSubStringIndex(item, basename)) {
+            // don't remove if alphabetic characters remain in the tail
+            string tail = llStringTrim(llGetSubString(item,    llStringLength(basename), -1), STRING_TRIM);
+            tail = llDumpList2String(llParseString2List(tail,[" ", "."],[]), "");
+            if(tail == (integer)tail) {
+                llRemoveInventory(item);
+            }
+        }
+    }
+    string my_string = "Un renard fou.  Regarde la lune..";
+}
+
 default
 {
     on_rez(integer start_param)
@@ -136,6 +177,7 @@ default
     }
     state_entry()
     {
+        upgrade();
         colorOnline=colorOtherRegion;
 
         llRemoveInventory("Gudule's Gate 2.10");
@@ -147,11 +189,11 @@ default
             landmark = llGetInventoryName(INVENTORY_LANDMARK, 0);
             // destination = osGetInventoryLandmarkParams(landmark, LANDMARK_ADDRESS);
             if (~llSubStringIndex(destination, "ERROR_")) {
-                sayDebug(destination + " falling back to gatekeeper");
+                debug(destination + " falling back to gatekeeper");
                 // destination = osGetInventoryLandmarkParams(landmark, LANDMARK_GATEKEEPER);
             }
             if (~llSubStringIndex(destination, "ERROR_")) {
-                sayDebug(destination + ": Could not read landmark " + landmark
+                debug(destination + ": Could not read landmark " + landmark
                     + ", using last destination");
                 destination = "";
             } else {
@@ -309,7 +351,7 @@ state inactive
     {
         llSetColor(colorInactive, ALL_SIDES);
         llSetAlpha(alphaInactive, ALL_SIDES);
-        sayDebug("Teleport can only work if object is owned by parcel owner");
+        debug("Teleport can only work if object is owned by parcel owner");
     }
     touch_start(integer num_detected)
     {
