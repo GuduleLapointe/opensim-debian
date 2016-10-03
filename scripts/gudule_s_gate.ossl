@@ -1,5 +1,5 @@
 // Gudule's Gate
-// Version: 2.13
+// Version: 2.15
 // Copyright Gudule Lapointe 2011,2012 - Speculoos.net
 //
 // Advanced teleport script, configurable in two modes: touch and pass through (aka blam gate).
@@ -8,7 +8,7 @@
 // WARNING: Depends of following functions in server's config:
 //      osTeleportAgent, osGetGridGatekeeperURI, osGetInventoryDesc
 //      (osGetInventoryLandmarkParams was relying on a custom OS build and has
-//      has been disabled)
+//      is replaced by the use of landmark name and landmark desc)
 //
 // Configuration:
 // useLandmark = TRUE
@@ -66,6 +66,7 @@ float alphaInactive = 0.4;
 
 string internalUpdateMessage = "reset";
 integer internalUpdateChannel = 17;
+list destinations;
 string destination;
 string destinationName;
 string destinationURL;
@@ -75,8 +76,8 @@ vector colorOnline;
 key agentBeingTransferred;
 list lastFewAgents;
 string message;
-string landmark;
 string myGatekeeper;
+string gatekeeper;
 string me;
 integer showDebug = TRUE;
 
@@ -103,7 +104,23 @@ performTeleport( key avatar )
     message = "Teleporting " + llKey2Name(avatar) + " to " + destinationName
     + " (" + destinationURL + ")";
     llWhisper(0, message);
-    osTeleportAgent( avatar, destination, landingPoint, landingLookAt );
+    string uri = destination;
+    vector landing;
+    if(llSubStringIndex(uri, "<") > 0) {
+        landing = (vector)llGetSubString(uri,
+            llSubStringIndex(uri, "<"),
+            llSubStringIndex(uri, ">")
+            );
+        if(landing == <0.0,0.0,0.0>) {
+            landing = landingPoint;
+        } else {
+        }
+        uri = llStringTrim(llGetSubString(uri,
+            0,
+            llSubStringIndex(uri, "<") - 1
+            ), STRING_TRIM);
+    }
+    osTeleportAgent( avatar, uri, landing, landingLookAt );
 }
 
 resetScript()
@@ -111,7 +128,7 @@ resetScript()
     if(llGetInventoryNumber(INVENTORY_LANDMARK) > 1 && deleteProcessedLandmark)
     {
         if(deleteProcessedLandmark)
-            llRemoveInventory(landmark);
+            llRemoveInventory(llGetInventoryName(INVENTORY_LANDMARK, 0));
     }
     llResetScript();
 }
@@ -161,6 +178,62 @@ upgrade() {
     string my_string = "Un renard fou.  Regarde la lune..";
 }
 
+readLandmark() {
+    if (useLandmark && llGetInventoryName(INVENTORY_LANDMARK, 0)) {
+        string landmark = llGetInventoryName(INVENTORY_LANDMARK, 0);
+        readLandmark(landmark);
+    }
+}
+readLandmark(string landmark) {
+    if (useLandmark && llGetInventoryName(INVENTORY_LANDMARK, 0)) {
+        string description = osGetInventoryDesc(landmark);
+        string info = landmark;
+        if(llGetSubString(info, 0, 2) == "HG "){
+            info = llGetSubString(info, 3, -1) + "'";
+        }
+        string parcel;
+        string region;
+        vector position;
+        integer index;
+        index = llSubStringIndex(info, ",");
+        if(index > 0) {
+            parcel = llStringTrim(llGetSubString(info, 0, index - 1), STRING_TRIM);
+            info = llStringTrim(llGetSubString(info, index + 1, -1), STRING_TRIM);
+        }
+        index = llSubStringIndex(info, "(");
+        if(index > 0) {
+            region = llStringTrim(llGetSubString(info, 0, index - 1), STRING_TRIM);
+            position = llStringTrim(llGetSubString(info, index + 1, llSubStringIndex(info, ")") - 1), STRING_TRIM);
+        }
+        if(parcel != region && parcel != "Your Parcel") {
+            destinationName = parcel + ", " + region;
+        } else {
+            destinationName = region;
+            parcel = "";
+        }
+
+        index = llSubStringIndex(description, "@");
+        if(index > 0) {
+            gatekeeper = strReplace(llStringTrim(llGetSubString(description, index + 1, -1), STRING_TRIM), "http://", "");
+            description = llStringTrim(llGetSubString(description, 0, index -1),  STRING_TRIM);
+        }
+        if(!gatekeeper |! region) {
+            debug("missing something");
+            return;
+        }
+
+        destination = gatekeeper + ":" + region;
+        if(position != <0,0,0>) destination += " " + (string)position;
+
+        destinations += [ destinationName, parcel, region, position, gatekeeper, description ];
+        llSetObjectName(destinationName);
+        llSetObjectDesc(destination);
+
+        if(deleteProcessedLandmark)
+            llRemoveInventory(landmark);
+    }
+}
+
 default
 {
     on_rez(integer start_param)
@@ -184,27 +257,7 @@ default
         myGatekeeper = strReplace(osGetGridGatekeeperURI(), "http://", "");
         llSetAlpha(alphaActive, ALL_SIDES);
         llSetColor(colorInactive, ALL_SIDES);
-        if (useLandmark && llGetInventoryName(INVENTORY_LANDMARK, 0)) {
-            landmark = llGetInventoryName(INVENTORY_LANDMARK, 0);
-            // destination = osGetInventoryLandmarkParams(landmark, LANDMARK_ADDRESS);
-            if (~llSubStringIndex(destination, "ERROR_")) {
-                debug(destination + " falling back to gatekeeper");
-                // destination = osGetInventoryLandmarkParams(landmark, LANDMARK_GATEKEEPER);
-            }
-            if (~llSubStringIndex(destination, "ERROR_")) {
-                debug(destination + ": Could not read landmark " + landmark
-                    + ", using last destination");
-                destination = "";
-            } else {
-                destination = strReplace(destination, "http://", "");
-                destinationName = landmark;
-                // destinationURL = osGetInventoryLandmarkParams(landmark, LANDMARK_URL);
-                llSetObjectName(destinationName);
-                llSetObjectDesc(destination);
-            }
-            if(deleteProcessedLandmark)
-                llRemoveInventory(landmark);
-        }
+        readLandmark();
         if(destination == "" && useObjectName) {
             if(llGetObjectName() != "" & llGetObjectName() != "Primitive")
             {
@@ -226,6 +279,7 @@ default
         }
         destination = strReplace(destination, myGatekeeper + ":", "");
         destinationURL = strReplace(destinationURL, myGatekeeper + ":", "");
+
         if(destination == "" || destination == " ") {
                 state empty;
         }
