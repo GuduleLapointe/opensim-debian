@@ -8,17 +8,17 @@ string version = "1.8.0";
 // look if there is only one notecard and use it instead.
 
 // Copyright (C) 2010-2016  Gudule Lapointe gudule@speculoos.world
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published
 // by the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -79,7 +79,7 @@ parsePrefsLine(string line)
             llList2ListStrided(parsedLine, 1, -1, 1),
             " "
             );
-//        if(llListFindList(allowedVars, [var]) != -1) 
+//        if(llListFindList(allowedVars, [var]) != -1)
 //        {
 //            debug("the var " + var + " is allowed, passing " + val);
             llMessageLinked(LINK_THIS, 17, val, (key)var);
@@ -99,15 +99,15 @@ default {
         if (change & (CHANGED_INVENTORY | CHANGED_ALLOWED_DROP))
         {
             parsePrefs();
-        }   
+        }
     }
-        
+
     timer()
     {
         string originalName = objectBaseName + " " + version + " (" + llGetRegionName() + ")";
         if(objectName == "")
         {
-            string objectOwner = llKey2Name(llGetOwner()); 
+            string objectOwner = llKey2Name(llGetOwner());
             objectName = originalName;
         }
         if(setObjectName)
