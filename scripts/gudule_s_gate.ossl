@@ -1,5 +1,5 @@
 // Gudule's Gate
-// Version: 2.18
+// Version: 2.19
 // Copyright Gudule Lapointe 2011,2012 - Speculoos.net
 //
 // Advanced teleport script, configurable in two modes: touch and pass through (aka blam gate).
@@ -137,6 +137,9 @@ string strReplace(string str, string search, string replace) {
 }
 
 upgrade() {
+    // disabled, as it behaves weird (existing copies delete the newly added)
+    // let's check that later and add the version checking.
+    return;
     // Self Upgrading function by Cron Stardust based upon work by Markov Brodsky and Jippen Faddoul.
     // If this code is used, these header lines MUST be kept.
     //Get the name of the script

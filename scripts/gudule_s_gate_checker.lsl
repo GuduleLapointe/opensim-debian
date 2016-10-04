@@ -1,5 +1,5 @@
 // Gudule's Gate checker
-// Version: 0.3.5
+// Version: 0.3.6
 // Copyright Gudule Lapointe 2011,2012 - Speculoos.net
 // Original script by Diva Canto diva@metaverseink.com
 
@@ -46,6 +46,9 @@ string strReplace(string str, string search, string replace) {
 }
 
 upgrade() {
+    // disabled, as it behaves weird (existing copies delete the newly added)
+    // let's check that later and add the version checking.
+    return;
     // Self Upgrading function by Cron Stardust based upon work by Markov Brodsky and Jippen Faddoul.
     // If this code is used, these header lines MUST be kept.
     //Get the name of the script
