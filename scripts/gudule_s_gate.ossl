@@ -1,5 +1,5 @@
 // Gudule's Gate
-// Version: 2.16
+// Version: 2.18
 // Copyright Gudule Lapointe 2011,2012 - Speculoos.net
 //
 // Advanced teleport script, configurable in two modes: touch and pass through (aka blam gate).
@@ -111,14 +111,13 @@ performTeleport( key avatar )
             llSubStringIndex(uri, "<"),
             llSubStringIndex(uri, ">")
             );
-        if(landing == <0.0,0.0,0.0>) {
-            landing = landingPoint;
-        } else {
-        }
         uri = llStringTrim(llGetSubString(uri,
             0,
             llSubStringIndex(uri, "<") - 1
             ), STRING_TRIM);
+    }
+    if(landing == <0,0,0>) {
+        landing = landingPoint;
     }
     osTeleportAgent( avatar, uri, landing, landingLookAt );
 }
