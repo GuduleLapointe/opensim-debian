@@ -208,7 +208,7 @@ integer dst_valid (integer n) { // Get validity flag for destination n
 integer TEXTURE_SIZE = 512;
 integer DISPLAY_SIDE = 4;
 string FONT_NAME = "Impact"; // Depends on system fonts
-string FONT_COLOR = "LightYellow"; // Depends on system fonts
+string FONT_COLOR = "Black"; // Depends on system fonts
 integer FONT_SIZE = 28; // Depends on TEXTURE_SIZE
 integer COLUMNS = 1;
 integer ROWS = 10;
@@ -216,10 +216,10 @@ integer ROWS = 10;
 integer PADDING_LEFT = 14;
 integer PADDING_TOP = 5;
 
-string validCellColor   = "transparent"; // "CadetBlue";
+string validCellColor   = "CadetBlue";
 string invalCellColor   = "IndianRed";
-string localCellColor   = "Green";
-string emptyCellColor   = "transparent"; // "DarkGray";
+string localCellColor   = "Green"; // Not used yet
+string emptyCellColor   = "DarkGray";
 string cellBorderColor  = "transparent"; // "White";
 integer cellBorderSize  = 5; // "White";
 string backgroundColor  = "transparent"; // "Gray";
