@@ -4,6 +4,7 @@
 // (c) The owner of Avatar Jeff Kelley, 2010
 
 // 2016 Additions:
+//  - filters local gatekeeper from destination
 //  - transparent background and border
 //  - border size
 //  - padding
