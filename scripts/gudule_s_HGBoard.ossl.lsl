@@ -225,6 +225,7 @@ integer cellBorderSize  = 5; // "White";
 string backgroundColor  = "transparent"; // "Gray";
 
 string drawList;
+string localGatekeeper;
 
 displayBegin() {
     //if(validCellColor == "transparent") {
@@ -292,12 +293,9 @@ drawTable() {
     drawList = osSetFontName (drawList, FONT_NAME);
 
     if(backgroundColor != "transparent") {
-        llOwnerSay("not transparent: " + backgroundColor);
         drawList = osMovePen     (drawList, 0, 0);
         drawList = osSetPenColor (drawList, backgroundColor);
         drawList = osDrawFilledRectangle (drawList, TEXTURE_SIZE, TEXTURE_SIZE);
-    } else {
-        llOwnerSay("transparent" + backgroundColor);
     }
     integer x; integer y;
     for (x=0; x<COLUMNS; x++)
@@ -345,11 +343,12 @@ integer action (integer index, key who) {
     // Préparer les globales avant de sauter
 
     telep_key  = who;   // Pass to postaction
-    telep_url  = hurl;  // Pass to postaction
+    //telep_url  = hurl;  // Pass to postaction
+    telep_url  = strReplace("http://" + hurl, localGatekeeper + ":", "");
+    // filter local gatekeeper to allow local jumps to HG local address
     telep_land = land;  // Pass to postaction
 
     hippo_url = "http://"+URI2hostport(hurl);   // Pass to http check
-
     DEBUG ("Region name:   " +name +" "+gloc+" (Check="+(string)ok+")");
     DEBUG ("Landing point: " +(string)land);
     DEBUG ("Hypergrid Url: " +hurl);
@@ -369,6 +368,9 @@ postaction (integer success) {
     }
 }
 
+string strReplace(string str, string search, string replace) {
+    return llDumpList2String(llParseStringKeepNulls((str),[search],[]),replace);
+}
 
 ///////////////////////////////////////////////////////////////////
 // State 1 : read the data and draw the board
@@ -377,6 +379,7 @@ postaction (integer success) {
 default {
 
     state_entry() {
+        localGatekeeper = osGetGridGatekeeperURI();
         llOwnerSay ("Reading data from "+datasource);
         readFile (datasource);
     }
