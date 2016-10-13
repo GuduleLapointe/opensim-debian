@@ -1,5 +1,5 @@
 // Gudule's HGBoard (based on Jeff Kelley's HGBoard)
-// Version 2016.4
+// Version 2016.5
 // (c) Gudule Lapointe 2016:
 // (c) The owner of Avatar Jeff Kelley, 2010
 
@@ -358,6 +358,7 @@ integer action (integer index, key who) {
     telep_key  = who;   // Pass to postaction
     //telep_url  = hurl;  // Pass to postaction
     telep_url  = strReplace("http://" + hurl, localGatekeeper + ":", "");
+    telep_url  = strReplace(telep_url, "http://", "");
     // filter local gatekeeper to allow local jumps to HG local address
     telep_land = land;  // Pass to postaction
 
