@@ -1,9 +1,10 @@
 // Gudule's HGBoard (based on Jeff Kelley's HGBoard)
-// Version 2016.3
+// Version 2016.4
 // (c) Gudule Lapointe 2016:
 // (c) The owner of Avatar Jeff Kelley, 2010
 
 // 2016 Additions:
+//  - assume location is ok if left empty
 //  - fix bad detection of empty cells
 //  - allow different texture height and widh (must still be 256,512 or 1024)
 //  - allow disabling touched face check (now disabled by default)
@@ -158,15 +159,18 @@ parseLine (string line) {
     // Parse and check grid location
 
     parse = llParseString2List (gloc, [","],[]);
+    integer ok = TRUE; // assuming ok if no gloc set
+    if(gloc != "") {
     integer xloc = llList2Integer (parse, 0);  // X grid location
     integer yloc = llList2Integer (parse, 1);  // Y grid location
 
     vector hisLoc = <xloc, yloc, 0>;
     vector ourLoc = llGetRegionCorner()/256;
-    integer ok =( llAbs(llFloor(hisLoc.x - ourLoc.x)) < 4096 )
-            &&  ( llAbs(llFloor(hisLoc.y - ourLoc.y)) < 4096 )
-            &&  ( hisLoc != ourLoc);
-
+    ok =( llAbs(llFloor(hisLoc.x - ourLoc.x)) < 4096 )
+        &&  ( llAbs(llFloor(hisLoc.y - ourLoc.y)) < 4096 )
+        &&  ( hisLoc != ourLoc);
+    }
+//    if(!ok) llOwnerSay("gloc: " + gloc);
     // Parse and check landing point
 
     parse = llParseString2List (coor, [","],[]);
@@ -440,7 +444,6 @@ state ready {
         if (link != llGetLinkNumber())
             if (whoClick == llGetOwner()) llResetScript();
             else return;
-
         if (point == TOUCH_INVALID_TEXCOORD) return;
         if (face != DISPLAY_SIDE)
             if(DISPLAY_SIDE != -1)
