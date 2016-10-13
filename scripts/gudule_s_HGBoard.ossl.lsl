@@ -1,7 +1,50 @@
 // Gudule's HGBoard (based on Jeff Kelley's HGBoard)
-// Version 2016.5
-// (c) Gudule Lapointe 2016:
+// Version 2016.6
 // (c) The owner of Avatar Jeff Kelley, 2010
+// (c) Gudule Lapointe 2016
+
+// This script is licensed under Creative Commons BY-NC-SA
+// See <http://creativecommons.org/licenses/by-nc-sa/3.0/>
+// You may not use this work for commercial purposes.
+// You must attribute the work to the authors, Jeff Kelley and Gudule Lapointe
+// You may distribute, alter, transform, or build upon this work
+// as long as you do not delete the name of the original authors.
+
+// More info after the configurable parameters
+
+integer TEXTURE_HEIGHT = 512; // a square of 2: 256, 512, 1024...
+integer TEXTURE_WIDTH = 512; // a square of 2: 256, 512, 1024...
+string FONT_NAME = "Impact"; // Depends on installed system fonts
+string FONT_COLOR = "Black";
+integer FONT_SIZE = 18; // Depends on TEXTURE_HEIGHT
+integer COLUMNS = 1;
+integer ROWS = 10;
+
+integer PADDING_LEFT = 14;
+integer PADDING_TOP = 8;
+
+string validCellColor   = "White";
+string invalCellColor   = "IndianRed";
+string localCellColor   = "Green"; // Not used yet
+string emptyCellColor   = "transparent";
+string cellBorderColor  = "transparent"; // "White";
+integer cellBorderSize  = 5; // "White";
+string backgroundColor  = "transparent"; // "Gray";
+
+// At the moment, we support three datasources:
+//  http://                 A web file
+//  card://cardname         A notecard in the objects's inventory
+//  card://uuid/cardname    A notecard from the LSL server 'uuid'
+//                          (requires a server script, not included)
+// string datasource = "card://Destinations";
+// string datasource = "card://e511d6c0-7588-4157-a684-8ca5f685a077/Destinations";
+// string datasource = "http://my_web_server/path_to_file/Destinations";
+string datasource =  "card://Destinations";
+
+integer DISPLAY_SIDE = -1; // touch active only on this side.
+//                            If set to -1, all sides are active
+
+// End of configurable parameters
 
 // 2016 Additions:
 //  - assume location is ok if left empty
@@ -18,15 +61,6 @@
 //      cellBorderColor = "transparent" disables drawing border, cellBorderSize  is still used to set margin between cells
 //      cellBorderSize = size of the cells border or margin
 //  - PADDING_TOP and PADDING_LEFT set the margin inside the cells
-//
-// This script is licensed under Creative Commons BY-NC-SA
-// See <http://creativecommons.org/licenses/by-nc-sa/3.0/>
-//
-// You may not use this work for commercial purposes.
-// You must attribute the work to the author, Jeff Kelley.
-// You may distribute, alter, transform, or build upon this work
-// as long as you do not delete the name of the original author.
-
 
 integer DEBUG_ON = FALSE;
 DEBUG(string message) {if (DEBUG_ON) llOwnerSay(message);}
@@ -35,22 +69,6 @@ DEBUG(string message) {if (DEBUG_ON) llOwnerSay(message);}
 ///////////////////////////////////////////////////////////////////
 // Part 1 : Datasource
 ///////////////////////////////////////////////////////////////////
-
-// The goal of the datasource is to read a file in script's memory
-// At the moment, we support three datasources:
-//
-//  http://                 A web file
-//  card://cardname         A notecard in the objects's inventory
-//  card://uuid/cardname    A notecard from the LSL server 'uuid'
-//                          (requires a server script, not included)
-//
-// Edit the 'datasource' string to fit your need
-//
-//string datasource = "card://Destinations";
-//string datasource = "card://e511d6c0-7588-4157-a684-8ca5f685a077/Destinations";
-//string datasource = "http://my_web_server/path_to_file/Destinations";
-
-string datasource =  "card://Destinations";
 
 string datasorceData;   // The content of the datasource
 
@@ -213,26 +231,6 @@ integer dst_valid (integer n) { // Get validity flag for destination n
 ////////////////////////////////////////////////////////////
 // Part 3 : Drawing
 ////////////////////////////////////////////////////////////
-
-integer TEXTURE_HEIGHT = 512;
-integer TEXTURE_WIDTH = 512;
-integer DISPLAY_SIDE = -1; // -1 don't check
-string FONT_NAME = "Impact"; // Depends on system fonts
-string FONT_COLOR = "Black"; // Depends on system fonts
-integer FONT_SIZE = 18; // Depends on TEXTURE_HEIGHT
-integer COLUMNS = 1;
-integer ROWS = 10;
-
-integer PADDING_LEFT = 14;
-integer PADDING_TOP = 8;
-
-string validCellColor   = "White";
-string invalCellColor   = "IndianRed";
-string localCellColor   = "Green"; // Not used yet
-string emptyCellColor   = "transparent";
-string cellBorderColor  = "transparent"; // "White";
-integer cellBorderSize  = 5; // "White";
-string backgroundColor  = "transparent"; // "Gray";
 
 string drawList;
 string localGatekeeper;
