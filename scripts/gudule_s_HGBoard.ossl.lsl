@@ -259,8 +259,8 @@ displayEnd() {
 
 drawCell (integer x, integer y) {
     integer CELL_HEIGHT = (TEXTURE_HEIGHT - cellBorderSize) / ROWS;
-    integer CELL_WIDHT  = (TEXTURE_HEIGHT - cellBorderSize) / COLUMNS;
-    integer xOffset = (TEXTURE_HEIGHT-cellBorderSize-CELL_WIDHT*COLUMNS)/2;
+    integer CELL_WIDHT  = (TEXTURE_WIDTH - cellBorderSize) / COLUMNS;
+    integer xOffset = (TEXTURE_WIDTH-cellBorderSize-CELL_WIDHT*COLUMNS)/2;
     integer yOffset = (TEXTURE_HEIGHT-cellBorderSize-CELL_HEIGHT*ROWS)/2;
     integer xTopLeft    = xOffset + x*CELL_WIDHT;
     integer yTopLeft    = yOffset + y*CELL_HEIGHT;
@@ -307,7 +307,7 @@ drawTable() {
     if(backgroundColor != "transparent") {
         drawList = osMovePen     (drawList, 0, 0);
         drawList = osSetPenColor (drawList, backgroundColor);
-        drawList = osDrawFilledRectangle (drawList, TEXTURE_HEIGHT, TEXTURE_HEIGHT);
+        drawList = osDrawFilledRectangle (drawList, TEXTURE_WIDTH, TEXTURE_HEIGHT);
     }
     integer x; integer y;
     for (x=0; x<COLUMNS; x++)
