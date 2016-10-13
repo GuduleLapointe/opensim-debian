@@ -1,9 +1,13 @@
 // Gudule's HGBoard (based on Jeff Kelley's HGBoard)
-// Version 2016.1
+// Version 2016.3
 // (c) Gudule Lapointe 2016:
 // (c) The owner of Avatar Jeff Kelley, 2010
 
 // 2016 Additions:
+//  - fix bad detection of empty cells
+//  - allow different texture height and widh (must still be 256,512 or 1024)
+//  - allow disabling touched face check (now disabled by default)
+//  - correct "outside touch" detection if not root prim or non linked
 //  - filters local gatekeeper from destination
 //  - transparent background and border
 //  - border size
@@ -206,21 +210,22 @@ integer dst_valid (integer n) { // Get validity flag for destination n
 // Part 3 : Drawing
 ////////////////////////////////////////////////////////////
 
-integer TEXTURE_SIZE = 512;
-integer DISPLAY_SIDE = 4;
+integer TEXTURE_HEIGHT = 512;
+integer TEXTURE_WIDTH = 512;
+integer DISPLAY_SIDE = -1; // -1 don't check
 string FONT_NAME = "Impact"; // Depends on system fonts
 string FONT_COLOR = "Black"; // Depends on system fonts
-integer FONT_SIZE = 28; // Depends on TEXTURE_SIZE
+integer FONT_SIZE = 18; // Depends on TEXTURE_HEIGHT
 integer COLUMNS = 1;
 integer ROWS = 10;
 
 integer PADDING_LEFT = 14;
-integer PADDING_TOP = 5;
+integer PADDING_TOP = 8;
 
-string validCellColor   = "CadetBlue";
+string validCellColor   = "White";
 string invalCellColor   = "IndianRed";
 string localCellColor   = "Green"; // Not used yet
-string emptyCellColor   = "DarkGray";
+string emptyCellColor   = "transparent";
 string cellBorderColor  = "transparent"; // "White";
 integer cellBorderSize  = 5; // "White";
 string backgroundColor  = "transparent"; // "Gray";
@@ -241,18 +246,18 @@ displayEnd() {
     integer alpha = 255;
     if(backgroundColor == "transparent") alpha = 0;
     osSetDynamicTextureData    ( "", "vector", drawList,
-        "width:"+(string)TEXTURE_SIZE
-        +",height:"+(string)TEXTURE_SIZE
+        "width:"+(string)(TEXTURE_WIDTH)
+        +",height:"+(string)TEXTURE_HEIGHT
         +",alpha:"+(string)alpha
         +",bgcolor:"+(string)backgroundColor
         , 0);
 }
 
 drawCell (integer x, integer y) {
-    integer CELL_HEIGHT = (TEXTURE_SIZE - cellBorderSize) / ROWS;
-    integer CELL_WIDHT  = (TEXTURE_SIZE - cellBorderSize) / COLUMNS;
-    integer xOffset = (TEXTURE_SIZE-cellBorderSize-CELL_WIDHT*COLUMNS)/2;
-    integer yOffset = (TEXTURE_SIZE-cellBorderSize-CELL_HEIGHT*ROWS)/2;
+    integer CELL_HEIGHT = (TEXTURE_HEIGHT - cellBorderSize) / ROWS;
+    integer CELL_WIDHT  = (TEXTURE_HEIGHT - cellBorderSize) / COLUMNS;
+    integer xOffset = (TEXTURE_HEIGHT-cellBorderSize-CELL_WIDHT*COLUMNS)/2;
+    integer yOffset = (TEXTURE_HEIGHT-cellBorderSize-CELL_HEIGHT*ROWS)/2;
     integer xTopLeft    = xOffset + x*CELL_WIDHT;
     integer yTopLeft    = yOffset + y*CELL_HEIGHT;
 
@@ -267,9 +272,11 @@ drawCell (integer x, integer y) {
     integer index = (y+x*ROWS);
     string  cellName  = dst_name(index);
     integer cellValid = dst_valid(index);
+    string hurl = dst_hgurl (index);
 
     string cellBbackground;
     if (cellName == "") cellBbackground = emptyCellColor;   else
+    if (hurl == "") cellBbackground = emptyCellColor;   else
     if (cellValid)      cellBbackground = validCellColor;   else
                         cellBbackground = invalCellColor;
 
@@ -296,7 +303,7 @@ drawTable() {
     if(backgroundColor != "transparent") {
         drawList = osMovePen     (drawList, 0, 0);
         drawList = osSetPenColor (drawList, backgroundColor);
-        drawList = osDrawFilledRectangle (drawList, TEXTURE_SIZE, TEXTURE_SIZE);
+        drawList = osDrawFilledRectangle (drawList, TEXTURE_HEIGHT, TEXTURE_HEIGHT);
     }
     integer x; integer y;
     for (x=0; x<COLUMNS; x++)
@@ -336,6 +343,7 @@ integer action (integer index, key who) {
     integer ok  = dst_valid (index);
 
     if (name == "") return FALSE; // Empty cell
+    if (hurl == "") return FALSE; // Empty cell
     if (!ok) llWhisper (0, "This region is too far ("+gloc+")");
     if (!ok) return FALSE; // Incompatible region
 
@@ -429,12 +437,14 @@ state ready {
         integer face = llDetectedTouchFace(0);
         integer link = llDetectedLinkNumber(0);
 
-        if (link != LINK_ROOT)
+        if (link != llGetLinkNumber())
             if (whoClick == llGetOwner()) llResetScript();
             else return;
 
         if (point == TOUCH_INVALID_TEXCOORD) return;
-        if (face != DISPLAY_SIDE) return;
+        if (face != DISPLAY_SIDE)
+            if(DISPLAY_SIDE != -1)
+            return;
 
         integer ok = action (getCellClicked(point), whoClick);
         if (!ok) return; // Incompatible grid coordinates
