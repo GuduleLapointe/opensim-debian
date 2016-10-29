@@ -7,7 +7,7 @@ Linkset resizer
 A bug fix on existing Linkset resize (aka resize_script) found in lot of clothing attachment, it should avoid the object being broken if the resize is made while the object is worn.
 
 HYPevents
-Some additions to HYPevents inworld script, to allow a better presentation (different styles for hour and event title, column alignment...). These changes were included by the author in the official submitted to the original so you should rather check HYPEvents online (https://hypevents.net/) or in-world (hypergrid.org:8002:Linkwater_South) for the latest version.
+Some additions to HYPevents inworld script, to allow a better presentation (different styles for hour and event title, column alignment...). These changes were included by the author in the official release so you should rather check HYPEvents online (https://hypevents.net/) or in-world (hypergrid.org:8002:Linkwater_South) for the latest version.
 
 Gudule's HG Board
 This is a fusion between our original "Gudule's gate" and Jeff Kelley's HG Board, allowing better presentation, transparent backgrounds and a few other modifications.
