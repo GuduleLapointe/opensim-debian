@@ -165,7 +165,7 @@ startSim() {
 	screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]"
 
         
-        TAILTIMEOUT=60
+        TAILTIMEOUT=120
         log "logfile: $LogFile"
         echo timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up" $LogFile
  
@@ -238,6 +238,27 @@ cleanpath() {
     echo $newpath
 }
 
+status() {
+    ps -C mono -o  pid,uname,pcpu,pmem,rss,args --sort=-pcpu,pmem \
+	| sed "s/mono.*inifile=//" \
+	| sed "s/-log.*//" \
+	| tee $TMP.usage
+    ucpu=0
+    umem=0
+    cat $TMP.usage | grep -v PID \
+	| awk '{count+=1; cpu += $3; mem += $4; rss += $5} END {print "TOTAL\n" count "\tprocesses\n" cpu "\t% cpu\n" mem "\t% mem\n" rss "\trss"}'
+    return
+    #e | grep -v "PID" | cut -f 1 | paste -sd+
+    printf "" | sed "s/\.//g"  \
+	| while read pid user cpu mem command
+	  do
+	      ucpu=$(($ucpu + $cpu))
+	      umem=$(($umem + $mem))
+	  done
+    echo "cpu usage: $ucpu"
+    echo "mem usage: $umem"					 
+}
+
 B="[[:blank:]]*"
 
 getRobustPath() {
@@ -283,12 +304,19 @@ log "ETCPATH: $ETCPATH"
 
 case "$1" in 
     "start")
-    action=$1
-    shift
-    ;;
+	action=$1
+	shift
+	;;
+    "status")
+	action=$1
+	;;
 esac
 
 case $action in
+    status)
+	status
+	;;
+    
 	start)
 	if [ -n "$1" ]
 	then
@@ -313,5 +341,5 @@ case $action in
 	fi
 	;;
     connections)
-	
+	;;
 esac
