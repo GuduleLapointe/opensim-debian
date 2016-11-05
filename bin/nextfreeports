@@ -1,0 +1,35 @@
+#!/bin/sh
+
+min=9010
+max=9999
+find=1
+
+PGM=$(basename $0)
+TMP=/tmp/$PGM.$$
+
+trap 'rm -f $TMP $TMP.*' EXIT
+
+[ $1 ] && min=$1
+[ $2 ] && find=$2
+
+cd /etc/opensim || /opt/opensim/etc || exit 1
+
+# use blank to ignore commented lines, i don't
+#egrep "^[[:blank:]]*(InternalPort|PublicPort|PrivatePort)[[:blank:]]*=" */*.ini grid/*/Regions/*.ini
+
+(
+   find . /opt/opensim/var/data/regions /opt/opensim/var/*/data/regions -name "*.ini" 2>/dev/null \
+        | grep -v "#" \
+        | xargs egrep "^[[:blank:];]*(InternalPort|PublicPort|PrivatePort|http_listener_port)[[:blank:]]*=" \
+) | cut -d "=" -f 2 | sed "s/[^0-9]//g" | sort -u | sort -n > $TMP.inuse
+
+i=$(($min - 1))
+found=0
+while [ $found -lt $find ]
+do
+    i=$(($i + 1))
+    grep -q "^$i$" $TMP.inuse \
+        && continue
+    echo "$i"
+    found=$((found + 1))
+done
