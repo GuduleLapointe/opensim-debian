@@ -2,7 +2,7 @@
 
 [ ! "$OPENSIM" ] && OPENSIM=opensim
 [ ! "$PGM" ] && PGM=$(basename "$0")
-[ ! "$TMP" ] && TMP=$PGM.$$
+[ ! "$TMP" ] && TMP=/tmp/$PGM.$$
 
 BIN=$(dirname  $(readlink -f "$0"))
 OSDDIR=$(dirname "$BIN")
@@ -23,7 +23,6 @@ done
 [ ! "$CACHE" ] && CACHE=$VAR/cache
 [ ! "$SRC" ] && SRC=$OSDDIR/src
 
-echo "OSBIN is $OSBIN"
 ( ls $OSBIN/OpenSim.exe  \
   || ls */bin/OpenSim.exe \
   || ls lib/*/bin/OpenSim.exe

@@ -13,9 +13,11 @@ DEBUG=yes
 
 BASEDIR=$(dirname $(dirname $(readlink -f "$0")))
 LIB=$BASEDIR/lib
-. $LIB/os-helpers || exit 1 
+. $LIB/os-helpers || exit 1
 . $LIB/bash-helpers/ini_parser 2>/dev/null || end 1 "Missing ini_parser library"
- 
+
+trap 'rm -f $TMP*' EXIT
+
 HELP="
       -s start
       -h display this help
@@ -64,7 +66,7 @@ do
 	    VALUES="$VALUES $PARAM"
 	    LASTVAL=$PARAM
     esac
-    
+
 done 2>/dev/null
 shift `expr $OPTIND - 1`
 
@@ -92,13 +94,13 @@ startSim() {
 
 	log "$instance ($ini)"
 
-	screen -ls | egrep -q "[0-9][0-9]*\.$instance[[:blank:]]" 
+	screen -ls | egrep -q "[0-9][0-9]*\.$instance[[:blank:]]"
 	if [ $? -eq 0 ]
 		then
 		log 1 "An instance of $instance is already running"
 		continue
 	fi
-	
+
 	for default in $(echo "$ETCPATH:" | sed "s|/*:|/default.ini |g")
 	do
 	    [ -f "$default" ] || continue
@@ -129,7 +131,7 @@ startSim() {
 
         [ ! "$LogFile" ] && LogFile="$logfile"
         [ ! "$LogFile" ] && LogFile="$LogDir/$instance.log"
-        
+
 	cmd="mono $Executable -inifile='$inifile'"
 	if [ $Executable = "Robust.exe" ]
 	then
@@ -149,9 +151,9 @@ startSim() {
                 $BinDir/$Executable.config > $LogConfig
 	    cd /opt/opensim/var/data/config
 	    ln -s $LogConfig 2>/dev/null
-            log created LogConfig file $LogConfig from core model $BinDir/$Executable.config 
+            log created LogConfig file $LogConfig from core model $BinDir/$Executable.config
         fi
-        
+
 	if [ -f "$LogConfig" ]
 	then
 	    cmd="$cmd -logconfig=$LogConfig"
@@ -164,17 +166,17 @@ startSim() {
 	eval "screen -S $instance -d -m $cmd"
 	screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]"
 
-        
+
         TAILTIMEOUT=120
         log "logfile: $LogFile"
         echo timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up" $LogFile
- 
+
         timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up" $LogFile \
             && echo "At least one region started" \
                 || echo "Startup still going on after $TAILTIMEOUT seconds, check again later"
 
 	# echo screen -S robust -d -m mono Robust.exe -inifile='/etc/opensim/robust-enabled/robust.ini' -logfile='/var/log/opensim/Robust.HG.log' -prompt 'Robust (robust) '
-	
+
 	# screen -S $instance -d -m $cmd || log $? "screen error"
 	# sleep 1
 	# log "still launching"
@@ -184,7 +186,7 @@ startSim() {
 	# 	sleep 1
 	# 	printf "launching\n"
 	# 	sleep 1
-	# 	screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]" 
+	# 	screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]"
 	# 	sleep 1
     done
 }
@@ -256,7 +258,7 @@ status() {
 	      umem=$(($umem + $mem))
 	  done
     echo "cpu usage: $ucpu"
-    echo "mem usage: $umem"					 
+    echo "mem usage: $umem"
 }
 
 B="[[:blank:]]*"
@@ -285,7 +287,7 @@ ETCPATH=$(cleanpath "$ETCPATH")
 log looking in $ETC
 
 IFS=":"
-for etc in $ETC $ETCPATH 
+for etc in $ETC $ETCPATH
 do
     folder=$(realpath "$etc")
     [ "$folder" ] || continue
@@ -302,7 +304,7 @@ fi
 ETCPATH=$LOOKUP
 log "ETCPATH: $ETCPATH"
 
-case "$1" in 
+case "$1" in
     "start")
 	action=$1
 	shift
@@ -316,7 +318,7 @@ case $action in
     status)
 	status
 	;;
-    
+
 	start)
 	if [ -n "$1" ]
 	then
