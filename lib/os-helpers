@@ -27,6 +27,16 @@ done
   || ls */bin/OpenSim.exe \
   || ls lib/*/bin/OpenSim.exe
 ) >$TMP.osexe 2>/dev/null \
-  && OSBIN=$(head -1 $TMP.osexe | xargs dirname) \
-  && echo "OSBIN now $OSBIN" \
-  || echo "$PGM: Missing $OSBIN/OpenSim.exe, run install.sh"
+&& OSBIN=$(head -1 $TMP.osexe | xargs dirname) \
+&& echo "OSBIN now $OSBIN" \
+|| echo "$PGM: Missing $OSBIN/OpenSim.exe, run install.sh"
+
+osConsole() {
+  [ ! "$2" ] && return
+  osInstance=$1
+  shift
+  osCommand="$@"
+  lr=$(printf "\n\b")
+  pre=$(printf "\n\b")
+  screen -S $osInstance -X stuff "$(echo "$pre$osCommand$lr")"
+}
