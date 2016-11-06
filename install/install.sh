@@ -15,6 +15,8 @@ LIB=$BASEDIR/lib
 . $LIB/os-helpers || exit 1
 . $LIB/bash-helpers/ini_parser || end 2 "Missing ini_parser librarie"
 
+trap 'rm -f $TMP*' EXIT
+
 if [ ! -d "$ETC" ]
 then
     log No preferences folder, trying to create one
@@ -79,7 +81,10 @@ fi
 
 log "Checking standard directories presence"
 for dir in $LIB $SRC $CACHE $LOGS $ETC/opensim.d $ETC/robust.d \
-  $VAR $VAR/cache $VAR/data $VAR/logs $VAR/tmp
+  $VAR $VAR/cache $VAR/cache/bakes $VAR/cache/datasnapshot \
+  $VAR/cache/fsassets-tmp $VAR/cache/maptiles $VAR/cache/Registry \
+  $VAR/data $VAR/data/config $VAR/data/fsassets-data \
+  $VAR/data/regions $VAR/logs $VAR/tmp
 do
   [ -d "$dir" ] && continue
   mkdir -p "$dir" \
