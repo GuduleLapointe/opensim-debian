@@ -191,6 +191,56 @@ startSim() {
     done
 }
 
+stopSim() {
+  [ "$1" ] && sims=$1 || sims=$(enabledIni opensim robust)
+  for sim in $sims
+  do
+    simName=$(ini2Name $sim)
+    log shutting down $simName
+    osConsole $simName shutdown
+    screen -x $simName
+  done
+}
+
+restartSim() {
+  [ "$1" ] && sims=$1 || sims=$(enabledIni opensim robust)
+  for sim in $sims
+  do
+    simName=$(ini2Name $sim)
+    log shutting down $simName
+    log restarting $simName
+    osConsole $simName shutdown
+    screen -x $simName
+    startSim $sim
+  done
+}
+
+ini2Name() {
+  [ ! "$1" ] && return "no-name"
+  ini=$1
+  name=$(egrep "^[[:blank:]]SimName *=" $ini)
+  [ ! $name ] && name=$(basename $ini .ini | tr [:upper:] [:lower:])
+  echo $name
+}
+
+enabledIni() {
+  [ "$1" ] && types=$1 || types="robust opensim"
+  for type in $types
+  do
+    case $type in
+      robust)
+      ls "$etc"/robust.d/*.ini 2>/dev/null | sort -n
+      ls "$etc"/robust-enabled/*.ini 2>/dev/null | sort -n
+      ;;
+      opensim)
+      ls "$etc"/opensim.d/*.ini 2>/dev/null | sort -n
+      ls "$etc"/simulators-enabled/*.ini 2>/dev/null | sort -n
+      ;;
+    esac
+  done
+}
+
+
 buildIni() {
     unset ini
     sim="$@"
@@ -305,12 +355,23 @@ ETCPATH=$LOOKUP
 log "ETCPATH: $ETCPATH"
 
 case "$1" in
-    "start")
+  "start")
+  action=$1
+  shift
+  ;;
+  "stop")
+  action=$1
+  shift
+  stopSim "$@"
+  ;;
+  "restart")
+  action=$1
+  shift
+  restartSim "$@"
+  ;;
+  "status")
 	action=$1
-	shift
-	;;
-    "status")
-	action=$1
+  shift
 	;;
 esac
 
@@ -318,7 +379,6 @@ case $action in
     status)
 	status
 	;;
-
 	start)
 	if [ -n "$1" ]
 	then
@@ -330,7 +390,9 @@ case $action in
 	    do
 		unset IFS
 		for ini in $(
-			ls "$etc"/robust-enabled/*.ini 2>/dev/null | sort -n
+      ls "$etc"/robust.d/*.ini 2>/dev/null | sort -n
+      ls "$etc"/robust-enabled/*.ini 2>/dev/null | sort -n
+      ls "$etc"/opensim.d/*.ini 2>/dev/null | sort -n
 			ls "$etc"/simulators-enabled/*.ini 2>/dev/null | sort -n
 			)
 		do
