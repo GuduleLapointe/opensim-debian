@@ -196,6 +196,20 @@ stopSim() {
   for sim in $sims
   do
     simName=$(ini2Name $sim)
+    log notiy users in $simName
+    shutDownDelay=120
+    warnTimes=3
+    warnDelay=$(($shutDownDelay / $warnTimes))
+    warn=0
+    while [ $warn -lt $warnTimes ]
+    do
+      remaining=$(($shutDownDelay - $warn * $warnDelay))
+      log " $remaining seconds left"
+      osConsole $simName "alert Attention: this simulator will be restarted in $remaining seconds. Please teleport to another region to avoid being disconnected."
+      sleep $warnDelay
+      warn=$(($warn + 1))
+    done
+    osConsole $simName "alert Shutting down now."
     log shutting down $simName
     osConsole $simName shutdown
     screen -x $simName
@@ -203,14 +217,11 @@ stopSim() {
 }
 
 restartSim() {
-  [ "$1" ] && sims=$1 || sims=$(enabledIni opensim robust)
+  [ "$1" ] && sims=$1 || sims=$(enabledIni robust opensim)
   for sim in $sims
   do
     simName=$(ini2Name $sim)
-    log shutting down $simName
-    log restarting $simName
-    osConsole $simName shutdown
-    screen -x $simName
+    stopSim $simName
     startSim $sim
   done
 }
@@ -218,7 +229,7 @@ restartSim() {
 ini2Name() {
   [ ! "$1" ] && return "no-name"
   ini=$1
-  name=$(egrep "^[[:blank:]]SimName *=" $ini)
+  [ -f "$1" ] && name=$(egrep "^[[:blank:]]SimName *=" $ini)
   [ ! $name ] && name=$(basename $ini .ini | tr [:upper:] [:lower:])
   echo $name
 }
