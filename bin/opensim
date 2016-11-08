@@ -7,6 +7,8 @@
 LogDir=/opt/opensim/var/logs
 
 DELAY=60
+shutdownDelay=120
+shutdownWarnings=3
 DEBUG=yes
 
 # End of user configurable data
@@ -197,13 +199,13 @@ stopSim() {
   do
     simName=$(ini2Name $sim)
     log notiy users in $simName
-    shutDownDelay=120
-    warnTimes=3
-    warnDelay=$(($shutDownDelay / $warnTimes))
+    warnDelay=$(($shutdownDelay / $shutdownWarnings))
     warn=0
-    while [ $warn -lt $warnTimes ]
+    [ $shutdownDelay -le 10 ] && shutdownWarnings=1
+    [ $shutdownDelay -eq 0 ] && shutdownWarnings=0
+    while [ $warn -lt $shutdownWarnings ]
     do
-      remaining=$(($shutDownDelay - $warn * $warnDelay))
+      remaining=$(($shutdownDelay - $warn * $warnDelay))
       log " $remaining seconds left"
       osConsole $simName "alert Attention: this simulator will be restarted in $remaining seconds. Please teleport to another region to avoid being disconnected."
       sleep $warnDelay
@@ -373,11 +375,13 @@ case "$1" in
   "stop")
   action=$1
   shift
+  [ "$1" = "now" ] && shutdownDelay=0 && shift
   stopSim "$@"
   ;;
   "restart")
   action=$1
   shift
+  [ "$1" = "now" ] && shutdownDelay=0 && shift
   restartSim "$@"
   ;;
   "status")
