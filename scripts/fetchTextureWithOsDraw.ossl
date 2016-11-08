@@ -11,7 +11,7 @@
 //    Style parameters can be updated by another script with a link message:
 //      llMessageLinked(LINK_THIS, internalUpdateChannel, val, (key)var);
 //    The update script should anwser to "status request" message
-//    "var" can be any of 
+//    "var" can be any of
 //      fontname, fontsize, lineheight, fontcolor, backgroundcolor,
 //      texturewidth, textureheigth, margin, position, croptofit
 //    Other values are ignored
@@ -23,17 +23,17 @@
 
 
 // Copyright (C) 2010-2016  Gudule Lapointe gudule@speculoos.world
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published
 // by the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -44,8 +44,8 @@ string fontName = "Default"; // Depends on the fonts available on your simulator
 
 integer fontSize = 24;
 integer lineHeight = 24;
-string textColor = "white";
-string backgroundColor = "transparent"; // does not work actually
+string textColor = "black";
+string backgroundColor = "white"; // "transparent" or color name
 
 key inactiveTexture = TEXTURE_TRANSPARENT;
 key otherTexture = TEXTURE_BLANK;
@@ -78,15 +78,15 @@ string cropText(string in, string fontname, integer fontsize,integer width)
     integer i;
     integer trimmed = FALSE;
     string suffix="";
-                
+
     for(;llStringLength(in)>0;in=llGetSubString(in,0,-2)) {
         if(trimmed) suffix="...";
         vector extents = osGetDrawStringSize("vector",in+suffix,fontname,fontsize);
-        
+
         if(extents.x<=width) {
                 return in+suffix;
         }
-        
+
         trimmed = TRUE;
     }
 
@@ -155,7 +155,7 @@ fetchTexture()
     commandList = osDrawText(commandList, text);
 
     integer alpha = 256;
-    if(backgroundColor == "transparent") 
+    if(backgroundColor == "transparent")
     {
         alpha = 0;
         otherTexture = TEXTURE_TRANSPARENT;
@@ -169,10 +169,10 @@ fetchTexture()
     llSetTexture(otherTexture, 5);
 */
 }
-   
+
 oldFetchTexture(string text)
 {
-    
+
     string fetchedTexture = osSetDynamicTextureURL(
         dynTextureDynamicID,
         dynTextureType,
@@ -246,7 +246,7 @@ default
         }
         fetchTexture();
     }
-    
+
     changed(integer change)
     {
         if(change & CHANGED_OWNER)
@@ -256,7 +256,7 @@ default
         if (change & CHANGED_INVENTORY && standalone)
             resetScript();
     }
-    
+
     link_message(integer sender, integer channel, string message, key id)
     {
         if(message == "status request") return; // own initial request
