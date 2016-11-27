@@ -1,5 +1,5 @@
 // Gudule's HGBoard (based on Jeff Kelley's HGBoard)
-// Version 2016.11
+// Version 2016.12
 // (c) The owner of Avatar Jeff Kelley, 2010
 // (c) Gudule Lapointe 2016
 
@@ -77,6 +77,7 @@ string datasorceData;   // The content of the datasource
 
 readFile(string source) {
     if(source=="desc://") source=llGetObjectDesc();
+    if(firstRun) llOwnerSay ("Reading data from "+ source);
     list parse = llParseString2List (source, ["/"],[]);
     string s0 = llList2String (parse, 0);
     string s1 = llList2String (parse, 1);
@@ -402,7 +403,6 @@ default {
 
     state_entry() {
         localGatekeeper = osGetGridGatekeeperURI();
-        if(firstRun) llOwnerSay ("Reading data from "+datasource);
         readFile (datasource);
     }
 
