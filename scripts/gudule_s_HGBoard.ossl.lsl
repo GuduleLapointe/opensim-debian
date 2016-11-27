@@ -39,8 +39,7 @@ string backgroundColor  = "transparent"; // "Gray";
 // string datasource = "card://Destinations";
 // string datasource = "card://e511d6c0-7588-4157-a684-8ca5f685a077/Destinations";
 // string datasource = "http://my_web_server/path_to_file/Destinations";
-// The pseudo "desc://" datasource will read datasource setting from
-// the prim description.
+// The pseudo "desc://" will read datasource setting from prim description.
 string datasource = "desc://";
 
 integer DISPLAY_SIDE = -1; // touch active only on this side.
