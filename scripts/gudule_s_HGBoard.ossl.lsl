@@ -77,6 +77,12 @@ string datasorceData;   // The content of the datasource
 
 readFile(string source) {
     if(source=="desc://") source=llGetObjectDesc();
+    if(source=="") source="card://" + llGetInventoryName(INVENTORY_NOTECARD, 0);
+    if(source=="card://") {
+        llOwnerSay("datasource not set or invalid");
+        return;
+    }
+    //destinations=["Empty destinations"];
     if(firstRun) llOwnerSay ("Reading data from "+ source);
     list parse = llParseString2List (source, ["/"],[]);
     string s0 = llList2String (parse, 0);
