@@ -443,7 +443,8 @@ state ready {
     state_entry() {
         firstRun = FALSE;
         llWhisper (0, "Ready");
-        llSetTimerEvent (AUTO_REFRESH);
+        if(AUTO_REFRESH > 0)
+        llSetTimerEvent ((integer)(AUTO_REFRESH * (0.9 + llFrand(0.2))));
     }
 
     touch_start (integer n) {
