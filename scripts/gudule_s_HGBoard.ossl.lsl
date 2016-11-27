@@ -1,5 +1,5 @@
 // Gudule's HGBoard (based on Jeff Kelley's HGBoard)
-// Version 2016.14
+// Version 2016.15
 // (c) The owner of Avatar Jeff Kelley, 2010
 // (c) Gudule Lapointe 2016
 
@@ -371,13 +371,13 @@ integer action (integer index, key who) {
 
     telep_key  = who;   // Pass to postaction
     telep_url  = hurl;  // Pass to postaction
+    hippo_url = "http://"+URI2hostport(telep_url);   // Pass to http check
     telep_url  = strReplace(telep_url, "http://", "");
     telep_url  = strReplace("http://" + telep_url, localGatekeeper + ":", "");
     telep_url  = strReplace(telep_url, "http://", "");
     // filter local gatekeeper to allow local jumps to HG local address
     telep_land = land;  // Pass to postaction
 
-    hippo_url = "http://"+URI2hostport(telep_url);   // Pass to http check
     DEBUG ("Region name:   " +name +" "+gloc+" (Check="+(string)ok+")");
     DEBUG ("Landing point: " +(string)land);
     DEBUG ("Hypergrid Url: " +hurl);
