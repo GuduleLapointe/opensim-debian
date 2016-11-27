@@ -1,5 +1,5 @@
 // Gudule's HGBoard (based on Jeff Kelley's HGBoard)
-// Version 2016.7
+// Version 2016.8
 // (c) The owner of Avatar Jeff Kelley, 2010
 // (c) Gudule Lapointe 2016
 
@@ -32,14 +32,16 @@ integer cellBorderSize  = 5; // "White";
 string backgroundColor  = "transparent"; // "Gray";
 
 // At the moment, we support three datasources:
-//  http://                 A web file
+//  http://example.com/url  A web file
 //  card://cardname         A notecard in the objects's inventory
 //  card://uuid/cardname    A notecard from the LSL server 'uuid'
 //                          (requires a server script, not included)
 // string datasource = "card://Destinations";
 // string datasource = "card://e511d6c0-7588-4157-a684-8ca5f685a077/Destinations";
 // string datasource = "http://my_web_server/path_to_file/Destinations";
-string datasource =  "card://Destinations";
+// The pseudo "desc://" datasource will read datasource setting from
+// the prim description.
+string datasource = "desc://";
 
 integer DISPLAY_SIDE = -1; // touch active only on this side.
 //                            If set to -1, all sides are active
@@ -47,6 +49,7 @@ integer DISPLAY_SIDE = -1; // touch active only on this side.
 // End of configurable parameters
 
 // 2016 Additions:
+//  - read datasource url from prim description
 //  - assume location is ok if left empty
 //  - fix bad detection of empty cells
 //  - allow different texture height and widh (must still be 256,512 or 1024)
@@ -392,6 +395,7 @@ string strReplace(string str, string search, string replace) {
 default {
 
     state_entry() {
+        if(datasource=="desc://") datasource=llGetObjectDesc();
         localGatekeeper = osGetGridGatekeeperURI();
         llOwnerSay ("Reading data from "+datasource);
         readFile (datasource);
