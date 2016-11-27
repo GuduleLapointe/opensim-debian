@@ -1,5 +1,5 @@
 // Gudule's HGBoard (based on Jeff Kelley's HGBoard)
-// Version 2016.10
+// Version 2016.11
 // (c) The owner of Avatar Jeff Kelley, 2010
 // (c) Gudule Lapointe 2016
 
@@ -41,6 +41,7 @@ string backgroundColor  = "transparent"; // "Gray";
 // string datasource = "http://my_web_server/path_to_file/Destinations";
 // Pseudo source "desc://" reads datasource setting from prim description.
 string datasource = "desc://";
+integer AUTO_REFRESH = 3600; // for http datasource, set zero to disable
 
 integer DISPLAY_SIDE = -1; // touch active only on this side.
 //                            If set to -1, all sides are active
@@ -167,7 +168,7 @@ parseLine (string line) {
     if (line == "") return; // Ignore empty lines
 
     if (llGetSubString (line,0,1) == "//") {  // Is this a comment?
-        llOwnerSay ("(Comment) "+line);
+        if(firstRun) llOwnerSay ("   " + line);
         return;
     }
 
@@ -395,11 +396,13 @@ string strReplace(string str, string search, string replace) {
 // State 1 : read the data and draw the board
 ///////////////////////////////////////////////////////////////////
 
+integer firstRun = TRUE;
+
 default {
 
     state_entry() {
         localGatekeeper = osGetGridGatekeeperURI();
-        llOwnerSay ("Reading data from "+datasource);
+        if(firstRun) llOwnerSay ("Reading data from "+datasource);
         readFile (datasource);
     }
 
@@ -424,7 +427,7 @@ default {
     }
 
     state_exit() {
-        llOwnerSay ("Done. Initializing board");
+        if(firstRun) llOwnerSay ("Done. Initializing board");
         parseFile(datasorceData);
         drawTable();
     }
@@ -438,7 +441,9 @@ default {
 state ready {
 
     state_entry() {
+        firstRun = FALSE;
         llWhisper (0, "Ready");
+        llSetTimerEvent (AUTO_REFRESH);
     }
 
     touch_start (integer n) {
@@ -482,6 +487,10 @@ state ready {
         if (what & CHANGED_REGION_RESTART) llResetScript();
     }
 
+    timer() {
+        llSetTimerEvent (0);
+        state default;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////
