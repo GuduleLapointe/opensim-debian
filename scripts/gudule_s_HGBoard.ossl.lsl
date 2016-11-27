@@ -1,5 +1,5 @@
 // Gudule's HGBoard (based on Jeff Kelley's HGBoard)
-// Version 2016.8
+// Version 2016.9
 // (c) The owner of Avatar Jeff Kelley, 2010
 // (c) Gudule Lapointe 2016
 
@@ -153,6 +153,7 @@ integer HURL_IDX = 2;   // Index of hypergrid url in list
 integer HGOK_IDX = 3;   // Index of validity flag in list
 integer LAND_IDX = 4;   // Index of landing point in list
 integer N_FIELDS = 5;   // Total number of fields
+integer checkgloc = FALSE;
 
 parseFile (string data) {
     list lines = llParseString2List (data,["\n"],[]);
@@ -180,7 +181,7 @@ parseLine (string line) {
 
     parse = llParseString2List (gloc, [","],[]);
     integer ok = TRUE; // assuming ok if no gloc set
-    if(gloc != "") {
+    if(checkgloc && gloc != "") {
     integer xloc = llList2Integer (parse, 0);  // X grid location
     integer yloc = llList2Integer (parse, 1);  // Y grid location
 
@@ -189,6 +190,8 @@ parseLine (string line) {
     ok =( llAbs(llFloor(hisLoc.x - ourLoc.x)) < 4096 )
         &&  ( llAbs(llFloor(hisLoc.y - ourLoc.y)) < 4096 )
         &&  ( hisLoc != ourLoc);
+    } else {
+        ok = TRUE;
     }
 //    if(!ok) llOwnerSay("gloc: " + gloc);
     // Parse and check landing point
