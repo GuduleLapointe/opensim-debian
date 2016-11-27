@@ -1,5 +1,5 @@
 // Gudule's HGBoard (based on Jeff Kelley's HGBoard)
-// Version 2016.12
+// Version 2016.14
 // (c) The owner of Avatar Jeff Kelley, 2010
 // (c) Gudule Lapointe 2016
 
@@ -25,7 +25,7 @@ integer PADDING_TOP = 8;
 
 string validCellColor   = "White";
 string invalCellColor   = "IndianRed";
-string localCellColor   = "Green"; // Not used yet
+string localCellColor   = "Green";
 string emptyCellColor   = "transparent";
 string cellBorderColor  = "transparent"; // "White";
 integer cellBorderSize  = 5; // "White";
@@ -242,6 +242,7 @@ integer dst_valid (integer n) { // Get validity flag for destination n
 
 string drawList;
 string localGatekeeper;
+string localHGurl;
 
 displayBegin() {
     //if(validCellColor == "transparent") {
@@ -287,8 +288,9 @@ drawCell (integer x, integer y) {
     string cellBbackground;
     if (cellName == "") cellBbackground = emptyCellColor;   else
     if (hurl == "") cellBbackground = emptyCellColor;   else
-    if (cellValid)      cellBbackground = validCellColor;   else
-                        cellBbackground = invalCellColor;
+    if (cellValid && hurl == localHGurl) cellBbackground = localCellColor;
+    else if(cellValid) cellBbackground = validCellColor;
+    else cellBbackground = invalCellColor;
 
     // Fill background
 
@@ -402,7 +404,9 @@ integer firstRun = TRUE;
 default {
 
     state_entry() {
+        destinations = [];
         localGatekeeper = osGetGridGatekeeperURI();
+        localHGurl = strReplace(localGatekeeper + ":" + llGetRegionName(), "http://", "");
         readFile (datasource);
     }
 
