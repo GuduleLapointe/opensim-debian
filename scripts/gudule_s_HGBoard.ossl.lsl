@@ -502,6 +502,11 @@ state ready {
         llSetTimerEvent (0);
         state default;
     }
+    on_rez(integer start_param)
+    {
+        llSetTimerEvent (0);
+        state default;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////
