@@ -1,10 +1,21 @@
-// fetchTextureWidhOsDraw
-// Version: 1.0.0
+// Gudule's free land rental
+// Version: 1.0.1
 // Author: Gudule Lapointe gudule@speculoos.world
 // Licence:  GNU Affero General Public License
 
-// The rental sign handles the parcel ownership. Therefore, it has
-// to be placed outside the rented parcel, in public land.
+// Allow to rent land for free, requiring the user to click
+// regularly on the rental panel to keep the parcel.
+// The land is technically sold as with viewer buy/send land so
+// the user has full ownership and full control on his parcel,
+// no need of the group trick. Expired or abandonned land is sold
+// back to the vendor owner.
+
+// IMPORTANT:
+// - Disallow land join,split and resell in the Estate settings
+// - The vendor HAS TO BE outside the rented land. Place it at 1m
+// of the rented land border. The script uses parcelDistance to
+// calculate the actual rented parcel. Pay attention to the the sign
+// orientation.
 
 // User configurable variables:
 integer debug = FALSE;    // set to TRUE to see debug info
@@ -371,6 +382,7 @@ state unleased
             llInstantMessage(touchedKey,"Thanks for claiming this spot! Please wait a few moments...");
             MY_STATE = 1;
             LEASER = llKey2Name(touchedKey);
+            string shortName = llStringTrim(strReplace( llList2String(llParseStringKeepNulls(llKey2Name(touchedKey),["@"],[]), 0), ".", " "), STRING_TRIM);
             LEASERID = touchedKey;
             LEASED_UNTIL = llGetUnixTime() + (integer) (DAYSEC * PERIOD);
             DEBUG("Remaining time:" +  timespan(llGetUnixTime()-LEASED_UNTIL));
@@ -379,7 +391,7 @@ state unleased
             save_data();
             llInstantMessage(llGetOwner(), "NEW CLAIM -" +  get_rentalbox_info());
             list rules =[
-                PARCEL_DETAILS_NAME, LEASER + "'s land",
+                PARCEL_DETAILS_NAME, shortName + "'s land",
                 PARCEL_DETAILS_DESC, LEASER + "'s land; "
                     + parcelArea + " sqm; "
                     + PRIMMAX + " prims allowed.",
