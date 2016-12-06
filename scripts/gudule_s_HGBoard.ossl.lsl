@@ -1,5 +1,5 @@
 // Gudule's HGBoard (based on Jeff Kelley's HGBoard)
-// Version 2016.16
+// Version 2016.17
 // (c) The owner of Avatar Jeff Kelley, 2010
 // (c) Gudule Lapointe 2016
 
@@ -40,6 +40,15 @@ string backgroundColor  = "transparent"; // "Gray";
 // string datasource = "card://e511d6c0-7588-4157-a684-8ca5f685a077/Destinations";
 // string datasource = "http://my_web_server/path_to_file/Destinations";
 // Pseudo source "desc://" reads datasource setting from prim description.
+//
+// Datasource format for notecard or web page:
+//  grid|region|global location|url|landing point
+// Examples:
+//  Speculoos|||speculoos.world:8002
+//  Speculoos|Grand Place|5000,5000|speculoos.world:8002|128,128,25
+// Grid name and url are mandatory, other values are optional.
+// Lines with "|" but no values are treated as separators
+
 string datasource = "desc://";
 integer AUTO_REFRESH = 3600; // for http datasource, set zero to disable
 
@@ -50,7 +59,8 @@ integer DISPLAY_SIDE = -1; // touch active only on this side.
 
 // 2016 Additions:
 //  - read datasource url from prim description
-//  - assume location is ok if left empty
+//  - global location check (4096 rule) is disabled by default
+//  - disable location check anyway if no location given
 //  - fix bad detection of empty cells
 //  - allow different texture height and widh (must still be 256,512 or 1024)
 //  - allow disabling touched face check (now disabled by default)
