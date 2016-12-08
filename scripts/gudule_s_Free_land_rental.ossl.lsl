@@ -1,5 +1,5 @@
 // Gudule's free land rental
-// Version: 1.0.1
+// Version: 1.1.0
 // Author: Gudule Lapointe gudule@speculoos.world
 // Licence:  GNU Affero General Public License
 
@@ -12,14 +12,14 @@
 
 // IMPORTANT:
 // - Disallow land join,split and resell in the Estate settings
-// - The vendor HAS TO BE outside the rented land. Place it at 1m
-// of the rented land border. The script uses parcelDistance to
-// calculate the actual rented parcel. Pay attention to the the sign
-// orientation.
+// - The vendor HAS TO BE outside the rented land. Place it at 1 meter
+// of the rented land border (outside) and make sure the yellow
+// positioning mark is inside.
 
 // User configurable variables:
 integer debug = FALSE;    // set to TRUE to see debug info
 vector parcelDistance = <0,2,0>; // distance between the rental sign and the parcel (allow to place the sign outside the parcel)
+integer posCheckerLinkNumber = 4;
 
 // named texture have to be placed in the prim inventory:
 string texture_expired = TEXTURE_BLANK;          // lease is expired
@@ -297,14 +297,33 @@ string Convert(integer insecs)
     return (llList2String(weekdays, DayOfWeek) + " " + str + PST_PDT);
 }
 
-integer firstLaunch = TRUE;
+checkValidPosition()
+{
+    DEBUG("checking position");
+    vector currentPos = llGetPos() + parcelDistance * llGetRot();
+    if(parcelPos != currentPos)
+    {
+        DEBUG("position was " + (string)parcelPos + " and is now " + (string)currentPos);
+        state waiting;
+    }
+    DEBUG("checking marker");
+    currentPos = llList2Vector(llGetLinkPrimitiveParams(posCheckerLinkNumber, [ PRIM_POS_LOCAL ]), 0);
+    if(currentPos != <0,0,0>)
+    {
+        DEBUG("marker is out: " + (string)currentPos);
+        state waiting;
+    }
+}
 
+integer firstLaunch = TRUE;
 default
 {
     state_entry()
     {
         parcelPos = llGetPos() + parcelDistance * llGetRot();
         parcelArea = llList2Integer(llGetParcelDetails(parcelPos, [PARCEL_DETAILS_AREA]),0);
+        checkValidPosition();
+
         load_data();
         llSetScale(SIZE_LEASED);
         llSetTexture(texture_expired,ALL_SIDES);
@@ -322,22 +341,30 @@ default
         llSetText("DISABLED",<0,0,0>, 1.0);
     }
 
-    on_rez(integer start_param)
-    {
-        load_data();
-    }
-
     touch_start(integer total_number)
     {
-        if (llDetectedKey(0) == llGetOwner())
+        touchedKey = llDetectedKey(0);
+        if (touchedKey == llGetOwner())
         {
-            load_data();
-
             llSay(0,"Activating...");
+            load_data();
             if (MY_STATE == 0)
                 state unleased;
             else if (MY_STATE == 1)
                 state leased;
+        }
+    }
+    on_rez(integer start_param)
+    {
+        DEBUG("rez (from default)");
+        state waiting;
+    }
+    changed(integer change)
+    {
+        if(change & CHANGED_LINK)
+        {
+            DEBUG("CHANGED_LINK (from default)");
+            state waiting;
         }
     }
 }
@@ -405,6 +432,9 @@ state unleased
 
     touch_start(integer total_number)
     {
+        touchedKey = llDetectedKey(0);
+        if(touchedKey == llGetOwner()) checkValidPosition();
+
         DEBUG("touch event in unleased");
         load_data();
         llSay(0,"Claim Info");
@@ -414,7 +444,6 @@ state unleased
         llSay(0, "Max Lease Length: " + (string)MAXPERIOD + " days");
         llSay(0, "Max Prims: " + (string)PRIMMAX);
 
-        touchedKey = llDetectedKey(0);
         if(llGetInventoryNumber(INVENTORY_NOTECARD) > 0 ) {
             llGiveInventory(touchedKey,llGetInventoryName(INVENTORY_NOTECARD,0));
             llSay(0, "Please read the covenant before renting");
@@ -427,6 +456,19 @@ state unleased
     {
         dialogActiveFlag = FALSE;
         llListenRemove(listener);
+    }
+    on_rez(integer start_param)
+    {
+        DEBUG("rez (from unleased)");
+        state waiting;
+    }
+    changed(integer change)
+    {
+        if(change & CHANGED_LINK)
+        {
+            DEBUG("CHANGED_LINK (from unleased)");
+            state waiting;
+        }
     }
 }
 
@@ -623,6 +665,9 @@ state leased
     touch_start(integer total_number)
     {
         DEBUG("touch event in leased");
+        touchedKey = llDetectedKey(0);
+        if(touchedKey == llGetOwner()) checkValidPosition();
+
         load_data();
 
         if (MY_STATE != 1 || PERIOD == 0 || LEASER == "" )
@@ -644,9 +689,8 @@ state leased
         llSay(0,"Claim due since " + timespan(llGetUnixTime()-LEASED_UNTIL));
 
         // same as money
-        if (llDetectedKey(0) == LEASERID && IS_RENEWABLE)
+        if (touchedKey == LEASERID && IS_RENEWABLE)
         {
-            touchedKey = llDetectedKey(0);
             LEASED_UNTIL = llGetUnixTime() + (integer) (DAYSEC * PERIOD);
             llSay(0, "Renewed until " + Unix2PST_PDT(LEASED_UNTIL));
             dialog();
@@ -655,9 +699,75 @@ state leased
         }
 
         // same as money
-        if (llDetectedKey(0) == LEASERID && !IS_RENEWABLE)
+        if (touchedKey == LEASERID && !IS_RENEWABLE)
         {
              llSay(0,"The parcel cannot be claimed again");
+        }
+    }
+    on_rez(integer start_param)
+    {
+        DEBUG("rez (from leased)");
+        state waiting;
+    }
+    changed(integer change)
+    {
+        if(change & CHANGED_LINK)
+        {
+            DEBUG("CHANGED_LINK (from leased)");
+            state waiting;
+        }
+    }
+}
+
+state waiting
+{
+    state_entry()
+    {
+        DEBUG("entering wait state");
+        integer positionConfirmed = TRUE;
+        positionConfirmed = FALSE;
+        llSetLinkPrimitiveParamsFast(posCheckerLinkNumber, [
+        PRIM_POS_LOCAL, parcelDistance,
+        PRIM_COLOR, ALL_SIDES, <1,1,0>, 0.75,
+        PRIM_GLOW, ALL_SIDES, 0.05,
+        PRIM_SIZE, <0.25,0.25,5>
+        ]);
+        integer channel = llCeil(llFrand(1000000)) + 100000 * -1; // negative channel # cannot be typed
+        listener = llListen(channel,"","","");
+        llDialog(llGetOwner(),
+        "WARNING:\n"
+        + "Place the vendor OUTSIDE the rented parcel, but make sure the YELLOW MARK stays INSIDE the rented parcel. Then click the Checked button.",
+        ["Checked"],
+        channel);
+        //
+    }
+    listen(integer channel, string name, key id, string message)
+    {
+        if(id == llGetOwner() && message == "Checked")
+        {
+            DEBUG("verified");
+            llSetLinkPrimitiveParamsFast(posCheckerLinkNumber, [
+            PRIM_POS_LOCAL, <0,0,0>,
+            PRIM_COLOR, ALL_SIDES, <1,1,1>, 0.0,
+            PRIM_GLOW, ALL_SIDES, 0.00,
+            PRIM_SIZE, <0.01,0.01,0.1>
+            ]);
+            llSleep(5);
+            firstLaunch = FALSE;
+            state default;
+        }
+    }
+    on_rez(integer start_param)
+    {
+        DEBUG("rez (from waiting)");
+        state waiting;
+    }
+    changed(integer change)
+    {
+        if(change & CHANGED_LINK)
+        {
+            DEBUG("CHANGED_LINK (from waiting)");
+            state waiting;
         }
     }
 }
