@@ -1,5 +1,5 @@
 // Gudule's free land rental
-// Version: 1.2.1
+// Version: 1.2.2
 // Author: Gudule Lapointe gudule@speculoos.world
 // Licence:  GNU Affero General Public License
 
@@ -404,6 +404,7 @@ string cropText(string in, string fontname, integer fontsize,integer width)
 
 drawText(string text)
 {
+    llSetText("",<1,0,0>, 1.0);
     string commandList = "";
     integer x = margin;
     integer y = margin;
