@@ -1,5 +1,5 @@
 // Gudule's free land rental
-// Version: 1.2.0
+// Version: 1.2.1
 // Author: Gudule Lapointe gudule@speculoos.world
 // Licence:  GNU Affero General Public License
 
@@ -120,9 +120,9 @@ dialog()
         + ". Abandon land?"
         ,["Abandon","-","No"],channel);
     }
-    llSetTimerEvent(30);        llSetText("",<1,0,0>, 1.0);
-        llInstantMessage(LEASERID,"Your parcel is ready.\n"
-        + get_rentalbox_url());
+    llSetTimerEvent(30);
+    llSetText("",<1,0,0>, 1.0);
+    //llInstantMessage(LEASERID,"Your parcel is ready.\n" + get_rentalbox_url());
 
     dialogActiveFlag  = TRUE;
 }
@@ -215,6 +215,8 @@ save_data()
 
 reclaimParcel()
 {
+    LEASER="";
+    LEASERID=NULL_KEY;
     list rules =[
         PARCEL_DETAILS_NAME, parcelArea + " sqm parcel for rent",
         PARCEL_DETAILS_DESC, "Free rental; "
@@ -225,6 +227,7 @@ reclaimParcel()
         PARCEL_DETAILS_GROUP, llList2Key(llGetObjectDetails(llGetKey(), [OBJECT_GROUP]), 0),
         PARCEL_DETAILS_CLAIMDATE, 0];
     osSetParcelDetails(parcelPos, rules);
+    save_data();
 }
 
 string strReplace(string str, string search, string replace) {
