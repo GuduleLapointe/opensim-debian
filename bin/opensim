@@ -194,24 +194,41 @@ startSim() {
 }
 
 stopSim() {
-  [ "$1" ] && sims=$1 || sims=$(enabledIni opensim robust)
+  [ "$1" ] && sims=$@ || sims=$(enabledIni opensim robust)
   for sim in $sims
   do
     simName=$(ini2Name $sim)
-    log notiy users in $simName
-    warnDelay=$(($shutdownDelay / $shutdownWarnings))
-    warn=0
-    [ $shutdownDelay -le 10 ] && shutdownWarnings=1
-    [ $shutdownDelay -eq 0 ] && shutdownWarnings=0
-    while [ $warn -lt $shutdownWarnings ]
-    do
-      remaining=$(($shutdownDelay - $warn * $warnDelay))
-      log " $remaining seconds left"
-      osConsole $simName "alert Attention: this simulator will be restarted in $remaining seconds. Please teleport to another region to avoid being disconnected."
-      sleep $warnDelay
-      warn=$(($warn + 1))
-    done
-    osConsole $simName "alert Shutting down now."
+    ls -d "$sim" 2>/dev/null | grep -q "\.ini$" \
+  	    && { inifile=$sim; instance=$(basename $sim .ini | tr "[:upper:]" "[:lower:]"); } \
+  	    || { instance=$(echo $sim | tr "[:upper:]" "[:lower:]"); inifile=$(buildIni "$sim"); }
+
+  	cat "$inifile" | sed '/\[Const]/,/^\[/!d' | sed "$ d" > $TMP.ini
+  	cat "$inifile" | sed '/\[Launch]/,/^\[/!d' | sed "$ d" >> $TMP.ini
+  	cat "$inifile" | sed '/\[Startup]/,/^\[/!d' | sed "$ d" >> $TMP.ini
+  	ini_parser "$TMP.ini" || continue
+  	# ini_parser "$inifile" || continue
+  	#2>/dev/null || continue
+  	# ini_section_Startup 2>/dev/null
+  	ini_section_Const 2>/dev/null
+  	ini_section_Launch 2>/dev/null
+
+    if [ "$Executable" = "OpenSim.exe" ]
+    then
+      log notiy users in $simName
+      warnDelay=$(($shutdownDelay / $shutdownWarnings))
+      warn=0
+      [ $shutdownDelay -le 10 ] && shutdownWarnings=1
+      [ $shutdownDelay -eq 0 ] && shutdownWarnings=0
+      while [ $warn -lt $shutdownWarnings ]
+      do
+        remaining=$(($shutdownDelay - $warn * $warnDelay))
+        log " $remaining seconds left"
+        osConsole $simName "alert Attention: this simulator will be restarted in $remaining seconds. Please teleport to another region to avoid being disconnected."
+        sleep $warnDelay
+        warn=$(($warn + 1))
+      done
+      osConsole $simName "alert Shutting down now."
+    fi
     log shutting down $simName
     osConsole $simName shutdown
     screen -x $simName
@@ -219,12 +236,13 @@ stopSim() {
 }
 
 restartSim() {
-  [ "$1" ] && sims=$1 || sims=$(enabledIni robust opensim)
+  [ "$1" ] && sims="$@" || sims=$(enabledIni robust opensim)
   for sim in $sims
   do
     simName=$(ini2Name $sim)
+    echo restart $simName
     stopSim $simName
-    startSim $sim
+    startSim $simName
   done
 }
 
@@ -235,9 +253,8 @@ ini2Name() {
   [ ! $name ] && name=$(basename $ini .ini | tr [:upper:] [:lower:])
   echo $name
 }
-
 enabledIni() {
-  [ "$1" ] && types=$1 || types="robust opensim"
+  [ "$1" ] && types=$@ || types="robust opensim"
   for type in $types
   do
     case $type in
@@ -305,6 +322,7 @@ cleanpath() {
 
 status() {
     ps -C mono -o  pid,uname,pcpu,pmem,rss,args --sort=-pcpu,pmem \
+	| grep -v mcs\.exe \
 	| sed "s/mono.*inifile=//" \
 	| sed "s/-log.*//" \
 	| tee $TMP.usage
