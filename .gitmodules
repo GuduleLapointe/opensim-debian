@@ -6,4 +6,4 @@
 	url = https://github.com/OpenMetaverseEconomy/OMEconomy-Modules.git
 [submodule "lib/flexible_helper_scripts"]
 	path = lib/flexible_helper_scripts
-	url = git@gitlab.magiiic.com:GuduleLapointe/flexible_helper_scripts.git
+	url = git@github.com:GuduleLapointe/flexible_helper_scripts.git
