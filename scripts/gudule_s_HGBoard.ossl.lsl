@@ -1,5 +1,5 @@
 // Gudule's HGBoard (based on Jeff Kelley's HGBoard)
-// Version 2016.6
+// Version 2016.17
 // (c) The owner of Avatar Jeff Kelley, 2010
 // (c) Gudule Lapointe 2016
 
@@ -25,21 +25,32 @@ integer PADDING_TOP = 8;
 
 string validCellColor   = "White";
 string invalCellColor   = "IndianRed";
-string localCellColor   = "Green"; // Not used yet
+string localCellColor   = "Green";
 string emptyCellColor   = "transparent";
 string cellBorderColor  = "transparent"; // "White";
 integer cellBorderSize  = 5; // "White";
 string backgroundColor  = "transparent"; // "Gray";
 
 // At the moment, we support three datasources:
-//  http://                 A web file
+//  http://example.com/url  A web file
 //  card://cardname         A notecard in the objects's inventory
 //  card://uuid/cardname    A notecard from the LSL server 'uuid'
 //                          (requires a server script, not included)
 // string datasource = "card://Destinations";
 // string datasource = "card://e511d6c0-7588-4157-a684-8ca5f685a077/Destinations";
 // string datasource = "http://my_web_server/path_to_file/Destinations";
-string datasource =  "card://Destinations";
+// Pseudo source "desc://" reads datasource setting from prim description.
+//
+// Datasource format for notecard or web page:
+//  grid|region|global location|url|landing point
+// Examples:
+//  Speculoos|||speculoos.world:8002
+//  Speculoos|Grand Place|5000,5000|speculoos.world:8002|128,128,25
+// Grid name and url are mandatory, other values are optional.
+// Lines with "|" but no values are treated as separators
+
+string datasource = "desc://";
+integer AUTO_REFRESH = 3600; // for http datasource, set zero to disable
 
 integer DISPLAY_SIDE = -1; // touch active only on this side.
 //                            If set to -1, all sides are active
@@ -47,7 +58,9 @@ integer DISPLAY_SIDE = -1; // touch active only on this side.
 // End of configurable parameters
 
 // 2016 Additions:
-//  - assume location is ok if left empty
+//  - read datasource url from prim description
+//  - global location check (4096 rule) is disabled by default
+//  - disable location check anyway if no location given
 //  - fix bad detection of empty cells
 //  - allow different texture height and widh (must still be 256,512 or 1024)
 //  - allow disabling touched face check (now disabled by default)
@@ -73,6 +86,14 @@ DEBUG(string message) {if (DEBUG_ON) llOwnerSay(message);}
 string datasorceData;   // The content of the datasource
 
 readFile(string source) {
+    if(source=="desc://") source=llGetObjectDesc();
+    if(source=="") source="card://" + llGetInventoryName(INVENTORY_NOTECARD, 0);
+    if(source=="card://") {
+        llOwnerSay("datasource not set or invalid");
+        return;
+    }
+    //destinations=["Empty destinations"];
+    if(firstRun) llOwnerSay ("Reading data from "+ source);
     list parse = llParseString2List (source, ["/"],[]);
     string s0 = llList2String (parse, 0);
     string s1 = llList2String (parse, 1);
@@ -151,6 +172,7 @@ integer HURL_IDX = 2;   // Index of hypergrid url in list
 integer HGOK_IDX = 3;   // Index of validity flag in list
 integer LAND_IDX = 4;   // Index of landing point in list
 integer N_FIELDS = 5;   // Total number of fields
+integer checkgloc = FALSE;
 
 parseFile (string data) {
     list lines = llParseString2List (data,["\n"],[]);
@@ -163,7 +185,7 @@ parseLine (string line) {
     if (line == "") return; // Ignore empty lines
 
     if (llGetSubString (line,0,1) == "//") {  // Is this a comment?
-        llOwnerSay ("(Comment) "+line);
+        if(firstRun) llOwnerSay ("   " + line);
         return;
     }
 
@@ -178,7 +200,7 @@ parseLine (string line) {
 
     parse = llParseString2List (gloc, [","],[]);
     integer ok = TRUE; // assuming ok if no gloc set
-    if(gloc != "") {
+    if(checkgloc && gloc != "") {
     integer xloc = llList2Integer (parse, 0);  // X grid location
     integer yloc = llList2Integer (parse, 1);  // Y grid location
 
@@ -187,6 +209,8 @@ parseLine (string line) {
     ok =( llAbs(llFloor(hisLoc.x - ourLoc.x)) < 4096 )
         &&  ( llAbs(llFloor(hisLoc.y - ourLoc.y)) < 4096 )
         &&  ( hisLoc != ourLoc);
+    } else {
+        ok = TRUE;
     }
 //    if(!ok) llOwnerSay("gloc: " + gloc);
     // Parse and check landing point
@@ -234,6 +258,7 @@ integer dst_valid (integer n) { // Get validity flag for destination n
 
 string drawList;
 string localGatekeeper;
+string localHGurl;
 
 displayBegin() {
     //if(validCellColor == "transparent") {
@@ -279,8 +304,9 @@ drawCell (integer x, integer y) {
     string cellBbackground;
     if (cellName == "") cellBbackground = emptyCellColor;   else
     if (hurl == "") cellBbackground = emptyCellColor;   else
-    if (cellValid)      cellBbackground = validCellColor;   else
-                        cellBbackground = invalCellColor;
+    if (cellValid && hurl == localHGurl) cellBbackground = localCellColor;
+    else if(cellValid) cellBbackground = validCellColor;
+    else cellBbackground = invalCellColor;
 
     // Fill background
 
@@ -354,13 +380,14 @@ integer action (integer index, key who) {
     // Préparer les globales avant de sauter
 
     telep_key  = who;   // Pass to postaction
-    //telep_url  = hurl;  // Pass to postaction
-    telep_url  = strReplace("http://" + hurl, localGatekeeper + ":", "");
+    telep_url  = hurl;  // Pass to postaction
+    hippo_url = "http://"+URI2hostport(telep_url);   // Pass to http check
+    telep_url  = strReplace(telep_url, "http://", "");
+    telep_url  = strReplace("http://" + telep_url, localGatekeeper + ":", "");
     telep_url  = strReplace(telep_url, "http://", "");
     // filter local gatekeeper to allow local jumps to HG local address
     telep_land = land;  // Pass to postaction
 
-    hippo_url = "http://"+URI2hostport(hurl);   // Pass to http check
     DEBUG ("Region name:   " +name +" "+gloc+" (Check="+(string)ok+")");
     DEBUG ("Landing point: " +(string)land);
     DEBUG ("Hypergrid Url: " +hurl);
@@ -388,11 +415,14 @@ string strReplace(string str, string search, string replace) {
 // State 1 : read the data and draw the board
 ///////////////////////////////////////////////////////////////////
 
+integer firstRun = TRUE;
+
 default {
 
     state_entry() {
+        destinations = [];
         localGatekeeper = osGetGridGatekeeperURI();
-        llOwnerSay ("Reading data from "+datasource);
+        localHGurl = strReplace(localGatekeeper + ":" + llGetRegionName(), "http://", "");
         readFile (datasource);
     }
 
@@ -417,7 +447,7 @@ default {
     }
 
     state_exit() {
-        llOwnerSay ("Done. Initializing board");
+        if(firstRun) llOwnerSay ("Done. Initializing board");
         parseFile(datasorceData);
         drawTable();
     }
@@ -431,7 +461,10 @@ default {
 state ready {
 
     state_entry() {
+        firstRun = FALSE;
         llWhisper (0, "Ready");
+        if(AUTO_REFRESH > 0)
+        llSetTimerEvent ((integer)(AUTO_REFRESH * (0.9 + llFrand(0.2))));
     }
 
     touch_start (integer n) {
@@ -475,6 +508,15 @@ state ready {
         if (what & CHANGED_REGION_RESTART) llResetScript();
     }
 
+    timer() {
+        llSetTimerEvent (0);
+        state default;
+    }
+    on_rez(integer start_param)
+    {
+        llSetTimerEvent (0);
+        state default;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////
