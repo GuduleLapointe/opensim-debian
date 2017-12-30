@@ -1,3 +1,9 @@
 [submodule "lib/bash-helpers"]
 	path = lib/bash-helpers
 	url = https://github.com/magicoli/bash-helpers.git
+[submodule "lib/OMEconomy-Modules"]
+	path = lib/OMEconomy-Modules
+	url = https://github.com/OpenMetaverseEconomy/OMEconomy-Modules.git
+[submodule "lib/flexible_helper_scripts"]
+	path = lib/flexible_helper_scripts
+	url = git@github.com:GuduleLapointe/flexible_helper_scripts.git

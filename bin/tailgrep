@@ -1,0 +1,21 @@
+#!/bin/sh
+
+pattern="$1"
+file="$2"
+ls $file >/dev/null || exit $?
+
+echo "looking for  $pattern in $file"
+
+(tail -f $file & echo $! >&3) 3>pid \
+    | while read line
+do
+    echo "$line" | grep -q "$pattern" && kill $(cat pid)
+    echo "$line"
+done
+
+exit
+
+echo timeout 10 grepintail $@ 
+timeout 10 grepintail $@ \
+    && echo got it \
+        || echo "didn't make it"

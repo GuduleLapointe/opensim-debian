@@ -2,6 +2,7 @@
 
 [ ! "$OPENSIM" ] && OPENSIM=opensim
 [ ! "$PGM" ] && PGM=$(basename "$0")
+[ ! "$TMP" ] && TMP=/tmp/$PGM.$$
 
 BIN=$(dirname  $(readlink -f "$0"))
 OSDDIR=$(dirname "$BIN")
@@ -16,10 +17,26 @@ do
 done
 
 [ ! "$LIB" ] && LIB=$OSDDIR/lib
-[ ! "$OSBIN" ] && OSBIN="$LIB/$OPENSIM/bin"
+[ ! "$OSBIN" ] && OSBIN="$OPENSIM/bin"
 [ ! "$VAR" ] && VAR=$OSDDIR/var
+[ ! "$LOGS" ] && LOGS=$VAR/logs
+[ ! "$CACHE" ] && CACHE=$VAR/cache
 [ ! "$SRC" ] && SRC=$OSDDIR/src
-[ ! "$CACHE" ] && CACHE=$OSDDIR/cache
-[ ! "$LOGS" ] && LOGS=$OSDDIR/logs
 
-[ -f "$OSBIN/OpenSim.exe" ] || echo "$PGM: Missing $OSBIN/OpenSim.exe, run install.sh"
+( ls $OSBIN/OpenSim.exe  \
+  || ls */bin/OpenSim.exe \
+  || ls lib/*/bin/OpenSim.exe
+) >$TMP.osexe 2>/dev/null \
+&& OSBIN=$(head -1 $TMP.osexe | xargs dirname) \
+&& echo "OSBIN now $OSBIN" \
+|| echo "$PGM: Missing $OSBIN/OpenSim.exe, run install.sh"
+
+osConsole() {
+  [ ! "$2" ] && return
+  osInstance=$1
+  shift
+  osCommand="$@"
+  lr=$(printf "\n\b")
+  pre=$(printf "\n\b")
+  screen -S $osInstance -X stuff "$(echo "$pre$osCommand$lr")"
+}

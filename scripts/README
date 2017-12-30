@@ -1,0 +1,28 @@
+These are some scripts we created or modified, to fix bug or to add useful functionalties.
+
+Archive Box:
+A simple archive script. Drop it in a prim, then drop objects to archive. The prim will display (on its faces) the name of the first item dropped. And the box becomes an object giver: if you click, it gives you it's content, except the archive script, in a properly named folder.
+
+Linkset resizer
+A bug fix on existing Linkset resize (aka resize_script) found in lot of clothing attachment, it should avoid the object being broken if the resize is made while the object is worn.
+
+HYPevents
+Some additions to HYPevents inworld script, to allow a better presentation (different styles for hour and event title, column alignment...). These changes were included by the author in the official release so you should rather check HYPEvents online (https://hypevents.net/) or in-world (hypergrid.org:8002:Linkwater_South) for the latest version.
+
+Gudule's HG Board
+This is a fusion between our original "Gudule's gate" and Jeff Kelley's HG Board, allowing better presentation, transparent backgrounds and a few other modifications.
+
+Gudule's gate
+Legacy teleport gate script, used in parallel with fetchTexture scripts to display the gate name on the prim instead of ugly hovering text. Deprecated by HG Board.
+
+fetchTextureFromTextGen
+Original texture maker, deprecated by fetchTextureWithOsDraw
+
+fetchTextureWithOsDraw
+Texture maker, takes a title (from object description or send by other scripts) and applies it as a texture, using an external text generation library (like its predecessor) or using osDraw functions.
+
+OpenSimulator version display
+Just display OS version. The script existed already but I wanted to get rid of extra space between version number and platform.
+
+comboReadPrefs
+A helper script to read a preference notecard and send values to other scripts via linked message.
