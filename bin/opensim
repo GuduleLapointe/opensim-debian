@@ -387,25 +387,25 @@ log "ETCPATH: $ETCPATH"
 
 case "$1" in
   "start")
-  action=$1
-  shift
-  ;;
+    action=$1
+    shift
+    ;;
   "stop")
-  action=$1
-  shift
-  [ "$1" = "now" ] && shutdownDelay=0 && shift
-  stopSim "$@"
-  ;;
+    action=$1
+    shift
+    [ "$1" = "now" ] && shutdownDelay=0 && shift
+    stopSim "$@"
+    ;;
   "restart")
-  action=$1
-  shift
-  [ "$1" = "now" ] && shutdownDelay=0 && shift
-  restartSim "$@"
-  ;;
+    action=$1
+    shift
+    [ "$1" = "now" ] && shutdownDelay=0 && shift
+    restartSim "$@"
+    ;;
   "status")
-	action=$1
-  shift
-	;;
+    action=$1
+    shift
+    ;;
 esac
 
 case $action in
