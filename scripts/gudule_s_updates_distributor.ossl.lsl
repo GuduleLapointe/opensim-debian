@@ -1,5 +1,5 @@
 // Products and Updates Vendor
-// Version 0.1.4
+// Version 1.0.0
 // (c) Gudule Lapointe 2016
 
 // DONE:
