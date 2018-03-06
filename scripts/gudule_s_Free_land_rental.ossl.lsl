@@ -1,5 +1,5 @@
 // Gudule's free land rental
-// Version: 1.2.2
+// Version: 1.3.0
 // Author: Gudule Lapointe gudule@speculoos.world
 // Licence:  GNU Affero General Public License
 
@@ -584,7 +584,8 @@ state unleased
             osSetParcelDetails(parcelPos, rules);
             llSetText("",<1,0,0>, 1.0);
             llInstantMessage(LEASERID,"Your parcel is ready.\n"
-            + get_rentalbox_url());
+            + get_rentalbox_url() + "\n" + "Please join the group to receive status updates.");
+            osInviteToGroup(LEASERID);
             state leased;
         }
     }
