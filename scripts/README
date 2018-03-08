@@ -1,4 +1,8 @@
-These are some scripts we created or modified, to fix bug or to add useful functionalties.
+These are some scripts, some we created, some we modified to fix bug or to add useful functionalties.
+
+We use .lsl for all of them because our script editor likes that.
+The scripts ending with .ossl.lsl extension use OpenSimulator specific futions.
+The ones with only .lsl should also work on Second Life.
 
 Archive Box:
 A simple archive script. Drop it in a prim, then drop objects to archive. The prim will display (on its faces) the name of the first item dropped. And the box becomes an object giver: if you click, it gives you it's content, except the archive script, in a properly named folder.
