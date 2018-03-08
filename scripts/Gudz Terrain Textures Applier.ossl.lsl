@@ -6,7 +6,8 @@
 // This script is licensed under Creative Commons BY-NC-SA
 // See <http://creativecommons.org/licenses/by-nc-sa/3.0/>
 // You may not use this work for commercial purposes.
-// You must attribute the work to the authors, Jeff Kelley and Gudule Lapointe
+// You must attribute the work to the authors,
+//  Olivier van Helden and Gudule Lapointe.
 // You may distribute, alter, transform, or build upon this work
 // as long as you do not delete the name of the original authors.
 
