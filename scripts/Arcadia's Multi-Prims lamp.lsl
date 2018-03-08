@@ -1,5 +1,5 @@
 // Arcadia's Multi-Prims lamp
-// Version 1.0
+// Version 1.1
 
 // (c) Arcadia Aardvark
 // Slight additions (c) Gudule Lapointe 2018
@@ -8,7 +8,7 @@
 //
 //  - Handle multiple lamps in the same object (liked prims whose name is "lamp");
 //  - Set the lamp prims color to current light color;
-//  - Use last color after reset (loaded from first lamp prim color)
+//  - Keep light color, intensity, radius and falloff after reset;
 //  - More color choices (basic rainbow colors);
 //  - Colors values in a list instead of hardcoded;
 //  - Save automatic status via object description.
@@ -49,6 +49,7 @@ vector colour;
 float intensity;
 float radius;
 float falloff;
+float glow;
 integer automatic;
 integer random;
 vector sun;
@@ -87,11 +88,11 @@ light_on (vector col, float int, float rad, float fall)
 }
 light_on (integer link, vector col, float int, float rad, float fall)
 {
+    glow = intensity * 0.4;
     llSetLinkPrimitiveParams
     (link, [
     PRIM_COLOR, side, col, 1.0,
-    PRIM_GLOW, side, 0.4,
-    PRIM_FULLBRIGHT, side, TRUE,
+    PRIM_GLOW, side, glow,
     PRIM_FULLBRIGHT, side, TRUE,
     PRIM_POINT_LIGHT, TRUE, col, int, rad, fall
     ]);
@@ -112,7 +113,6 @@ light_off (integer link)
     llSetLinkPrimitiveParams
     (link, [
     PRIM_GLOW, side, 0.0,
-    PRIM_FULLBRIGHT, side, FALSE,
     PRIM_FULLBRIGHT, side, FALSE,
     PRIM_POINT_LIGHT, FALSE, <0.0, 0.0, 0.0>, 0.0, 0.0, 0.0
     ]);
@@ -149,10 +149,13 @@ default
     {
         lookForLamps();
         fono = (integer)("0x" + llGetSubString((string)llGetKey(),-1,-8));
-        colour = llList2Vector(llGetLinkPrimitiveParams(llList2Integer(lamps, 0), [PRIM_COLOR, side]), 0);
-        intensity = 1.0;
-        radius = 3.0;
-        falloff = 1.0;
+        list savedParams = llGetLinkPrimitiveParams(llList2Integer(lamps, 0), [PRIM_POINT_LIGHT]);
+        //colour = llList2Vector(llGetLinkPrimitiveParams(llList2Integer(lamps, 0), [PRIM_COLOR, side]), 0);
+        colour = llList2Vector(savedParams, 1);
+        intensity = llList2Float(savedParams, 2);
+        radius = llList2Float(savedParams, 3);
+        falloff = llList2Float(savedParams, 4);
+        glow = intensity * 0.4;
         if (llGetObjectDesc() == "automatic") {
             automatic = TRUE;
             light_auto();
@@ -230,6 +233,7 @@ default
                 if(llGetObjectDesc() == "") {
                     llSetObjectDesc("automatic");
                 } else {
+                    if(id == llGetOwner())
                     llInstantMessage(id, "The object description is not empty. Empty it if you want to save the automatic status");
                 }
                 opciones = 3;
@@ -245,7 +249,6 @@ default
         {
             if (xxx == "Random")
             {
-                llInstantMessage(id, xxx + " not yet implemented");
                 random = TRUE;
                 light_on(colour, intensity, radius, falloff);
                 colorDialog(id);
