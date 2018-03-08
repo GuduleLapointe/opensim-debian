@@ -1,5 +1,5 @@
 // Arcadia's Multi-Prims lamp
-// Version 1.1
+// Version 1.2
 
 // (c) Arcadia Aardvark
 // Slight additions (c) Gudule Lapointe 2018
@@ -83,10 +83,10 @@ light_on (vector col, float int, float rad, float fall)
         if(random == TRUE) {
             trueColor = llList2Vector(Colour, (integer)llFrand(colorsCount) * 2 + 1);
         }
-        light_on (lamp, trueColor, int, rad, fall);
+        light_on_link (lamp, trueColor, int, rad, fall);
     } while(++l < length);
 }
-light_on (integer link, vector col, float int, float rad, float fall)
+light_on_link (integer link, vector col, float int, float rad, float fall)
 {
     glow = intensity * 0.4;
     llSetLinkPrimitiveParams
@@ -104,11 +104,11 @@ light_off ()
     integer length = llGetListLength(lamps);
     do {
         integer lamp = llList2Integer(lamps, l);
-        light_off (llList2Integer(lamps, l));
+        light_off_link (llList2Integer(lamps, l));
     }
     while(++l < length);
 }
-light_off (integer link)
+light_off_link (integer link)
 {
     llSetLinkPrimitiveParams
     (link, [
@@ -272,7 +272,7 @@ default
             else
             {
                 random = FALSE;
-                integer colIdx = llListFindList(Colour, xxx);
+                integer colIdx = llListFindList(Colour, [xxx]);
                 if(colIdx != -1)
                 {
                     colour = llList2Vector(Colour, colIdx + 1);
