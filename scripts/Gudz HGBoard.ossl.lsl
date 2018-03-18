@@ -1,5 +1,5 @@
 // Gudule's HGBoard (based on Jeff Kelley's HGBoard)
-// Version 2018 0.0.19
+// Version 2018.7
 // (c) The owner of Avatar Jeff Kelley, 2010
 // (c) Gudule Lapointe 2016
 
@@ -13,7 +13,7 @@
 // More info after the configurable parameters
 
 integer TEXTURE_HEIGHT = 512; // a square of 2: 256, 512, 1024...
-integer TEXTURE_WIDTH = 512; // a square of 2: 256, 512, 1024...
+integer TEXTURE_WIDTH = 256; // a square of 2: 256, 512, 1024...
 string FONT_NAME = "Impact"; // Depends on installed system fonts
 string FONT_COLOR = "Black";
 integer FONT_SIZE = 18; // Depends on TEXTURE_HEIGHT
