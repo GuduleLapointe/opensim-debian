@@ -1,5 +1,5 @@
 // Gudule's HGBoard (based on Jeff Kelley's HGBoard)
-// Version 2018.7
+// Version 2018.8
 // (c) The owner of Avatar Jeff Kelley, 2010
 // (c) Gudule Lapointe 2016
 
@@ -18,7 +18,7 @@ string FONT_NAME = "Impact"; // Depends on installed system fonts
 string FONT_COLOR = "Black";
 integer FONT_SIZE = 18; // Depends on TEXTURE_HEIGHT
 integer COLUMNS = 1;
-integer ROWS = 10;
+integer ROWS = 12;
 
 integer PADDING_LEFT = 14;
 integer PADDING_TOP = 8;
@@ -372,11 +372,18 @@ integer action (integer index, key who) {
 
     if (name == "") return FALSE; // Empty cell
     if (hurl == "") return FALSE; // Empty cell
-    if (!ok) llWhisper (0, "This region is too far ("+gloc+")");
-    if (!ok) return FALSE; // Incompatible region
-
-    llWhisper (0, "You have selected "+name+", location "+gloc);
-
+    if (!ok)
+    {
+        llInstantMessage(who, "This region is too far ("+gloc+")");
+        return FALSE; // Incompatible region
+    }
+    if(gloc != "")
+    {
+        llInstantMessage(who, "You have selected "+name+", location "+gloc);
+    }
+    else {
+        llInstantMessage(who, "You have selected "+name);
+    }
     // Préparer les globales avant de sauter
 
     telep_key  = who;   // Pass to postaction
@@ -399,11 +406,11 @@ integer action (integer index, key who) {
 
 postaction (integer success) {
     if (success) {
-        llWhisper (0, "Fasten your seat belt, we move!!!");
+        llInstantMessage(telep_key, "Fasten your seat belt, we move!!!");
         llPlaySound (TELPT_SOUND, 1.0); llSleep (JUMP_DELAY);
         osTeleportAgent(telep_key, telep_url, telep_land, ZERO_VECTOR);
     } else {
-        llWhisper (0, "Sorry, host is not available");
+        llInstantMessage(telep_key, "Sorry, destination grid looks unavailable");
     }
 }
 
@@ -463,7 +470,7 @@ state ready {
 
     state_entry() {
         firstRun = FALSE;
-        llWhisper (0, "Ready");
+        //llWhisper (0, "Ready");
         if(AUTO_REFRESH > 0)
         llSetTimerEvent ((integer)(AUTO_REFRESH * (0.9 + llFrand(0.2))));
     }
@@ -527,17 +534,20 @@ state ready {
 state hippos {
 
     state_entry() {
+        DEBUG("checking " + hippo_url);
         sendHTTPRequest (hippo_url);
         llSetTimerEvent (60);
     }
 
     http_response(key id,integer status, list meta, string body) {
+        DEBUG("got answer " + status);
         if (id == httpQueryId)
         postaction (status == 200);
         state ready;
     }
 
     timer() {
+        DEBUG("Destination grid is offline");
         llSetTimerEvent (0);
         postaction (FALSE);
         state ready;
