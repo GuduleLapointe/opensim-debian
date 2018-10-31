@@ -16,9 +16,6 @@ _opensim()
         ;;
       esac
       ;;
-#    3)
-#    COMPREPLY=( $(cd ~/castings/${COMP_WORDS[1]}/${COMP_WORDS[2]} && compgen -d -- "$cur") )
-#    ;;
   esac
 }
 complete -F _opensim opensim
