@@ -33,12 +33,12 @@ So, we reorganised the files and folders, matching the general Linux standards.
   - Git clone and other works in progress should go in dev/
 
 It was important to achieve this without altering the main OpenSim code.
-So we created some scripts which: 
+So we created some scripts which:
   - read the preferences in etc/
   - looks for instances to start in etc/simulator-enabled
   - tells OpenSim where to save data, cache and logs
 
-We have developed and used this setup for 5 years in Speculoos Grid 
+We have developed and used this setup for several years in Speculoos Grid
 and wanted to share. Although this was working for us, we don't push the whole
 thing as is, as we want to make sure the methods are as globals as they can.
 
@@ -63,8 +63,15 @@ Configuration should be working as is, but you will probably want to adjust
 
 Legacy folders, deprecated but still recognised::
   - /etc/opensim/robust-available/Robust.ini
-  - /etc/opensim/simulator-available/*.ini 
+  - /etc/opensim/simulator-available/*.ini
 
 ```shell
 opensim start
+```
+
+Do add bash completion:
+```shell
+sudo apt update
+sudo apt install bash-completion
+sudo ln -s /opt/opensim-debian/lib/bash_completion.d/opensim /etc/bash_completion.d/
 ```
