@@ -1,4 +1,4 @@
-# bash completion for casting tools
+# bash completion for opensim script
 
 _opensim()
 {
