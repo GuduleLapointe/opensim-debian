@@ -9,7 +9,7 @@ LogDir=/opt/opensim/var/logs
 DELAY=60
 shutdownDelay=120
 shutdownWarnings=3
-DEBUG=yes
+DEBUG=no
 
 # End of user configurable data
 
@@ -21,12 +21,12 @@ LIB=$BASEDIR/lib
 trap 'rm -f $TMP*' EXIT
 
 HELP="
-      -s start
+  $PGM <start|stop|restart> [instance1] [instance2] [...]
+  $PGM status
+
       -h display this help
       -v verbose mode
-      -q quiet mode
-
-sorry, helpman is in a minimalist mood"
+      -q quiet mode"
 
 
 OPTS="shvq"
@@ -223,7 +223,7 @@ stopSim() {
       do
         remaining=$(($shutdownDelay - $warn * $warnDelay))
         log " $remaining seconds left"
-        osConsole $simName "alert Attention: this simulator will be restarted in $remaining seconds. Please teleport to another region to avoid being disconnected."
+        osConsole $simName "alert Attention: this simulator will be stopped in $remaining seconds. Please teleport to another region to avoid being disconnected."
         sleep $warnDelay
         warn=$(($warn + 1))
       done
@@ -386,6 +386,10 @@ ETCPATH=$LOOKUP
 log "ETCPATH: $ETCPATH"
 
 case "$1" in
+  "help")
+    help
+    end ""
+    ;;
   "start")
     action=$1
     shift
