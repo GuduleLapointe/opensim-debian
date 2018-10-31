@@ -69,7 +69,7 @@ Legacy folders, deprecated but still recognised::
 opensim start
 ```
 
-Do add bash completion:
+To enable bash completion:
 ```shell
 sudo apt update
 sudo apt install bash-completion
