@@ -9,7 +9,7 @@ _opensim()
     1)
     COMPREPLY=( $(compgen -W "start stop restart status" -- "$cur") )
       ;;
-    2)
+    *)
     COMPREPLY=( $(compgen -W "$(for folder in /etc/opensim/*.d; do cd $folder/; ls *.ini | cut -d . -f 1; done 2>/dev/null)" -- "$cur" -W) )
       ;;
 #    3)
