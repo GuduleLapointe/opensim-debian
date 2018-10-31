@@ -1,0 +1,20 @@
+# bash completion for casting tools
+
+_opensim()
+{
+  local cur
+  COMPREPLY=()
+  cur=${COMP_WORDS[COMP_CWORD]}
+  case $COMP_CWORD in
+    1)
+    COMPREPLY=( $(compgen -W "start stop restart status" -- "$cur") )
+      ;;
+    2)
+    COMPREPLY=( $(compgen -W "$(for folder in /etc/opensim/*.d; do cd $folder/; ls *.ini | cut -d . -f 1; done 2>/dev/null)" -- "$cur" -W) )
+      ;;
+#    3)
+#    COMPREPLY=( $(cd ~/castings/${COMP_WORDS[1]}/${COMP_WORDS[2]} && compgen -d -- "$cur") )
+#    ;;
+  esac
+}
+complete -F _opensim opensim
