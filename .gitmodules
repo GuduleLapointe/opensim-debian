@@ -7,3 +7,6 @@
 [submodule "lib/flexible_helper_scripts"]
 	path = lib/flexible_helper_scripts
 	url = git@github.com:GuduleLapointe/flexible_helper_scripts.git
+[submodule "scripts/Gudz Teleport Board 2"]
+	path = scripts/Gudz Teleport Board 2
+	url = https://github.com/GuduleLapointe/Gudz-Teleport-Board-2.git
