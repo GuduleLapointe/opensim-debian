@@ -1,12 +1,12 @@
 [submodule "lib/bash-helpers"]
 	path = lib/bash-helpers
-	url = https://github.com/magicoli/bash-helpers.git
+	url = https://git.magiiic.com/magicoli/bash-helpers.git
 [submodule "lib/OMEconomy-Modules"]
 	path = lib/OMEconomy-Modules
 	url = https://github.com/OpenMetaverseEconomy/OMEconomy-Modules.git
 [submodule "lib/flexible_helper_scripts"]
 	path = lib/flexible_helper_scripts
-	url = git@github.com:GuduleLapointe/flexible_helper_scripts.git
+	url = https://git.magiiic.com/opensimulator/flexible_helper_scripts.git
 [submodule "scripts/Gudz Teleport Board 2"]
 	path = scripts/Gudz Teleport Board 2
-	url = https://github.com/GuduleLapointe/Gudz-Teleport-Board-2.git
+	url = https://git.magiiic.com/opensimulator/Gudz-Teleport-Board-2.git
