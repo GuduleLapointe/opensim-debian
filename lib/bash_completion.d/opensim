@@ -12,7 +12,7 @@ _opensim()
     *)
       case ${COMP_WORDS[1]} in
         start|stop|restart)
-        COMPREPLY=( $(compgen -W "$(for folder in /etc/opensim/*.d; do cd $folder/; ls *.ini | cut -d . -f 1; done 2>/dev/null | tr [:upper:] [:lower:])" -- "$cur" -W) )
+        COMPREPLY=( $(compgen -W "$(for folder in /etc/opensim/*.d /opt/opensim/etc/*.d; do cd $folder/; ls *.ini | cut -d . -f 1; done 2>/dev/null | tr [:upper:] [:lower:] | sort -u)" -- "$cur" -W) )
         ;;
       esac
       ;;
