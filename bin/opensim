@@ -142,7 +142,7 @@ startSim() {
 	else
 	    [ ! "$ConsolePrompt" ] && ConsolePrompt="$instance (\R) "
         fi
-	#LogConfig=$(echo "$inifile" | sed -e "s/\.ini$/.LogConfig/" -e "s%/[a-z]*-enabled/%/%")
+	LogConfig=$(echo "$inifile" | sed -e "s/\.ini$/.LogConfig/" -e "s%/[a-z]*-enabled/%/%")
         #		LogConfig=${inifile/.ini/.LogConfig}
 	echo "LogConfig $LogConfig"
 	if [ ! -f "$LogConfig" ]
@@ -150,7 +150,7 @@ startSim() {
             ExecName=$(basename $Executable .exe)
             sed -e "s|[a-zA-Z0-9\./_-]*/*$ExecName.log|$LogDir/$instance.log|" \
                 -e "s|[a-zA-Z0-9\./_-]*/*${ExecName}Stats.log|$LogDir/${instance}.Stats.log|" \
-                $BinDir/$Executable.config > $LogConfig
+                $BinDir/$(basename $Executable).config > $LogConfig.tmp && mv $LogConfig.tmp $LogConfig
 	    cd /opt/opensim/var/data/config
 	    ln -s $LogConfig 2>/dev/null
             log created LogConfig file $LogConfig from core model $BinDir/$Executable.config
@@ -160,9 +160,9 @@ startSim() {
 	then
 	    cmd="$cmd -logconfig=$LogConfig"
 	fi
-	echo "$cmd"
 
 	touch $TMP.wait
+  log "Working directory: $PWD"
 	log "launching $instance "
 	log "$cmd"
 	eval "screen -S $instance -d -m $cmd"
