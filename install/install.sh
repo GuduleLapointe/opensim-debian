@@ -4,7 +4,7 @@
 # Released under GNU Affero GPL v3.0 license
 #    http://www.gnu.org/licenses/agpl-3.0.html
 
-OSDOWNLOAD=http://opensimulator.org/dist/opensim-0.8.1.2.tar.gz
+OSDOWNLOAD=http://opensimulator.org/dist/opensim-0.9.0.1.tar.gz
 DEBUG=yes
 #AUTOMATIC=yes
 
