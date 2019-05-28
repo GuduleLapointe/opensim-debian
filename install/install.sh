@@ -4,29 +4,33 @@
 # Released under GNU Affero GPL v3.0 license
 #    http://www.gnu.org/licenses/agpl-3.0.html
 
-OSDOWNLOAD=http://opensimulator.org/dist/opensim-0.9.0.1.tar.gz
+OSDOWNLOADPAGE=http://opensimulator.org/dist
 DEBUG=yes
 #AUTOMATIC=yes
 
 # End of user configurable data
 
-BASEDIR=$(dirname $(dirname $(readlink -f "$0")))
-LIB=$BASEDIR/lib
-. $LIB/os-helpers || exit 1
-. $LIB/bash-helpers/ini_parser || end 2 "Missing ini_parser librarie"
+BASEDIR=$(dirname $(dirname $(realpath "$0")))
+. $BASEDIR/lib/os-helpers || exit 1
+. $CONTRIB/bash-helpers/ini_parser || end 2 "Missing ini_parser librarie"
 
 trap 'rm -f $TMP*' EXIT
 
+log "Initialize submodules"
+git submodule init
+git submodule update
+# git submodule update --remote
+
 if [ ! -d "$ETC" ]
 then
-    log No preferences folder, trying to create one
-    for etc in $OSDDIR/etc /etc/$OPENSIM ~/etc/$OPENSIM
-    do
-	mkdir "$etc" 2>/dev/null && ETC=$etc && break
-    done
-    [ ! "$ETC" ] && end 1 "Could not create preferences folder"
+  log No preferences folder, trying to create one
+  for etc in $BASEDIR/etc /etc/$OPENSIM ~/etc/$OPENSIM
+  do
+    mkdir "$etc" 2>/dev/null && ETC=$etc && break
+  done
+  [ ! "$ETC" ] && end 1 "Could not create preferences folder"
 fi
-log "preferences folder is $ETC"
+log "Preferences folder is $ETC"
 
 log "Looking for OpenSimulator binaries"
 if [ ! -f "$OSBIN/OpenSim.exe" ]
@@ -35,6 +39,11 @@ then
   if yesno "Download latest official release?"
   then
     log "Downloading latest official release"
+    OSDOWNLOAD=$( curl -s $OSDOWNLOADPAGE/ | tr " " "\n" \
+    | grep 'href="opensim.*tar.gz' | grep -v source | cut -d '"' -f 2  | tail -1)
+    [ "$OSDOWNLOAD" != "" ] && OSDOWNLOAD=$OSDOWNLOADPAGE/$OSDOWNLOAD \
+    || end 1 could not find a release to download
+
     mkdir -p "$SRC" || end $? "Could not create $SRC"
     tar=$(basename "$OSDOWNLOAD")
     if [ ! -f "$SRC/$tar" ]
@@ -45,10 +54,16 @@ then
       || end $? Error $? while downloading OpenSim
     fi
     log "unpacking OpenSimulator"
-    mkdir -p "$LIB/$OPENSIM" \
-    && log extracting OpenSimulator archive to "$LIB/$OPENSIM" \
-    && tar xvfz "$SRC/$tar" -C "$LIB/$OPENSIM" --strip-components 1 \
+    cd "$CORE" \
+    && log extracting OpenSimulator archive to "$CORE/$OPENSIM" \
+    && tar xvfz "$SRC/$tar" \
     || end $? Error $? while unpacking OpenSim
+    OSDIR=$CORE/$(basename $OSDOWNLOAD .tar.gz)
+    [ -d "$OSDIR" ] || end 1 "unexpectedly didn't find $OSDIR"
+    OSBINDIR=$OSDIR/bin
+    [ -d "$OSBINDIR" ] || end 1 "unexpectedly didn't find $OSBINDIR"
+    OSBIN=$OSBINDIR/OpenSim.exe
+    [ -f "$OSBIN" ] || end 1 "unexpectedly didn't find $OSBIN"
   else
     if yesno "Download development version?"
     then
@@ -58,11 +73,6 @@ then
     fi
   fi
 fi
-
-## No more submodules for now, we keep this during development in case
-# log "checking submodules"
-# git submodule init
-# git submodule update
 
 #cd "$OSBIN" || end 2 could not cd to $OSBIN
 #(
@@ -79,18 +89,24 @@ fi
 #		|| end 4 could not copy $file
 #done
 
+CACHE=$VAR/cache
+DATA=$VAR/data
+
 log "Checking standard directories presence"
-for dir in $LIB $SRC $CACHE $LOGS $ETC/opensim.d $ETC/robust.d \
-  $VAR $VAR/cache $VAR/cache/bakes $VAR/cache/datasnapshot \
-  $VAR/cache/fsassets-tmp $VAR/cache/maptiles $VAR/cache/Registry \
-  $VAR/data $VAR/data/config $VAR/data/fsassets-data \
-  $VAR/data/regions $VAR/logs $VAR/tmp
+for dir in $LIB $SRC $VAR $CACHE $DATA $ETC \
+  $ETC/opensim.d $ETC/robust.d \
+  $DATA/config $DATA/fsassets-data \
+  $CACHE/bakes $CACHE/datasnapshot $CACHE/fsassets-tmp $CACHE/maptiles $CACHE/Registry \
+  $DATA/regions \
+  $VAR/logs $VAR/tmp
 do
   [ -d "$dir" ] && continue
   mkdir -p "$dir" \
     && log "Created $dir" \
     || end $? "Could not create $dir"
 done
+
+log "end for now we'll see the configuration steps later"
 
 if yesno "Create Robust config?"
 then

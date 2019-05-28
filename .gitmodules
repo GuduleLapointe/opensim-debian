@@ -1,9 +1,23 @@
-[submodule "lib/bash-helpers"]
-	path = lib/bash-helpers
+[submodule "contrib/bash-helpers"]
+	path = contrib/bash-helpers
 	url = https://git.magiiic.com/magicoli/bash-helpers.git
-[submodule "lib/OMEconomy-Modules"]
-	path = lib/OMEconomy-Modules
+[submodule "contrib/currency/OMEconomy-Modules"]
+	path = contrib/currency/OMEconomy-Modules
 	url = https://github.com/OpenMetaverseEconomy/OMEconomy-Modules.git
-[submodule "lib/flexible_helper_scripts"]
-	path = lib/flexible_helper_scripts
+[submodule "contrib/web/flexible_helper_scripts"]
+	path = contrib/web/flexible_helper_scripts
 	url = https://git.magiiic.com/opensimulator/flexible_helper_scripts.git
+[submodule "contrib/web/offline-mail-forwarding"]
+	path = contrib/web/offline-mail-forwarding
+	url = https://git.magiiic.com/opensimulator/offline-mail-forwarding.git
+[submodule "contrib/drupal/d4os"]
+	path = contrib/drupal/d4os
+	url = https://git.drupalcode.org/project/d4os.git
+	branch = 7.x-1.x
+[submodule "contrib/drupal/opensim-drupal"]
+	path = contrib/drupal/opensim-drupal
+	url = https://git.magiiic.com/opensimulator/opensim-drupal.git
+	branch = 7.x-2.x
+[submodule "contrib/wordpress/w4os"]
+	path = contrib/wordpress/w4os
+	url = https://git.magiiic.com/opensimulator/w4os.git

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 min=9010
 max=9999
@@ -9,13 +9,15 @@ TMP=/tmp/$PGM.$$
 
 trap 'rm -f $TMP $TMP.*' EXIT
 
+BASEDIR=$(dirname $(dirname $(realpath "$0")))
+. $BASEDIR/lib/os-helpers || exit 1
+[ "$OSBIN" ] || exit 1
+[ "$ETC" ] || exit 1
+
 [ $1 ] && min=$1
 [ $2 ] && find=$2
 
-cd /etc/opensim || /opt/opensim/etc || exit 1
-
-# use blank to ignore commented lines, i don't
-#egrep "^[[:blank:]]*(InternalPort|PublicPort|PrivatePort)[[:blank:]]*=" */*.ini grid/*/Regions/*.ini
+cd "$ETC" || exit 1
 
 (
    find . /opt/opensim/var/data/regions /opt/opensim/var/*/data/regions -name "*.ini" 2>/dev/null \

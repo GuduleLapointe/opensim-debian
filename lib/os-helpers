@@ -1,35 +1,46 @@
-#!/bin/sh
+#!/bin/bash
 
 [ ! "$OPENSIM" ] && OPENSIM=opensim
 [ ! "$PGM" ] && PGM=$(basename "$0")
 [ ! "$TMP" ] && TMP=/tmp/$PGM.$$
 
-BIN=$(dirname  $(readlink -f "$0"))
-OSDDIR=$(dirname "$BIN")
-[ ! "$LIB" ] && LIB=$OSDDIR/lib
+if ! which realpath >/dev/null; then
+  realpath() {
+    readlink -f "$@" 2>/dev/null && return
+    cd "$@" 2>/dev/null && pwd -P && return
+  }
+fi
+echo $0
 
-. $LIB/bash-helpers/helpers || echo "$PGM: Missing helpers library, run install.sh"
+# echo ":$PATH:" | grep -q ":$BINDIR:" || export PATH=$PATH:$BINDIR
+# [ ! "$LIB" ] && LIB=$BASEDIR/lib
+BINDIR=$(dirname $(realpath "$0"))
+BASEDIR=$(dirname "$BINDIR")
+[ ! "$CONTRIB" ] && CONTRIB=$BASEDIR/contrib
+echo BASEDIR $BASEDIR
+. $CONTRIB/bash-helpers/helpers || echo "$PGM: Missing helpers library, run install.sh"
 
-for etc in $OSDDIR/etc /etc/$OPENSIM ~/etc/$OPENSIM
+for etc in $BASEDIR/etc /etc/opensim ~/etc/opensim
 do
     [ -d "$etc" ] && ETC=$etc
     [ -f "$etc/opensim.conf" ] && . $ETC/opensim.conf 2>/dev/null
 done
 
-[ ! "$LIB" ] && LIB=$OSDDIR/lib
-[ ! "$OSBIN" ] && OSBIN="$OPENSIM/bin"
-[ ! "$VAR" ] && VAR=$OSDDIR/var
+[ ! "$LIB" ] && LIB=$BASEDIR/lib
+[ ! "$VAR" ] && VAR=$BASEDIR/var
 [ ! "$LOGS" ] && LOGS=$VAR/logs
 [ ! "$CACHE" ] && CACHE=$VAR/cache
-[ ! "$SRC" ] && SRC=$OSDDIR/src
+[ ! "$SRC" ] && SRC=$BASEDIR/src
+[ ! "$CORE" ] && CORE=$BASEDIR/core
+# [ ! "$OSBINDIR" ] && OSBINDIR="$CORE/opensim/bin"
 
-( ls $OSBIN/OpenSim.exe  \
-  || ls */bin/OpenSim.exe \
-  || ls lib/*/bin/OpenSim.exe
-) >$TMP.osexe 2>/dev/null \
-&& OSBIN=$(head -1 $TMP.osexe | xargs dirname) \
-&& echo "OSBIN now $OSBIN" \
-|| echo "$PGM: Missing $OSBIN/OpenSim.exe, run install.sh"
+OSBIN=$(
+ls $OSBINDIR/bin/OpenSim.exe 2>/dev/null \
+|| ls $CORE/*/bin/OpenSim.exe 2>/dev/null | head -1
+)
+[ "$OSBIN" ] \
+&& log "$OSBIN found" && OSDIR=$(dirname $OSBIN) \
+|| log 1 "OpenSim.exe not found, run install.sh"
 
 osConsole() {
   [ ! "$2" ] && return

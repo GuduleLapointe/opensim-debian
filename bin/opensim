@@ -13,15 +13,15 @@ DEBUG=no
 
 # End of user configurable data
 
-BASEDIR=$(dirname $(dirname $(readlink -f "$0")))
-LIB=$BASEDIR/lib
-. $LIB/os-helpers || exit 1
-. $LIB/bash-helpers/ini_parser 2>/dev/null || end 1 "Missing ini_parser library"
+BASEDIR=$(dirname $(dirname $(realpath "$0")))
+. $BASEDIR/lib/os-helpers || exit 1
+[ "$OSBIN" ] || exit 1
+[ "$ETC" ] || exit 1
 
 trap 'rm -f $TMP*' EXIT
 
 HELP="
-  $PGM <start|stop|restart> [instance1] [instance2] [...]
+  $PGM <start|stop [now]|restart [now]> [instance1] [instance2] [...]
   $PGM status
 
       -h display this help
@@ -76,11 +76,6 @@ shift `expr $OPTIND - 1`
 #[ -n "$ini_parser" ] || end 1 no ini parser
 #log "ini_parser: $ini_parser"
 . "$(which ini_parser)" || end 2 could not launch ini parser
-
-realpath() {
-readlink -f "$@" 2>/dev/null && return
-cd "$@" 2>/dev/null && pwd -P && return
-}
 
 startSim() {
     unset IFS
