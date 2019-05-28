@@ -7,6 +7,3 @@
 [submodule "lib/flexible_helper_scripts"]
 	path = lib/flexible_helper_scripts
 	url = https://git.magiiic.com/opensimulator/flexible_helper_scripts.git
-[submodule "scripts/Gudz Teleport Board 2"]
-	path = scripts/Gudz Teleport Board 2
-	url = https://git.magiiic.com/opensimulator/Gudz-Teleport-Board-2.git
