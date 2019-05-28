@@ -16,7 +16,7 @@ DEBUG=no
 BASEDIR=$(dirname $(dirname $(readlink -f "$0")))
 LIB=$BASEDIR/lib
 . $LIB/os-helpers || exit 1
-. $LIB/bash-helpers/ini_parser 2>/dev/null || end 1 "Missing ini_parser library"
+. contrib/bash-helpers/ini_parser 2>/dev/null || end 1 "Missing ini_parser library"
 
 trap 'rm -f $TMP*' EXIT
 

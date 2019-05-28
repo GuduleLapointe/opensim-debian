@@ -12,8 +12,10 @@ DEBUG=yes
 
 BASEDIR=$(dirname $(dirname $(readlink -f "$0")))
 LIB=$BASEDIR/lib
+CORE=$BASEDIR/core
+CONTRIB=$BASEDIR/contrib
 . $LIB/os-helpers || exit 1
-. $LIB/bash-helpers/ini_parser || end 2 "Missing ini_parser librarie"
+. $CONTRIB/bash-helpers/ini_parser || end 2 "Missing ini_parser librarie"
 
 trap 'rm -f $TMP*' EXIT
 
@@ -45,9 +47,9 @@ then
       || end $? Error $? while downloading OpenSim
     fi
     log "unpacking OpenSimulator"
-    mkdir -p "$LIB/$OPENSIM" \
-    && log extracting OpenSimulator archive to "$LIB/$OPENSIM" \
-    && tar xvfz "$SRC/$tar" -C "$LIB/$OPENSIM" --strip-components 1 \
+    mkdir -p "$CORE/$OPENSIM" \
+    && log extracting OpenSimulator archive to "$CORE/$OPENSIM" \
+    && tar xvfz "$SRC/$tar" -C "$CORE/$OPENSIM" --strip-components 1 \
     || end $? Error $? while unpacking OpenSim
   else
     if yesno "Download development version?"
