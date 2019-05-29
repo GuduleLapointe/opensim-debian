@@ -1,6 +1,6 @@
 #!/bin/bash
 
-[ ! "$OPENSIM" ] && OPENSIM=opensim
+[ ! "$OPENSIM" ] && OPENSIM=core/opensim
 [ ! "$PGM" ] && PGM=$(basename "$0")
 [ ! "$TMP" ] && TMP=/tmp/$PGM.$$
 

@@ -13,10 +13,17 @@ DEBUG=no
 
 # End of user configurable data
 
+<<<<<<< HEAD
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/lib/os-helpers || exit 1
 [ "$OSBIN" ] || exit 1
 [ "$ETC" ] || exit 1
+=======
+BASEDIR=$(dirname $(dirname $(readlink -f "$0")))
+LIB=$BASEDIR/lib
+. $LIB/os-helpers || exit 1
+. contrib/bash-helpers/ini_parser 2>/dev/null || end 1 "Missing ini_parser library"
+>>>>>>> 88571216666ad277381c4b8d75fb4730581ce706
 
 trap 'rm -f $TMP*' EXIT
 
