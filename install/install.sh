@@ -21,9 +21,10 @@ git submodule init
 git submodule update
 # git submodule update --remote
 
+log checking preferences
 if [ ! -d "$ETC" ]
 then
-  log No preferences folder, trying to create one
+  log No preferences folder, createing one
   for etc in $BASEDIR/etc /etc/$OPENSIM ~/etc/$OPENSIM
   do
     mkdir "$etc" 2>/dev/null && ETC=$etc && break
@@ -31,6 +32,16 @@ then
   [ ! "$ETC" ] && end 1 "Could not create preferences folder"
 fi
 log "Preferences folder is $ETC"
+
+log checking mono
+if ! (dpkg --get-selections mono-complete | cut -f 1 | grep -q "^mono-complete$")
+then
+  log 1 "Mono is required to run OpenSimulator"
+  yesno "Install mono?" || end $? "Mono installation cancelled"
+  sudo aptitude update && sudo aptitude upgrade -y \
+  && sudo aptitude install mono-complete \
+  || end $? "Mono installation failed"
+fi
 
 log "Looking for OpenSimulator binaries"
 if [ ! -f "$OSBIN/OpenSim.exe" ]
