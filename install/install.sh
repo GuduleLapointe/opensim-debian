@@ -9,17 +9,17 @@ DEBUG=yes
 #AUTOMATIC=yes
 
 # End of user configurable data
-
-BASEDIR=$(dirname $(dirname $(realpath "$0")))
-. $BASEDIR/lib/os-helpers || exit 1
-. $CONTRIB/bash-helpers/ini_parser || end 2 "Missing ini_parser librarie"
-
-trap 'rm -f $TMP*' EXIT
-
 log "Initialize submodules"
 git submodule init
 git submodule update
 # git submodule update --remote
+
+BASEDIR=$(dirname $(dirname $(realpath "$0")))
+. $BASEDIR/lib/os-helpers || exit 1
+. $CONTRIB/bash-helpers/ini_parser || (echo "Missing ini_parser librarie" >&2; exit 2 )
+trap 'rm -f $TMP*' EXIT
+
+
 
 log checking preferences
 if [ ! -d "$ETC" ]
