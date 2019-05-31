@@ -10,14 +10,12 @@ if ! which realpath >/dev/null; then
     cd "$@" 2>/dev/null && pwd -P && return
   }
 fi
-echo $0
 
 # echo ":$PATH:" | grep -q ":$BINDIR:" || export PATH=$PATH:$BINDIR
 # [ ! "$LIB" ] && LIB=$BASEDIR/lib
 BINDIR=$(dirname $(realpath "$0"))
 BASEDIR=$(dirname "$BINDIR")
 [ ! "$CONTRIB" ] && CONTRIB=$BASEDIR/contrib
-echo BASEDIR $BASEDIR
 . $CONTRIB/bash-helpers/helpers || echo "$PGM: Missing helpers library, run install.sh"
 
 for etc in $BASEDIR/etc /etc/opensim ~/etc/opensim
@@ -39,7 +37,7 @@ ls $OSBINDIR/bin/OpenSim.exe 2>/dev/null \
 || ls $CORE/*/bin/OpenSim.exe 2>/dev/null | head -1
 )
 [ "$OSBIN" ] \
-&& log "$OSBIN found" && OSDIR=$(dirname $OSBIN) \
+&& log "$OSBIN found" && OSBINDIR=$(dirname $OSBIN) && OSDIR=$(dirname $OSBINDIR)\
 || log 1 "OpenSim.exe not found, run install.sh"
 
 osConsole() {
@@ -50,4 +48,10 @@ osConsole() {
   lr=$(printf "\n\b")
   pre=$(printf "\n\b")
   screen -S $osInstance -X stuff "$(echo "$pre$osCommand$lr")"
+}
+
+cleanupIni() {
+  [ "$1" ] || return
+  [ -f "$1" ] || return
+  cat "$1" | sed "s/^[[:blank:]]*//"
 }

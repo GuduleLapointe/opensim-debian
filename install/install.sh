@@ -16,10 +16,8 @@ git submodule update
 
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/lib/os-helpers || exit 1
-. $CONTRIB/bash-helpers/ini_parser || (echo "Missing ini_parser librarie" >&2; exit 2 )
+# . $CONTRIB/bash-helpers/ini_parser || (echo "Missing ini_parser librarie" >&2; exit 2 )
 trap 'rm -f $TMP*' EXIT
-
-
 
 log checking preferences
 if [ ! -d "$ETC" ]
@@ -43,8 +41,18 @@ then
   || end $? "Mono installation failed"
 fi
 
+log "## Checking standard directories"
+for dir in $LIB $SRC $VAR $CACHE $DATA $ETC \
+  $ETC/opensim.d $ETC/robust.d $DATA $CACHE $VAR/logs $VAR/tmp
+do
+  [ -d "$dir" ] && continue
+  mkdir -p "$dir" \
+    && log "Created $dir" \
+    || end $? "Could not create $dir"
+done
+
 log "Looking for OpenSimulator binaries"
-if [ ! -f "$OSBIN/OpenSim.exe" ]
+if [ ! -f "$OSBIN" ]
 then
   log "OpenSim binaries missing, lets fix that"
   if yesno "Download latest official release?"
@@ -84,6 +92,7 @@ then
     fi
   fi
 fi
+[ ! "$OSBINDIR" ] && OSBINDIR=$OSDIR/bin
 
 #cd "$OSBIN" || end 2 could not cd to $OSBIN
 #(
@@ -103,160 +112,200 @@ fi
 CACHE=$VAR/cache
 DATA=$VAR/data
 
-log "Checking standard directories presence"
-for dir in $LIB $SRC $VAR $CACHE $DATA $ETC \
-  $ETC/opensim.d $ETC/robust.d \
-  $DATA/config $DATA/fsassets-data \
-  $CACHE/bakes $CACHE/datasnapshot $CACHE/fsassets-tmp $CACHE/maptiles $CACHE/Registry \
-  $DATA/regions \
-  $VAR/logs $VAR/tmp
-do
-  [ -d "$dir" ] && continue
-  mkdir -p "$dir" \
-    && log "Created $dir" \
-    || end $? "Could not create $dir"
-done
-
-log "end for now we'll see the configuration steps later"
-
 if yesno "Create Robust config?"
 then
+  log setting defaults
+  crudini --set $TMP.new.ini Launch BinDir "\"$OSBINDIR\""
+  crudini --set $TMP.new.ini Launch Executable "\"Robust.exe\#"
+  cleanupIni $OSBINDIR/Robust.HG.ini.example > $TMP.defaults.ini
+  crudini --merge $TMP.new.ini <$TMP.defaults.ini
+  crudini --set $TMP.new.ini DatabaseService ConnectionString "\"Data Source=localhost;Database=os_$(hostname -s);User ID=opensim;Password=password;Old Guids=true;\""
+
   log "## Choose robust config"
 
-  default=$OSBIN/Robust.HG.ini.example
-
-  robustconfig=$(
+  RobustConfig=$(
     (
-    ls $ETC/robust.d/*.ini
-    ls $ETC/robust-enabled/*.ini
-  	ls $ETC/robust-available/*.ini
-    ls $ETC/opensim.d/Robust*.ini $ETC/opensim.d/robust*.ini
-  	echo "$ETC/robust.d/NewRobust.ini"
+    ls $ETC/robust.d/*.ini 2>/dev/null
+    # ls $ETC/robust-enabled/*.ini
+  	# ls $ETC/robust-available/*.ini
+    # ls $ETC/opensim.d/Robust*.ini $ETC/opensim.d/robust*.ini
+  	# echo "$ETC/robust.d/NewRobust.ini"
     ) | head -1
   )
-  #robustconfig=$ETC/robust-available/$( (ls $ETC/robust-enabled | grep "\.ini$" || echo "Robust.ini" ) | sort -n | head -1)
-  #[ ! "$robustconfig" ] && robustconfig=Robust.ini
+  if [ "$RobustConfig" ]
+  then
+    log 1 "Please choose the Robust .ini file location"
+    log 1 "  If present, it will be read, and overriden after settings completion"
+    log 2 "  If not present, it will be created"
+    readvar RobustConfig
+    #read -e -p "$PGM: Robust config file: " -i $RobustConfig RobustConfig
+    [ "$RobustConfig" ] || end 1 "You have to choose a file"
+    RobustName=$(basename $RobustConfig .ini)
+    cleanupIni $RobustConfig > $TMP.current.ini
 
-  log 1 "Please choose the Robust .ini file location"
-  log 1 "  If present, it will be read, and overriden after settings completion"
-  log 2 "  If not present, it will be created"
-  readvar robustconfig
-  #read -e -p "$PGM: Robust config file: " -i $robustconfig robustconfig
-  [ "$robustconfig" ] || end 1 "You have to choose a file"
+    log merging current config to defaults
+    crudini --merge $TMP.new.ini <$TMP.current.ini
+  fi
 
+  [ ! "$GridName" ] && GridName=$(titlecase $(hostname -s | cut -d "." -f 1))
+  readvar GridName
+  crudini --set $TMP.new.ini GridInfoService GridName "\"$GridName\""
+  [ ! "$GridNick" ] && GridNick=$(echo $GridName | sed "s/ //g")
+  readvar GridNick
+  crudini --set $TMP.new.ini GridInfoService GridNick "\"$GridNick\""
+
+  [ ! "$RobustName" ] && RobustName=$(echo "$GridName" | sed "s/ //g")
+  # RobustName=$(titlecase $(hostname -s | cut -d "." -f 1))
+  # readvar RobustName
+  [ ! "$RobustConfig" ] && RobustConfig=$ETC/robust.d/$RobustName.ini
+  # [ ! -f "$RobustConfig" ] &&  touch $RobustConfig
+
+  MachineName=$(echo "$GridNick" | tr "[:upper:]" "[:lower:]")
+  log "MachineName $MachineName"
+
+  log 1 "## General settings"
+  eval $(crudini --get --format=sh $TMP.new.ini Const \
+  | sed -e "s/baseurl/BaseURL/" -e "s/publicport/PublicPort/" -e "s/privateport/PrivatePort/" \
+  -e "s/cachedirectory/CacheDirectory/" -e "s/datadirectory/DataDirectory/" \
+  -e "s/\"//g"
+  )
+  # ini.parse $TMP.new.ini
+  # ini.section.Const  || end $? broken at Const
+  # eval $(crudini --get --format=sh $TMP.new.ini Const)
+  # BaseURL=$baseurl
+  # PublicPort=$publicport
+  # PrivatePort=$privateport
+  [ "$BaseURL" = "" ] && BaseURL=http://$(hostname -f)
+  echo "$BaseURL" | grep -q "127\.0\.0\." && BaseURL="http://$(hostname -f)"
+  echo "$BaseURL" | grep -q "^https*://" || BaseURL="http://$BaseURL"
+  log BaseURL: $BaseURL
+  BaseURL=$(echo "$BaseURL" | sed "s/\"//")
+  PublicPort=$(echo "$PublicPort" | sed "s/\"//")
+  PrivatePort=$(echo "$PrivatePort" | sed "s/\"//")
+  readvar BaseURL PublicPort PrivatePort
+  crudini --set $TMP.new.ini Const BaseURL "\"$BaseURL\""
+  crudini --set $TMP.new.ini Const PublicPort "$PublicPort"
+  crudini --set $TMP.new.ini Const PrivatePort "$PrivatePort"
+  crudini --set $TMP.new.ini Const CacheDirectory "\"$CACHE/$MachineName\""
+  crudini --set $TMP.new.ini Const DataDirectory "\"$DATA/$MachineName\""
+
+  hostname=$(echo "$BaseURL" | sed "s%.*://%%" | cut -d "/" -f 1)
+  log hostname $hostname
   ## Database configuration
   log 1 "## Database configuration"
-  cat >> $TMP.db <<EOF
-  [DatabaseService]
-  ConnectionString = "Data Source=localhost;Database=opensim;User ID=opensim;Password=password;Old Guids=true;"
-EOF
-  ini.merge DatabaseService $default $TMP.db  $robustconfig
+  # ini.parse $TMP.new.ini
+  # grep -A5 DatabaseService $TMP.new.ini
+  eval $(crudini --get --format=sh $TMP.new.ini DatabaseService \
+  | sed -e "s/storageprovider/StorageProvider/" -e "s/connectionstring/ConnectionString/" \
+  -e "s/\"//g"
+  )
+
+  # ini.merge DatabaseService $tmpIni $TMP.db  $RobustConfig || end $? "ini merge failed"
+  log ConnectionString $ConnectionString
   DatabaseHost=$(echo "$ConnectionString;" | sed "s/.*Data Source=//" | cut -d ';' -f 1)
   DatabaseName=$(echo "$ConnectionString;" | sed "s/.*Database=//" | cut -d ';' -f 1)
   DatabaseUser=$(echo "$ConnectionString;" | sed "s/.*User ID=//" | cut -d ';' -f 1)
   DatabasePassword=$(echo "$ConnectionString;" | sed "s/.*Password=//" | cut -d ';' -f 1)
-  readvar DatabaseHost DatabaseName DatabaseUser DatabasePassword
 
-  cat >> $TMP.installdefault <<EOF
-  [DatabaseService]
-  ConnectionString = "Data Source=$DatabaseHost;Database=$DatabaseName;User ID=$DatabaseUser;Password=$DatabasePassword;Old Guids=true;"
-EOF
-  ini.merge DatabaseService $robustconfig $TMP.installdefault $default
-  echo "ConnectionString $ConnectionString"
+  readvar DatabaseHost DatabaseName DatabaseUser DatabasePassword
+  ConnectionString="Data Source=$DatabaseHost;Database=$DatabaseName;User ID=$DatabaseUser;Password=$DatabasePassword;Old Guids=true;"
+  crudini --set $TMP.new.ini DatabaseService ConnectionString "\"$ConnectionString\""
+  log "ConnectionString $ConnectionString"
+
+  log "## LoginService configuration"
+
+  eval $(crudini --get --format=sh $TMP.new.ini LoginService \
+  | sed -e "s/\"//g" \
+  -e "s/currency/Currency/" -e "s/welcomemessage/WelcomeMessage/" -e "s/searchurl/SearchURL/" )
+  readvar Currency  WelcomeMessage SearchURL
+  crudini --set $TMP.new.ini LoginService Currency "\"$Currency\""
+  crudini --set $TMP.new.ini LoginService WelcomeMessage "$WelcomeMessage"
+  crudini --set $TMP.new.ini LoginService SearchURL "$SearchURL"
+
+  log "## GridService"
+  echo "[GridService]" > $TMP.regions
+  for flag in DefaultRegion DefaultHGRegion FallbackRegion #NoDirectLogin Persistent
+  do
+    eval "$flag=\"$( (grep "$flag" $TMP.new.ini || echo Welcome) | sed "s/^Region_//" | cut -d= -f 1 | sed -e "s/_/ /g" -e "s/ *$//")\""
+    readvar $flag
+    regionvar=$(echo Region_${!flag} | sed "s/ /_/g")
+    grep -q "^$regionvar *= *" $TMP.regions \
+      && sed -i "s/^$regionvar *= *\"\(.*\)\"/$regionvar = \"\\1, $flag\"/" $TMP.regions \
+      || echo "$regionvar = \"$flag\"" >> $TMP.regions
+  done
+  crudini --merge $TMP.new.ini <$TMP.regions
 
   ## Set robust name based on confif filename
-  robustname=$(basename $robustconfig .ini)
-  enable="$ETC/robust-enabled/$robustname.ini"
-
-  log 1 "## General settings"
-  cat > $TMP.installdefault <<EOF
-  [Const]
-  BaseURL = "http://$(hostname -f)"
-EOF
-
-  ini.merge Const $default $TMP.installdefault $robustconfig
-  readvar BaseURL PublicPort PrivatePort
-  echo "$BaseURL" | grep -q "^https*://" || BaseURL="http://$BaseURL"
-
-  hostname=$(echo "$BaseURL" | sed "s%.*://%%" | cut -d "/" -f 1)
+  # enable="$ETC/robust-enabled/$RobustName.ini"
 
   log "## Setting Launcher info"
-  cat >> $TMP.installdefault <<EOF
-  [Launch]
-     BinDir = "$OSBIN"
-     Executable = "Robust.exe"
-     LogFile = "$LOGS/$robustname.log"
-     ConsolePrompt = "$robustname ($hostname:$PublicPort)"
-EOF
-  ini.merge Launch $TMP.installdefault $robustconfig
+  crudini --set $TMP.new.ini Launch BinDir "\"$OSBINDIR\""
+  crudini --set $TMP.new.ini Launch Executable "\"Robust.exe\""
+  crudini --set $TMP.new.ini Launch LogFile "\"$LOGS/$MachineName.log\""
+  crudini --set $TMP.new.ini Launch ConsolePrompt "\"$RobustName ($hostname:$PublicPort)\""
 
   log "## Startup section"
-  cat >> $TMP.installdefault <<EOF
-  [Startup]
-  RegistryLocation=$VAR/Registry
-  ConfigDirectory=$VAR/Config
-  ConsoleHistoryFile=$LOGS/$ConsoleHistoryFile
-  ConfigDirectory=$VAR/Config
-EOF
-  ini.merge Startup $default $TMP.installdefault $robustconfig
-  ini.write Launch >> $TMP.ini
-  ini.write Const >> $TMP.ini
-  ini.write Startup >> $TMP.ini
-  ini.write DatabaseService >> $TMP.ini
+  crudini --set $TMP.new.ini Startup PIDFile "\"\${Const|CacheDirectory}/.pid\""
+  crudini --set $TMP.new.ini Startup RegistryLocation "\"\${Const|DataDirectory}/registry\""
+  crudini --set $TMP.new.ini Startup ConsoleHistoryFile "\"\${Const|CacheDirectory}/RobustConsoleHistory.txt\""
+
+  log "## Hypergrid"
+  crudini --set $TMP.new.ini Hypergrid HomeURI "\"\${Const|BaseURL}:\${Const|PublicPort}\""
+  crudini --set $TMP.new.ini Hypergrid GatekeeperURI "\"\${Const|BaseURL}:\${Const|PublicPort}\""
 
   log "## Grid info"
-  cat >> $TMP.installdefault <<EOF
-  [GridInfoService]
-     GridName = "$(ucfirst $hostname) (Powered by opensim-debian)"
-     GridNick = "$(ucfirst $hostname)"
-     welcome = "\${Const|BaseURL}:\${Const|PublicPort}/welcome"
-     ; economy = "\${Const|BaseURL}:\${Const|PublicPort}/economy"
-     ; about = "\${Const|BaseURL}/about/"
-     ; register = "\${Const|BaseURL}/register"
-     ; help = "\${Const|BaseURL}/help"
-     ; password = "\${Const|BaseURL}/password"
-EOF
-  ini.merge GridInfoService $default $TMP.installdefault $robustconfig
-  readvar GridName GridNick
-  ini.write GridInfoService >> $TMP.ini
 
-  cat >> $TMP.installdefault <<EOF
-  [GridService]
-      MapTileDirectory = "$CACHE/maptiles"
-  [MapImageService]
-      TilesStoragePath = "$CACHE/maptiles"
-  [BakedTextureService]
-      BaseDirectory = "$CACHE/bakes"
-  [LoginService]
-      SearchURL = "\${Const|BaseURL}:\${Const|PublicPort}/";
-  [UserProfilesService]
-      Enabled = true
-EOF
-  for section in GridService LoginService UserProfilesService MapImageService BakedTextureService
+  crudini --set $TMP.new.ini GridInfoService GridName "\"$GridName\""
+  crudini --set $TMP.new.ini GridInfoService GridNick "\"$GridNick\""
+  crudini --set $TMP.new.ini GridInfoService welcome "\"\${Const|BaseURL}:\${Const|PublicPort}/welcome\""
+  crudini --set $TMP.new.ini GridInfoService economy "\"\${Const|BaseURL}:\${Const|PublicPort}/economy\""
+  crudini --set $TMP.new.ini GridInfoService about "\"\${Const|BaseURL}/about/\""
+  crudini --set $TMP.new.ini GridInfoService register "\"\${Const|BaseURL}/register\""
+  crudini --set $TMP.new.ini GridInfoService help "\"\${Const|BaseURL}/help\""
+  crudini --set $TMP.new.ini GridInfoService password "\"\${Const|BaseURL}/password\""
+
+  log "## Misc"
+  crudini --set $TMP.new.ini AssetService LocalServiceModule "\"OpenSim.Services.FSAssetService.dll:FSAssetConnector\""
+  crudini --set $TMP.new.ini AssetService FallbackService "\"OpenSim.Services.AssetService.dll:AssetService\""
+  crudini --set $TMP.new.ini AssetService BaseDirectory "\"\${Const|DataDirectory}/fsassets\""
+  crudini --set $TMP.new.ini AssetService SpoolDirectory "\"\${Const|CacheDirectory}/fsassets\""
+  crudini --set $TMP.new.ini AssetService AllowRemoteDelete "true"
+  crudini --set $TMP.new.ini GridService MapTileDirectory "\"\${Const|CacheDirectory}/maptiles\""
+  crudini --set $TMP.new.ini MapImageService TilesStoragePath "\"\${Const|CacheDirectory}/maptiles\""
+  crudini --set $TMP.new.ini BakedTextureService BaseDirectory = "\"\${Const|CacheDirectory}/bakes\""
+  crudini --set $TMP.new.ini LoginService SearchURL "\"\${Const|BaseURL}:\${Const|PublicPort}/\"";
+  crudini --set $TMP.new.ini UserProfilesService Enabled true
+
+  log "## Checking $RobustNick directories"
+  for dir in \
+    $DATA/$MachineName $DATA/$MachineName/fsassets \
+    $CACHE/$MachineName/bakes $CACHE/$MachineName/fsassets $CACHE/$MachineName/maptiles \
+    $CACHE/$MachineName/registry
   do
-      ini.merge $section $default $TMP.installdefault $robustconfig
-      ini.write $section >> $TMP.ini
+    [ -d "$dir" ] && continue
+    mkdir -p "$dir" \
+      && log "Created $dir" \
+      || end $? "Could not create $dir"
   done
 
   echo
   echo "# Generated configuration:"
   echo
-  cat $TMP.ini
-  echo
+  # cat $TMP.new.ini
+  # echo
 
-  if [ -f "$robustconfig" ]
+  if [ -f "$RobustConfig" ]
   then
-      yesno "File $robustconfig exists, override?" || end Aborted
+      yesno "File $RobustConfig exists, override?" || end Aborted
   else
-      yesno "Save $robustconfig file?" || end Aborted
+      yesno "Save $RobustConfig file?" || end Aborted
   fi
-  mv $TMP.ini "$robustconfig" \
-  && echo "$robustconfig saved"
-  end
-  [ ! -f "$enable" ] && ln -s "$robustconfig" "$enable"
-  cat $ETC/Robust.exe.config \
-  | sed "s%\(<file value=\"\)Robust%\\1$LOGS/$robustname%" \
-  > "$ETC/$robustname.logconfig"
+  cp $TMP.new.ini $RobustConfig && echo "$RobustConfig saved"
+
+  # [ ! -f "$enable" ] && ln -s "$RobustConfig" "$enable"
+  cat $OSBINDIR/Robust.exe.config \
+  | sed "s%\(<file value=\"\)Robust%\\1$LOGS/$RobustName%" \
+  > "$DATA/$RobustName.logconfig"
 
   if [ ! -f "$ETC/opensim.conf" ]
   then

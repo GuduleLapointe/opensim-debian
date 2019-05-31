@@ -9,7 +9,7 @@ LogDir=/opt/opensim/var/logs
 DELAY=60
 shutdownDelay=120
 shutdownWarnings=3
-DEBUG=no
+DEBUG=yes
 
 # End of user configurable data
 
@@ -137,23 +137,27 @@ startSim() {
 	else
 	    [ ! "$ConsolePrompt" ] && ConsolePrompt="$instance (\R) "
         fi
-	LogConfig=$(echo "$inifile" | sed -e "s/\.ini$/.LogConfig/" -e "s%/[a-z]*-enabled/%/%")
         #		LogConfig=${inifile/.ini/.LogConfig}
-	echo "LogConfig $LogConfig"
-	if [ ! -f "$LogConfig" ]
-	then
-            ExecName=$(basename $Executable .exe)
-            sed -e "s|[a-zA-Z0-9\./_-]*/*$ExecName.log|$LogDir/$instance.log|" \
-                -e "s|[a-zA-Z0-9\./_-]*/*${ExecName}Stats.log|$LogDir/${instance}.Stats.log|" \
-                $BinDir/$(basename $Executable).config > $LogConfig.tmp && mv $LogConfig.tmp $LogConfig
-	    cd /opt/opensim/var/data/config
-	    ln -s $LogConfig 2>/dev/null
-            log created LogConfig file $LogConfig from core model $BinDir/$Executable.config
-        fi
+  log "DataDirectory $DataDirectory"
+  log "CacheDirectory $CacheDirectory"
 
+  [ ! "$LogConfig" ] && LogConfig="$DataDirectory/$(basename "$inifile" .ini).LogConfig"
+  log "LogConfig $LogConfig"
+  if [ ! -f "$LogConfig" ]
+  then
+    ExecName=$(basename $Executable .exe)
+    sed -e "s|[a-zA-Z0-9\./_-]*/*$ExecName.log|$LogDir/$instance.log|" \
+    -e "s|[a-zA-Z0-9\./_-]*/*${ExecName}Stats.log|$LogDir/${instance}.Stats.log|" \
+    $BinDir/$(basename $Executable).config > $LogConfig.tmp && mv $LogConfig.tmp $LogConfig
+    # cd /opt/opensim/var/data/config
+    # ln -s $LogConfig 2>/dev/null
+    log created LogConfig file $LogConfig from core model $BinDir/$Executable.config
+  fi
 	if [ -f "$LogConfig" ]
 	then
-	    cmd="$cmd -logconfig=$LogConfig"
+    cmd="$cmd -logconfig=$LogConfig"
+    LogFile=$(egrep "LogFileAppender|<file" $LogConfig | grep -A1 "LogFileAppender" | head -2 | tail -1 | cut -d '"' -f 2)
+    touch $LogFile
 	fi
 
 	touch $TMP.wait
@@ -163,14 +167,23 @@ startSim() {
 	eval "screen -S $instance -d -m $cmd"
 	screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]"
 
+  TAILTIMEOUT=120
+  log "logfile: $LogFile"
 
-        TAILTIMEOUT=120
-        log "logfile: $LogFile"
-        echo timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up" $LogFile
+  if [ "$Executable" = "Robust.exe" ]
+  then
+    TAILTIMEOUT=60
+    timeout $TAILTIMEOUT tailgrep "UserAgentServerConnector loaded successfully" $LogFile \
+    && echo "At least one region started" \
+    || echo "Startup still going on after $TAILTIMEOUT seconds, check again later"
+  else
+    echo timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up" $LogFile
 
-        timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up" $LogFile \
-            && echo "At least one region started" \
-                || echo "Startup still going on after $TAILTIMEOUT seconds, check again later"
+    timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up|loaded successfully" $LogFile \
+    && echo "At least one region started" \
+    || echo "Startup still going on after $TAILTIMEOUT seconds, check again later"
+  fi
+
 
 	# echo screen -S robust -d -m mono Robust.exe -inifile='/etc/opensim/robust-enabled/robust.ini' -logfile='/var/log/opensim/Robust.HG.log' -prompt 'Robust (robust) '
 
