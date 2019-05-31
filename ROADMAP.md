@@ -1,38 +1,13 @@
-# Roadmap as of 31/10/2015
+# Roadmap as of 31/05/2019
 
-## Working
 
-`./install/install.sh`
+## Fixes
 
-- create basic directory structure, download OpenSim and other needed libraries
-- read Robust default configuration, ask a few questions and build a working configuration in etc/robust-available
+- try to open ports if firewall is active
 
-`opensim start`
+## New features
 
-- Start all instances, first in etc/robust-enabled, then in etc/simulators-enabled
-
-`opensim start example1 example2 ...`
-
-- Start only example1 and example2 instances.
-  The config will be the first match in etc/robust.d/<name>.ini or etc/opensim.d/<name>.ini
-
-`opensim stop [now] [instance1] [instance2] [...]`
-
-`opensim restart [now] [instance1] [instance2] [...]`
-
-- Stop/Restart all instances or matching instances
-- If first parameter is "now", stops the simulator immediately, otherwise send reminders to leave during 2 minutes then stop
-
-`opensim status`
-
-- Show open instances
-
-Planned
--------
-
-Planned work contains functionalities we already have in our devel
-environment. They are not included in this repository because
-we still need to test their general usability and stability.
+- try to open nat ports if behind a router
 
 `newsimulator SimName`
 
