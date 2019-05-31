@@ -54,12 +54,13 @@ cd /opt/opensim-debian
 ./install/install.sh
 ```
 
+Answer the common setting questions.
+
 Configuration should be working as is, but you will probably want to adjust
   - ./etc/opensim/opensim.conf
   (main database configuration)
-  - ./etc/opensim/robust.d/*.ini
-  - ./etc/opensim/opensim.d/*.ini
-  (Robust and simulators ini files)
+  - ./etc/opensim/robust.d/*.ini (robust settings)
+  - ./etc/opensim/opensim.d/*.ini (simulators settings)
 
 
 ```shell
