@@ -1,7 +1,7 @@
 #!/bin/bash
 
 firstport=9010
-# DEBUG=yes
+DEBUG=yes
 
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/lib/os-helpers || exit 1
@@ -30,27 +30,40 @@ readvar RobustConfig
 crudget $RobustConfig Launch
 BinDir=$bindir
 
-echo "[Launch]" >> $TMP.ini
-echo >> $TMP.ini
-echo "[Const]" >> $TMP.ini
-echo >> $TMP.ini
-echo "[Network]" >> $TMP.ini
+# crudget $TMP.ini Launch
+# [ ! "$BinDir" ] && BinDir=$bindir
+# [ ! "$BinDir" ] && BinDir=$OSBINDIR
+readvar BinDir
+[ -d "$BinDir" ] || end $? "$BinDir directory does not exist"
+[ -f "$BinDir/OpenSim.exe" ] || end $? "$BinDir not an OpenSim bin directory"
 
-[ -f $BinDir/config-include/GridCommon.ini.example ] || end $? Missing $BinDir/config-include/GridCommon.ini.example
-crudmerge $TMP.ini $BinDir/config-include/GridCommon.ini.example || end $?
-crudmerge $TMP.ini $ETC/GridCommon.ini || end $?
+for section in Launch Const Network DatabaseService Modules Includes
+do
+  echo "[$section]" >> $TMP.ini
+  echo >> $TMP.ini
+done
+
+# [ -f $BinDir/config-include/GridCommon.ini.example ] || end $? Missing $BinDir/config-include/GridCommon.ini.example
+# crudmerge $TMP.ini $ETC/GridCommon.ini || end $?
 
 [ "$1" ] && SimName=$1 && shift
 readvar SimName
 [ ! "$SimName" ] && end 1
-crudini --set $TMP.ini Launch SimName "$SimName"
 MachineName=$(echo "$SimName" | tr [:upper:] [:lower:] | sed "s/ //g")
 log MachineName $MachineName
+
+for ini in $BinDir/OpenSim.ini.example $BinDir/OpenSim.ini.example $ETC/OpenSim.ini $Bin
+do
+  [ ! -f "$ini" ] && log "skipping $ini, not found" && continue
+  crudmerge $TMP.ini $ini || end $?
+  OpenSimIniFound=true
+done
+[ "$OpenSimIniFound" ] || end 1 "Could not find an OpenSim.ini base"
 
 ls $ETC/*.d/$MachineName.ini 2>/dev/null \
 || ls $ETC/*.d/$SimName.ini 2>/dev/null \
 && {
-  log 1 "There is already an instance named $SimName"
+  log 1 "There is already a config for $SimName"
   if yesno "Proceed and replace the config?"
   then
     log "merging $ETC/opensim.d/$MachineName.ini"
@@ -59,9 +72,14 @@ ls $ETC/*.d/$MachineName.ini 2>/dev/null \
     end 1 "current $SimName config left untouched"
   fi
 }
+crudini --set $TMP.ini Launch SimName "\"$SimName\""
+crudini --set $TMP.ini Launch BinDir "\"$BinDir\""
+crudini --set $TMP.ini Launch Executable '"OpenSim.exe"'
+crudini --set $TMP.ini Launch LogConfig "$DATA/$MachineName/$MachineName.logconfig"
 
 crudget $RobustConfig Const
-crudini --set $TMP.ini Const BaseURL $baseurl
+crudini --set $TMP.ini Const BaseHostname "\"$(echo $baseurl | cut -d/ -f 3)\""
+crudini --set $TMP.ini Const BaseURL "\"$baseurl\""
 crudini --set $TMP.ini Const PublicPort $publicport
 crudini --set $TMP.ini Const PrivatePort $privateport
 
@@ -69,23 +87,15 @@ crudget $RobustConfig GridInfoService
 GridName="$gridname"
 crudini --set $TMP.ini Const GridName "\"$gridname\""
 
-crudget $TMP.ini Launch
-[ ! "$BinDir" ] && BinDir=$bindir
-[ ! "$BinDir" ] && BinDir=$OSBINDIR
-readvar BinDir
-[ -d "$BinDir" ] || end $? "$BinDir directory does not exist"
-[ -f "$BinDir/OpenSim.exe" ] || end $? "$BinDir not an OpenSim bin directory"
-crudini --set $TMP.ini Launch BinDir "$BinDir"
-crudini --set $TMP.ini Const BinDirectory "$BinDir"
-crudini --set $TMP.ini Launch Executable "OpenSim.exe"
-crudini --set $TMP.ini Launch LogConfig "$DATA/$MachineName/$MachineName.logconfig"
-
+crudini --set $TMP.ini Const BinDirectory "\"$BinDir\""
 crudini --set $TMP.ini Const CacheDirectory "\"$CACHE/$MachineName\""
 crudini --set $TMP.ini Const DataDirectory "\"$DATA/$MachineName\""
 crudini --set $TMP.ini Const LogsDirectory "\"$LOGS\""
 
 crudget $TMP.ini Network
-[ "$http_listener_port" ] || crudini --set $TMP.ini Network http_listener_port "\"$(nextfreeports)\""
+[ "$http_listener_port" ] || http_listener_port=$(nextfreeports 9010)
+readvar http_listener_port
+crudini --set $TMP.ini Network http_listener_port "$http_listener_port"
 [ "$externalhostnamegorlsl" ] || crudini --set $TMP.ini Network ExternalHostNameForLSL "\"$(hostname -f)\""
 
 # crudini --set $TMP.ini Startup ConsolePrompt "\"\${Launch|SimName} (\R) \""
@@ -137,6 +147,9 @@ crudini --del $TMP.ini DatabaseService IncludeDASHStorage
 crudini --set $TMP.ini DatabaseService StorageProvider "\"OpenSim.Data.MySQL.dll\""
 crudini --set $TMP.ini DatabaseService ConnectionString "\"$ConnectionString\""
 
+crudini --del $TMP.ini Architecture Include-Architecture
+crudini --set $TMP.ini Architecture IncludeDASHArchitecture '"${Const|BinDirectory}/config-include/GridHypergrid.ini"'
+crudini --set $TMP.ini Includes Include-Common "\"$ETC/GridCommon.ini\""
 
 # crudget $TMP.ini Const
 # [ "$baseurl" ] || crudini --set $TMP.ini Const BaseURL "\"$BaseURL\""
@@ -144,7 +157,6 @@ crudini --set $TMP.ini DatabaseService ConnectionString "\"$ConnectionString\""
 # [ "$privateport" ] || crudini --set $TMP.ini Const PrivatePort "$PrivatePort"
 # [ "$gridname" ] || crudini --set $TMP.ini Const GridName "$GridName"
 #
-# [ "$basehostname" ] || crudini --set $TMP.ini Const BaseHostname "\"$(echo $BaseURL | cut -d/ -f 3)\""
 # [ "$bindirectory" ] || crudini --set $TMP.ini Const BinDirectory "\"\${Launch|BinDir}\""
 #
 # crudget $TMP.ini Startup
