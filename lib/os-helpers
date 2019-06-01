@@ -18,19 +18,19 @@ BASEDIR=$(dirname "$BINDIR")
 [ ! "$CONTRIB" ] && CONTRIB=$BASEDIR/contrib
 . $CONTRIB/bash-helpers/helpers || echo "$PGM: Missing helpers library, run install.sh"
 
+LIB=$BASEDIR/lib
+VAR=$BASEDIR/var
+LOGS=$VAR/logs
+CACHE=$VAR/cache
+DATA=$VAR/data
+SRC=$BASEDIR/src
+CORE=$BASEDIR/core
+
 for etc in $BASEDIR/etc /etc/opensim ~/etc/opensim
 do
     [ -d "$etc" ] && ETC=$etc
     [ -f "$etc/opensim.conf" ] && . $ETC/opensim.conf 2>/dev/null
 done
-
-[ ! "$LIB" ] && LIB=$BASEDIR/lib
-[ ! "$VAR" ] && VAR=$BASEDIR/var
-[ ! "$LOGS" ] && LOGS=$VAR/logs
-[ ! "$CACHE" ] && CACHE=$VAR/cache
-[ ! "$SRC" ] && SRC=$BASEDIR/src
-[ ! "$CORE" ] && CORE=$BASEDIR/core
-# [ ! "$OSBINDIR" ] && OSBINDIR="$CORE/opensim/bin"
 
 OSBIN=$(
 ls $OSBINDIR/bin/OpenSim.exe 2>/dev/null \
@@ -54,4 +54,8 @@ cleanupIni() {
   [ "$1" ] || return
   [ -f "$1" ] || return
   cat "$1" | sed "s/^[[:blank:]]*//"
+}
+
+randomPassword() {
+  < /dev/urandom tr -dc "A-Za-z0-9" | head -c32
 }
