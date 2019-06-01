@@ -114,10 +114,13 @@ fi
 CACHE=$VAR/cache
 DATA=$VAR/data
 
+OpenSimBinDirectory=$OSBINDIR
+readvar OpenSimBinDirectory
+
 if yesno "Create Robust config?"
 then
   log setting defaults
-  crudini --set $TMP.new.ini Launch BinDir "\"$OSBINDIR\""
+  crudini --set $TMP.new.ini Launch BinDir "\"$OpenSimBinDirectory\""
   crudini --set $TMP.new.ini Launch Executable "\"Robust.exe\#"
   cleanupIni $OSBINDIR/Robust.HG.ini.example > $TMP.defaults.ini
   crudini --merge $TMP.new.ini <$TMP.defaults.ini
