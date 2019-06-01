@@ -262,8 +262,8 @@ then
 
   crudini --set $TMP.new.ini GridInfoService GridName "\"$GridName\""
   crudini --set $TMP.new.ini GridInfoService GridNick "\"$GridNick\""
-  crudini --set $TMP.new.ini GridInfoService welcome "\"\${Const|BaseURL}:\${Const|PublicPort}/welcome\""
-  crudini --set $TMP.new.ini GridInfoService economy "\"\${Const|BaseURL}:\${Const|PublicPort}/economy\""
+  crudini --set $TMP.new.ini GridInfoService welcome "\"\${Const|BaseURL}/welcome\""
+  crudini --set $TMP.new.ini GridInfoService economy "\"\${Const|BaseURL}/economy\""
   crudini --set $TMP.new.ini GridInfoService about "\"\${Const|BaseURL}/about/\""
   crudini --set $TMP.new.ini GridInfoService register "\"\${Const|BaseURL}/register\""
   crudini --set $TMP.new.ini GridInfoService help "\"\${Const|BaseURL}/help\""
