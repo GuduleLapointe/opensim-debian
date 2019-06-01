@@ -19,6 +19,8 @@ BASEDIR=$(dirname $(dirname $(realpath "$0")))
 # . $CONTRIB/bash-helpers/ini_parser || (echo "Missing ini_parser librarie" >&2; exit 2 )
 trap 'rm -f $TMP*' EXIT
 
+which crudini > /dev/null || end $? "Depends to crudini ini file parsers, you must install it"
+
 log checking preferences
 if [ ! -d "$ETC" ]
 then
