@@ -181,7 +181,14 @@ crudini --set $TMP.ini Includes Include-Common "\"$ETC/GridCommon.ini\""
 #
 # log http_listener_port $http_listener_port
 
-sed "s/IncludeDASH/Include-/" $TMP.ini > $ETC/opensim.d/$MachineName.ini
+sed -i "s/IncludeDASH/Include-/" $TMP.ini
+crudini --get $TMP.ini > $TMP.sections
+cat $TMP.sections | while read section
+do
+  crudini --get $TMP.ini $section | grep -qi [a-z] || crudini --del $TMP.ini "$section"
+done
+
+cp $TMP.ini $ETC/opensim.d/$MachineName.ini
 
 for folder in $CACHE/$MachineName $DATA/$MachineName $LOGS
 do
