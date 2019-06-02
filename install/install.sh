@@ -253,6 +253,8 @@ then
   crudini --set $TMP.new.ini Startup PIDFile "\"\${Const|CacheDirectory}/.pid\""
   crudini --set $TMP.new.ini Startup RegistryLocation "\"\${Const|DataDirectory}/registry\""
   crudini --set $TMP.new.ini Startup ConsoleHistoryFile "\"\${Const|CacheDirectory}/RobustConsoleHistory.txt\""
+  # crudini --set $TMP.new.ini Startup NoVerifyCertChain true
+  # crudini --set $TMP.new.ini Startup NoVerifyCertHostname true
 
   log "## Hypergrid"
   crudini --set $TMP.new.ini Hypergrid HomeURI "\"\${Const|BaseURL}:\${Const|PublicPort}\""
@@ -270,16 +272,26 @@ then
   crudini --set $TMP.new.ini GridInfoService password "\"\${Const|BaseURL}/password\""
 
   log "## Misc"
+  crudini --set $TMP.new.ini ServiceList OfflineIMServiceConnector "\${Const|PrivatePort}/OpenSim.Addons.OfflineIM.dll:OfflineIMServiceRobustConnector"
+  crudini --set $TMP.new.ini ServiceList GroupsServiceConnector "\${Const|PrivatePort}/OpenSim.Addons.Groups.dll:GroupsServiceRobustConnector"
+  crudini --set $TMP.new.ini ServiceList BakedTextureService = "\${Const|PrivatePort}/OpenSim.Server.Handlers.dll:XBakesConnector"
+  crudini --set $TMP.new.ini ServiceList UserProfilesServiceConnector = "\${Const|PublicPort}/OpenSim.Server.Handlers.dll:UserProfilesConnector"
+  crudini --set $TMP.new.ini ServiceList EstateDataService = "\${Const|PrivatePort}/OpenSim.Server.Handlers.dll:EstateDataRobustConnector"
+
   crudini --set $TMP.new.ini AssetService LocalServiceModule "\"OpenSim.Services.FSAssetService.dll:FSAssetConnector\""
   crudini --set $TMP.new.ini AssetService FallbackService "\"OpenSim.Services.AssetService.dll:AssetService\""
   crudini --set $TMP.new.ini AssetService BaseDirectory "\"\${Const|DataDirectory}/fsassets\""
   crudini --set $TMP.new.ini AssetService SpoolDirectory "\"\${Const|CacheDirectory}/fsassets\""
   crudini --set $TMP.new.ini AssetService AllowRemoteDelete "true"
+  crudini --set $TMP.new.ini HGAssetService LocalServiceModule "\"OpenSim.Services.HypergridService.dll:HGFSAssetService\""
+
   crudini --set $TMP.new.ini GridService MapTileDirectory "\"\${Const|CacheDirectory}/maptiles\""
   crudini --set $TMP.new.ini MapImageService TilesStoragePath "\"\${Const|CacheDirectory}/maptiles\""
   crudini --set $TMP.new.ini BakedTextureService BaseDirectory = "\"\${Const|CacheDirectory}/bakes\""
   crudini --set $TMP.new.ini LoginService SearchURL "\"\${Const|BaseURL}:\${Const|PublicPort}/\"";
   crudini --set $TMP.new.ini UserProfilesService Enabled true
+
+
 
   log "## Checking $RobustNick directories"
   for dir in \
