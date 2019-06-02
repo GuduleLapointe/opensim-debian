@@ -274,9 +274,9 @@ then
   log "## Misc"
   crudini --set $TMP.new.ini ServiceList OfflineIMServiceConnector "\${Const|PrivatePort}/OpenSim.Addons.OfflineIM.dll:OfflineIMServiceRobustConnector"
   crudini --set $TMP.new.ini ServiceList GroupsServiceConnector "\${Const|PrivatePort}/OpenSim.Addons.Groups.dll:GroupsServiceRobustConnector"
-  crudini --set $TMP.new.ini ServiceList BakedTextureService = "\${Const|PrivatePort}/OpenSim.Server.Handlers.dll:XBakesConnector"
-  crudini --set $TMP.new.ini ServiceList UserProfilesServiceConnector = "\${Const|PublicPort}/OpenSim.Server.Handlers.dll:UserProfilesConnector"
-  crudini --set $TMP.new.ini ServiceList EstateDataService = "\${Const|PrivatePort}/OpenSim.Server.Handlers.dll:EstateDataRobustConnector"
+  crudini --set $TMP.new.ini ServiceList BakedTextureService "\${Const|PrivatePort}/OpenSim.Server.Handlers.dll:XBakesConnector"
+  crudini --set $TMP.new.ini ServiceList UserProfilesServiceConnector "\${Const|PublicPort}/OpenSim.Server.Handlers.dll:UserProfilesConnector"
+  crudini --set $TMP.new.ini ServiceList EstateDataService "\${Const|PrivatePort}/OpenSim.Server.Handlers.dll:EstateDataRobustConnector"
 
   crudini --set $TMP.new.ini AssetService LocalServiceModule "\"OpenSim.Services.FSAssetService.dll:FSAssetConnector\""
   crudini --set $TMP.new.ini AssetService FallbackService "\"OpenSim.Services.AssetService.dll:AssetService\""
@@ -287,7 +287,7 @@ then
 
   crudini --set $TMP.new.ini GridService MapTileDirectory "\"\${Const|CacheDirectory}/maptiles\""
   crudini --set $TMP.new.ini MapImageService TilesStoragePath "\"\${Const|CacheDirectory}/maptiles\""
-  crudini --set $TMP.new.ini BakedTextureService BaseDirectory = "\"\${Const|CacheDirectory}/bakes\""
+  crudini --set $TMP.new.ini BakedTextureService BaseDirectory "\"\${Const|CacheDirectory}/bakes\""
   crudini --set $TMP.new.ini LoginService SearchURL "\"\${Const|BaseURL}:\${Const|PublicPort}/\"";
   crudini --set $TMP.new.ini UserProfilesService Enabled true
 
