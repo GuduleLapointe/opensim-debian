@@ -123,7 +123,8 @@ then
   crudini --set $TMP.new.ini Launch BinDir "\"$OpenSimBinDirectory\""
   crudini --set $TMP.new.ini Launch Executable "\"Robust.exe\#"
   cleanupIni $OSBINDIR/Robust.HG.ini.example > $TMP.defaults.ini
-  crudini --merge $TMP.new.ini <$TMP.defaults.ini
+  crudmerge $TMP.new.ini $TMP.defaults.ini
+  crudmerge $TMP.new.ini $BASEDIR/install/Robust.Tweaks.ini
   crudini --set $TMP.new.ini DatabaseService ConnectionString "\"Data Source=localhost;Database=os_$(hostname -s);User ID=opensim;Password=password;Old Guids=true;\""
 
   log "## Choose robust config"
@@ -149,7 +150,7 @@ then
     cleanupIni $RobustConfig > $TMP.current.ini
 
     log merging current config to defaults
-    crudini --merge $TMP.new.ini <$TMP.current.ini
+    crudmerge $TMP.new.ini $TMP.current.ini
   fi
 
   [ ! "$GridName" ] && GridName=$(titlecase $(hostname -s | cut -d "." -f 1))
@@ -238,7 +239,7 @@ then
       && sed -i "s/^$regionvar *= *\"\(.*\)\"/$regionvar = \"\\1, $flag\"/" $TMP.regions \
       || echo "$regionvar = \"$flag\"" >> $TMP.regions
   done
-  crudini --merge $TMP.new.ini <$TMP.regions
+  crudmerge $TMP.new.ini $TMP.regions
 
   ## Set robust name based on confif filename
   # enable="$ETC/robust-enabled/$RobustName.ini"
@@ -250,47 +251,17 @@ then
   crudini --set $TMP.new.ini Launch ConsolePrompt "\"$RobustName ($hostname:$PublicPort)\""
 
   log "## Startup section"
-  crudini --set $TMP.new.ini Startup PIDFile "\"\${Const|CacheDirectory}/.pid\""
-  crudini --set $TMP.new.ini Startup RegistryLocation "\"\${Const|DataDirectory}/registry\""
-  crudini --set $TMP.new.ini Startup ConsoleHistoryFile "\"\${Const|CacheDirectory}/RobustConsoleHistory.txt\""
+  crudini --set $TMP.new.ini Startup ConfigDirectory "$ETC/robust-include"
+  crudini --set $TMP.new.ini Startup PIDFile "\"\${Const|CacheDirectory}/$MachineName.pid\""
   # crudini --set $TMP.new.ini Startup NoVerifyCertChain true
   # crudini --set $TMP.new.ini Startup NoVerifyCertHostname true
 
-  log "## Hypergrid"
-  crudini --set $TMP.new.ini Hypergrid HomeURI "\"\${Const|BaseURL}:\${Const|PublicPort}\""
-  crudini --set $TMP.new.ini Hypergrid GatekeeperURI "\"\${Const|BaseURL}:\${Const|PublicPort}\""
-
   log "## Grid info"
-
   crudini --set $TMP.new.ini GridInfoService GridName "\"$GridName\""
   crudini --set $TMP.new.ini GridInfoService GridNick "\"$GridNick\""
-  crudini --set $TMP.new.ini GridInfoService welcome "\"\${Const|BaseURL}/welcome\""
-  crudini --set $TMP.new.ini GridInfoService economy "\"\${Const|BaseURL}/economy\""
-  crudini --set $TMP.new.ini GridInfoService about "\"\${Const|BaseURL}/about/\""
-  crudini --set $TMP.new.ini GridInfoService register "\"\${Const|BaseURL}/register\""
-  crudini --set $TMP.new.ini GridInfoService help "\"\${Const|BaseURL}/help\""
-  crudini --set $TMP.new.ini GridInfoService password "\"\${Const|BaseURL}/password\""
 
-  log "## Misc"
-  crudini --set $TMP.new.ini ServiceList OfflineIMServiceConnector "\${Const|PrivatePort}/OpenSim.Addons.OfflineIM.dll:OfflineIMServiceRobustConnector"
-  crudini --set $TMP.new.ini ServiceList GroupsServiceConnector "\${Const|PrivatePort}/OpenSim.Addons.Groups.dll:GroupsServiceRobustConnector"
-  crudini --set $TMP.new.ini ServiceList BakedTextureService "\${Const|PrivatePort}/OpenSim.Server.Handlers.dll:XBakesConnector"
-  crudini --set $TMP.new.ini ServiceList UserProfilesServiceConnector "\${Const|PublicPort}/OpenSim.Server.Handlers.dll:UserProfilesConnector"
-  crudini --set $TMP.new.ini ServiceList EstateDataService "\${Const|PrivatePort}/OpenSim.Server.Handlers.dll:EstateDataRobustConnector"
-
-  crudini --set $TMP.new.ini AssetService LocalServiceModule "\"OpenSim.Services.FSAssetService.dll:FSAssetConnector\""
-  crudini --set $TMP.new.ini AssetService FallbackService "\"OpenSim.Services.AssetService.dll:AssetService\""
-  crudini --set $TMP.new.ini AssetService BaseDirectory "\"\${Const|DataDirectory}/fsassets\""
-  crudini --set $TMP.new.ini AssetService SpoolDirectory "\"\${Const|CacheDirectory}/fsassets\""
-  crudini --set $TMP.new.ini AssetService AllowRemoteDelete "true"
-  crudini --set $TMP.new.ini HGAssetService LocalServiceModule "\"OpenSim.Services.HypergridService.dll:HGFSAssetService\""
-
-  crudini --set $TMP.new.ini GridService MapTileDirectory "\"\${Const|CacheDirectory}/maptiles\""
-  crudini --set $TMP.new.ini MapImageService TilesStoragePath "\"\${Const|CacheDirectory}/maptiles\""
-  crudini --set $TMP.new.ini BakedTextureService BaseDirectory "\"\${Const|CacheDirectory}/bakes\""
-  crudini --set $TMP.new.ini LoginService SearchURL "\"\${Const|BaseURL}:\${Const|PublicPort}/\"";
-  crudini --set $TMP.new.ini UserProfilesService Enabled true
-
+  log "## Just for fun"
+  crudini --set $TMP.new.ini LibraryService LibraryName "\"$GridNick Library\""
 
 
   log "## Checking $RobustNick directories"
@@ -303,6 +274,12 @@ then
     mkdir -p "$dir" \
       && log "Created $dir" \
       || end $? "Could not create $dir"
+  done
+
+  crudini --get $TMP.new.ini > $TMP.sections
+  cat $TMP.sections | while read section
+  do
+    crudini --get $TMP.new.ini $section | grep -qi [a-z] || crudini --del $TMP.new.ini "$section"
   done
 
   echo
@@ -324,13 +301,13 @@ then
   | sed "s%\(<file value=\"\)Robust%\\1$LOGS/$RobustName%" \
   > "$DATA/$RobustName.logconfig"
 
-  if [ ! -f "$ETC/opensim.conf" ]
-  then
-    echo "myhost=$newhost
-    mydb=$newdb
-    myuser=$newuser
-    mypass=$newpass" > "$ETC/opensim.conf"
-  fi
+  # if [ ! -f "$ETC/opensim.conf" ]
+  # then
+  #   echo "myhost=$newhost
+  #   mydb=$newdb
+  #   myuser=$newuser
+  #   mypass=$newpass" > "$ETC/opensim.conf"
+  # fi
 fi
 
 end
