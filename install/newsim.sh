@@ -13,18 +13,6 @@ echo "OSBINDIR $OSBINDIR"
 echo "# Available ROBUST servers"
 ls $ETC/robust.d/*.ini 2>/dev/null
 
-crudget() {
-  [ "$2" ] || return $?
-  eval $(crudini --get --format=sh $1 $2  | sed -e "s/'\"/'/" -e "s/\"'/'/")
-}
-crudmerge() {
-  [ -f "$2" ] || continue
-  log merging $2 in $1
-  cleanupIni $2 | sed "s/^Include-/IncludeDASH/" > $TMP.merge.ini
-  crudini --merge $1 <$TMP.merge.ini || end $? $2 Merge failed
-  # sed -i "s/^Include-/IncludeDASH/" $TMP.ini
-}
-
 RobustConfig=$(ls $ETC/robust.d/*.ini 2>/dev/null | head -1)
 readvar RobustConfig
 crudget $RobustConfig Launch
