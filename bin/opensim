@@ -119,8 +119,9 @@ startSim() {
 	log reading section Launch
 
 	# ini_section_Startup 2>/dev/null
-	# ini_section_Const || end $? reading section Const
-  # echo "const ok"
+  echo "Executable $Executable"
+  ini_section_Const 2>/dev/null && echo "const ok"
+  # || end $? reading section Const
 	ini_section_Launch 2>/dev/null || end $? reading section Launch
   echo "launch ok"
 	log "starting $instance with $inifile"
