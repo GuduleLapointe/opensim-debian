@@ -134,14 +134,16 @@ crudini --set $TMP.ini Network http_listener_port "$http_listener_port"
 
 log "getting db settings"
 # inigrep Include_ $TMP.ini
+GridMachineName=$(echo "$GridNick" | tr [:upper:] [:lower:])
+
 crudget $TMP.ini DatabaseService || end $?
 if [ "$connectionstring" ]
 then
   DatabaseName=$(echo "$connectionstring;" | sed "s/.*Database=//" | cut -d ';' -f 1)
-  [ ! "$DatabaseName" -o "$DatabaseName" = "opensim" ] && DatabaseName="os_$MachineName"
+  [ ! "$DatabaseName" -o "$DatabaseName" = "opensim" ] && DatabaseName="os_$GridMachineName_$MachineName"
 else
   crudget $RobustConfig DatabaseService || end $? get DatabaseService failed
-  DatabaseName="os_$MachineName"
+  DatabaseName="os_$GridMachineName_$MachineName"
 fi
 DatabaseHost=$(echo "$connectionstring;" | sed "s/.*Data Source=//" | cut -d ';' -f 1)
 [ ! "$DatabaseHost" ] && DatabaseHost=localhost
