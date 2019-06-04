@@ -220,9 +220,14 @@ then
 
   log "## LoginService configuration"
 
-  eval $(crudini --get --format=sh $TMP.new.ini LoginService \
-  | sed -e "s/\"//g" \
-  -e "s/currency/Currency/" -e "s/welcomemessage/WelcomeMessage/" -e "s/searchurl/SearchURL/" )
+  if [ -f "$ETC/$GridNick.Gloebit.ini" ]
+  then
+    Currency="G$"
+  else
+    eval $(crudini --get --format=sh $TMP.new.ini LoginService \
+    | sed -e "s/\"//g" \
+    -e "s/currency/Currency/" -e "s/welcomemessage/WelcomeMessage/" -e "s/searchurl/SearchURL/" )
+  fi
   readvar Currency  WelcomeMessage SearchURL
   crudini --set $TMP.new.ini LoginService Currency "\"$Currency\""
   crudini --set $TMP.new.ini LoginService WelcomeMessage "$WelcomeMessage"
