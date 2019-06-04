@@ -125,8 +125,9 @@ createDatabase() {
   DatabaseHost=$1
   DatabaseUser=$2
   DatabaseName=$3
-  echo "CREATE DATABASE $DatabaseName;"  | sudo mysql -h$DatabaseHost \
+  echo "CREATE DATABASE $DatabaseName character set UTF8;"  | sudo mysql -h$DatabaseHost \
   && echo "GRANT ALL ON $DatabaseName.* TO $DatabaseUser;" | sudo mysql -h$DatabaseHost \
+  && echo "set global innodb_large_prefix=on; set global innodb_file_format=Barracuda;" | sudo mysql -h$DatabaseHost \
   && log "Database created"
   return $?
 }
