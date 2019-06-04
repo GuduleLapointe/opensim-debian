@@ -69,6 +69,10 @@ else
   [ -f "$ETC/$GridNick.Gloebit.ini" ] \
   && crudini --set $TMP.OpenSim.ini Startup EconomyModule Gloebit
 
+  [ -f "$ETC/osslEnable.ini" ] \
+  || [ -f "$ETC/$GridNick.osslEnable.ini" ] \
+  && crudini --set $TMP.OpenSim.ini IncludeDASHosslEnable = "$ETC/osslEnable.ini"
+
   # We remove some confussing values that are defaults anyway
   crudini --del $TMP.OpenSim.ini ClientStack.LindenCaps Cap_GetTexture
   crudini --del $TMP.OpenSim.ini ClientStack.LindenCaps Cap_GetMesh
