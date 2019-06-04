@@ -224,7 +224,7 @@ then
 
   log "## LoginService configuration"
 
-  if [ -f "$ETC/$GridNick.Gloebit.ini" ]
+  if [ -f "$ETC/$GridNick.Gloebit.ini" -o -f "$ETC/Gloebit.ini" ]
   then
     Currency="G$"
   else
