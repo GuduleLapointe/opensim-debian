@@ -71,7 +71,7 @@ else
 
   [ -f "$ETC/osslEnable.ini" ] \
   || [ -f "$ETC/$GridNick.osslEnable.ini" ] \
-  && crudini --set $TMP.OpenSim.ini IncludeDASHosslEnable = "$ETC/osslEnable.ini"
+  && crudini --set $TMP.OpenSim.ini Includes IncludeDASHosslEnable = "$ETC/osslEnable.ini"
 
   # We remove some confussing values that are defaults anyway
   crudini --del $TMP.OpenSim.ini ClientStack.LindenCaps Cap_GetTexture
