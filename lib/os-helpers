@@ -123,8 +123,8 @@ createDatabase() {
   [ "$3" ] || return $?
   yesno "Create database $DatabaseName and grant rights to $DatabaseUser?" || return $?
   DatabaseHost=$1
-  DatabaseName=$2
-  DatabaseUser=$3
+  DatabaseUser=$2
+  DatabaseName=$3
   echo "CREATE DATABASE $DatabaseName;"  | sudo mysql -h$DatabaseHost \
   && echo "GRANT ALL ON $DatabaseName.* TO $DatabaseUser;" | sudo mysql -h$DatabaseHost \
   && log "Database created"
