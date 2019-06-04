@@ -214,6 +214,10 @@ then
   DatabasePassword=$(echo "$ConnectionString;" | sed "s/.*Password=//" | cut -d ';' -f 1)
 
   readvar DatabaseHost DatabaseName DatabaseUser DatabasePassword
+
+  testDatabaseConnection $DatabaseHost $DatabaseName $DatabaseUser "$DatabasePassword" \
+  || end $?
+
   ConnectionString="Data Source=$DatabaseHost;Database=$DatabaseName;User ID=$DatabaseUser;Password=$DatabasePassword;Old Guids=true;"
   crudini --set $TMP.new.ini DatabaseService ConnectionString "\"$ConnectionString\""
   log "ConnectionString $ConnectionString"
