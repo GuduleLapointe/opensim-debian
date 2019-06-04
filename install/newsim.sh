@@ -6,47 +6,105 @@ DEBUG=yes
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/lib/os-helpers || exit 1
 
-echo "ETC $ETC"
-echo "OSBIN $OSBIN"
-echo "OSBINDIR $OSBINDIR"
-
-echo "# Available ROBUST servers"
-ls $ETC/robust.d/*.ini 2>/dev/null
-
-RobustConfig=$(ls $ETC/robust.d/*.ini 2>/dev/null | head -1)
-readvar RobustConfig
-crudget $RobustConfig Launch
-BinDir=$bindir
-
-# crudget $TMP.ini Launch
-# [ ! "$BinDir" ] && BinDir=$bindir
-# [ ! "$BinDir" ] && BinDir=$OSBINDIR
-readvar BinDir
-[ -d "$BinDir" ] || end $? "$BinDir directory does not exist"
-[ -f "$BinDir/OpenSim.exe" ] || end $? "$BinDir not an OpenSim bin directory"
-
-for section in Launch Const Network DatabaseService Modules Includes
-do
-  echo "[$section]" >> $TMP.ini
-  echo >> $TMP.ini
-done
-
-# [ -f $BinDir/config-include/GridCommon.ini.example ] || end $? Missing $BinDir/config-include/GridCommon.ini.example
-# crudmerge $TMP.ini $ETC/GridCommon.ini || end $?
-
 [ "$1" ] && SimName=$1 && shift
 readvar SimName
 [ ! "$SimName" ] && end 1
 MachineName=$(echo "$SimName" | tr [:upper:] [:lower:] | sed "s/ //g")
 log MachineName $MachineName
 
-for ini in $BinDir/OpenSim.ini.example $BinDir/OpenSim.ini.example $ETC/OpenSim.ini $Bin
-do
-  [ ! -f "$ini" ] && log "skipping $ini, not found" && continue
-  crudmerge $TMP.ini $ini || end $?
-  OpenSimIniFound=true
-done
-[ "$OpenSimIniFound" ] || end 1 "Could not find an OpenSim.ini base"
+log "ETC $ETC"
+log "OSBIN $OSBIN"
+log "OSBINDIR $OSBINDIR"
+echo "# Available ROBUST servers"
+ls $ETC/robust.d/*.ini 2>/dev/null
+
+log "Local Robust Config"
+RobustConfig=$(ls $ETC/robust.d/*.ini 2>/dev/null | head -1)
+readvar RobustConfig
+crudget $RobustConfig Launch
+BinDir=$bindir
+crudget $RobustConfig GridInfoService
+GridName=$gridname
+GridNick=$gridnick
+
+readvar BinDir
+[ -d "$BinDir" ] || end $? "$BinDir directory does not exist"
+[ -f "$BinDir/OpenSim.exe" ] || end $? "$BinDir not an OpenSim bin directory"
+
+if [ -f "$ETC/$GridNick.OpenSim.ini" ]
+then
+  log "Using $ETC/$GridNick.OpenSim.ini"
+  crudget $RobustConfig Launch
+  BinDir=$bindir
+  GridNick=$gridnick
+else
+  log "Building OpenSim.ini for $GridNick grid"
+
+  for section in Const Startup Network DatabaseService Modules Includes
+  do
+    echo "[$section]" >> $TMP.OpenSim.ini
+    echo >> $TMP.OpenSim.ini
+  done
+
+  for ini in $BinDir/OpenSim.ini.example $BinDir/OpenSim.ini $ETC/OpenSim.ini $BASEDIR/install/OpenSim.Tweaks.ini
+  do
+    # [ ! -f "$ini" ] && log "skipping $ini, not found" && continue
+    crudmerge $TMP.OpenSim.ini $ini || end $?
+    OpenSimIniFound=true
+  done
+  [ "$OpenSimIniFound" ] || end 1 "Could not find an OpenSim.ini base"
+  crudget $RobustConfig Const
+  crudini --set $TMP.OpenSim.ini Const BinDirectory "$BinDir"
+  crudini --set $TMP.OpenSim.ini Const GridName "$gridname"
+  crudini --set $TMP.OpenSim.ini Const BaseHostname "$(basename $baseurl)"
+  crudini --set $TMP.OpenSim.ini Const BaseURL "$baseurl"
+  crudini --set $TMP.OpenSim.ini Const PublicPort $publicport
+  crudini --set $TMP.OpenSim.ini Const PrivatePort $privateport
+  crudini --set $TMP.OpenSim.ini Const CacheDirectory "$CACHE/$MachineName"
+  crudini --set $TMP.OpenSim.ini Const DataDirectory "$DATA/$MachineName"
+  crudini --set $TMP.OpenSim.ini Const LogsDirectory "$LOGS"
+
+  crudini --set $TMP.OpenSim.ini Includes Include-Common "$ETC/config-include/GridCommon.ini"
+
+  [ -f "$ETC/$GridNick.Gloebit.ini" ] \
+  && crudini --set $TMP.OpenSim.ini Startup EconomyModule Gloebit
+
+  # We remove some confussing values that are defaults anyway
+  crudini --del $TMP.OpenSim.ini ClientStack.LindenCaps Cap_GetTexture
+  crudini --del $TMP.OpenSim.ini ClientStack.LindenCaps Cap_GetMesh
+  crudini --del $TMP.OpenSim.ini ClientStack.LindenCaps Cap_AvatarPickerSearch
+  crudini --del $TMP.OpenSim.ini ClientStack.LindenCaps Cap_GetDisplayNames
+
+  log "Saving as $ETC/$GridNick.OpenSim.ini"
+  cleanupIni4Prod $TMP.OpenSim.ini
+  cp "$TMP.OpenSim.ini" "$ETC/$GridNick.OpenSim.ini"
+fi
+
+if [ -f "$ETC/config-include/GridCommon.ini" ]
+then
+  log "Using $ETC/config-include/GridCommon.ini"
+else
+  log "Building config-include/GridCommon.ini"
+  for section in Const Startup Network DatabaseService Modules Includes
+  do
+    echo "[$section]" >> $TMP.GridCommon.ini
+    echo >> $TMP.GridCommon.ini
+  done
+  [ -f "$BinDir/config-include/GridCommon.ini.example" ] || end $?
+
+  for ini in $BinDir/config-include/GridCommon.ini.example $BASEDIR/install/GridCommon.Tweaks.ini
+  do
+    # [ ! -f "$ini" ] && log "skipping $ini, not found" && continue
+    crudmerge $TMP.GridCommon.ini $ini || end $?
+  done
+  crudini --del $TMP.GridCommon.ini DatabaseService IncludeDASHStorage
+
+  cleanupIni4Prod $TMP.GridCommon.ini \
+  && mkdir -p "$ETC/config-include/" \
+  && cp $TMP.GridCommon.ini "$ETC/config-include/GridCommon.ini" \
+  && log "saved as $ETC/config-include/GridCommon.ini" \
+  || end $?
+fi
 
 ls $ETC/*.d/$MachineName.ini 2>/dev/null \
 || ls $ETC/*.d/$SimName.ini 2>/dev/null \
@@ -60,33 +118,15 @@ ls $ETC/*.d/$MachineName.ini 2>/dev/null \
     end 1 "current $SimName config left untouched"
   fi
 }
-crudini --set $TMP.ini Launch SimName "\"$SimName\""
-crudini --set $TMP.ini Launch BinDir "\"$BinDir\""
+crudini --set $TMP.ini Launch SimName "$SimName"
+crudini --set $TMP.ini Launch BinDir "$BinDir"
 crudini --set $TMP.ini Launch Executable '"OpenSim.exe"'
 crudini --set $TMP.ini Launch LogConfig "$DATA/$MachineName/$MachineName.logconfig"
 
-crudget $RobustConfig Const
-crudini --set $TMP.ini Const BaseHostname "\"$(echo $baseurl | cut -d/ -f 3)\""
-crudini --set $TMP.ini Const BaseURL "\"$baseurl\""
-crudini --set $TMP.ini Const PublicPort $publicport
-crudini --set $TMP.ini Const PrivatePort $privateport
-
-crudget $RobustConfig GridInfoService
-GridName="$gridname"
-crudini --set $TMP.ini Const GridName "\"$gridname\""
-
-crudini --set $TMP.ini Const BinDirectory "\"$BinDir\""
-crudini --set $TMP.ini Const CacheDirectory "\"$CACHE/$MachineName\""
-crudini --set $TMP.ini Const DataDirectory "\"$DATA/$MachineName\""
-crudini --set $TMP.ini Const LogsDirectory "\"$LOGS\""
-
 crudget $TMP.ini Network
-[ "$http_listener_port" ] || http_listener_port=$(nextfreeports 9010)
+[ "$http_listener_port" ] || http_listener_port=$(nextfreeports $firstport)
 readvar http_listener_port
 crudini --set $TMP.ini Network http_listener_port "$http_listener_port"
-[ "$externalhostnamegorlsl" ] || crudini --set $TMP.ini Network ExternalHostNameForLSL "\"$(hostname -f)\""
-
-# crudini --set $TMP.ini Startup ConsolePrompt "\"\${Launch|SimName} (\R) \""
 
 log "getting db settings"
 # inigrep Include_ $TMP.ini
@@ -107,51 +147,40 @@ DatabasePassword=$(echo "$connectionstring;" | sed "s/.*Password=//" | cut -d ';
 [ "$DatabasePassword" = "****" ] && DatabasePassword=
 readvar DatabaseHost DatabaseName DatabaseUser DatabasePassword
 [ ! "$DatabasePassword" ] && DatabasePassword=$(randomPassword) && echo "Random password generated $DatabasePassword"
+
+testDatabaseConnection $DatabaseHost $DatabaseName $DatabaseUser "$DatabasePassword" \
+|| end $?
+
 ConnectionString="Data Source=$DatabaseHost;Database=$DatabaseName;User ID=$DatabaseUser;Password=$DatabasePassword;Old Guids=true;"
-# echo "ConnectionString $ConnectionString"
-
-log "Testing database connection"
-echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p$DatabasePassword $DatabaseName
-if [ $? -ne 0 ]
-then
-  echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p$DatabasePassword
-  if [ $? -ne 0 ]
-  then
-    echo "user not ok either, add it manually before trying to launch the sim"
-  else
-    if yesno "Create database $DatabaseName and grant rights to $DatabaseUser?"
-    then
-      echo "CREATE DATABASE $DatabaseName; GRANT ALL ON $DatabaseName.* TO $DatabaseUser;" | sudo mysql \
-      && log "Database created, checking access again"
-      echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p$DatabasePassword $DatabaseName \
-      && log "Database OK" || log $? "Could not create db $DatabaseName or grant privileges to $DatabaseUser, check before launching"
-    fi
-  fi
-fi
-echo Connection OK
-
-
-crudini --del $TMP.ini DatabaseService IncludeDASHStorage
-crudini --set $TMP.ini DatabaseService StorageProvider "\"OpenSim.Data.MySQL.dll\""
+crudini --set $TMP.ini DatabaseService StorageProvider "OpenSim.Data.MySQL.dll"
 crudini --set $TMP.ini DatabaseService ConnectionString "\"$ConnectionString\""
 
 crudini --del $TMP.ini Architecture Include-Architecture
-crudini --set $TMP.ini Architecture IncludeDASHArchitecture '"${Const|BinDirectory}/config-include/GridHypergrid.ini"'
-crudini --set $TMP.ini Includes Include-Common "\"$ETC/GridCommon.ini\""
+# crudini --set $TMP.ini Architecture IncludeDASHArchitecture '"${Const|BinDirectory}/config-include/GridHypergrid.ini"'
+crudini --set $TMP.ini Startup ConfigDirectory "$ETC"
+
+crudini --set $TMP.ini Includes IncludeDASHCommon "$ETC/$GridNick.OpenSim.ini"
+
+[ -f "$ETC/$GridNick.Vivox.ini" ] \
+&& crudini --set $TMP.ini Includes Include-Voice "$ETC/$GridNick.Vivox.ini" \
+|| [ -f "$ETC/Vivox.ini" ] \
+&& crudini --set $TMP.ini Includes Include-Voice "$ETC/Vivox.ini" \
+
+# crudini --set $TMP.ini  Includes Include-osslEnable "/etc/opensim/osslEnable.ini"
+
 
 # crudget $TMP.ini Const
-# [ "$baseurl" ] || crudini --set $TMP.ini Const BaseURL "\"$BaseURL\""
+# [ "$baseurl" ] || crudini --set $TMP.ini Const BaseURL "$BaseURL"
 # [ "$publicport" ] || crudini --set $TMP.ini Const PublicPort "$PublicPort"
 # [ "$privateport" ] || crudini --set $TMP.ini Const PrivatePort "$PrivatePort"
 # [ "$gridname" ] || crudini --set $TMP.ini Const GridName "$GridName"
 #
-# [ "$bindirectory" ] || crudini --set $TMP.ini Const BinDirectory "\"\${Launch|BinDir}\""
+# [ "$bindirectory" ] || crudini --set $TMP.ini Const BinDirectory "\${Launch|BinDir}"
 #
 # crudget $TMP.ini Startup
-# [ "$consoleprompt" ] || crudini --set $TMP.ini Startup ConsolePrompt "\"\${Launch|SimName} (\R) \""
-# [ "$configdirectory" ] || crudini --set $TMP.ini Startup ConfigDirectory '"${Const|DataDirectory}/${Launch|SimName}"'
+# [ "$consoleprompt" ] || crudini --set $TMP.ini Startup ConsolePrompt "\${Launch|SimName} (\R) "
 # [ "$regionload_regionsdir" ] || crudini --set $TMP.ini Startup regionload_regionsdir '"${Const|DataDirectory}/${Launch|SimName}/regions"'
-# [ "$economymodule" ] || crudini --set $TMP.ini Startup EconomyModule "Gloebot"
+# [ "$economymodule" ] || crudini --set $TMP.ini Startup EconomyModule "Gloebit"
 # [ "$drawprimonmaptile" ] || crudini --set $TMP.ini Startup DrawPrimOnMapTile "true"
 #
 # [ "$physical_prim" ] || crudini --set $TMP.ini Startup physical_prim "true"
@@ -169,14 +198,8 @@ crudini --set $TMP.ini Includes Include-Common "\"$ETC/GridCommon.ini\""
 #
 # log http_listener_port $http_listener_port
 
-sed -i "s/IncludeDASH/Include-/" $TMP.ini
-crudini --get $TMP.ini > $TMP.sections
-cat $TMP.sections | while read section
-do
-  crudini --get $TMP.ini $section | grep -qi [a-z] || crudini --del $TMP.ini "$section"
-done
-
-cp $TMP.ini $ETC/opensim.d/$MachineName.ini
+cleanupIni4Prod $TMP.ini \
+&& cp $TMP.ini $ETC/opensim.d/$MachineName.ini
 
 for folder in $CACHE/$MachineName $DATA/$MachineName $LOGS
 do

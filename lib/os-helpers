@@ -72,3 +72,61 @@ crudmerge() {
   crudini --merge $1 <$TMP.merge.ini || end $? $2 Merge failed
   # sed -i "s/^Include-/IncludeDASH/" $TMP.ini
 }
+
+cleanupIni4Prod() {
+  [ "$1" ] || return
+  sed -i "s/DASH/-/" $1
+  crudini --get $1 > $TMP.sections
+  cat $TMP.sections | while read section
+  do
+    crudini --get $1 $section | grep -qi [a-z] || crudini --del $1 "$section"
+  done
+
+}
+
+testDatabaseConnection() {
+  [ "$4" ] || return $?
+  log "Testing database connection"
+  DatabaseHost=$1
+  DatabaseName=$2
+  DatabaseUser=$3
+  DatabasePassword=$4
+
+  echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" $DatabaseName
+  if [ $? -ne 0 ]
+  then
+    echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword"
+    if [ $? -ne 0 ]
+    then
+      createuser $DatabaseHost $DatabaseUser "$DatabasePassword" || return $?
+    fi
+    createDatabase $DatabaseHost $DatabaseUser $DatabaseName \
+    && echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p$DatabasePassword $DatabaseName \
+    && log "Database OK" && return \
+    || return $?
+  fi
+  log "Database Connection OK"
+  return
+}
+
+createDatabaseUser() {
+  [ "$3" ] || return $?
+  yesno "Create database user $DatabaseUser on $DatabaseHost?" || return $?
+  DatabaseHost=$1
+  DatabaseUser=$2
+  DatabasePassword=$3
+  echo "CREATE USER $DatabaseUser IDENTIFIED BY '$DatabasePassword';" | mysql -h$DatabaseHost \
+  return $?
+}
+
+createDatabase() {
+  [ "$3" ] || return $?
+  yesno "Create database $DatabaseName and grant rights to $DatabaseUser?" || return $?
+  DatabaseHost=$1
+  DatabaseName=$2
+  DatabaseUser=$3
+  echo "CREATE DATABASE $DatabaseName;"  | sudo mysql -h$DatabaseHost \
+  && echo "GRANT ALL ON $DatabaseName.* TO $DatabaseUser;" | sudo mysql -h$DatabaseHost \
+  && log "Database created"
+  return $?
+}
