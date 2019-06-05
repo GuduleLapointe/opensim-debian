@@ -68,14 +68,13 @@ crudget() {
 crudmerge() {
   [ -f "$2" ] || continue
   log merging $2 in $1
-  cleanupIni $2 | sed "s/^Include-/IncludeDASH/" > $TMP.merge.ini
+  cleanupIni $2 | sed "s/^Include-/Include_/" > $TMP.merge.ini
   crudini --merge $1 <$TMP.merge.ini || end $? $2 Merge failed
-  # sed -i "s/^Include-/IncludeDASH/" $TMP.ini
 }
 
 cleanupIni4Prod() {
   [ "$1" ] || return
-  sed -i "s/DASH/-/" $1
+  sed -i "s/Include_/Include-/" $1
   crudini --get $1 > $TMP.sections
   cat $TMP.sections | while read section
   do

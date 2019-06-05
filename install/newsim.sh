@@ -26,6 +26,7 @@ BinDir=$bindir
 crudget $RobustConfig GridInfoService
 GridName=$gridname
 GridNick=$gridnick
+GridMachineName=$(echo "$GridNick" | tr [:upper:] [:lower:])
 
 readvar BinDir
 [ -d "$BinDir" ] || end $? "$BinDir directory does not exist"
@@ -37,6 +38,7 @@ then
   crudget $RobustConfig Launch
   BinDir=$bindir
   GridNick=$gridnick
+  GridMachineName=$(echo "$GridNick" | tr [:upper:] [:lower:])
 else
   log "Building OpenSim.ini for $GridNick grid"
 
@@ -60,8 +62,8 @@ else
   crudini --set $TMP.OpenSim.ini Const BaseURL "$baseurl"
   crudini --set $TMP.OpenSim.ini Const PublicPort $publicport
   crudini --set $TMP.OpenSim.ini Const PrivatePort $privateport
-  crudini --set $TMP.OpenSim.ini Const CacheDirectory "$CACHE/$MachineName"
-  crudini --set $TMP.OpenSim.ini Const DataDirectory "$DATA/$MachineName"
+  crudini --set $TMP.OpenSim.ini Const CacheDirectory "$CACHE/$GridNick"
+  crudini --set $TMP.OpenSim.ini Const DataDirectory "$DATA/\${Launch|SimName}"
   crudini --set $TMP.OpenSim.ini Const LogsDirectory "$LOGS"
 
   crudini --set $TMP.OpenSim.ini Includes Include-Common "$ETC/config-include/GridCommon.ini"
@@ -71,7 +73,7 @@ else
 
   [ -f "$ETC/osslEnable.ini" ] \
   || [ -f "$ETC/$GridNick.osslEnable.ini" ] \
-  && crudini --set $TMP.OpenSim.ini Includes IncludeDASHosslEnable = "$ETC/osslEnable.ini"
+  && crudini --set $TMP.OpenSim.ini Includes Include_osslEnable = "$ETC/osslEnable.ini"
 
   # We remove some confussing values that are defaults anyway
   crudini --del $TMP.OpenSim.ini ClientStack.LindenCaps Cap_GetTexture
@@ -101,7 +103,7 @@ else
     # [ ! -f "$ini" ] && log "skipping $ini, not found" && continue
     crudmerge $TMP.GridCommon.ini $ini || end $?
   done
-  crudini --del $TMP.GridCommon.ini DatabaseService IncludeDASHStorage
+  crudini --del $TMP.GridCommon.ini DatabaseService Include_Storage
 
   cleanupIni4Prod $TMP.GridCommon.ini \
   && mkdir -p "$ETC/config-include/" \
@@ -134,16 +136,15 @@ crudini --set $TMP.ini Network http_listener_port "$http_listener_port"
 
 log "getting db settings"
 # inigrep Include_ $TMP.ini
-GridMachineName=$(echo "$GridNick" | tr [:upper:] [:lower:])
 
 crudget $TMP.ini DatabaseService || end $?
 if [ "$connectionstring" ]
 then
   DatabaseName=$(echo "$connectionstring;" | sed "s/.*Database=//" | cut -d ';' -f 1)
-  [ ! "$DatabaseName" -o "$DatabaseName" = "opensim" ] && DatabaseName="os_$GridMachineName_$MachineName"
+  [ ! "$DatabaseName" -o "$DatabaseName" = "opensim" ] && DatabaseName="os_${GridMachineName}_${MachineName}"
 else
   crudget $RobustConfig DatabaseService || end $? get DatabaseService failed
-  DatabaseName="os_$GridMachineName_$MachineName"
+  DatabaseName="os_${GridMachineName}_${MachineName}"
 fi
 DatabaseHost=$(echo "$connectionstring;" | sed "s/.*Data Source=//" | cut -d ';' -f 1)
 [ ! "$DatabaseHost" ] && DatabaseHost=localhost
@@ -161,53 +162,23 @@ ConnectionString="Data Source=$DatabaseHost;Database=$DatabaseName;User ID=$Data
 crudini --set $TMP.ini DatabaseService StorageProvider "OpenSim.Data.MySQL.dll"
 crudini --set $TMP.ini DatabaseService ConnectionString "\"$ConnectionString\""
 
-crudini --del $TMP.ini Architecture Include-Architecture
-# crudini --set $TMP.ini Architecture IncludeDASHArchitecture '"${Const|BinDirectory}/config-include/GridHypergrid.ini"'
 crudini --set $TMP.ini Startup ConfigDirectory "$ETC"
 
-crudini --set $TMP.ini Includes IncludeDASHCommon "$ETC/$GridNick.OpenSim.ini"
+crudini --set $TMP.ini Includes Include_Common "$ETC/$GridNick.OpenSim.ini"
 
 [ -f "$ETC/$GridNick.Vivox.ini" ] \
 && crudini --set $TMP.ini Includes Include-Voice "$ETC/$GridNick.Vivox.ini" \
 || [ -f "$ETC/Vivox.ini" ] \
 && crudini --set $TMP.ini Includes Include-Voice "$ETC/Vivox.ini" \
 
-# crudini --set $TMP.ini  Includes Include-osslEnable "/etc/opensim/osslEnable.ini"
 
-
-# crudget $TMP.ini Const
-# [ "$baseurl" ] || crudini --set $TMP.ini Const BaseURL "$BaseURL"
-# [ "$publicport" ] || crudini --set $TMP.ini Const PublicPort "$PublicPort"
-# [ "$privateport" ] || crudini --set $TMP.ini Const PrivatePort "$PrivatePort"
-# [ "$gridname" ] || crudini --set $TMP.ini Const GridName "$GridName"
-#
-# [ "$bindirectory" ] || crudini --set $TMP.ini Const BinDirectory "\${Launch|BinDir}"
-#
-# crudget $TMP.ini Startup
-# [ "$consoleprompt" ] || crudini --set $TMP.ini Startup ConsolePrompt "\${Launch|SimName} (\R) "
-# [ "$regionload_regionsdir" ] || crudini --set $TMP.ini Startup regionload_regionsdir '"${Const|DataDirectory}/${Launch|SimName}/regions"'
-# [ "$economymodule" ] || crudini --set $TMP.ini Startup EconomyModule "Gloebit"
-# [ "$drawprimonmaptile" ] || crudini --set $TMP.ini Startup DrawPrimOnMapTile "true"
-#
-# [ "$physical_prim" ] || crudini --set $TMP.ini Startup physical_prim "true"
-# [ "$meshing" ] || crudini --set $TMP.ini Startup meshing "Meshmerizer"
-# [ "$physics" ] || crudini --set $TMP.ini Startup physics "BulletSim"
-# [ "$storage_prim_inventories" ] || crudini --set $TMP.ini Startup storage_prim_inventories "true"
-# [ "$cachesculptmaps" ] || crudini --set $TMP.ini Startup CacheSculptMaps "false"
-#
-
-#
-# crudget $TMP.ini NPC
-# [ "$enabled" ] || crudini --set $TMP.ini NPC Enabled "true"
-
-#
-#
-# log http_listener_port $http_listener_port
+crudini --del $TMP.ini Architecture
+crudini --set $TMP.ini Architecture Include_Architecture '"${Const|BinDirectory}/config-include/GridHypergrid.ini"'
 
 cleanupIni4Prod $TMP.ini \
 && cp $TMP.ini $ETC/opensim.d/$MachineName.ini
 
-for folder in $CACHE/$MachineName $DATA/$MachineName $LOGS
+for folder in $CACHE/$GridNick $DATA/$MachineName $LOGS
 do
   [ -e "$folder" ] && continue
   mkdir -p "$folder" && log created folder $folder || end $? couild not create $folder
