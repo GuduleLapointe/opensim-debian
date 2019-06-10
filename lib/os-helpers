@@ -93,13 +93,13 @@ testDatabaseConnection() {
   DatabaseUser=$3
   DatabasePassword=$4
 
-  echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" $DatabaseName
+  echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" $DatabaseName 2>/dev/null
   if [ $? -ne 0 ]
   then
-    echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword"
+    echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" 2>/dev/null
     if [ $? -ne 0 ]
     then
-      createuser $DatabaseHost $DatabaseUser "$DatabasePassword" || return $?
+      createDatabaseUser $DatabaseHost $DatabaseUser "$DatabasePassword" || return $?
     fi
     createDatabase $DatabaseHost $DatabaseUser $DatabaseName \
     && echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p$DatabasePassword $DatabaseName \
@@ -116,7 +116,7 @@ createDatabaseUser() {
   DatabaseHost=$1
   DatabaseUser=$2
   DatabasePassword=$3
-  echo "CREATE USER $DatabaseUser IDENTIFIED BY '$DatabasePassword';" | mysql -h$DatabaseHost \
+  echo "CREATE USER $DatabaseUser IDENTIFIED BY '$DatabasePassword';" | sudo mysql -h$DatabaseHost 2>/dev/null 
   return $?
 }
 
@@ -128,7 +128,7 @@ createDatabase() {
   DatabaseName=$3
   echo "CREATE DATABASE $DatabaseName character set UTF8;"  | sudo mysql -h$DatabaseHost \
   && echo "GRANT ALL ON $DatabaseName.* TO $DatabaseUser;" | sudo mysql -h$DatabaseHost \
-  && echo "set global innodb_large_prefix=on; set global innodb_file_format=Barracuda;" | sudo mysql -h$DatabaseHost \
+  && echo "set global innodb_large_prefix=on; set global innodb_file_format=Barracuda;" | sudo mysql -h$DatabaseHost  2>/dev/null \
   && log "Database created"
   return $?
 }
