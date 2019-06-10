@@ -21,3 +21,6 @@
 [submodule "contrib/wordpress/w4os"]
 	path = contrib/wordpress/w4os
 	url = https://git.magiiic.com/opensimulator/w4os.git
+[submodule "contrib/currency/Gloebit"]
+	path = contrib/currency/Gloebit
+	url = https://github.com/gloebit/opensim-moneymodule-gloebit.git
