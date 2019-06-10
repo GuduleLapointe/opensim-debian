@@ -20,7 +20,7 @@ BASEDIR=$(dirname $(dirname $(realpath "$0")))
 cd "$ETC" || exit 1
 
 (
-   find . /opt/opensim/var/data/regions /opt/opensim/var/*/data/regions -name "*.ini" 2>/dev/null \
+   find . $DATA/regions $DATA/*/regions -name "*.ini" 2>/dev/null \
         | grep -v "#" \
         | xargs egrep "^[[:blank:];]*(InternalPort|PublicPort|PrivatePort|http_listener_port)[[:blank:]]*=" \
 ) | cut -d "=" -f 2 | sed "s/[^0-9]//g" | sort -u | sort -n > $TMP.inuse
