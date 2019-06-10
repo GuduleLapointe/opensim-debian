@@ -1,32 +1,80 @@
 #!/bin/bash
 
 firstport=9010
-DEBUG=yes
+DEBUG=no
+[ "$1" = "-v" ] && DEBUG=yes && shift
+[ "$1" = "-q" ] && DEBUG=no && shift
 
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/lib/os-helpers || exit 1
 
+log "ETC $ETC"
+log "OSBIN $OSBIN"
+log "OSBINDIR $OSBINDIR"
+
+[ "$2" ] && GridNick=$1 && shift
 [ "$1" ] && SimName=$1 && shift
+
+ls $ETC/robust.d/*.ini 2>/dev/null | while read ini
+do
+  echo "$(basename $ini .ini) $ini" >> $TMP.grids
+done
+ls $ETC/*.OpenSim.ini 2>/dev/null  | while read ini
+do
+  nick=$(basename $ini .OpenSim.ini)
+  grep -q "^$nick[[:blank:]]" $TMP.grids 2>/dev/null && continue
+  echo "$nick $ini" >> $TMP.grids
+done
+[ -f $TMP.grids ] && defaultGrid=$(head -1 $TMP.grids | cut -d " " -f 1)
+[ -f $TMP.grids ] && echo "Known grids:"
+cat $TMP.grids | sed "s:^:  :"
+log default grid $defaultGrid
+
+[ ! "$GridNick" ] && GridNick="$defaultGrid"
+readvar GridNick
+RobustConfig=$(grep "^$GridNick[[:blank:]]" $TMP.grids | cut -d " " -f 2)
+if [ "$RobustConfig" ]
+then
+  log robust config $RobustConfig
+  grep -q "\[GridInfoService\]" $RobustConfig
+  if [ $? -eq 0 ]
+  then
+    log "robust type ini file"
+    crudget $RobustConfig Launch
+    BinDir=$bindir
+    crudget $RobustConfig GridInfoService
+    GridName=$gridname
+    GridNick=$gridnick
+  else
+    log "simulator type ini file"
+    crudget $RobustConfig Const
+    GridName=$gridname
+    curl -s $baseurl:$publicport/get_grid_info > $TMP.gridinfo
+    which xmlstarlet >/dev/null \
+     && GridNick=$(xmlstarlet sel -t -m /gridinfo -v gridnick -nl < $TMP.gridinfo)
+  fi
+  GridMachineName=$(echo "$GridNick" | tr [:upper:] [:lower:])
+else
+  end 1 "No robust config found, manual setup not implemented"
+fi
+log grid name $GridName
+log grid nick $GridNick
+log GridMachineName $GridMachineName
+
 readvar SimName
 [ ! "$SimName" ] && end 1
 MachineName=$(echo "$SimName" | tr [:upper:] [:lower:] | sed "s/ //g")
 log MachineName $MachineName
 
-log "ETC $ETC"
-log "OSBIN $OSBIN"
-log "OSBINDIR $OSBINDIR"
-echo "# Available ROBUST servers"
-ls $ETC/robust.d/*.ini 2>/dev/null
-
-log "Local Robust Config"
-RobustConfig=$(ls $ETC/robust.d/*.ini 2>/dev/null | head -1)
-readvar RobustConfig
-crudget $RobustConfig Launch
-BinDir=$bindir
-crudget $RobustConfig GridInfoService
-GridName=$gridname
-GridNick=$gridnick
-GridMachineName=$(echo "$GridNick" | tr [:upper:] [:lower:])
+log "list of core opensim directories"
+find "$CORE" -name OpenSim.exe | xargs dirname | grep "bin$" > $TMP.list
+grep -v "/opensim-[0-9\.]*/" $TMP.list > $TMP.osdirs
+grep "/opensim-[0-9\.]*/" $TMP.list >> $TMP.osdirs
+defaultOSDir=$(tail -1 $TMP.osdirs)
+log default OSDIR $defaultOSDir
+echo "Known OpenSimulator distributions"
+cat $TMP.osdirs | sed "s:^:  :"
+[ ! "$BinDir" ] && BinDir=$defaultOSDir
 
 readvar BinDir
 [ -d "$BinDir" ] || end $? "$BinDir directory does not exist"
@@ -34,11 +82,11 @@ readvar BinDir
 
 if [ -f "$ETC/$GridNick.OpenSim.ini" ]
 then
-  log "Using $ETC/$GridNick.OpenSim.ini"
-  crudget $RobustConfig Launch
-  BinDir=$bindir
-  GridNick=$gridnick
-  GridMachineName=$(echo "$GridNick" | tr [:upper:] [:lower:])
+  log "Using $ETC/$GridNick.OpenSim.ini but we already know what we need"
+  # crudget $RobustConfig Const
+  # BinDir=$bindirectory
+  # GridName=$GridName
+  # GridMachineName=$(echo "$GridNick" | tr [:upper:] [:lower:])
 else
   log "Building OpenSim.ini for $GridNick grid"
 
