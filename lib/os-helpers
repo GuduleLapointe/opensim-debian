@@ -62,7 +62,9 @@ randomPassword() {
 
 crudget() {
   [ "$2" ] || return $?
-  eval $(crudini --get --format=sh $1 $2  | sed -e "s/'\"/'/" -e "s/\"'/'/")
+  [ -f "$1" ] || return $?
+  cleanupIni "$1" > $TMP.get
+  eval $(crudini --get --format=sh $TMP.get $2  | sed -e "s/'\"/'/" -e "s/\"'/'/")
 }
 
 crudmerge() {
