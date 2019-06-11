@@ -173,7 +173,7 @@ ls $ETC/*.d/$MachineName.ini 2>/dev/null \
 crudini --set $TMP.ini Launch SimName "$SimName"
 crudini --set $TMP.ini Launch BinDir "$BinDir"
 crudini --set $TMP.ini Launch Executable '"OpenSim.exe"'
-crudini --set $TMP.ini Launch LogConfig "$DATA/$MachineName/$MachineName.logconfig"
+crudini --set $TMP.ini Launch LogConfig "$DATA/$SimName/$SimName.logconfig"
 
 crudget $TMP.ini Network
 [ "$http_listener_port" ] || http_listener_port=$(nextfreeports $firstport)
@@ -224,7 +224,7 @@ crudini --set $TMP.ini Architecture Include_Architecture '"${Const|BinDirectory}
 cleanupIni4Prod $TMP.ini \
 && cp $TMP.ini $ETC/opensim.d/$MachineName.ini
 
-for folder in $CACHE/$GridNick $DATA/$MachineName $LOGS
+for folder in "$CACHE/$GridNick" "$DATA/$SimName" $LOGS
 do
   [ -e "$folder" ] && continue
   mkdir -p "$folder" && log created folder $folder || end $? couild not create $folder
