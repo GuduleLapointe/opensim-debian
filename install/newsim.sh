@@ -2,8 +2,6 @@
 
 firstport=9010
 DEBUG=no
-[ "$1" = "-v" ] && DEBUG=yes && shift
-[ "$1" = "-q" ] && DEBUG=no && shift
 
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/lib/os-helpers || exit 1

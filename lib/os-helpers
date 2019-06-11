@@ -18,6 +18,9 @@ BASEDIR=$(dirname "$BINDIR")
 [ ! "$CONTRIB" ] && CONTRIB=$BASEDIR/contrib
 . $CONTRIB/bash-helpers/helpers || echo "$PGM: Missing helpers library, run install.sh"
 
+[ "$1" = "-v" ] && DEBUG=yes && shift
+[ "$1" = "-q" ] && DEBUG=no && shift
+
 LIB=$BASEDIR/lib
 VAR=$BASEDIR/var
 LOGS=$VAR/logs
@@ -116,7 +119,7 @@ createDatabaseUser() {
   DatabaseHost=$1
   DatabaseUser=$2
   DatabasePassword=$3
-  echo "CREATE USER $DatabaseUser IDENTIFIED BY '$DatabasePassword';" | sudo mysql -h$DatabaseHost 2>/dev/null 
+  echo "CREATE USER $DatabaseUser IDENTIFIED BY '$DatabasePassword';" | sudo mysql -h$DatabaseHost 2>/dev/null
   return $?
 }
 
