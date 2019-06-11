@@ -20,10 +20,12 @@ BASEDIR=$(dirname $(dirname $(realpath "$0")))
 cd "$ETC" || exit 1
 
 (
-   find . $DATA/regions $DATA/*/regions -name "*.ini" 2>/dev/null \
+  find . $DATA/regions $DATA/*/regions -name "*.ini" 2>/dev/null \
         | grep -v "#" \
         | xargs egrep "^[[:blank:];]*(InternalPort|PublicPort|PrivatePort|http_listener_port)[[:blank:]]*=" \
-) | cut -d "=" -f 2 | sed "s/[^0-9]//g" | sort -u | sort -n > $TMP.inuse
+        | cut -d "=" -f 2 | sed "s/[^0-9]//g"
+  netstat -an | grep ":" | cut -d ":" -f 2 | cut -f 1 | cut -d " " -f 1
+) | sort -u | sort -n > $TMP.inuse
 
 i=$(($min - 1))
 found=0
