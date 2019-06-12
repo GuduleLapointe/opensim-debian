@@ -78,9 +78,9 @@ shift `expr $OPTIND - 1`
 . "$(which ini_parser)" || end 2 could not launch ini parser
 
 startSim() {
-    unset IFS
-    for arg in $@
-    do
+  unset IFS
+  for arg in $@
+  do
 	ls -d "$arg" 2>/dev/null | grep -q "\.ini$" \
 	    && { inifile=$arg; instance=$(basename $arg .ini | tr "[:upper:]" "[:lower:]"); } \
 	    || { instance=$(echo $arg | tr "[:upper:]" "[:lower:]"); inifile=$(buildIni "$instance"); }
@@ -165,45 +165,41 @@ startSim() {
     touch $LogFile && log "LogFile $LogFile touched"
 	fi
 
-	touch $TMP.wait
+	# touch $TMP.wait
   log "Working directory: $PWD"
 	log "launching $instance "
 	log "$cmd"
 	eval "screen -S $instance -d -m $cmd"
 	screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]"
 
-  TAILTIMEOUT=120
-  log "logfile: $LogFile"
-
-  if [ "$Executable" = "Robust.exe" ]
-  then
-    TAILTIMEOUT=60
-    timeout $TAILTIMEOUT tailgrep "UserAgentServerConnector loaded successfully" $LogFile \
-    && echo "At least one region started" \
-    || echo "Startup still going on after $TAILTIMEOUT seconds, check again later"
-  else
-    echo timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up" $LogFile
-
-    timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up|loaded successfully" $LogFile \
-    && echo "At least one region started" \
-    || echo "Startup still going on after $TAILTIMEOUT seconds, check again later"
-  fi
-
-
-	# echo screen -S robust -d -m mono Robust.exe -inifile='/etc/opensim/robust-enabled/robust.ini' -logfile='/var/log/opensim/Robust.HG.log' -prompt 'Robust (robust) '
-
-	# screen -S $instance -d -m $cmd || log $? "screen error"
-	# sleep 1
-	# log "still launching"
-	# sleep 1
-	# sleep 1
-	# continue
-	# 	sleep 1
-	# 	printf "launching\n"
-	# 	sleep 1
-	# 	screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]"
-	# 	sleep 1
-    done
+    # TAILTIMEOUT=120
+    # log "logfile: $LogFile"
+    if [ "$Executable" = "Robust.exe" ]
+    then
+      osConsoleWait $instance "UserAgentServerConnector loaded successfully" \
+      && log "Robust server $instance started" \
+      || log "Robust not started after 30 seconds, giving up"
+      # TAILTIMEOUT=60
+      # timeout $TAILTIMEOUT tailgrep "UserAgentServerConnector loaded successfully" $LogFile \
+      # && echo "At least one region started" \
+      # || echo "Startup still going on after $TAILTIMEOUT seconds, check again later"
+    else
+      osConsoleWait 5 $instance "RegionUUID" && osConsole $instance "\n"
+      osConsoleWait 1 $instance "Internal IP address" && osConsole $instance "\n"
+      osConsoleWait 1 $instance "External host name" && osConsole $instance "\n"
+      osConsoleWait 1 $instance "Do you wish to join region .* to an existing estate" && osConsole $instance "\n" \
+      && osConsoleWait 1 $instance "Name of estate to join." && osConsole $instance "\n"
+      
+      osConsoleWait 120 $instance "neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done" \
+      && log "Simulator $instance started" \
+      || log $? "Simulator $instance not started after 60 seconds, giving up"
+      #
+      # echo timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up" $LogFile
+      # timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up|loaded successfully" $LogFile \
+      # && echo "At least one region started" \
+      # || echo "Startup still going on after $TAILTIMEOUT seconds, check again later"
+    fi
+  done
 }
 
 stopSim() {

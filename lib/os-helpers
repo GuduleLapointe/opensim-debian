@@ -48,9 +48,41 @@ osConsole() {
   osInstance=$1
   shift
   osCommand="$@"
+  [ "$osCommand" = "\n" ] && unset osCommand
   lr=$(printf "\n\b")
-  pre=$(printf "\n\b")
-  screen -S $osInstance -X stuff "$(echo "$pre$osCommand$lr")"
+  # pre=$(printf "\n\b")
+  screen -x $osInstance -X stuff "$(echo "$pre$osCommand$lr")"
+}
+osConsoleRead() {
+  [ ! "$1" ] && return
+  [ ! "$COLUMNS" ] && COLUMNS=75
+  osInstance=$1; shift
+  pattern="$@"
+  screen -x $osInstance -X hardcopy -h $TMP.console
+  if [ "$pattern" ]
+  then
+    egrep "$pattern" $TMP.console && return
+    printf "\33[2K"
+    printf "$(grep . $TMP.console | tail -1 | cut -c -$COLUMNS)\r"
+    return 1
+  else
+    cat $TMP.console | sed "s/^/cat /"
+  fi
+}
+osConsoleWait() {
+  [ "$2" ] || return $?
+  [ "$3" ] && timeout=$1 && shift || timeOut=60
+  osInstance=$1; shift
+  pattern="$@"
+  [ "$pattern" = "" ] && return 2
+  t=0; while [ $t -lt 60 ]
+  do
+    osConsoleRead $osInstance "$pattern" && return
+    sleep 0.5
+    t=$(($t + 1))
+  done
+  # echo
+  return 1
 }
 
 cleanupIni() {
