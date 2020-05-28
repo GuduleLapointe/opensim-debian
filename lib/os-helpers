@@ -95,7 +95,7 @@ cleanupIni() {
 }
 
 randomPassword() {
-  < /dev/urandom tr -dc "A-Za-z0-9" | head -c32
+  echo $(< /dev/urandom tr -dc "[:alnum:]" | head -c32)
 }
 
 crudget() {
