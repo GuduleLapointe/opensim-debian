@@ -34,13 +34,11 @@ do
     [ -f "$etc/opensim.conf" ] && . $ETC/opensim.conf 2>/dev/null
 done
 
-OSBIN=$(
-(
-ls $OSBINDIR/bin/OpenSim.exe \
-|| ls $BASEDIR/lib/opensim*/bin/OpenSim.exe \
-|| ls $BASEDIR/core/opensim*/bin/OpenSim.exe
-) 2>/dev/null | tail -1
-)
+[ ! "$OSBIN" ] && OSBIN=$( (
+ls $BASEDIR/lib/opensim*/bin/OpenSim.exe
+ls $BASEDIR/core/opensim*/bin/OpenSim.exe
+ls $OSBINDIR/bin/OpenSim.exe
+) 2>/dev/null | tail -1 )
 [ "$OSBIN" ] \
 && log "$OSBIN found" && OSBINDIR=$(dirname $OSBIN) && OSDIR=$(dirname $OSBINDIR)\
 || log 1 "OpenSim.exe not found, run install.sh"
