@@ -37,8 +37,8 @@ done
 OSBIN=$(
 (
 ls $OSBINDIR/bin/OpenSim.exe \
-|| ls $BASEDIR/lib/*/bin/OpenSim.exe \
-|| ls $BASEDIR/core/*/bin/OpenSim.exe
+|| ls $BASEDIR/lib/opensim*/bin/OpenSim.exe \
+|| ls $BASEDIR/core/opensim*/bin/OpenSim.exe
 ) 2>/dev/null | tail -1
 )
 [ "$OSBIN" ] \
