@@ -106,8 +106,7 @@ crudget() {
   then
     crudini --get $TMP.get $2 $3 | sed -e 's/^"//' -e  's/"$//'
   else
-    # sed -i "s/^\([^= ]\)-/\\1_/" $TMP.get
-    sed -i "s/Include-/Include_/" $TMP.get
+    sed -i "s/^\([^=]\)-/\\1_/" $TMP.get
     eval $(crudini --get --format=sh $TMP.get $2 $3  | sed -e "s/'\"/'/" -e "s/\"'/'/")
   fi
 }
