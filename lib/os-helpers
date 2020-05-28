@@ -27,7 +27,6 @@ LOGS=$VAR/logs
 CACHE=$VAR/cache
 DATA=$VAR/data
 SRC=$BASEDIR/src
-CORE=$BASEDIR/core
 
 for etc in $BASEDIR/etc /etc/opensim ~/etc/opensim
 do
@@ -36,8 +35,11 @@ do
 done
 
 OSBIN=$(
-ls $OSBINDIR/bin/OpenSim.exe 2>/dev/null \
-|| ls $CORE/*/bin/OpenSim.exe 2>/dev/null | tail -1
+(
+ls $OSBINDIR/bin/OpenSim.exe \
+|| ls $BASEDIR/lib/*/bin/OpenSim.exe \
+|| ls $BASEDIR/core/*/bin/OpenSim.exe
+) 2>/dev/null | tail -1
 )
 [ "$OSBIN" ] \
 && log "$OSBIN found" && OSBINDIR=$(dirname $OSBIN) && OSDIR=$(dirname $OSBINDIR)\
