@@ -101,11 +101,13 @@ randomPassword() {
 crudget() {
   [ "$2" ] || return $?
   [ -f "$1" ] || return $?
-  cleanupIni "$1" | sed "s/Include-/Include_/" > $TMP.get
+  cleanupIni "$1" > $TMP.get
   if [ "$3" ]
   then
     crudini --get $TMP.get $2 $3 | sed -e 's/^"//' -e  's/"$//'
   else
+    # sed -i "s/^\([^= ]\)-/\\1_/" $TMP.get
+    sed -i "s/Include-/Include_/" $TMP.get
     eval $(crudini --get --format=sh $TMP.get $2 $3  | sed -e "s/'\"/'/" -e "s/\"'/'/")
   fi
 }
