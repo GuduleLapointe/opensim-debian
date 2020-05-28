@@ -27,10 +27,11 @@ LOGS=$VAR/logs
 CACHE=$VAR/cache
 DATA=$VAR/data
 SRC=$BASEDIR/src
+ETC=$BASEDIR/etc
 
-for etc in $BASEDIR/etc /etc/opensim ~/etc/opensim
+for etc in /etc/opensim $BASEDIR/etc ~/etc/opensim
 do
-    [ -d "$etc" ] && ETC=$etc
+    [ -d "$etc" ] && ETC=$etc || continue
     [ -f "$etc/opensim.conf" ] && . $ETC/opensim.conf 2>/dev/null
 done
 
