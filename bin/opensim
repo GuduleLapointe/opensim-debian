@@ -119,7 +119,13 @@ startSim() {
 	log reading section Launch
 
 	# ini_section_Startup 2>/dev/null
-  echo "Executable $Executable"
+  [ "$Executable" ] \
+  || Executable=$(crudget $inifile Launch Executable) \
+  && [ "$Executable" ] \
+  || end $? count not read Executable value
+
+  log "Executable $Executable"
+
   ini_section_Const 2>/dev/null && echo "const ok"
   # || end $? reading section Const
 	ini_section_Launch 2>/dev/null || end $? reading section Launch
