@@ -11,6 +11,11 @@ if ! which realpath >/dev/null; then
   }
 fi
 
+for exe in crudini pv #mono
+do
+  which $exe >/dev/null || end $? "missing '$exe', install it and try again"
+done
+
 # echo ":$PATH:" | grep -q ":$BINDIR:" || export PATH=$PATH:$BINDIR
 # [ ! "$LIB" ] && LIB=$BASEDIR/lib
 BINDIR=$(dirname $(realpath "$0"))
@@ -105,9 +110,11 @@ crudget() {
   if [ "$3" ]
   then
     crudini --get $TMP.get $2 $3 | sed -e 's/^"//' -e  's/"$//'
+    return $?
   else
     sed -i "s/^\([^=]\)-/\\1_/" $TMP.get
     eval $(crudini --get --format=sh $TMP.get $2 $3  | sed -e "s/'\"/'/" -e "s/\"'/'/")
+    return $?
   fi
 }
 

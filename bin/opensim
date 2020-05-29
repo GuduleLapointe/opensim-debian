@@ -4,7 +4,7 @@
 # Released under GNU Affero GPL v3.0 license
 #    http://www.gnu.org/licenses/agpl-3.0.html
 
-LogDir=/opt/opensim/var/logs
+DefaultLogDir=/opt/opensim/var/logs
 
 DELAY=60
 shutdownDelay=120
@@ -129,8 +129,13 @@ startSim() {
 	log "BinDir $BinDir"
 	[ -f $Executable ] || log 3 Executable $Executable not found
 
+  Include_Common=$(crudget $inifile Includes Include-Common)
+  # crudini --get $inifile Includes Include-Common
+  LogDirectgory=$(crudget $Include_Common Const LogsDirectory | sed -e "s#\${Launch|SimName}#$instance#g" -e "s#\${Launch|MachineName}#$instance#g")
+  log LogsDirectory $LogsDirectory
+  [ ! "$LogDirectgory" ] && LogDirectgory=$DefaultLogDir
   [ ! "$LogFile" ] && LogFile="$logfile"
-  [ ! "$LogFile" ] && LogFile="$LogDir/$instance.log"
+  [ ! "$LogFile" ] && LogFile="$LogsDirectory/$instance.log"
 
   cmd="mono $Executable -inifile='$inifile'"
   if [ "$Executable" = "Robust.exe" ]
@@ -146,11 +151,15 @@ startSim() {
 
   [ ! "$LogConfig" ] && LogConfig="$DataDirectory/$(basename "$inifile" .ini).LogConfig"
   log "LogConfig $LogConfig"
+
+
+  end DEBUG
+  # crudini --get $
   if [ ! -f "$LogConfig" ]
   then
     ExecName=$(basename $Executable .exe)
-    sed -e "s|[a-zA-Z0-9\./_-]*/*$ExecName.log|$LogDir/$instance.log|" \
-    -e "s|[a-zA-Z0-9\./_-]*/*${ExecName}Stats.log|$LogDir/${instance}.Stats.log|" \
+    sed -e "s|[a-zA-Z0-9\./_-]*/*$ExecName.log|$LogDirectory/$instance.log|" \
+    -e "s|[a-zA-Z0-9\./_-]*/*${ExecName}Stats.log|$LogDirectory/${instance}.Stats.log|" \
     $BinDir/$(basename $Executable).config >$TMP.logconfig \
     && mv $TMP.logconfig $LogConfig \
     && log created LogConfig file $LogConfig from core model $BinDir/$Executable.config \
@@ -158,6 +167,8 @@ startSim() {
     # cd /opt/opensim/var/data/config
     # ln -s $LogConfig 2>/dev/null
   fi
+  cat $LogConfig
+  end DEBUG
 	if [ -f "$LogConfig" ]
 	then
     cmd="$cmd -logconfig=$LogConfig"
@@ -189,7 +200,7 @@ startSim() {
       osConsoleWait 1 $instance "External host name" && osConsole $instance "\n"
       osConsoleWait 1 $instance "Do you wish to join region .* to an existing estate" && osConsole $instance "\n" \
       && osConsoleWait 1 $instance "Name of estate to join." && osConsole $instance "\n"
-      
+
       osConsoleWait 120 $instance "neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done" \
       && log "Simulator $instance started" \
       || log $? "Simulator $instance not started after 60 seconds, giving up"
