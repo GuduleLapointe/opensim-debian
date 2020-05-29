@@ -122,7 +122,7 @@ startSim() {
   [ "$Executable" ] \
   || Executable=$(crudget $inifile Launch Executable) \
   && [ "$Executable" ] \
-  || end $? count not read Executable value
+  || end $? could not read Executable value
 
   log "Executable $Executable"
 
