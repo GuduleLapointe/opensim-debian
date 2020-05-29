@@ -152,9 +152,6 @@ startSim() {
   [ ! "$LogConfig" ] && LogConfig="$DataDirectory/$(basename "$inifile" .ini).LogConfig"
   log "LogConfig $LogConfig"
 
-
-  end DEBUG
-  # crudini --get $
   if [ ! -f "$LogConfig" ]
   then
     ExecName=$(basename $Executable .exe)
@@ -167,8 +164,7 @@ startSim() {
     # cd /opt/opensim/var/data/config
     # ln -s $LogConfig 2>/dev/null
   fi
-  cat $LogConfig
-  end DEBUG
+
 	if [ -f "$LogConfig" ]
 	then
     cmd="$cmd -logconfig=$LogConfig"
