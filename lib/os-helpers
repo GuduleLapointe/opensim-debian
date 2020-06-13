@@ -137,11 +137,11 @@ cleanupIni4Prod() {
 
 testDatabaseConnection() {
   [ "$4" ] || return $?
-  log "Testing database connection"
   DatabaseHost=$1
   DatabaseName=$2
   DatabaseUser=$3
   DatabasePassword=$4
+  log "Testing database $DatabaseName connection"
 
   echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" $DatabaseName 2>/dev/null
   if [ $? -ne 0 ]
