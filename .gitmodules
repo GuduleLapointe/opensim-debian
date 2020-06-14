@@ -1,9 +1,3 @@
-[submodule "contrib/bash-helpers"]
-	path = contrib/bash-helpers
-	url = https://git.magiiic.com/magicoli/bash-helpers.git
-[submodule "contrib/currency/OMEconomy-Modules"]
-	path = contrib/currency/OMEconomy-Modules
-	url = https://github.com/OpenMetaverseEconomy/OMEconomy-Modules.git
 [submodule "contrib/web/flexible_helper_scripts"]
 	path = contrib/web/flexible_helper_scripts
 	url = https://git.magiiic.com/opensimulator/flexible_helper_scripts.git
@@ -24,3 +18,9 @@
 [submodule "contrib/currency/Gloebit"]
 	path = contrib/currency/Gloebit
 	url = https://github.com/gloebit/opensim-moneymodule-gloebit.git
+[submodule "contrib/bash-helpers"]
+	path = contrib/bash-helpers
+	url = https://git.magiiic.com/magicoli/bash-helpers.git
+[submodule "contrib/currency/OMEconomy-Modules"]
+	path = contrib/currency/OMEconomy-Modules
+	url = https://github.com/OpenMetaverseEconomy/OMEconomy-Modules.git
