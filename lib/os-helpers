@@ -216,3 +216,8 @@ iniMergeAndForget() {
   sed -i "s/Include_/Include-/" $thisini
   iniExpandVariables $thisini
 }
+
+sql() {
+  [ "$1" = "-v" ] && options="-v" && shift || options="-BN"
+  echo "$@" | mysql --defaults-file=$TMP.my.cnf $options
+}
