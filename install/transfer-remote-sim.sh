@@ -90,19 +90,23 @@ do
   [ "$GridCommon" ] && crudini --set $sim.ini Includes Include-Common "$GridCommon"
 
   SimName=$(crudget $sim.ini Launch SimName)
+  # just make sure SimName is lowercase and without spaces
+  $SimName=$(echo $SimName | sed "s/[^[:alnum:]_]//g" | tr [:upper:] [:lower:])
 
-  log check if MachineName is present and valid
-  MachineName==$(crudget $sim.ini Launch MachineName)
-  [ "$MachineName" ] \
-  && MachineName=$(echo $MachineName | sed "s/[^[:alnum:]_]//g" ) \
-  || MachineName=$(echo $SimName | sed "s/[^[:alnum:]_]//g" | tr [:upper:] [:lower:]) \
-  && [ "$MachineName" ] \
-  && crudini --set $sim.ini Launch MachineName $MachineName \
-  || end $? MachineName $MachineName empty
-  log MachineName $MachineName
+  ## Forget that stuff, simname **is** the MachineName
+  # log check if MachineName is present and valid
+  # MachineName==$(crudget $sim.ini Launch MachineName)
+  # [ "$MachineName" ] \
+  # && MachineName=$(echo $MachineName | sed "s/[^[:alnum:]_]//g" ) \
+  # || MachineName=$(echo $SimName | sed "s/[^[:alnum:]_]//g" | tr [:upper:] [:lower:]) \
+  # && [ "$MachineName" ] \
+  # && crudini --set $sim.ini Launch MachineName $MachineName \
+  # || end $? MachineName $MachineName empty
+  # log MachineName $MachineName
 
-  log rough and dirty LogConfig fix
-  crudini --set $sim.ini Launch LogConfig "$(crudget $GridCommon Const DataDirectory | sed -e "s#\${Launch|SimName}#${MachineName}#g" -e "s#\${Launch|MachineName}#${MachineName}#g")/config/log.config"
+  # log rough and dirty LogConfig fix
+  crudini --set $sim.ini Launch LogConfig "$(crudget $GridCommon Const DataDirectory | sed -e "s#\${Launch|SimName}#${SimName}#g" -e "s#\${Launch|MachineName}#${SimName}#g")/config/log.config"
+  # crudini --set $sim.ini Launch LogConfig "$(crudget $GridCommon Const DataDirectory | sed -e "s#\${Launch|SimName}#${MachineName}#g" -e "s#\${Launch|MachineName}#${MachineName}#g")/config/log.config"
 
   log "Creating user $DBUSER (if not exists)"
   echo "CREATE USER IF NOT EXISTS $DBUSER IDENTIFIED BY '$DBPASS'" | sudo mysql -BN
