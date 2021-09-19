@@ -21,6 +21,7 @@ git submodule update
 
 
 which crudini > /dev/null || end $? "Depends to crudini ini file parsers, you must install it"
+which apt > /dev/null || end $? "Depends to apt installation tool, you must install it"
 
 log checking preferences
 if [ ! -d "$ETC" ]
@@ -39,8 +40,8 @@ if ! (dpkg --get-selections mono-complete | cut -f 1 | grep -q "^mono-complete$"
 then
   log 1 "Mono is required to run OpenSimulator"
   yesno "Install mono?" || end $? "Mono installation cancelled"
-  sudo aptitude update && sudo aptitude upgrade -y \
-  && sudo aptitude install mono-complete \
+  sudo apt update && sudo apt upgrade -y \
+  && sudo apt install mono-complete \
   || end $? "Mono installation failed"
 fi
 
