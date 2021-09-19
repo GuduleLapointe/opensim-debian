@@ -8,16 +8,17 @@ OSDOWNLOADPAGE=http://opensimulator.org/dist
 DEBUG=yes
 #AUTOMATIC=yes
 
+BASEDIR=$(dirname $(dirname $(realpath "$0")))
+. $BASEDIR/lib/os-helpers || exit 1
+# . $CONTRIB/bash-helpers/ini_parser || (echo "Missing ini_parser librarie" >&2; exit 2 )
+trap 'rm -f $TMP*' EXIT
+
 # End of user configurable data
 log "Initialize submodules"
 git submodule init
 git submodule update
 # git submodule update --remote
 
-BASEDIR=$(dirname $(dirname $(realpath "$0")))
-. $BASEDIR/lib/os-helpers || exit 1
-# . $CONTRIB/bash-helpers/ini_parser || (echo "Missing ini_parser librarie" >&2; exit 2 )
-trap 'rm -f $TMP*' EXIT
 
 which crudini > /dev/null || end $? "Depends to crudini ini file parsers, you must install it"
 
