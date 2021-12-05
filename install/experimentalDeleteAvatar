@@ -41,7 +41,7 @@ PrincipalID=$(sql "SELECT PrincipalID FROM UserAccounts WHERE FirstName='$FirstN
 
 echo "Will delete $FirstName $LastName ($PrincipalID)" | grep --color "$FirstName $LastName"
 echo "  $(sql "SELECT count(*) FROM UserAccounts WHERE PrincipalID='$PrincipalID'") user account"
-echo "  $(sql "SELECT count(*) FROM Auth WHERE UUID='$PrincipalID'") auth info"
+echo "  $(sql "SELECT count(*) FROM auth WHERE UUID='$PrincipalID'") auth info"
 echo "  $(sql "SELECT count(*) FROM GridUser WHERE UserID='$PrincipalID'") grid user"
 echo "  $(sql "SELECT count(*) FROM Presence WHERE UserID='$PrincipalID'") grid user"
 echo "  $(sql "SELECT count(*) FROM Avatars WHERE PrincipalID='$PrincipalID'") avatar appearance"
@@ -50,13 +50,12 @@ echo "  $(sql "SELECT count(*) FROM inventoryitems WHERE avatarID='$PrincipalID'
 echo "WARNING: this is highly experimental, only use in test environments."  | grep --color ".*"
 yesno "Really proceed?" || end Cancelled
 echo Proceeding
-sql -v "
-DELETE FROM UserAccounts WHERE PrincipalID='$PrincipalID';
-DELETE FROM Auth WHERE UUID='$PrincipalID';
-DELETE FROM GridUser WHERE UserID='$PrincipalID';
-DELETE FROM Presence WHERE UserID='$PrincipalID';
-DELETE FROM Avatars WHERE PrincipalID='$PrincipalID';
-DELETE FROM inventoryfolders WHERE agentID='$PrincipalID';
-DELETE FROM inventoryitems WHERE avatarID='$PrincipalID';
-"
+sql -v "DELETE FROM UserAccounts WHERE PrincipalID='$PrincipalID';"
+sql -v "DELETE FROM GridUser WHERE UserID='$PrincipalID';"
+sql -v "DELETE FROM Presence WHERE UserID='$PrincipalID';"
+sql -v "DELETE FROM Avatars WHERE PrincipalID='$PrincipalID';"
+sql -v "DELETE FROM inventoryfolders WHERE agentID='$PrincipalID';"
+sql -v "DELETE FROM inventoryitems WHERE avatarID='$PrincipalID';"
+sql -v "DELETE FROM auth WHERE UUID='$PrincipalID';"
+
 echo Avatar $FirstName $LastName is probably deleted, unless otherwise mentioned above
