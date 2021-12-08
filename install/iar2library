@@ -1,0 +1,109 @@
+#!/bin/bash
+
+BASEDIR=$(dirname $(dirname $(realpath "$0")))
+. $BASEDIR/lib/os-helpers || exit 1
+trap - EXIT
+trap 'rm -rf $TMP* 2>/dev/null' EXIT
+
+[ "$1" ] || end $? "usage $0 <source iar> <config directory>"
+initsource="$1"
+ConfigDirectory="$2"
+[ -d "$ConfigDirectory" -o -d "$(realpath "$ConfigDirectory")" ] || end $? "config dir $ConfigDirectory not found"
+ConfigDirectory="$(realpath "$ConfigDirectory")"
+
+[ -f "$ConfigDirectory/assets/AssetSets.xml" -a -f "$ConfigDirectory/inventory/Libraries.xml" ] || end $? "assets or inventory folder not found in $ConfigDirectory"
+
+[ -e "$initsource" ] || end $? "source $initsource not found"
+if [ -f "$initsource" ]
+then
+  log assuming .iar file
+  mkdir $TMP.source && cd $TMP.source \
+  && tar xvfz "$initsource" >/dev/null && source=$PWD
+else
+  source=$initsource
+fi
+
+srcassetdir=$source/assets
+# find $srcassetdir
+# end
+cd "$source/inventory" || end $?
+if [ ! -f "$source/archive.xml" ]
+then
+  end 1 "source $source does not look like a valid archive"
+fi
+find * -type d | while read folder
+do
+  foldername=$(echo "$folder" | sed "s:__[^/]*::g")
+  name="$(basename "$foldername")"
+  machinename=$(echo "$foldername" | sed "s/ //g")
+  shortname="$(basename "$machinename")"
+  assetdir="${shortname}AssetSet"
+  assetxml="$assetdir/${shortname}AssetSet.xml"
+  invdir="$(echo $machinename | sed "s:BodyParts/:BodyPartsLibrary/:")"
+  log assetdir $assetdir
+  log invdir $invdir
+  cd $ConfigDirectory
+  [ -e "assets/$assetdir" ] && log "Folder $foldername exists, will merge" || log "Folder $foldername"
+  mkdir -p "assets/$assetdir" || end $?
+  mkdir -p "inventory/$invdir" || end $?
+  cd "$source/inventory/$folder" || end $?
+  ls *.xml 2>/dev/null > $TMP.xml || { log "Nothing to do here, skipping"; continue; }
+
+  echo "<Nini>" > $TMP.assetxml
+  cat $TMP.xml | while read file
+  do
+    name=$(grep "<Name>" "$file" | cut -d ">" -f 2- | sed "s:</*Name>::g" )
+    assetID=$(grep "<AssetID>" "$file" | cut -d ">" -f 2- | sed "s:</*AssetID>::g" )
+    assetType=$(grep "<AssetType>" "$file" | cut -d ">" -f 2- | sed "s:</*AssetType>::g" )
+    inventoryType=$(grep "<InvType>" "$file" | cut -d ">" -f 2- | sed "s:</*InvType>::g" )
+    assetfile=$(find $srcassetdir -iname "${assetID}*")
+    # fileName="$(basename "$assetfile" | sed -e "s/_bodypart.txt/_bodypart.dat/" -e "s/_clothing.txt/_clothing.dat/")"
+    fileName="$(basename "$assetfile")"
+    cp "$assetfile" "$ConfigDirectory/assets/$assetdir/$fileName"
+    echo "<Section Name=\"$name\">
+    <Key Name=\"assetID\" Value=\"$assetID\" />
+    <Key Name=\"name\" Value=\"$name\" />
+    <Key Name=\"assetType\" Value=\"$assetType\" />
+    <Key Name=\"inventoryType\" Value=\"$inventoryType\" />
+    <Key Name=\"fileName\" Value=\"$fileName\" />
+</Section>
+"
+  done >> $TMP.assetxml
+  echo "</Nini>" >> $TMP.assetxml
+
+  # cp addassets.lis $ConfigDirectory/assets/
+  # cd $ConfigDirectory
+  python "$BASEDIR/lib/updatelibrary.py" -n "$name" -s "$shortname" -a "$ConfigDirectory/assets/$assetdir" -i "$ConfigDirectory/inventory/$invdir" || end $?
+
+  cd "$ConfigDirectory"
+  # cp $TMP.assetxml $ConfigDirectory/assets/$assetxml
+  grep -q "\"$assetxml" assets/AssetSets.xml \
+  && grep -q "\"$invdir/${shortname}Folders.xml" inventory/Libraries.xml \
+  && grep -q "\"$invdir/${shortname}Folders.xml" inventory/Libraries.xml \
+  && log "$foldername already registered" && break
+  log "registering $foldername"
+  grep -v "</Nini>" assets/AssetSets.xml > $TMP.AssetSets.xml
+  echo "
+  <!-- imported from $initsource -->
+  <Section Name=\"$name\">
+    <Key Name=\"file\" Value=\"$assetxml\"/>
+  </Section>
+  <!---->
+</Nini>" >> $TMP.AssetSets.xml
+  diff assets/AssetSets.xml $TMP.AssetSets.xml
+  cat $TMP.AssetSets.xml > assets/AssetSets.xml
+  log assets/AssetSets.xml updated
+
+  grep -v "</Nini>" inventory/Libraries.xml > $TMP.Libraries.xml
+  echo "
+  <!-- imported from $initsource -->
+  <Section Name=\"$name\">
+    <Key Name=\"foldersFile\" Value=\"${invdir}Folders.xml\"/>
+    <Key Name=\"itemsFile\" Value=\"${invdir}Items.xml\"/>
+  </Section>
+  <!---->
+</Nini>" >> $TMP.Libraries.xml
+  diff inventory/Libraries.xml $TMP.Libraries.xml
+  cat $TMP.Libraries.xml > inventory/Libraries.xml
+  log inventory/Libraries.xml updated
+done
