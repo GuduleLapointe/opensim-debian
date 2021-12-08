@@ -1,0 +1,10 @@
+.map-outerframe { border: solid 1px black; overflow: hidden; position: relative; top: 0px; left: 0px; }
+.map-outerframe div { margin: 0px }
+.map-surface { margin: 0px; padding: 0px; overflow: hidden; background-image: url(../images/waterback.jpg); }
+.map-regionname { color: #ffffff; position: absolute; top: 0px; left: 0px; margin-top: 0px; font-size: 7pt; }
+.map-regionname-block { opacity: 0.75; -moz-opacity: 0.75; background-color: #000000; }
+.map-reuse { display: none; }
+.map-tooltip { color: #000000; }
+.map-controls { text-align: center; padding: 0px 5px 10px ; border: solid 1px black; position: absolute; top: 0px; right: 0px; z-index: 1000; width: 50px; height: 200px; background-color: #c0c0c0; color: black; }
+.map-zoom { position: relative; top: 10px; left: 16px; height: 140px; }
+

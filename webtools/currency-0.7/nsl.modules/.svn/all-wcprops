@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/opensim/opensim.nsl.modules/!svn/ver/44/trunk
+END
+get_optional_modules.sh
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/opensim/opensim.nsl.modules/!svn/ver/44/trunk/get_optional_modules.sh
+END
+build.sh
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/opensim/opensim.nsl.modules/!svn/ver/24/trunk/build.sh
+END
+clean.sh
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/opensim/opensim.nsl.modules/!svn/ver/44/trunk/clean.sh
+END

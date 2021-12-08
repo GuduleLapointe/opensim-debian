@@ -1,0 +1,19 @@
+<?php
+date_default_timezone_set ("Europe/Brussels");
+$DB_HOST = "localhost";
+$DB_USER = "opensim";
+$DB_PASSWORD = "password";
+$DB_NAME = "opensim_robust";
+
+$websearchUrl="https://example.org/?s=";
+// $websearchUrl = "http://search.metaverseink.com/opensim/results.jsp?query=";
+$websearchParam['Places'] = "type:place ";
+// $websearchUrl = "http://www.hyperica.com/?s=";
+$showcaseUrl="https://example.org/lab";
+
+$otherRegistrars=array(
+	"http://metaverseink.com/cgi-bin/register.py",
+);
+
+$HTTP_RAW_POST_DATA="";
+?>

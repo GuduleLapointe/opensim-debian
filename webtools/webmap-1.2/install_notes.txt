@@ -1,0 +1,12 @@
+packages required
+
+ImageMagick
+openjpeg
+
+edit apache vhost config
+add or change: AllowOverride All
+
+change asset server URL in regionimg.php on line 13
+
+-----------------------
+http://osgrid.org

@@ -1,0 +1,112 @@
+
+#GREX {
+	BACKGROUND-IMAGE: url(../images/login_screens/icons/grey_dot.png); MARGIN: 0px; BACKGROUND-REPEAT: repeat-x; PADDING-BOTTOM: 0px
+}
+
+
+<!-- INFO ALERT BOX -->
+#Infobox {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 0px; Z-INDEX: 71; PADDING-BOTTOM: 0px; MARGIN: 0px 0px 7px; PADDING-TOP: 0px; POSITION: relative
+}
+.boxtext {
+	PADDING-RIGHT: 3px; PADDING-LEFT: 3px; PADDING-BOTTOM: 1px; PADDING-TOP: 0px; TEXT-ALIGN: left; FONT-SIZE: 12px
+}
+.black_content {
+	FONT-SIZE: 1.2em; COLOR: #ccc; BACKGROUND-COLOR: #000
+}
+TD.boxwhite_t {
+	BACKGROUND-POSITION: left bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxwhite_t.png); BACKGROUND-REPEAT: repeat-x; HEIGHT 11px
+}
+TD.boxwhite_r {
+	BACKGROUND-POSITION: right top; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxwhite_r.png); WIDTH: 11px; BACKGROUND-REPEAT: repeat-y; BACKGROUND-COLOR: #000000
+}
+TD.boxwhite_b {
+	BACKGROUND-POSITION: left bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxwhite_b.png); BACKGROUND-REPEAT: repeat-x; HEIGHT: 11px; BACKGROUND-COLOR: #000000
+}
+TD.boxwhite_l {
+	BACKGROUND-POSITION: left top; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxwhite_l.png); WIDTH: 11px; BACKGROUND-REPEAT: repeat-y; BACKGROUND-COLOR: #000000
+}
+TD.boxwhite_tl {
+	BACKGROUND-POSITION: left bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxwhite_tl.png); WIDTH: 11px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 11px
+}
+TD.boxwhite_tr {
+	BACKGROUND-POSITION: right bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxwhite_tr.png); WIDTH: 11px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 11px
+}
+TD.boxwhite_bl {
+	BACKGROUND-POSITION: left bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxwhite_bl.png); WIDTH: 11px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 11px
+}
+TD.boxwhite_br {
+	BACKGROUND-POSITION: right bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxwhite_br.png); WIDTH: 11px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 11px
+}
+TD.boxgreen_t {
+	BACKGROUND-POSITION: left bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxgreen_t.png); BACKGROUND-REPEAT: repeat-x; HEIGHT: 11px
+}
+TD.boxgreen_r {
+	BACKGROUND-POSITION: right top; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxgreen_r.png); WIDTH: 11px; BACKGROUND-REPEAT: repeat-y; BACKGROUND-COLOR: #000000
+}
+TD.boxgreen_b {
+	BACKGROUND-POSITION: left bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxgreen_b.png); BACKGROUND-REPEAT: repeat-x; HEIGHT: 11px; BACKGROUND-COLOR: #000000
+}
+TD.boxgreen_l {
+	BACKGROUND-POSITION: left top; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxgreen_l.png); WIDTH: 11px; BACKGROUND-REPEAT: repeat-y; BACKGROUND-COLOR: #000000
+}
+TD.boxgreen_tl {
+	BACKGROUND-POSITION: left bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxgreen_tl.png); WIDTH: 11px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 11px
+}
+TD.boxgreen_tr {
+	BACKGROUND-POSITION: right bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxgreen_tr.png); WIDTH: 11px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 11px
+}
+TD.boxgreen_bl {
+	BACKGROUND-POSITION: left bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxgreen_bl.png); WIDTH: 11px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 11px
+}
+TD.boxgreen_br {
+	BACKGROUND-POSITION: right bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxgreen_br.png); WIDTH: 11px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 11px
+}
+TD.boxyellow_t {
+	BACKGROUND-POSITION: left bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxyellow_t.png); BACKGROUND-REPEAT: repeat-x; HEIGHT: 9px
+}
+TD.boxyellow_r {
+	BACKGROUND-POSITION: right top; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxyellow_r.png); WIDTH: 9px; BACKGROUND-REPEAT: repeat-y; BACKGROUND-COLOR: #000000
+}
+TD.boxyellow_b {
+	BACKGROUND-POSITION: left bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxyellow_b.png); BACKGROUND-REPEAT: repeat-x; HEIGHT: 9px; BACKGROUND-COLOR: #000000
+}
+TD.boxyellow_l {
+	BACKGROUND-POSITION: left top; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxyellow_l.png); WIDTH: 9px; BACKGROUND-REPEAT: repeat-y; BACKGROUND-COLOR: #000000
+}
+TD.boxyellow_tl {
+	BACKGROUND-POSITION: left bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxyellow_tl.png); WIDTH: 9px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 9px
+}
+TD.boxyellow_tr {
+	BACKGROUND-POSITION: right bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxyellow_tr.png); WIDTH: 9px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 9px
+}
+TD.boxyellow_bl {
+	BACKGROUND-POSITION: left bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxyellow_bl.png); WIDTH: 9px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 9px
+}
+TD.boxyellow_br {
+	BACKGROUND-POSITION: right bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxyellow_br.png); WIDTH: 9px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 9px
+}
+TD.boxred_t {
+	BACKGROUND-POSITION: left bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxred_t.png); BACKGROUND-REPEAT: repeat-x; HEIGHT: 9px
+}
+TD.boxred_r {
+	BACKGROUND-POSITION: right top; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxred_r.png); WIDTH: 9px; BACKGROUND-REPEAT: repeat-y; BACKGROUND-COLOR: #000000
+}
+TD.boxred_b {
+	BACKGROUND-POSITION: left bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxred_b.png); BACKGROUND-REPEAT: repeat-x; HEIGHT: 9px; BACKGROUND-COLOR: #000000
+}
+TD.boxred_l {
+	BACKGROUND-POSITION: left top; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxred_l.png); WIDTH: 9px; BACKGROUND-REPEAT: repeat-y; BACKGROUND-COLOR: #000000
+}
+TD.boxred_tl {
+	BACKGROUND-POSITION: left bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxred_tl.png); WIDTH: 9px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 9px
+}
+TD.boxred_tr {
+	BACKGROUND-POSITION: right bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxred_tr.png); WIDTH: 9px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 9px
+}
+TD.boxred_bl {
+	BACKGROUND-POSITION: left bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxred_bl.png); WIDTH: 9px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 9px
+}
+TD.boxred_br {
+	BACKGROUND-POSITION: right bottom; BACKGROUND-IMAGE: url(../images/login_screens/icons/boxred_br.png); WIDTH: 9px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 9px
+}

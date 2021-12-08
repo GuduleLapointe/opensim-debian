@@ -1,0 +1,18 @@
+#!/bin/sh
+
+function symbl2file()
+{
+    SYB=`echo $1|awk -F":" '{print $1}'`
+    FIL=`echo $1|awk -F":" '{print $2}'`
+
+    rm $SYB
+    echo "copy $FIL to $SYB"
+    cp -Rpd $FIL $SYB
+}
+
+
+LIST=`LANG=C ls -l |grep ^l |awk -F" " '{print $9":"$11}'`
+
+for A in $LIST; do
+    symbl2file $A
+done

@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/opensim/opensim.osprofile/!svn/ver/108/trunk
+END
+clean
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/opensim/opensim.osprofile/!svn/ver/102/trunk/clean
+END
+build.sh
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/opensim/opensim.osprofile/!svn/ver/46/trunk/build.sh
+END
+OpenSimProfile
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/opensim/opensim.osprofile/!svn/ver/22/trunk/OpenSimProfile
+END

@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/opensim/flotsam_XmlRpcGroup/!svn/ver/1/trunk/phpxmlrpclib/compat
+END
+var_export.php
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/opensim/flotsam_XmlRpcGroup/!svn/ver/1/trunk/phpxmlrpclib/compat/var_export.php
+END
+is_callable.php
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/opensim/flotsam_XmlRpcGroup/!svn/ver/1/trunk/phpxmlrpclib/compat/is_callable.php
+END
+is_a.php
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/opensim/flotsam_XmlRpcGroup/!svn/ver/1/trunk/phpxmlrpclib/compat/is_a.php
+END
+version_compare.php
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/opensim/flotsam_XmlRpcGroup/!svn/ver/1/trunk/phpxmlrpclib/compat/version_compare.php
+END
+is_scalar.php
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/opensim/flotsam_XmlRpcGroup/!svn/ver/1/trunk/phpxmlrpclib/compat/is_scalar.php
+END
+array_key_exists.php
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/opensim/flotsam_XmlRpcGroup/!svn/ver/1/trunk/phpxmlrpclib/compat/array_key_exists.php
+END

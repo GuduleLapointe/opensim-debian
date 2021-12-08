@@ -1,0 +1,10 @@
+Add the following to your own OpenSim.ini file to make the UserProfile service working
+
+[Modules]
+    LandServices = "RemoteLandServicesConnector"
+
+[Profile]
+    ; Change it to your own HTTP server to have the Profile server work
+	;ProfileURL = MOODLE_URL/blocks/modlos/helper/profile.php
+	ProfileURL = XOOPS_URL/modules/xoopensim/helper/profile.php
+

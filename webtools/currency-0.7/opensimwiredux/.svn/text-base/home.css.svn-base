@@ -1,0 +1,59 @@
+
+.txtcolor {
+	color: #cccccc
+}
+
+.placeholder {
+	font-size: 3px;
+}
+
+.top_table {
+	width: 80%;
+}
+
+.top_content {
+	font-size: 120%;
+}
+
+.grid_title {
+	color: #00e;
+	font-size: 20px;
+	font-weight: bold;
+}
+
+.grid_table {
+	width: 50%;
+}
+
+#top_div {
+}
+
+#online {
+	font-weight: bold; 
+	color: #12d212;
+}
+
+#offline {
+	font-weight: bold; 
+	color: #ea0202;
+}
+
+.padding {
+	padding-right: 3px; 
+	padding-left: 3px; 
+	padding-bottom: 2px; 
+	padding-top: 2px;
+}
+
+.td_space {
+	/*background-position: left top; */
+	width: 5px; 
+	background-color: #000000;
+}
+
+.td_style {
+	font-size: 1.2em; 
+	color: #ccc; 
+	background-color: #000;
+}
+

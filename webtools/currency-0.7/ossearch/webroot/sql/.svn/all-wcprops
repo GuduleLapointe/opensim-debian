@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/opensim/opensim.ossearch/!svn/ver/60/trunk/webroot/sql
+END
+update-hostregister.sql
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/opensim/opensim.ossearch/!svn/ver/60/trunk/webroot/sql/update-hostregister.sql
+END
+ossearch.sql
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/opensim/opensim.ossearch/!svn/ver/60/trunk/webroot/sql/ossearch.sql
+END
+update-events-classifieds.sql
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/opensim/opensim.ossearch/!svn/ver/60/trunk/webroot/sql/update-events-classifieds.sql
+END
+update-parcelsales.sql
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/opensim/opensim.ossearch/!svn/ver/60/trunk/webroot/sql/update-parcelsales.sql
+END

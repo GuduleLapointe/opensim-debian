@@ -1,0 +1,6 @@
+#!/bin/sh
+
+find . -name "*~"|xargs rm -f 
+
+rm -f bin/*.dll
+rm -f OpenSimProfile*/Modules/ProfileModule/OpenSimProfile.Modules.dll.build
