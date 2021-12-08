@@ -14,18 +14,20 @@ BASEDIR=$(dirname $(dirname $(realpath "$0")))
 [ "$OSBIN" ] || exit 1
 [ "$ETC" ] || exit 1
 
+[ "$1" = "-e" ] && exclude=$2 && shift 2
 [ $1 ] && min=$1
 [ $2 ] && find=$2
 
 cd "$ETC" || exit 1
 
 (
+  echo "$exclude" | grep [0-9]
   find . $DATA/regions $DATA/*/regions -name "*.ini" 2>/dev/null \
         | grep -v "#" \
-        | xargs egrep "^[[:blank:];]*(InternalPort|PublicPort|PrivatePort|http_listener_port)[[:blank:]]*=" \
+        | xargs egrep "^[[:blank:];]*(InternalPort|PublicPort|PrivatePort|http_listener_port)[[:blank:]]*=" 2>/dev/null \
         | cut -d "=" -f 2 | sed "s/[^0-9]//g"
   netstat -an | grep ":" | cut -d ":" -f 2 | cut -f 1 | cut -d " " -f 1
-) | sort -u | sort -n > $TMP.inuse
+) | sort -u | sort -n >> $TMP.inuse
 
 i=$(($min - 1))
 found=0
