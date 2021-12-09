@@ -37,7 +37,7 @@ readvar PublicPort && [ "${PublicPort}" != "" ] || end $? "PublicPort cannot be 
 grep -q "^$PublicPort$" $TMP.inuse && end 1 "Port $PublicPort is already in use"
 echo $PublicPort >> $TMP.inuse
 
-PrivatePort=$(nextfreeports -e $PublicPort 8003)
+PrivatePort=$(nextfreeports $(($PublicPort + 1)))
 readvar PrivatePort && [ "${PrivatePort}" != "" ] || end $? "PrivatePort cannot be empty"
 grep -q "^$PrivatePort$" $TMP.inuse && end 1 "Port $PrivatePort is already in use"
 echo $PrivatePort >> $TMP.inuse
@@ -196,7 +196,7 @@ for directory in \
   $EtcDirectory \
   $EtcDirectory/assets \
   $EtcDirectory/config-include \
-  $EtcDirectory/grids \
+  $EtcDirectory/sims \
   $EtcDirectory/inventory \
   $EtcDirectory/robust-include \
   $LogsDirectory
@@ -250,6 +250,7 @@ cat << EOF | sed -e "s/^[[:blank:]]*//" > $TMP.OpenSim.tweaks
 
 [Startup]
   ConsolePromp = "\${Launch|SimName}@\${Const|gridname} (\R) "
+  ConfigDirectory = "\${Const|EtcDirectory}/config-include"
   regionload_regionsdir "\${Const|EtcDirectory}/\${Launch|SimName}"
   registryLocation = "\${Const|DataDirectory}/registry"
   ConsoleHistoryFile "\${Const|LogsDirectory}/\${Launch|SimName}.OpenSimConsoleHistory.txt"
