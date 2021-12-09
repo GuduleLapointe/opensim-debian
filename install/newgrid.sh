@@ -44,7 +44,7 @@ readvar BaseHostname && [ "${BaseHostname}" != "" ] || end $? "BaseHostname cann
 # readvar BaseHostname && [ "${BaseHostname}" != "" ] || end $? "BaseHostname cannot be empty"
 
 (
-find . $DATA/regions $DATA/*/regions -name "*.ini" 2>/dev/null \
+find . $ETC/grids/*/sims/*/regions -name "*.ini" 2>/dev/null \
   | grep -v "#" \
   | xargs egrep "^[[:blank:];]*(InternalPort|PublicPort|PrivatePort|http_listener_port)[[:blank:]]*=" 2>/dev/null \
   | cut -d "=" -f 2 | sed "s/[^0-9]//g"
@@ -76,7 +76,7 @@ echo "$ConnectionString" | tr " ;" "\n" | grep [a-z].*= > $TMP.db
 [ "$Source" != "" ] && db_host=$Source || db_host="localhost"
 db_name=$(echo ${gridnick}_robust | tr [:upper:] [:lower:])
 [ "$ID"  != "" ] && db_user=$ID || db_user="opensim"
-[ "$Password"  != "" ] && db_pass="$Password" || db_pass="password"
+db_pass="$Password"
 
 readvar db_host && [ "${db_host}" != "" ] || end $? "db_host cannot be empty"
 readvar db_name && [ "${db_name}" != "" ] || end $? "db_name cannot be empty"
@@ -110,7 +110,7 @@ economyURL="\${Const|WebURL}/helpers"
 
 cat <<EOF >$TMP.thisgrid.ini || end $? "could not create $TMP.thisgrid.ini"
 [Const]
-  BaseURL = "http://$BaseHostname:$PublicPort"
+  BaseURL = "http://$BaseHostname"
   WebURL = "$WebURL"
   PublicPort = $PublicPort
   PrivatePort = $PrivatePort
@@ -120,12 +120,13 @@ cat <<EOF >$TMP.thisgrid.ini || end $? "could not create $TMP.thisgrid.ini"
   CacheDirectory = "$CacheDirectory"
   LogsDirectory = "$LogsDirectory"
 [Startup]
-  PIDFile = "\${Const|CacheDirectory}/$gridnick.Speculoos.pid"
+  PIDFile = "\${Const|CacheDirectory}/$gridnick.pid"
   RegistryLocation = "\${Const|DataDirectory}/registry"
   ConfigDirectory = "\${Const|EtcDirectory}/robust-include"
   ConsoleHistoryFile = "\${Const|LogsDirectory}/$gridnick.RobustConsoleHistory.txt"
 [Hypergrid]
   HomeURI = "\${Const|BaseURL}:\${Const|PublicPort}"
+  GatekeeperURI = "\${Const|BaseURL}:\${Const|PublicPort}"
 [DatabaseService]
   ConnectionString = "Data Source=$db_host;Database=$db_name;User ID=$db_user;Password=$db_pass;Old Guids=true;"
 [AssetService]
@@ -133,27 +134,29 @@ cat <<EOF >$TMP.thisgrid.ini || end $? "could not create $TMP.thisgrid.ini"
   SpoolDirectory = "\${Const|CacheDirectory}/fsassets/tmp"
   AssetLoaderArgs = "\${Const|EtcDirectory}/assets/AssetSets.xml"
 [GridService]
+  Region_Welcome = "DefaultRegion, DefaultHGRegion, FallbackRegion, Persistent"
   MapTileDirectory = "\${Const|CacheDirectory}/maptiles"
 [LibraryService]
-  LibraryName = "W4os Library"
+  LibraryName = "${gridname} Library"
   DefaultLibrary = "\${Const|EtcDirectory}/inventory/Libraries.xml"
 [LoginService]
   DestinationGuide = "\${Const|WebURL}/guide"
 [MapImageService]
   TilesStoragePath = "\${Const|DataDirectory}/maptiles"
 [GridInfoService]
-  gridname = "W4OS Demo Grid"
+  gridname = "${gridname}"
   gridnick = "${gridnick}"
-  welcome = "\${Const|WebURL}/splash"
-  about = "\${Const|WebURL}/about"
-  register = "\${Const|WebURL}/register"
-  help = "\${Const|WebURL}/support"
-  password = "\${Const|WebURL}/password"
-  economy = "$economyURL"
-  search = "\${Const|WebURL}/helpers/query.php"
-  message = "\${Const|WebURL}/helpers/offline.php"
-  GridStatus = "\${Const|WebURL}/GridStatus"
-  GridStatusRSS = "\${Const|WebURL}/GridStatusRSS"
+  welcome = "\${Const|WebURL}"
+  ;welcome = "\${Const|WebURL}/splash"
+  ;about = "\${Const|WebURL}/about"
+  ;register = "\${Const|WebURL}/register"
+  ;help = "\${Const|WebURL}/support"
+  ;password = "\${Const|WebURL}/password"
+  ;economy = "$economyURL"
+  ;search = "\${Const|WebURL}/helpers/query.php"
+  ;message = "\${Const|WebURL}/helpers/offline.php"
+  ;GridStatus = "\${Const|WebURL}/GridStatus"
+  ;GridStatusRSS = "\${Const|WebURL}/GridStatusRSS"
 [BakedTextureService]
   BaseDirectory = "\${Const|CacheDirectory}/bakes"
 EOF
@@ -214,28 +217,45 @@ do
 done
 
 for file in \
-  config-include/FlotsamCache.ini \
-  config-include/GridCommon.ini \
+  OpenSimDefaults.ini \
+  OpenSim.ini \
   config-include/GridHypergrid.ini \
+  config-include/GridCommon.ini \
+  config-include/FlotsamCache.ini \
   config-include/osslDefaultEnable.ini \
-  config-include/osslEnable.ini \
-  OpenSim.ini
+  config-include/osslEnable.ini
   # config-include/StandaloneCommon.ini \
 do
+  [ -f "$EtcDirectory/$file" ] && continue
   [ -f "$BinDir/${file}.example" ] \
   && original=$BinDir/${file}.example \
   || original=$BinDir/${file}
-  cleanupIni $original > $EtcDirectory/$file || end $? "error cleaning up $original"
+  if echo "$file" | grep -q "\.ini$"
+  then
+    # cleanupIni $original > $TMP.merge  || end $? "error cleaning up $original"
+    # crudmerge $EtcDirectory/OpenSim.ini $TMP.merge || end $? "error merging $original"
+    # [ "$file" != "OpenSim.ini" ] && cleanupIni $original > $EtcDirectory/$file && continue || end $? "error copying up $original"
+    cleanupIni $original > $EtcDirectory/$file && continue || end $? "error copying up $original"
+  else
+    cp $original $EtcDirectory/$file && continue || end $?
+  fi
 done
 
+crudmerge $EtcDirectory/OpenSim.ini $EtcDirectory/config-include/GridHypergrid.ini || end $? "error merging $_"
+crudmerge $EtcDirectory/OpenSim.ini $EtcDirectory/config-include/GridCommon.ini || end $? "error merging $_"
+
+for folder in assets inventory
+do
+  [ ! -d "$EtcDirectory/$folder" ] || yesno -y "Update $folder folder from distro (keep local changes)?" || continue
+  rsync -Waz --delete $BinDir/$folder/ $EtcDirectory/tmp.$$.$folder/ || end $?
+  [ -d "$EtcDirectory/$folder/" ] && rsync -Waz $EtcDirectory/$folder/ $EtcDirectory/tmp.$$.$folder/
+  rsync -Waz --delete $EtcDirectory/tmp.$$.$folder/ $EtcDirectory/$folder/ || end $?
+  rm -rf $EtcDirectory/tmp.$$.$folder/
+done
 uncomment() {
   [ "$2" ] || return
   sed -i "s/; *$1 *= */$1 = /" "$2"
 }
-
-crudmerge $EtcDirectory/OpenSim.ini $EtcDirectory/config-include/GridHypergrid.ini
-crudmerge $EtcDirectory/OpenSim.ini $EtcDirectory/config-include/GridCommon.ini
-
 
 # uncomment ConsolePrompt $EtcDirectory/OpenSim.ini
 # uncomment regionload_regionsdir $EtcDirectory/OpenSim.ini
@@ -258,18 +278,24 @@ cat << EOF | sed -e "s/^[[:blank:]]*//" > $TMP.OpenSim.tweaks
   PrivatePort = $PrivatePort
   CacheDirectory = "$CacheDirectory/\${Launch|simslug}"
   DataDirectory = "$DataDirectory/\${Launch|simslug}"
-  EtcDirectory = "$EtcDirectory/\${Launch|simslug}"
+  EtcDirectory = "$EtcDirectory"
   LogsDirectory = "$LogsDirectory"
 
 [Startup]
   ConsolePromp = "\${Launch|SimName}@\${Const|gridname} (\R) "
   ConfigDirectory = "\${Const|EtcDirectory}/config-include"
-  regionload_regionsdir = "\${Const|EtcDirectory}/\${Launch|simslug}"
+  regionload_regionsdir = "\${Const|EtcDirectory}/sims/\${Launch|simslug}/regions"
   registryLocation = "\${Const|DataDirectory}/registry"
   ConsoleHistoryFile = "\${Const|LogsDirectory}/\${Launch|simslug}.OpenSimConsoleHistory.txt"
   crash_dir = "/opt/opensim/var/run/crashes"
   PIDFile = "/opt/opensim/var/run/\${Const|gridname}.\${Launch|simslug}.pid"
   MapImageModule = "Warp3DImageModule"
+
+[Map]
+  MapImageModule = "Warp3DImageModule"
+
+[Permissions]
+  simple_build_permissions = true
 
 [Estates]
   DefaultEstateName = "$gridname Estate"
@@ -292,7 +318,7 @@ cat << EOF | sed -e "s/^[[:blank:]]*//" > $TMP.OpenSim.tweaks
   ;XmlRpcPort = 20800
 
 [ClientStack.LindenUDP]
-  DisableFacelights = false
+  DisableFacelights = true
 
 [Messaging]
   OfflineMessageModule = "Offline Message Module V2"
@@ -333,6 +359,7 @@ cat << EOF | sed -e "s/^[[:blank:]]*//" > $TMP.OpenSim.tweaks
   LocalService = remote
   GroupsServerURI = "\${Const|PrivURL}:\${Const|PrivatePort}"
   MessagingModule = "Groups Messaging Module V2"
+  MessageOnlineUsersOnly = true
   NoticesEnabled = true
 
 [NPC]
@@ -352,13 +379,13 @@ EOF
 # sed -i "s/\(\[Architecture\]\):; \\1:" $EtcDirectory/OpenSim.ini
 # sed -i "s/^[^;]*\(\[Include\]\):; \\1:" $EtcDirectory/OpenSim.ini
 
-for var in $(grep "^[^;]*=" $TMP.OpenSim.tweaks | cut -d = -f 1)
-do
-  [ "$var" = "Enabled" ] && continue
-  [ "$var" = "enabled" ] && continue
-  [ "$var" = "Include-Architecture" ] && continue
-  uncomment $var $EtcDirectory/OpenSim.ini
-done
+# for var in $(grep "^[^;]*=" $TMP.OpenSim.tweaks | cut -d = -f 1)
+# do
+#   [ "$var" = "Enabled" ] && continue
+#   [ "$var" = "enabled" ] && continue
+#   [ "$var" = "Include-Architecture" ] && continue
+#   uncomment $var $EtcDirectory/OpenSim.ini
+# done
 
 crudmerge $EtcDirectory/OpenSim.ini $TMP.OpenSim.tweaks
 
@@ -376,7 +403,6 @@ crudini --set $EtcDirectory/config-include/GridCommon.ini DatabaseService Estate
 
 crudini --set $EtcDirectory/config-include/GridCommon.ini Modules Include-FlotsamCache '"${Const|EtcDirectory}/config-include/FlotsamCache.ini"'
 crudini --set $EtcDirectory/config-include/GridCommon.ini AssetService AssetLoaderArgs '"${Const|EtcDirectory}/assets/AssetSets.xml"'
-
 crudini --set $EtcDirectory/config-include/GridHypergrid.ini Includes Include-Common '"${Const|EtcDirectory}/config-include/GridCommon.ini"'
 
 crudini --set $EtcDirectory/config-include/osslDefaultEnable.ini OSSL Include-osslEnable '"${Const|EtcDirectory}/config-include/GridCommon.ini"'
@@ -391,6 +417,11 @@ crudini --set $EtcDirectory/config-include/osslEnable.ini OSSL osslParcelOG '"PA
 
 crudini --del $EtcDirectory/OpenSim.ini Architecture
 crudini --set $EtcDirectory/OpenSim.ini Architecture Include-Architecture "\${Const|EtcDirectory}/config-include/GridHypergrid.ini"
+
+crudmerge $EtcDirectory/OpenSim.ini $EtcDirectory/config-include/GridHypergrid.ini
+crudmerge $EtcDirectory/OpenSim.ini $EtcDirectory/config-include/GridCommon.ini
+
+sed -i "s/^[[:blank:]]*\(Include-Storage\)/; \\1/" $EtcDirectory/OpenSim.ini
 
 startupIni="$ETC/robust.d/$gridnick.ini"
 [ -e "$startupIni" ] || ln -frs "$RobustOutput" "$startupIni" && ls "$startupIni" || end $?
