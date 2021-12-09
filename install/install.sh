@@ -8,18 +8,20 @@ OSDOWNLOADPAGE=http://opensimulator.org/dist
 DEBUG=yes
 #AUTOMATIC=yes
 
+BASEDIR=$(dirname $(dirname $(realpath "$0")))
+. $BASEDIR/lib/os-helpers || exit 1
+# . $CONTRIB/bash-helpers/ini_parser || (echo "Missing ini_parser librarie" >&2; exit 2 )
+trap 'rm -f $TMP*' EXIT
+
 # End of user configurable data
 log "Initialize submodules"
 git submodule init
 git submodule update
 # git submodule update --remote
 
-BASEDIR=$(dirname $(dirname $(realpath "$0")))
-. $BASEDIR/lib/os-helpers || exit 1
-# . $CONTRIB/bash-helpers/ini_parser || (echo "Missing ini_parser librarie" >&2; exit 2 )
-trap 'rm -f $TMP*' EXIT
 
 which crudini > /dev/null || end $? "Depends to crudini ini file parsers, you must install it"
+which apt > /dev/null || end $? "Depends to apt installation tool, you must install it"
 
 log checking preferences
 if [ ! -d "$ETC" ]
@@ -38,8 +40,8 @@ if ! (dpkg --get-selections mono-complete | cut -f 1 | grep -q "^mono-complete$"
 then
   log 1 "Mono is required to run OpenSimulator"
   yesno "Install mono?" || end $? "Mono installation cancelled"
-  sudo aptitude update && sudo aptitude upgrade -y \
-  && sudo aptitude install mono-complete \
+  sudo apt update && sudo apt upgrade -y \
+  && sudo apt install mono-complete \
   || end $? "Mono installation failed"
 fi
 

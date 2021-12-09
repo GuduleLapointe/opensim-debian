@@ -14,3 +14,9 @@ dev/*
 /core/*
 /tmp/
 /opensim*/
+backups/
+.listing
+*/config.php
+*/upload.php
+*/databaseinfo.php
+*/app.cfg

@@ -1,0 +1,68 @@
+<div align="center"><h2><?php echo $this->title_top;?></h2></div>
+
+<form name="assignform" id="assignform" action="<?php echo $this->action_url;?>" method="POST">
+
+  <table width="90%" cellpadding="2" cellspacing="1" align="center" border="2" bordercolor="#FFFFFF" bgcolor="#F8F8F8">
+    <tr height=26 style="background-color: #E0E0E0">
+      <td style="width:45%; font-size:120%; text-align:center">
+        <b><?php echo $this->title_left;?></b>
+      </td>
+      <td style="width:10%"></td>
+      <td style="width:45%; font-size:120%; text-align:center">
+        <b><?php echo $this->title_right;?></b>
+      </td>
+    </tr>
+
+    <tr>
+      <td valign="top">
+        <select name="select_left[]" size="20" id="select_left" multiple
+                  onFocus="document.assignform.submit_left.disabled=true;
+                           document.assignform.submit_right.disabled=false;" >
+          <?php foreach($items_left as $item) {?>
+            <option value=<?php echo $item;?> ><?php echo $this->get_name($item);?></option>
+          <?php }?>
+        </select>
+      </td>
+
+      <td valign="top" style="text-align:center; background-color: #E8E8E8">
+		<input type="hidden" name="sesskey" value="<?php echo sesskey();?>" />
+		<input type="hidden" name="course"  value="<?php echo $this->course_id;?>" />
+        <br />
+        <input name="submit_right" type="submit" id="submit_right" value="&rarr;" />
+        <br /><br />
+        <input name="submit_left"  type="submit" id="submit_left"  value="&larr;" />
+        <br />
+      </td>
+
+      <td valign="top">
+        <select name="select_right[]" size="20" id="select_right" multiple
+                  onFocus="document.assignform.submit_left.disabled=false;
+                           document.assignform.submit_right.disabled=true;" >
+          <?php foreach($items_right as $item) {?>
+            <option value=<?php echo $item;?> ><?php echo $this->get_name($item);?></option>
+          <?php }?>
+        </select>
+      </td>
+    </tr>
+
+    <tr height=24 style="background-color: #E0E0E0">
+      <td style="width:45%"></td>
+      <td style="width:10%"></td>
+      <td style="width:45%"></td>
+    </tr>
+  </table>
+</form>
+
+
+<!-- Error Message -->
+<?php if ($this->hasError) {?>
+  <br />
+  <hr />
+  <div align=center>
+    <ul>
+      <?php foreach($this->errorMsg as $mesg) {?>
+        <li><font color="#f02022"><b><?php echo $mesg;?></b></font></li>
+      <?php }?>
+    </ul>
+  </div>
+<?php }?>

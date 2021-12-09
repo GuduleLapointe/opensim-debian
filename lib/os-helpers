@@ -11,10 +11,6 @@ if ! which realpath >/dev/null; then
   }
 fi
 
-for exe in crudini pv #mono
-do
-  which $exe >/dev/null || end $? "missing '$exe', install it and try again"
-done
 
 # echo ":$PATH:" | grep -q ":$BINDIR:" || export PATH=$PATH:$BINDIR
 # [ ! "$LIB" ] && LIB=$BASEDIR/lib
@@ -22,6 +18,11 @@ BINDIR=$(dirname $(realpath "$0"))
 BASEDIR=$(dirname "$BINDIR")
 [ ! "$CONTRIB" ] && CONTRIB=$BASEDIR/contrib
 . $CONTRIB/bash-helpers/helpers || echo "$PGM: Missing helpers library, run install.sh"
+
+for exe in crudini pv #mono
+do
+  which $exe >/dev/null || end $? "missing '$exe', install it and try again"
+done
 
 [ "$1" = "-v" ] && DEBUG=yes && shift
 [ "$1" = "-q" ] && DEBUG=no && shift
@@ -181,4 +182,43 @@ createDatabase() {
   && echo "set global innodb_large_prefix=on; set global innodb_file_format=Barracuda;" | sudo mysql -h$DatabaseHost  2>/dev/null \
   && log "Database created"
   return $?
+}
+
+iniExpandVariables() {
+  [ ! "$1" ] && log 1 iniExpandVariables no ini file specified && return
+  thisini="$1"
+  grep -q '${' $thisini || { log "no var in $thisini, skipping"; return; }
+  log expanding $thisini
+  sed -E "s/($varPattern)/\n\\1\n/g" $TMP.ini \
+  | grep -E --color "$varPattern" | sed -e "s/[{}$]//g" -e "s/|/ /" \
+  | sort -u | while read section variable
+  do
+    value=$(crudget $TMP.ini $section $variable)
+    # echo $section $variable = $value
+    echo "$value" | grep -q "/" \
+    && sed -E -i "s%[$]\{$section\|$variable}%$value%g" $thisini \
+    || sed -E -i "s/[$]\{$section\|$variable}/$value/g" $thisini
+    # grep --color "$section|$variable" $thisini
+    # grep $value $thisini
+  done
+}
+
+iniMergeAndForget() {
+  [ ! "$3" ] && log 1 "usage iniMergeAndForget ini section variable" && return 1
+  thisini=$1
+  section=$2
+  variable=$3
+  file=$(crudget $thisini $section $variable)
+  [ ! -e "$file" ] && log 2 "file $file not found" && return 2
+
+  log mergin $common
+  crudmerge $thisini $file
+  crudini --del $thisini $section $variable
+  sed -i "s/Include_/Include-/" $thisini
+  iniExpandVariables $thisini
+}
+
+sql() {
+  [ "$1" = "-v" ] && options="-v" && shift || options="-BN"
+  echo "$@" | mysql --defaults-file=$TMP.my.cnf $options
 }

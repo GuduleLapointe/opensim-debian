@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/opensim/opensim.phplib/!svn/ver/158/trunk
+END
+env.mysql.php
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/opensim/opensim.phplib/!svn/ver/140/trunk/env.mysql.php
+END
+opensim.mysql.php
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/opensim/opensim.phplib/!svn/ver/158/trunk/opensim.mysql.php
+END
+mysql.func.php
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/opensim/opensim.phplib/!svn/ver/143/trunk/mysql.func.php
+END

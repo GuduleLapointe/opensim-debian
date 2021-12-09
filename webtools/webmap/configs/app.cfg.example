@@ -1,0 +1,5 @@
+[Grid]
+host=localhost
+user=opensim
+password=password
+db=opensim_robust

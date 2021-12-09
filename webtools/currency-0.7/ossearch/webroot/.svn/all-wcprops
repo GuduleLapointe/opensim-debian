@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/opensim/opensim.ossearch/!svn/ver/94/trunk/webroot
+END
+search_config.php
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/opensim/opensim.ossearch/!svn/ver/94/trunk/webroot/search_config.php
+END
+parser.php
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/opensim/opensim.ossearch/!svn/ver/91/trunk/webroot/parser.php
+END
+register.php
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/opensim/opensim.ossearch/!svn/ver/84/trunk/webroot/register.php
+END
+query.php
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/opensim/opensim.ossearch/!svn/ver/88/trunk/webroot/query.php
+END

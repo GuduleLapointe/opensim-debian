@@ -30,4 +30,6 @@ Could be great
 --------------
 
 - Memory/CPU usage monitoring.
-  Notify admin and/or restart Sim above given thresolds
+  Notify admin and/or restart Sim above given thresolds.
+  Thinking twice about previous notify thing: maybe it's better to let a
+  dedicated monitoring tool handle that.

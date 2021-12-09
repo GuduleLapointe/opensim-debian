@@ -24,3 +24,6 @@
 [submodule "contrib/currency/OMEconomy-Modules"]
 	path = contrib/currency/OMEconomy-Modules
 	url = https://github.com/OpenMetaverseEconomy/OMEconomy-Modules.git
+[submodule "webtools/currency-omc/helper/phpxmlrpc"]
+	path = webtools/currency-omc/helper/phpxmlrpc
+	url = https://github.com/gggeek/phpxmlrpc.git

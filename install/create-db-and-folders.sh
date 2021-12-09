@@ -20,40 +20,6 @@ varPattern="[$]\{[[:alnum:]_-]+\|[[:alnum:]_]+}"
 
 [ "$1" ] || end $? "usage: $PGM file.ini"
 
-iniExpandVariables() {
-  [ ! "$1" ] && log 1 iniExpandVariables no ini file specified && return
-  thisini="$1"
-  grep -q '${' $thisini || { log "no var in $thisini, skipping"; return; }
-  log expanding $thisini
-  sed -E "s/($varPattern)/\n\\1\n/g" $TMP.ini \
-  | grep -E --color "$varPattern" | sed -e "s/[{}$]//g" -e "s/|/ /" \
-  | sort -u | while read section variable
-  do
-    value=$(crudget $TMP.ini $section $variable)
-    # echo $section $variable = $value
-    echo "$value" | grep -q "/" \
-    && sed -E -i "s%[$]\{$section\|$variable}%$value%g" $thisini \
-    || sed -E -i "s/[$]\{$section\|$variable}/$value/g" $thisini
-    # grep --color "$section|$variable" $thisini
-    # grep $value $thisini
-  done
-}
-
-mergeandforget() {
-  [ ! "$3" ] && log 1 "usage mergeandforget ini section variable" && return 1
-  thisini=$1
-  section=$2
-  variable=$3
-  file=$(crudget $thisini $section $variable)
-  [ ! -e "$file" ] && log 2 "file $file not found" && return 2
-
-  log mergin $common
-  crudmerge $thisini $file
-  crudini --del $thisini $section $variable
-  sed -i "s/Include_/Include-/" $thisini
-  iniExpandVariables $thisini
-}
-
 # ini=$1
 cleanupIni $1 > $TMP.ini
 iniExpandVariables $TMP.ini
@@ -61,10 +27,10 @@ iniExpandVariables $TMP.ini
 executable=$(crudget $TMP.ini Launch Executable)
 if [ "$executable" != "Robust.exe" ]
 then
-  mergeandforget $TMP.ini Includes Include-Common
-  mergeandforget $TMP.ini Modules Include-FlotsamCache
-  mergeandforget $TMP.ini OSSL Include-osslEnable
-  mergeandforget $TMP.ini Architecture Include-Architecture
+  iniMergeAndForget $TMP.ini Includes Include-Common
+  iniMergeAndForget $TMP.ini Modules Include-FlotsamCache
+  iniMergeAndForget $TMP.ini OSSL Include-osslEnable
+  iniMergeAndForget $TMP.ini Architecture Include-Architecture
   crudini --del $TMP.ini Includes Include-Common
   addons=$(crudget $TMP.ini Modules Include-modules)
   # echo addons: $addons

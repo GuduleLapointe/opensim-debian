@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/opensim/opensim.nsl.modules/!svn/ver/44/trunk/OpenSim.NSLModules
+END
+runprebuild.bat
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/opensim/opensim.nsl.modules/!svn/ver/43/trunk/OpenSim.NSLModules/runprebuild.bat
+END
+runprebuild.sh
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/opensim/opensim.nsl.modules/!svn/ver/43/trunk/OpenSim.NSLModules/runprebuild.sh
+END
+prebuild.xml
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/opensim/opensim.nsl.modules/!svn/ver/24/trunk/OpenSim.NSLModules/prebuild.xml
+END
+OpenSim.build
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/opensim/opensim.nsl.modules/!svn/ver/44/trunk/OpenSim.NSLModules/OpenSim.build
+END

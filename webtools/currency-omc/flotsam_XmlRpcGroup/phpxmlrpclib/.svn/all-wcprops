@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/opensim/flotsam_XmlRpcGroup/!svn/ver/20/trunk/phpxmlrpclib
+END
+xmlrpc.inc
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/opensim/flotsam_XmlRpcGroup/!svn/ver/20/trunk/phpxmlrpclib/xmlrpc.inc
+END
+xmlrpc_wrappers.inc
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/opensim/flotsam_XmlRpcGroup/!svn/ver/19/trunk/phpxmlrpclib/xmlrpc_wrappers.inc
+END
+xmlrpcs.inc
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/opensim/flotsam_XmlRpcGroup/!svn/ver/20/trunk/phpxmlrpclib/xmlrpcs.inc
+END

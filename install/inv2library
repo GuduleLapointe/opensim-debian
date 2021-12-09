@@ -1,0 +1,94 @@
+#!/bin/bash
+
+USAGE="$PGM FirstName LastName \"/Avatar/Inventory/Folder/\" /path/to/Robust.ini"
+
+BASEDIR=$(dirname $(dirname $(realpath "$0")))
+. $BASEDIR/lib/os-helpers || exit 1
+trap 'rm -rf $TMP* 2>/dev/null' EXIT
+
+[ "$3" ] || end $? "$(usage)"
+iniFile="$1"
+FirstName=$2
+LastName=$3
+shift 3
+
+[ -f "$iniFile" ] || end $? Ini file $iniFile not found
+cleanupIni $iniFile > $TMP.ini
+# iniExpandVariables $TMP.ini 2>/dev/null
+
+ConnectionString=$(crudget $TMP.ini DatabaseService ConnectionString)
+(
+[ ! "$ConnectionString" ] && end 1 could not get connectionstring
+echo "[client]"
+echo "$ConnectionString" | tr ";" "\n" | egrep -v "Old Guid|^$" \
+| sed -e "s/Data Source=/host=/" -e "s/User ID=/user=/" -e "s/Password=\(.*\)/password=\"\\1\"/" -e "s/Database=/database=/"
+) > $TMP.my.cnf
+sql && log Database connection OK || end $? Error connection to the database
+
+PrincipalID=$(sql "SELECT PrincipalID FROM UserAccounts WHERE FirstName='$FirstName' AND LastName='$LastName'")
+[ "$PrincipalID" ] && log $FirstName $LastName found with uuid $PrincipalID || end $? Could not find user $FirstName $LastName
+
+# InventoryFolders  InventoryItems
+# sql describe InventoryFolders
+# sql "SELECT folderID, folderName FROM InventoryFolders WHERE agentID = '$PrincipalID' ORDER BY parentFolderID, folderID"
+
+# sql "SELECT * FROM InventoryFolders WHERE AgentID='$PrincipalID' AND parentFolderID='00000000-0000-0000-0000-000000000000'"
+# end
+getFolderID() {
+  path="$(echo "My Inventory/$1" | sed -e "s://*:/:" -e "s:/$::")"
+  local IFS=/
+  construct=00000000-0000-0000-0000-000000000000
+  foundpath=
+  for folder in $path
+  do
+    parent=$(basename "$construct")
+    local IFS=
+    uuid=$(sql "SELECT folderID FROM InventoryFolders WHERE AgentID='$PrincipalID' AND folderName='$folder' AND parentFolderID='$parent'")
+    [ ! "$uuid" ] && log folder $foundpath/$folder not found && return -1
+    construct=$construct/$uuid
+    foundpath="$foundpath/$folder"
+    # echo folder $folder
+  done
+  echo $uuid $parent $foundpath
+  return
+}
+getFolderParents() {
+  id=$1
+  shift
+  # name="$@"
+  path="$@"
+  while [ "$id" -a "$id" != '00000000-0000-0000-0000-000000000000' ]
+  do
+    parentId=$(sql "SELECT parentFolderID FROM InventoryFolders WHERE AgentID='$PrincipalID' AND folderID='$id'")
+    parentName=$(sql "SELECT folderName FROM InventoryFolders WHERE AgentID='$PrincipalID' AND folderID='$parentId'")
+    path=$parentName/$path
+    id=$parentId
+  done
+  echo "$path"
+}
+getFolderChilds() {
+  for parent in $@
+  do
+    sql "SELECT folderID, folderName FROM InventoryFolders WHERE AgentID='$PrincipalID' AND parentFolderID='$parent' ORDER BY folderName" | while read id name
+    do
+      echo "$id $parent $(getFolderParents $id "$name")"
+      getFolderChilds $id
+    done
+  done
+}
+
+for invFolder in "$@"
+do
+  log Processing folder $invFolder
+  getFolderID "$invFolder" >> $TMP.folders  || end $? "Inventory folder $invFolder not found"
+  folderID=$(cat $TMP.folders | cut -d " " -f 1)
+  getFolderChilds $folderID >> $TMP.folders
+done
+
+cat $TMP.folders | while read line
+do
+  grep -q "^$line$" $TMP.unique && continue
+  echo "$line" >> $TMP.unique
+done; mv $TMP.unique $TMP.folders
+
+cat $TMP.folders

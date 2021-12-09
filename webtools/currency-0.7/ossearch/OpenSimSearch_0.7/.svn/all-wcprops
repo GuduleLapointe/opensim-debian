@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/opensim/opensim.ossearch/!svn/ver/86/trunk/OpenSimSearch_0.7
+END
+runprebuild.bat
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/opensim/opensim.ossearch/!svn/ver/1/trunk/OpenSimSearch_0.7/runprebuild.bat
+END
+runprebuild.sh
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/opensim/opensim.ossearch/!svn/ver/1/trunk/OpenSimSearch_0.7/runprebuild.sh
+END
+prebuild.xml
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/opensim/opensim.ossearch/!svn/ver/65/trunk/OpenSimSearch_0.7/prebuild.xml
+END
+OpenSim.build
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/opensim/opensim.ossearch/!svn/ver/86/trunk/OpenSimSearch_0.7/OpenSim.build
+END
+OpenSim-addition.ini.example
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/opensim/opensim.ossearch/!svn/ver/58/trunk/OpenSimSearch_0.7/OpenSim-addition.ini.example
+END

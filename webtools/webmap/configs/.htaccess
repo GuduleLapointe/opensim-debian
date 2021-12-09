@@ -1,0 +1,4 @@
+order deny,allow
+deny from all
+# whitelist home IP address
+# allow from 123.123.123.123
