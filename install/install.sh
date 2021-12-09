@@ -4,9 +4,15 @@
 # Released under GNU Affero GPL v3.0 license
 #    http://www.gnu.org/licenses/agpl-3.0.html
 
+echo "Initialize submodules" >&2
+git submodule init
+git submodule update
+# git submodule update --remote
+
 OSDOWNLOADPAGE=http://opensimulator.org/dist
 DEBUG=yes
 #AUTOMATIC=yes
+
 
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/lib/os-helpers || exit 1
@@ -14,14 +20,11 @@ BASEDIR=$(dirname $(dirname $(realpath "$0")))
 trap 'rm -f $TMP*' EXIT
 
 # End of user configurable data
-log "Initialize submodules"
-git submodule init
-git submodule update
-# git submodule update --remote
 
 
-which crudini > /dev/null || end $? "Depends to crudini ini file parsers, you must install it"
 which apt > /dev/null || end $? "Depends to apt installation tool, you must install it"
+which crudini > /dev/null || apt install crudini || end $? "Depends to crudini ini file parsers, you must install it"
+which pv > /dev/null || apt install pv || end $? "Depends to crudini ini file parsers, you must install it"
 
 log checking preferences
 if [ ! -d "$ETC" ]
@@ -45,8 +48,6 @@ then
   sudo apt install mono-complete \
   || end $? "Mono installation failed"
 fi
-
-which crudini || sudo apt install crudini || exit $?
 
 log "## Checking standard directories"
 for dir in $LIB $SRC $VAR $CACHE $DATA $ETC \
