@@ -124,7 +124,7 @@ export OSBINDIR
 if yesno "Create Robust config?"
 then
   user=$(getent passwd $USER | cut -d : -f 5 | cut -d , -f 1 | cut -d " " -f 1 | grep -i [a-z] || echo "$USER" | sed -r -e 's/(\W)/\L\1/g' -e 's/(^|[ _-])(\w)/\U\2/g')
-  newgrid.sh "$user's grid" || end $?
+  newgrid.sh "${user}s Grid" || end $?
 
   # log setting defaults
   # crudini --set $TMP.new.ini Launch BinDir "\"$OpenSimBinDirectory\""
