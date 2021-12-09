@@ -26,10 +26,16 @@ readvar RobustOutput && [ "${RobustOutput}" != "" ] || end $? "RobustOutput cann
 
 if [ -f "$RobustOutput" ]
 then
+  cp $RobustOutput ${RobustOutput}~
+  cleanupIni $RobustOutput > $TMP.clean.ini && mv $TMP.clean.ini $RobustOutput
   echo "Grid config file exists, updating"
   update=yes
   crudget $RobustOutput Launch
   crudget $RobustOutput Const
+  # [ "$PublicPort" ] || PublicPort=$(crudini  --get $RobustOutput Const PublicPort)
+  # [ "$PrivatePort" ] || PrivatePort=$(crudini  --get $RobustOutput Const PrivatePort)
+  # cat $TMP.get
+  echo PublicPort $PublicPort
   # crudget $RobustOutput Startup
   savedPublicPort=$PublicPort
   savedPrivatePort=$PrivatePort
@@ -53,12 +59,18 @@ netstat -tulpn 2>/dev/null | grep LISTEN | sed -r -e "s/^[^:]*[0-9]*:+//" -e "s/
 
 PublicPort=${PublicPort:-$(nextfreeports 8002)}
 readvar PublicPort && [ "${PublicPort}" != "" ] || end $? "PublicPort cannot be empty"
-[ "$update" != "yes" -o "$PublicPort" != "$savedPublicPort" ] && grep -q "^$PublicPort$" $TMP.inuse && end 1 "Port $PublicPort is already in use, try $(nextfreeports $(($PublicPort + 1))) next time?"
+if [ "$update" != "yes" -o "$PublicPort" != "$savedPublicPort" ]
+then
+  grep -q "^$PublicPort$" $TMP.inuse && end 1 "Port $PublicPort is already in use, try $(nextfreeports $(($PublicPort + 1))) next time?"
+fi
 echo $PublicPort >> $TMP.inuse
 
 PrivatePort=${PrivatePort:-$(nextfreeports $(($PublicPort + 1)))}
 readvar PrivatePort && [ "${PrivatePort}" != "" ] || end $? "PrivatePort cannot be empty"
-[ "$update" != "yes" -o "$PrivatePort" != "$savedPrivatePort" ] && grep -q "^$PrivatePort$" $TMP.inuse && end 1 "Port $PrivatePort is already in use, try $(nextfreeports $(($PrivatePort + 1))) next time?"
+if [ "$update" != "yes" -o "$PublicPort" != "$savedPublicPort" ]
+then
+  grep -q "^$PrivatePort$" $TMP.inuse && end 1 "Port $PrivatePort is already in use, try $(nextfreeports $(($PrivatePort + 1))) next time?"
+fi
 echo $PrivatePort >> $TMP.inuse
 
 WebURL="https://$BaseHostname"
