@@ -120,9 +120,10 @@ crudget() {
 }
 
 crudmerge() {
-  [ -f "$2" ] || continue
+  [ -f "$2" ] || return
   log merging $2 in $1
-  cleanupIni $2 | sed "s/^Include-/Include_/" > $TMP.merge.ini
+  # cleanupIni $2 | sed "s/^Include-/Include_/" > $TMP.merge.ini
+  cleanupIni $2 > $TMP.merge.ini
   crudini --merge $1 <$TMP.merge.ini || end $? $2 Merge failed
 }
 

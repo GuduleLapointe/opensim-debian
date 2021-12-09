@@ -9,13 +9,13 @@ BASEDIR=$(dirname $(dirname $(realpath "$0")))
 
 PGM=$(basename "$0")
 TMP=/tmp/$PGM.$$
-
+echo
 [ "$1" ] && gridname="$@"
 readvar gridname && [ "${gridname}" != "" ] || end $? "gridname cannot be empty"
 
 gridnick=$(echo $gridname | tr "[:upper:]" "[:lower:]" | sed -r -e 's/(\W)/\L\1/g' -e 's/[^[:alnum:] _-]//g' -e 's/(^|[ _-])(\w)/\U\2/g')
 readvar gridnick && [ "${gridnick}" != "" ] || end $? "gridnick cannot be empty"
-
+gridslug=$(echo $gridnick | tr [:upper:] [:lower:])
 BinDir=$(ls -drt /opt/opensim/core/opensim-[0-9]*/bin | sort | tail -1)
 readvar BinDir && [ "${BinDir}" != "" ] || end $? "BinDir cannot be empty"
 ls -d "$BinDir" >/dev/null || end $?
@@ -98,8 +98,9 @@ EtcDirectory="/opt/opensim/etc/grids/$gridnick"
 DataDirectory="/opt/opensim/var/data/$gridnick"
 CacheDirectory="/opt/opensim/var/cache/$gridnick"
 LogsDirectory="/opt/opensim/var/logs"
+economyURL="\${Const|WebURL}/helpers"
 
-cat <<EOF >$TMP.thisgrid.ini || end $?
+cat <<EOF >$TMP.thisgrid.ini || end $? "could not create $TMP.thisgrid.ini"
 [Const]
   BaseURL = "http://$BaseHostname:$PublicPort"
   WebURL = "$WebURL"
@@ -112,7 +113,7 @@ cat <<EOF >$TMP.thisgrid.ini || end $?
   LogsDirectory = "$LogsDirectory"
 [Startup]
   PIDFile = "\${Const|CacheDirectory}/$gridnick.Speculoos.pid"
-  RegistryLocation = "\${Const|DataDirectory}/Registry"
+  RegistryLocation = "\${Const|DataDirectory}/registry"
   ConfigDirectory = "\${Const|EtcDirectory}/robust-include"
   ConsoleHistoryFile = "\${Const|LogsDirectory}/$gridnick.RobustConsoleHistory.txt"
 [Hypergrid]
@@ -140,7 +141,7 @@ cat <<EOF >$TMP.thisgrid.ini || end $?
   register = "\${Const|WebURL}/register"
   help = "\${Const|WebURL}/support"
   password = "\${Const|WebURL}/password"
-  economy = "\${Const|WebURL}/helpers"
+  economy = "$economyURL"
   search = "\${Const|WebURL}/helpers/query.php"
   message = "\${Const|WebURL}/helpers/offline.php"
   GridStatus = "\${Const|WebURL}/GridStatus"
@@ -165,22 +166,25 @@ then
     mv $RobustOutput $RobustOutput~ \
     && cp $TMP.ini $RobustOutput \
     && echo "$RobustOutput modified" \
-    || end $?
+    || end $? "apply changes failed"
   else
     echo "$RobustOutput left unchanged"
   fi
 else
   cp $TMP.ini $RobustOutput \
   && echo "$RobustOutput file created" \
-  || end $?
+  || end $? "create file $RobustOutput failed"
 fi
 
 for directory in \
   /opt/opensim/var/ \
   /opt/opensim/var/cache \
   /opt/opensim/var/data \
+  /opt/opensim/var/run \
+  /opt/opensim/var/run/crashes \
   $CacheDirectory \
   $CacheDirectory/bakes \
+  $CacheDirectory/fsassetcache \
   $CacheDirectory/fsassets \
   $CacheDirectory/fsassets/tmp \
   $CacheDirectory/maptiles \
@@ -188,16 +192,191 @@ for directory in \
   $DataDirectory/fsassets \
   $DataDirectory/fsassets/data \
   $DataDirectory/maptiles \
-  $DataDirectory/Registry \
+  $DataDirectory/registry \
   $EtcDirectory \
   $EtcDirectory/assets \
+  $EtcDirectory/config-include \
   $EtcDirectory/grids \
   $EtcDirectory/inventory \
   $EtcDirectory/robust-include \
   $LogsDirectory
 do
  [ -e "$directory" ] && cd "$directory" && continue
- mkdir "$directory" && log "created directory $directory" || end $?
+ mkdir "$directory" && log "created directory $directory" || end $? "could not create $directory"
 done
+
+for file in \
+  config-include/FlotsamCache.ini \
+  config-include/GridCommon.ini \
+  config-include/GridHypergrid.ini \
+  config-include/osslDefaultEnable.ini \
+  config-include/osslEnable.ini \
+  OpenSim.ini
+  # config-include/StandaloneCommon.ini \
+do
+  [ -f "$BinDir/${file}.example" ] \
+  && original=$BinDir/${file}.example \
+  || original=$BinDir/${file}
+  cleanupIni $original > $EtcDirectory/$file || end $? "error cleaning up $original"
+done
+
+uncomment() {
+  [ "$2" ] || return
+  sed -i "s/; *$1 *= */$1 = /" "$2"
+}
+
+# uncomment ConsolePrompt $EtcDirectory/OpenSim.ini
+# uncomment regionload_regionsdir $EtcDirectory/OpenSim.ini
+# # uncomment regionload_webserver_url $EtcDirectory/OpenSim.ini
+# uncomment RegistryLocation $EtcDirectory/OpenSim.ini
+# uncomment ConsoleHistoryFile $EtcDirectory/OpenSim.ini
+# uncomment crash_dir $EtcDirectory/OpenSim.ini
+# uncomment PIDFile $EtcDirectory/OpenSim.ini
+# # uncomment emailmodule $EtcDirectory/OpenSim.ini
+# uncomment MapImageModule $EtcDirectory/OpenSim.ini
+# uncomment DefaultEstateName $EtcDirectory/OpenSim.ini
+# uncomment DisableFacelights $EtcDirectory/OpenSim.ini
+
+cat << EOF | sed -e "s/^[[:blank:]]*//" > $TMP.OpenSim.tweaks
+[Const]
+  BinDirectory = "$BinDir"
+  gridname = "$gridname"
+  BaseHostname = "$BaseHostname"
+  PublicPort = $PublicPort
+  PrivatePort = $PrivatePort
+  CacheDirectory = "$CacheDirectory/\${Launch|SimName}"
+  DataDirectory = "$DataDirectory/\${Launch|SimName}"
+  LogsDirectory = "$LogsDirectory"
+
+[Startup]
+  ConsolePromp = "\${Launch|SimName}@\${Const|gridname} (\R) "
+  regionload_regionsdir "\${Const|EtcDirectory}/\${Launch|SimName}"
+  registryLocation = "\${Const|DataDirectory}/registry"
+  ConsoleHistoryFile "\${Const|LogsDirectory}/\${Launch|SimName}.OpenSimConsoleHistory.txt"
+  crash_dir '"/opt/opensim/var/run/crashes"'
+  PIDFile "/opt/opensim/var/run/\${Const|gridname}.\${Launch|SimName}.pid"'
+  MapImageModule Warp3DImageModule
+
+[Estates]
+  DefaultEstateName = "$gridname Estate"
+
+[SMTP]
+  enabled = true
+  host_domain_header_from = "$BaseHostname"
+  SMTP_SERVER_HOSTNAME = "mail.$BaseHostname"
+  SMTP_SERVER_PORT = 587
+  SMTP_SERVER_LOGIN = "facteur@$BaseHostname"
+  SMTP_SERVER_PASSWORD = "password"
+
+[Network]
+  ; ConsoleUser = "Test"
+  ; ConsolePass = "secret"
+  ; console_port = 0
+
+[XMLRPC]
+  ;XmlRpcRouterModule = "XmlRpcRouterModule"
+  ;XmlRpcPort = 20800
+
+[ClientStack.LindenUDP]
+  DisableFacelights = false
+
+[Messaging]
+  OfflineMessageModule = "Offline Message Module V2"
+  ; OfflineMessageURL = "\${Const|BaseURL}/Offline.php"
+  OfflineMessageURL = "\${Const|PrivURL}:\${Const|PrivatePort}""
+  StorageProvider = OpenSim.Data.MySQL.dll
+  MuteListModule = MuteListModule
+
+[RemoteAdmin]
+  ; enabled = false
+  ; port = 0
+  ; access_password = ""
+  ; enabled_methods = all
+
+[DataSnapshot]
+  index_sims = true
+  ; data_exposure = minimum
+  gridname = "$gridname"
+  ; default_snapshot_period = 1200
+  ; snapshot_cache_directory = "\$Const|DataDirectory/\${Launch|SimName}/DataSnapshot"
+  ;; New way of specifying data services, one per service
+  ;DATA_SRV_MISearch = "http://metaverseink.com/cgi-bin/register.py"
+  ;DATA_SRV_MISearch = "\${Const|WebURL}/helpers/register"
+
+[Economy]
+  ; economymodule = BetaGridLikeMoneyModule
+  ; economy = "$economyURL"
+  ; PriceUpload = 0
+  ; PriceGroupCreate = 0
+
+[OSSL]
+  Include-osslDefaultEnable = "\${Const|EtcDirectory}/config-include/osslEnable.ini"
+
+[Groups]
+  Enabled = true
+  Module = "Groups Module V2"
+  ServicesConnectorModule = "Groups HG Service Connector"
+  LocalService = remote
+  GroupsServerURI = "\${Const|PrivURL}:\${Const|PrivatePort}"
+  MessagingModule = "Groups Messaging Module V2"
+  NoticesEnabled = true
+
+[NPC]
+  AllowSenseAsAvatar = true
+
+[Terrain]
+  ; InitialTerrain = "pinhead-island"
+
+[UserProfiles]
+  ProfileServiceURL = "\${Const|BaseURL}:\${Const|PublicPort}"
+  AllowUserProfileWebURLs = true
+
+[Architecture]
+  Include-Architecture = "\${Const|EtcDirectory}/config-include/GridHypergrid.ini"
+
+EOF
+
+sed -i "s/^[[:blank:]]*Include-Architecture/; Include-Architecture/" $EtcDirectory/OpenSim.ini
+sed -i "s/^;[[:blank:]]*\(Include-Architecture.*GridHypergrid\)/\\1/" $EtcDirectory/OpenSim.ini
+
+for var in $(grep "^[^;]*=" $TMP.OpenSim.tweaks | cut -d = -f 1)
+do
+  [ "$var" = "Enabled" ] && continue
+  [ "$var" = "enabled" ] && continue
+  [ "$var" = "Include-Architecture" ] && continue
+  uncomment $var $EtcDirectory/OpenSim.ini
+done
+
+crudmerge $EtcDirectory/OpenSim.ini $TMP.OpenSim.tweaks
+
+crudini --set $EtcDirectory/config-include/FlotsamCache.ini AssetCache CacheDirectory "\${Const|CacheDirectory}/assetcache"
+
+sed -i "s/^[[:blank:]]*\(Include-Storage\)/; \\1/" $EtcDirectory/config-include/GridCommon.ini
+sed -i "s/^;[[:blank:]]*\(StorageProvider.*MySQL\)/\\1/" $EtcDirectory/config-include/GridCommon.ini
+crudini --set $EtcDirectory/config-include/GridCommon.ini DatabaseService StorageProvider "OpenSim.Data.MySQL.dll"
+sed -i "s/^;[[:blank:]]*\(ConnectionString.*Data Source=localhost;\)/\\1/" $EtcDirectory/config-include/GridCommon.ini
+crudini --set $EtcDirectory/config-include/GridCommon.ini DatabaseService ConnectionString "\"Data Source=$db_host;Database=${gridslug}_\${Launch|SimName};User ID=$db_user;Password=$db_pass;Old Guids=true;\""
+sed -i "s/^;[[:blank:]]*\(EstateConnectionString\)/\\1/" $EtcDirectory/config-include/GridCommon.ini
+crudini --set $EtcDirectory/config-include/GridCommon.ini DatabaseService EstateConnectionString "\"Data Source=$db_host;Database=$db_name;User ID=$db_user;Password=$db_pass;Old Guids=true;\""
+uncomment GatekeeperURI $EtcDirectory/config-include/GridCommon.ini
+crudini --set $EtcDirectory/config-include/GridCommon.ini DatabaseService EstateConnectionString "\"Data Source=$db_host;Database=$db_name;User ID=$db_user;Password=$db_pass;Old Guids=true;\""
+
+crudini --set $EtcDirectory/config-include/GridCommon.ini Modules Include-FlotsamCache '"${Const|EtcDirectory}/config-include/FlotsamCache.ini"'
+crudini --set $EtcDirectory/config-include/GridCommon.ini AssetService AssetLoaderArgs '"${Const|EtcDirectory}/assets/AssetSets.xml"'
+
+crudini --set $EtcDirectory/config-include/GridHypergrid.ini Includes Include-Common '"${Const|EtcDirectory}/config-include/GridCommon.ini"'
+
+crudini --set $EtcDirectory/config-include/osslDefaultEnable.ini OSSL Include-osslEnable '"${Const|EtcDirectory}/config-include/GridCommon.ini"'
+
+uncomment AllowOSFunctions $EtcDirectory/config-include/osslEnable.ini
+crudini --set $EtcDirectory/config-include/osslEnable.ini OSSL AllowOSFunctions true
+uncomment PermissionErrorToOwner $EtcDirectory/config-include/osslEnable.ini
+crudini --set $EtcDirectory/config-include/osslEnable.ini OSSL PermissionErrorToOwner true
+crudini --set $EtcDirectory/config-include/osslEnable.ini OSSL osslParcelO '"PARCEL_OWNER,"'
+crudini --set $EtcDirectory/config-include/osslEnable.ini OSSL osslParcelOG '"PARCEL_GROUP_MEMBER,PARCEL_OWNER,"'
+
+
+# crudini --set $EtcDirectory/config-include/osslDefaultEnable.ini Section Variable "Value"
+# crudini --set $EtcDirectory/config-include/osslEnable.ini Section Variable "Value"
 
 rm -f $TMP.ini
