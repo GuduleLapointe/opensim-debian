@@ -5,8 +5,15 @@
 #    http://www.gnu.org/licenses/agpl-3.0.html
 
 which apt > /dev/null || end $? "Depends to apt installation tool, you must install it"
-which crudini > /dev/null || sudo apt install crudini || end $? "Depends to crudini ini file parsers, you must install it"
 which pv > /dev/null || sudo apt install pv || end $? "Depends to crudini ini file parsers, you must install it"
+which crudini > /dev/null || end $? "Install crudini version >= 0.9.3
+git clone https://github.com/pixelb/crudini.git && sudo mv crudini /opt/ && sudo ln -s /opt/crudini/crudini.py /usr/local/bin/crudini
+"
+
+## Must add some checks before automating this:
+#
+# git clone https://github.com/pixelb/crudini.git && sudo mv crudini /opt/ && sudo ln -s /opt/crudini/crudini.py /usr/local/bin/crudini
+
 
 echo "Initialize submodules" >&2
 git submodule init
