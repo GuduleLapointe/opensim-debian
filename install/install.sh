@@ -35,15 +35,18 @@ then
 fi
 log "Preferences folder is $ETC"
 
+sudo apt update && sudo apt upgrade -y || exit $?
+
 log checking mono
 if ! (dpkg --get-selections mono-complete | cut -f 1 | grep -q "^mono-complete$")
 then
   log 1 "Mono is required to run OpenSimulator"
   yesno "Install mono?" || end $? "Mono installation cancelled"
-  sudo apt update && sudo apt upgrade -y \
-  && sudo apt install mono-complete \
+  sudo apt install mono-complete \
   || end $? "Mono installation failed"
 fi
+
+which crudini || sudo apt install crudini || exit $?
 
 log "## Checking standard directories"
 for dir in $LIB $SRC $VAR $CACHE $DATA $ETC \
