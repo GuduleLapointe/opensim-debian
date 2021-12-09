@@ -4,6 +4,10 @@
 # Released under GNU Affero GPL v3.0 license
 #    http://www.gnu.org/licenses/agpl-3.0.html
 
+which apt > /dev/null || end $? "Depends to apt installation tool, you must install it"
+which crudini > /dev/null || sudo apt install crudini || end $? "Depends to crudini ini file parsers, you must install it"
+which pv > /dev/null || sudo apt install pv || end $? "Depends to crudini ini file parsers, you must install it"
+
 echo "Initialize submodules" >&2
 git submodule init
 git submodule update
@@ -22,9 +26,6 @@ trap 'rm -f $TMP*' EXIT
 # End of user configurable data
 
 
-which apt > /dev/null || end $? "Depends to apt installation tool, you must install it"
-which crudini > /dev/null || apt install crudini || end $? "Depends to crudini ini file parsers, you must install it"
-which pv > /dev/null || apt install pv || end $? "Depends to crudini ini file parsers, you must install it"
 
 log checking preferences
 if [ ! -d "$ETC" ]
