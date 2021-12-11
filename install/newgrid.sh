@@ -179,22 +179,26 @@ cp $BinDir/Robust.HG.ini.example $TMP.Robust.ini \
 && cat $TMP.launch.ini $TMP.Robust.ini > $TMP.ini \
 || exit $?
 
+cleanupIni $TMP.ini > $TMP.Robust.ini
+uncomment UserProfilesServiceConnector $TMP.Robust.ini
+crudini --set $TMP.Robust.ini  UserProfilesService Enabled true
+
 if [ -f "$RobustOutput" ]
 then
-  diff "$RobustOutput" $TMP.ini &&
+  diff "$RobustOutput" $TMP.Robust.ini  &&
   echo "No change in $RobustOutput" && exit
 
   if yesno -y "Apply changes?"
   then
     mv $RobustOutput $RobustOutput~ \
-    && cp $TMP.ini $RobustOutput \
+    && cp $TMP.Robust.ini  $RobustOutput \
     && echo "$RobustOutput modified" \
     || end $? "apply changes failed"
   else
     echo "$RobustOutput left unchanged"
   fi
 else
-  cp $TMP.ini $RobustOutput \
+  cp $TMP.Robust.ini  $RobustOutput \
   && echo "$RobustOutput file created" \
   || end $? "create file $RobustOutput failed"
 fi
@@ -264,10 +268,6 @@ do
   rsync -Waz --delete $EtcDirectory/tmp.$$.$folder/ $EtcDirectory/$folder/ || end $?
   rm -rf $EtcDirectory/tmp.$$.$folder/
 done
-uncomment() {
-  [ "$2" ] || return
-  sed -i "s/; *$1 *= */$1 = /" "$2"
-}
 
 # uncomment ConsolePrompt $EtcDirectory/OpenSim.ini
 # uncomment regionload_regionsdir $EtcDirectory/OpenSim.ini
@@ -362,7 +362,7 @@ cat << EOF | sed -e "s/^[[:blank:]]*//" > $TMP.OpenSim.tweaks
   ; PriceGroupCreate = 0
 
 [OSSL]
-  Include-osslDefaultEnable = "\${Const|EtcDirectory}/config-include/osslEnable.ini"
+  Include-osslDefaultEnable = "$EtcDirectory/config-include/osslDefaultEnable.ini"
 
 [Groups]
   Enabled = true
@@ -417,7 +417,7 @@ crudini --set $EtcDirectory/config-include/GridCommon.ini Modules Include-Flotsa
 crudini --set $EtcDirectory/config-include/GridCommon.ini AssetService AssetLoaderArgs '"${Const|EtcDirectory}/assets/AssetSets.xml"'
 crudini --set $EtcDirectory/config-include/GridHypergrid.ini Includes Include-Common '"${Const|EtcDirectory}/config-include/GridCommon.ini"'
 
-crudini --set $EtcDirectory/config-include/osslDefaultEnable.ini OSSL Include-osslEnable '"${Const|EtcDirectory}/config-include/GridCommon.ini"'
+crudini --set $EtcDirectory/config-include/osslDefaultEnable.ini OSSL Include-osslEnable "\"$EtcDirectory/config-include/osslEnable.ini\""
 
 uncomment AllowOSFunctions $EtcDirectory/config-include/osslEnable.ini
 crudini --set $EtcDirectory/config-include/osslEnable.ini OSSL AllowOSFunctions true

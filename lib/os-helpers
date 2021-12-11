@@ -226,3 +226,8 @@ sql() {
   [ "$1" = "-v" ] && options="-v" && shift || options="-BN"
   echo "$@" | mysql --defaults-file=$TMP.my.cnf $options
 }
+
+uncomment() {
+  [ "$2" ] || return
+  sed -i "s/; *$1 *= */$1 = /" "$2"
+}
