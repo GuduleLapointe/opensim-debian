@@ -74,7 +74,7 @@ fi
 echo $PrivatePort >> $TMP.inuse
 
 WebURL="https://$BaseHostname"
-read -p "WebURL: [$WebURL] "
+readvar WebURL && [ "${WebURL}" != "" ] || end $? "WebURL cannot be empty"
 
 Executable="Robust.exe"
 LogConfig="/opt/opensim/var/data/$gridnick/Robust.exe.config"
