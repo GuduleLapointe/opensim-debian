@@ -32,6 +32,7 @@ then
   update=yes
   crudget $RobustOutput Launch
   crudget $RobustOutput Const
+  crudget $RobustOutput Startup
   # [ "$PublicPort" ] || PublicPort=$(crudini  --get $RobustOutput Const PublicPort)
   # [ "$PrivatePort" ] || PrivatePort=$(crudini  --get $RobustOutput Const PrivatePort)
   # cat $TMP.get
