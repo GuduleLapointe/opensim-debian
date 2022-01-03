@@ -125,23 +125,27 @@ startSim() {
 
   log "BinDir: $BinDir"
 
-  log "Executable $Executable"
-  echo "$Executable"
 
-  echo "launch ok"
+  Executable=${executable:-${Executable}}
+  BinDir=${bindir:-${BinDir}}
+  log "Executable $Executable"
+
 	log "starting $instance with $inifile"
 
-	cd $BinDir 2>/dev/null || log 2 $instance Cannot cd to $BinDir
+	cd $BinDir 2>/dev/null || end 2 $instance Cannot cd to $BinDir
 	log "BinDir $BinDir"
-	[ -f $Executable ] || log 3 Executable $Executable not found
+	[ -f $Executable ] || end 3 Executable $Executable not found
 
   Include_Common=$(crudget $inifile Includes Include-Common)
   # crudini --get $inifile Includes Include-Common
   LogsDirectory=$(crudget $Include_Common Const LogsDirectory | sed -e "s#\${Launch|SimName}#$instance#g" -e "s#\${Launch|MachineName}#$instance#g")
-  log LogsDirectory $LogsDirectory
+  LogsDirectory=${logsdirectory:-${LogsDirectory}}
+
   [ ! "$LogsDirectory" ] && LogsDirectory=$DefaultLogDir
-  [ ! "$LogFile" ] && LogFile="$logfile"
+  LogFile=${logfile:-${LogFile}}
   [ ! "$LogFile" ] && LogFile="$LogsDirectory/$instance.log"
+
+  ConsolePrompt=${consoleprompt:-${ConsolePrompt}}
 
   cmd="mono $Executable -inifile='$inifile'"
   if [ "$Executable" = "Robust.exe" ]
@@ -154,8 +158,9 @@ startSim() {
   #		LogConfig=${inifile/.ini/.LogConfig}
 
   log "LogsDirectory $LogsDirectory"
-  log "LogConfig $LogConfig"
 
+  LogConfig=${logconfig:-${LogConfig}}
+  DataDirectory=${datadirectory:-${DataDirectory}}
   [ ! "$LogConfig" ] && LogConfig="$DataDirectory/$(basename "$inifile" .ini).LogConfig"
   log "LogConfig $LogConfig"
 
@@ -205,9 +210,9 @@ startSim() {
       osConsoleWait 1 $instance "Do you wish to join region .* to an existing estate" && osConsole $instance "\n" \
       && osConsoleWait 1 $instance "Name of estate to join." && osConsole $instance "\n"
 
-      osConsoleWait 120 $instance "neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done" \
+      osConsoleWait 120 $instance "RegionReady|neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done" \
       && log "Simulator $instance started" \
-      || log $? "Simulator $instance not started after 60 seconds, giving up"
+      || log $? "Simulator $instance still starting after 120 seconds, let it go and see later"
       #
       # echo timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up" $LogFile
       # timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up|loaded successfully" $LogFile \
@@ -232,8 +237,8 @@ stopSim() {
   	# ini_parser "$TMP.ini" || continue
   	# ini_section_Const 2>/dev/null
   	# ini_section_Launch 2>/dev/null
-    crudget $inifile Const
-    crudget $inifile Launch
+    crudget $inifile Const || crudget $inifile const
+    crudget $inifile Launch || crudget $inifile launch
 
     if [ "$Executable" = "OpenSim.exe" ]
     then
