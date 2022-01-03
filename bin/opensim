@@ -226,15 +226,14 @@ stopSim() {
   	    && { inifile=$sim; instance=$(basename $sim .ini | tr "[:upper:]" "[:lower:]"); } \
   	    || { instance=$(echo $sim | tr "[:upper:]" "[:lower:]"); inifile=$(buildIni "$sim"); }
 
-  	cat "$inifile" | sed '/\[Const]/,/^\[/!d' | sed "$ d" > $TMP.ini
-  	cat "$inifile" | sed '/\[Launch]/,/^\[/!d' | sed "$ d" >> $TMP.ini
-  	cat "$inifile" | sed '/\[Startup]/,/^\[/!d' | sed "$ d" >> $TMP.ini
-  	ini_parser "$TMP.ini" || continue
-  	# ini_parser "$inifile" || continue
-  	#2>/dev/null || continue
-  	# ini_section_Startup 2>/dev/null
-  	ini_section_Const 2>/dev/null
-  	ini_section_Launch 2>/dev/null
+  	# cat "$inifile" | sed '/\[Const]/,/^\[/!d' | sed "$ d" > $TMP.ini
+  	# cat "$inifile" | sed '/\[Launch]/,/^\[/!d' | sed "$ d" >> $TMP.ini
+  	# cat "$inifile" | sed '/\[Startup]/,/^\[/!d' | sed "$ d" >> $TMP.ini
+  	# ini_parser "$TMP.ini" || continue
+  	# ini_section_Const 2>/dev/null
+  	# ini_section_Launch 2>/dev/null
+    crudget $inifile Const
+    crudget $inifile Launch
 
     if [ "$Executable" = "OpenSim.exe" ]
     then
