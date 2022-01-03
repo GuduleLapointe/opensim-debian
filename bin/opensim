@@ -89,7 +89,7 @@ startSim() {
 
 	[ ! -e "$inifile" ] && continue
 
-	instance=$(echo "$instance" | sed "s/[^a-zA-Z]*//g")
+	instance=$(echo "$instance" | sed "s/[^a-zA-Z0-9_]*//g")
 
 	log "$instance ($ini)"
 
