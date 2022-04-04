@@ -9,7 +9,7 @@ DefaultLogDir=/opt/opensim/var/logs
 DELAY=60
 shutdownDelay=120
 shutdownWarnings=3
-DEBUG=yes
+DEBUG=no
 
 # End of user configurable data
 
@@ -96,10 +96,12 @@ startSim() {
 	screen -ls | egrep -q "[0-9][0-9]*\.$instance[[:blank:]]"
 	if [ $? -eq 0 ]
 		then
-		log 1 "An instance of $instance is already running"
+		log "$instance is already running"
 		continue
 	fi
 
+	log 1 "starting $instance"
+	
 	# for default in $(echo "$ETCPATH:" | sed "s|/*:|/default.ini |g")
 	# do
 	#     [ -f "$default" ] || continue
@@ -243,7 +245,7 @@ stopSim() {
     if [ "$Executable" = "OpenSim.exe" ]
     then
       log notiy users in $simName
-      warnDelay=$(($shutdownDelay / $shutdownWarnings))
+      [ $shutdownDelay = 0 ] && warnDelay=0 || warnDelay=$(($shutdownDelay / $shutdownWarnings))
       warn=0
       [ $shutdownDelay -le 10 ] && shutdownWarnings=1
       [ $shutdownDelay -eq 0 ] && shutdownWarnings=0
