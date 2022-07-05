@@ -37,13 +37,13 @@ then
   if [ $? -eq 0 ]
   then
     log "robust type ini file"
-    crudget $RobustConfig Const
-    crudget $RobustConfig Launch
+    crudget $RobustConfig Const || crudget $RobustConfig const
+    crudget $RobustConfig Launch || crudget $RobustConfig launch
     # BinDir=$bindir
-    crudget $RobustConfig GridInfoService
+    crudget $RobustConfig GridInfoService || crudget $RobustConfig gridinfoservice
   else
     log "simulator type ini file"
-    crudget $RobustConfig Const
+    crudget $RobustConfig Const || crudget $RobustConfig const
     # gridname=$gridname
     curl -s $baseurl:$publicport/get_grid_info > $TMP.gridinfo
     which xmlstarlet >/dev/null \
@@ -53,7 +53,8 @@ then
 else
   end 1 "No robust config found, manual setup not implemented"
 fi
-
+PrivatePort=${privateport:-${PrivatePort}}
+PrivatePort=${PrivatePort:-8002}
 firstport=$(( ( $PrivatePort / 10 + 1 ) * 10 ))
 
 log grid name $gridname
@@ -78,12 +79,13 @@ defaultOSDir=$(tail -1 $TMP.osdirs)
 log default OSDIR $defaultOSDir
 echo "Found OpenSimulator distributions:"
 cat $TMP.osdirs | sed "s:^:  :"
+BinDir=${bindir:-${BinDir}}
 [ ! "$BinDir" ] && BinDir=$defaultOSDir
 
 readvar BinDir
 [ -d "$BinDir" ] || end $? "$BinDir directory does not exist"
 [ -f "$BinDir/OpenSim.exe" ] || end $? "$BinDir not an OpenSim bin directory"
-
+EtcDirectory=${etcdirectory:-${EtcDirectory}}
 [ -f "$EtcDirectory/OpenSim.ini" ] \
 && log "Using $EtcDirectory/OpenSim.ini" \
 || end 1 "Configuration not found, use newgrid.sh to build $EtcDirectory/"
@@ -118,8 +120,7 @@ cat <<EOF >$TMP.launch
 
 EOF
 
-
-cp $TMP.ini $EtcDirectory/tmp.ini []
+cp $TMP.ini $EtcDirectory/tmp.ini
 
 if [ -f $simConfig ]
 then
@@ -136,11 +137,11 @@ fi
 
 echo CacheDirectory $CacheDirectory
 
-crudget $TMP.ini Network
+crudget $TMP.ini Network || crudget $TMP.ini network || end $?
+
 [ "$http_listener_port" ] || http_listener_port=$(nextfreeports $firstport)
 readvar http_listener_port
 crudini --set $TMP.ini Network http_listener_port "$http_listener_port"
-
 log "getting db settings"
 # inigrep Include_ $TMP.ini
 
@@ -176,7 +177,9 @@ crudini --set $TMP.ini Includes Include-Common "$EtcDirectory/OpenSim.ini"
 
 # crudini --del $TMP.ini Architecture
 # crudini --set $TMP.ini Architecture Include_Architecture '"${Const|BinDirectory}/config-include/GridHypergrid.ini"'
-
+CacheDirectory=${cachedirectory:-${CacheDirectory}}
+DataDirectory=${datadirectory:-${DataDirectory}}
+simConfigDir=${simconfigdir:-${simConfigDir}}
 for folder in \
   "$CacheDirectory/$simslug" \
   "$DataDirectory/$simslug" \
