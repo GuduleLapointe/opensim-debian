@@ -1,18 +1,19 @@
 #!/bin/bash
 
 # Scan databasse to find users matchin a name, generate SQL commands to ban user
-# and delete their objects The script must be run when the simulator is off for
-# full efficiency.
+# and delete their objects.
 #
-# The user running the script must have access to the sql database without
-# typing credentials (e.g. credentials in ~/.my.cnf )
 #
 # This script is part of opensim-debian tool suite
 #     https://github.com/GuduleLapointe/opensim-debian
 #
-# Full package install may not be necessary but the script requires at least
+# Full opensim-debian project may not be necessary but the script requires at least
 #   lib/os-helpers
 #   contrib/bash-helpers/helpers
+# And an access  have access to the sql database without
+# typing credentials (e.g. credentials in ~/.my.cnf )
+#
+# The script must be run when the simulator is off for full efficiency.
 
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/lib/os-helpers || exit 1
@@ -166,8 +167,7 @@ echo Found $(cat $PGM.users | wc -l) users to ban
 cat $PGM.users | sed -E -e "s/[[:blank:]]+/ /g" -e "s/^/  /"
 echo
 echo "Database not modified, examine $PGM.cleanup and $PGM.ban, then run the commands below to proceed, then restart simulators
-    cat $PWD/$PGM.cleanup | mysql
-    cat $PWD/$PGM.ban | mysql"
+    cat $PWD/$PGM.cleanup $PWD/$PGM.ban | mysql"
 echo Additional info in $PWD/$PGM.users and $PWD/$PGM.hg_traveling_data
 
 # exit
