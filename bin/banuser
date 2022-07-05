@@ -5,9 +5,31 @@ BASEDIR=$(dirname $(dirname $(realpath "$0")))
 [ "$OSBIN" ] || exit 1
 [ "$ETC" ] || exit 1
 
+log 1 "WARNING
+
+This procedure will delete data directly from your ROBUST db, which is not undoable.
+The program will not perform the operations itself but it will generate SQL files with needed commands instead.
+
+Please make a backup of your database and review generated SQL before processing.
+
+This program will scan the database for users maching given name or given UUID,
+as well as objects belonging to matching users. It will genearate SQL commands to add found users to the estate ban lists, delete the users and their object.
+
+The simulators must be shut down before proceeding."
+
+if [ -d "$ETC" -a "$ROBUSTDB" = "" ]
+then
+  ROBUSTDB=$(egrep "^[[:blank:]]*(Estate)?ConnectionString" $ETC/robust.d/*.ini | sed -e "s/.*Database=//" -e "s/;.*//")
+fi
 [ "$ROBUSTDB" = "" ] && ROBUSTDB=opensim && log "ROBUSTDB not set, default to 'opensim'"
-readvar ROBUSTDB || end $? "coulld not read var"
-log "using '$ROBUSTDB' robust database"
+echo; echo "Confirm the name of ROBUST database: "
+readvar ROBUSTDB || end $? "could not read ROBUSTDB"
+# log "using '$ROBUSTDB' robust database"
+
+SIMDBS=$(echo $(egrep "^[[:blank:]]*(Estate)?ConnectionString" $ETC/opensim.d/*.ini 2>/dev/null | sed -e "s/.*Database=//" -e "s/;.*//" | sort -u))
+echo; echo "Confirm the name of estate databases (for robust and/or simulators, separate with a space): "
+readvar SIMDBS || end $? "could not read SIMDBS"
+# log "using '$SIMDBS' estate database"
 
 echo "show tables" | mysql -BN $ROBUSTDB | grep -q . || end $? "Could not connect to '$ROBUSTDB' database"
 
@@ -18,17 +40,18 @@ sql() {
   echo "$@" | mysql -BN $db
 }
 
-touch $TMP.banusers
+printf "" > $PGM.users
 #uuid="5572077b-72df-49c3-a405-003f5b7589a9"
 for user in "$@"
 do
+  log scanning user $user
   if isuuid $user
   then
     uuid=$user
     sql $ROBUSTDB "SELECT PrincipalID, FirstName, LastName FROM useraccounts WHERE PrincipalID = '$user'" | while read uuid firstname lastname
     do
-      grep -q "^$uuid" $TMP.banusers && continue
-      echo $uuid $firstname $lastname >> $TMP.banusers
+      grep -q "^$uuid" $PGM.users && continue
+      echo $uuid $firstname $lastname >> $PGM.users
     done
   else
     firstname=$(echo $user | cut -d " " -f 1)
@@ -36,7 +59,7 @@ do
     sql $ROBUSTDB "SELECT PrincipalID, FirstName, LastName FROM useraccounts WHERE FirstName = '$firstname' AND LastName = '$lastname'"
     sql $ROBUSTDB "SELECT UserID from griduser WHERE UserID LIKE '%;$user'" | tr ";" " " | while read uuid grid firstname lastname
     do
-      printf "$uuid\t$firstname\t$lastname\t$grid\n" >> $TMP.banusers
+      printf "$uuid\t$firstname\t$lastname\t$grid\n" >> $PGM.users
     done
   fi
 done
@@ -49,6 +72,7 @@ prepareDelete() {
   [ "$count" = "" ] && return
   if [ "$count" -a $count -gt 0 ]
   then
+    log 1 "found $count row$s in $db.$table where $condition"
     [ $count -gt 1 ] && s=s || s=
     echo "-- Delete $count row$s from $db.$table"
     echo "DELETE FROM $db.$table WHERE $condition;"
@@ -59,83 +83,109 @@ echo "-- Delete accounts && data $(date)" > $PGM.cleanup
 echo "-- Ban users $(date)" > $PGM.ban
 echo "-- Collected offending user data $(date)" > $PGM.hg_traveling_data
 
-cat $TMP.banusers | while read userid firstname lastname grid
+cat $PGM.users | while read userid firstname lastname grid
 do
-  log looking for $userid $firstname $lastname $grid
+  log prepare delete for $firstname $lastname@$grid $grid
   (
+    log "  $firstname $lastname@$grid in UserAccounts"
     prepareDelete $ROBUSTDB UserAccounts "PrincipalID = '$userid' OR ( FirstName = '$firstname' AND LastName = '$lastname')"
+    log "  $firstname $lastname@$grid GridUser"
     prepareDelete $ROBUSTDB GridUser "UserID = '$userid' OR UserID LIKE '$userid;'"
+    log "  $firstname $lastname@$grid userprofile"
     prepareDelete $ROBUSTDB userprofile "useruuid = '$userid'"
+    log "  $firstname $lastname@$grid tokens"
     prepareDelete $ROBUSTDB tokens "UUID = '$userid'"
+    log "  $firstname $lastname@$grid auth"
     prepareDelete $ROBUSTDB auth "UUID = '$userid'"
-    prepareDelete $ROBUSTDB tokens "UUID = '$userid'"
+    log "  $firstname $lastname@$grid Avatars"
     prepareDelete $ROBUSTDB Avatars "PrincipalID='$userid'"
+    log "  $firstname $lastname@$grid Presence"
     prepareDelete $ROBUSTDB Presence "UserID='$userid'"
+    log "  $firstname $lastname@$grid im_offline"
     prepareDelete $ROBUSTDB im_offline "PrincipalID='$userid'"
+    log "  $firstname $lastname@$grid inventoryfolders"
     prepareDelete $ROBUSTDB inventoryfolders "agentID='$userid'"
+    log "  $firstname $lastname@$grid inventoryitems"
     prepareDelete $ROBUSTDB inventoryitems "avatarID='$userid'"
+    log "  $firstname $lastname@$grid assets"
     prepareDelete $ROBUSTDB assets "CreatorID='$userid'"
   ) >> $PGM.cleanup
 
-  for db in $ROBUSTDB $DATABASES
+  for db in $ROBUSTDB $SIMDBS
   do
+    log "  $firstname $lastname@$grid prims ($db)"
     prepareDelete $db prims "OwnerID='$userid'" >> $PGM.cleanup
   done
 
-  sql $ROBUSTDB "select EstateID from estate_settings" | while read estateid
-  do
-    log 1 bans for $userid
-    bancount=$(sql $ROBUSTDB "select count(*) from $ROBUSTDB.estateban where bannedUUID = '$userid' AND EstateID = '$estateid'")
-    log 1 "found $bancount (result $?)"
-    [ $bancount -gt 0 ] && continue
-    echo "INSERT INTO $ROBUSTDB.estateban (EstateID, bannedUUID, bannedIp,bannedIpHostMask )
-    VALUES ($estateid, '$userid', '', '');"
-  done >> $PGM.ban
-
   sql $ROBUSTDB "SELECT * FROM hg_traveling_data WHERE UserID = '$userid'" >> $PGM.hg_traveling_data
-done
 
-cat $PGM.cleanup
-echo
-cat $PGM.ban
-echo
-cat $PGM.hg_traveling_data
-echo
-log 1 "cat $PGM.cleanup | mysql "
-log 1 "cat $PGM.ban | mysql "
-log 1 additional info in $PGM.banuserss and $PGM.hg_traveling_data
+  for ESTATEDB in $ROBUSTDB $SIMDBS
+  do
+    sql $ESTATEDB "SHOW TABLES LIKE 'estateban'" | grep -q estateban || continue
 
-
-exit
-
-for uuid in $@
-do
-    echo "show databases" | mysql | while read db
+    log prepare $firstname $lastname@$grid  ban in $ESTATEDB
+    sql $ESTATEDB "select EstateID from estate_settings" | while read estateid
     do
-	count=$(echo "select count('ownerid') from prims where ownerID = '$uuid';" | mysql -uopensim -p7Z85PNvQCaWyscDn $db | tail -1)
-	echo "select estateid from estate_settings" | mysql $db \
-	    | while read estateid
-	do
-	    bancount=$(echo "select count(*) from estateban where banneduuid = '$uuid'" | mysql $db)
-	    [ $bancount -gt 0 ] && continue
-	    echo "INSERT INTO estateban (EstateID, bannedUUID) VALUES ($estateid, '$uuid');" | mysql $db \
-		&& echo "$uuid added to estate $estateid ban list in $db"
-	done
+      bancount=$(sql $ESTATEDB "select count(*) from $ESTATEDB.estateban where bannedUUID = '$userid' AND EstateID = '$estateid'")
+      log "found $bancount in $ESTATEDB (result $?)"
+      [ $bancount -gt 0 ] && log "found $bancount in $ESTATEDB (result $?)" && continue
+      egrep -q "$ESTATEDB.estateban.*'$userid'" $PGM.ban && continue
 
-	[ "$count" ] || continue
-	[ $count -eq 0 ] && continue
-	printf "$db\t $count\n" >> $TMP.counts
-
-	echo "delete from prims where ownerID = '$uuid';" | mysql $db
-	echo "delete from assets where creatorid  = '$uuid';" | mysql $db
-	echo "$count prims and assets of $uuid deleted in $db"
-    done 2>/dev/null
+      log 1 "adding $userid to $ESTATEDB.estateban"
+      echo "INSERT INTO $ESTATEDB.estateban (EstateID, bannedUUID, bannedIp,bannedIpHostMask ) VALUES ($estateid, '$userid', '', '');" >> $PGM.ban
+    done
+  done
 done
 
-[ -f $TMP.counts ] || exit 0
+if istrue $DEBUG
+then
+  cat $PGM.cleanup
+  echo
+  cat $PGM.ban
+  echo
+  cat $PGM.hg_traveling_data
+  echo
+fi
 
-echo "Griefer prims found in following db, restart regions accordingly"
+echo
+echo Found $(cat $PGM.users | wc -l) users to ban
+cat $PGM.users | sed -E -e "s/[[:blank:]]+/ /g" -e "s/^/  /"
+echo
+echo "Database not modified, examine $PGM.cleanup and $PGM.ban, then run the commands below to proceed, then restart simulators
+    cat $PWD/$PGM.cleanup | mysql
+    cat $PWD/$PGM.ban | mysql"
+echo Additional info in $PWD/$PGM.users and $PWD/$PGM.hg_traveling_data
 
-cat $TMP.counts
-
-rm $TMP.counts
+# exit
+#
+# for uuid in $@
+# do
+#     echo "show databases" | mysql | while read db
+#     do
+# 	count=$(echo "select count('ownerid') from prims where ownerID = '$uuid';" | mysql -uopensim -p7Z85PNvQCaWyscDn $db | tail -1)
+# 	echo "select estateid from estate_settings" | mysql $db \
+# 	    | while read estateid
+# 	do
+# 	    bancount=$(echo "select count(*) from estateban where banneduuid = '$uuid'" | mysql $db)
+# 	    [ $bancount -gt 0 ] && continue
+# 	    echo "INSERT INTO estateban (EstateID, bannedUUID) VALUES ($estateid, '$uuid');" | mysql $db \
+# 		&& echo "$uuid added to estate $estateid ban list in $db"
+# 	done
+#
+# 	[ "$count" ] || continue
+# 	[ $count -eq 0 ] && continue
+# 	printf "$db\t $count\n" >> $TMP.counts
+#
+# 	echo "delete from prims where ownerID = '$uuid';" | mysql $db
+# 	echo "delete from assets where creatorid  = '$uuid';" | mysql $db
+# 	echo "$count prims and assets of $uuid deleted in $db"
+#     done 2>/dev/null
+# done
+#
+# [ -f $TMP.counts ] || exit 0
+#
+# echo "Griefer prims found in following db, restart regions accordingly"
+#
+# cat $TMP.counts
+#
+# rm $TMP.counts
