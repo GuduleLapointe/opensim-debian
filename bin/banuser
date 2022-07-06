@@ -10,8 +10,8 @@
 # Full opensim-debian project may not be necessary but the script requires at least
 #   lib/os-helpers
 #   contrib/bash-helpers/helpers
-# And an access  have access to the sql database without
-# typing credentials (e.g. credentials in ~/.my.cnf )
+# And an automated access to the sql databases (without need to type credentials
+# e.g. using ~/.my.cnf or environmental variables)
 #
 # The script must be run when the simulator is off for full efficiency.
 
