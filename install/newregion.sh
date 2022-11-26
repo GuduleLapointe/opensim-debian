@@ -17,9 +17,10 @@ which uuidgen >/dev/null || end $? "this scripts depends on uuidgen"
 
 readvar SimName
 SimMachineName=$(echo "$SimName" | tr "[:upper:]" "[:lower:]")
-screen -x $SimMachineName -X stuff "config save $TMP.sim.ini\n" || end $? "Simulator $sim must be running"
+screen -x $SimMachineName -X stuff "config save $TMP.sim.ini\n" || end $? "Simulator $sim must be configured and running. Use newsim.sh to create a simulator."
 sleep 0.1
 crudget $TMP.sim.ini Startup
+echo regionload_regionsdir $regionload_regionsdir
 [ "$regionload_regionsdir" ] || end $? "region dir $regionload_regionsdir not found"
 
 readvar RegionName
