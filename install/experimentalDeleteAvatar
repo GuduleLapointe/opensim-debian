@@ -48,7 +48,10 @@ echo "  $(sql "SELECT count(*) FROM Avatars WHERE PrincipalID='$PrincipalID'") a
 echo "  $(sql "SELECT count(*) FROM inventoryfolders WHERE agentID='$PrincipalID'") inventory folders"
 echo "  $(sql "SELECT count(*) FROM inventoryitems WHERE avatarID='$PrincipalID'") inventory items"
 echo "WARNING: this is highly experimental, only use in test environments."  | grep --color ".*"
-yesno "Really proceed?" || end Cancelled
+if [ "$prompt" != "no" ]
+then
+  yesno "Really proceed?" || end Cancelled
+fi
 echo Proceeding
 sql -v "DELETE FROM UserAccounts WHERE PrincipalID='$PrincipalID';"
 sql -v "DELETE FROM GridUser WHERE UserID='$PrincipalID';"
