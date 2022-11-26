@@ -24,7 +24,7 @@ BASEDIR=$(dirname $(dirname $(realpath "$0")))
   $PGM 'Firstname Lastname'
   $PGM 12345678-1234-1234-1234-123456789012
   $PGM 'Firstname Lastname' 12345678-1234-1234-1234-123456789012"
-  
+
 log 1 "WARNING
 
 This procedure will delete data directly from your ROBUST db, which is not undoable.
@@ -68,7 +68,7 @@ do
   if isuuid $user
   then
     uuid=$user
-    sql $ROBUSTDB "SELECT PrincipalID, FirstName, LastName FROM useraccounts WHERE PrincipalID = '$user'" | while read uuid firstname lastname
+    sql $ROBUSTDB "SELECT PrincipalID, FirstName, LastName FROM UserAccounts WHERE PrincipalID = '$user'" | while read uuid firstname lastname
     do
       grep -q "^$uuid" $PGM.users && continue
       echo $uuid $firstname $lastname >> $PGM.users
@@ -76,8 +76,8 @@ do
   else
     firstname=$(echo $user | cut -d " " -f 1)
     lastname=$(echo $user | cut -d " " -f 2)
-    sql $ROBUSTDB "SELECT PrincipalID, FirstName, LastName FROM useraccounts WHERE FirstName = '$firstname' AND LastName = '$lastname'"
-    sql $ROBUSTDB "SELECT UserID from griduser WHERE UserID LIKE '%;$user'" | tr ";" " " | while read uuid grid firstname lastname
+    sql $ROBUSTDB "SELECT PrincipalID, FirstName, LastName FROM UserAccounts WHERE FirstName = '$firstname' AND LastName = '$lastname'"
+    sql $ROBUSTDB "SELECT UserID from GridUser WHERE UserID LIKE '%;$user'" | tr ";" " " | while read uuid grid firstname lastname
     do
       printf "$uuid\t$firstname\t$lastname\t$grid\n" >> $PGM.users
     done
@@ -105,6 +105,7 @@ echo "-- Collected offending user data $(date)" > $PGM.hg_traveling_data
 
 cat $PGM.users | while read userid firstname lastname grid
 do
+  log 1 "CHECKPOINT $firstname.$lastname@$grid"
   log prepare delete for $firstname.$lastname@$grid $grid
   (
     log "  $firstname.$lastname@$grid in UserAccounts"
@@ -185,8 +186,9 @@ log $level "generated $adds add to ban queries to execute"
 if [ $(($adds + $deletes)) -gt 0 ]
 then
   echo
-  echo "Database not modified, examine $PGM.cleanup and $PGM.ban, then run the commands below to proceed, then restart simulators
-  cat $PWD/$PGM.cleanup $PWD/$PGM.ban | mysql"
+  echo "Database not modified, examine $PGM.cleanup and $PGM.ban, then run the commands below to proceed, then restart simulators"
+  echo
+  echo "    cat $PWD/$PGM.cleanup $PWD/$PGM.ban | mysql"
   echo
   echo "Additional info in $PWD/$PGM.users and $PWD/$PGM.hg_traveling_data"
 fi
