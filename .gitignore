@@ -21,3 +21,4 @@ backups/
 */databaseinfo.php
 */app.cfg
 sources
+lib/check_inventory.php
