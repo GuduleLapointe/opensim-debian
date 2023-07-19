@@ -90,6 +90,7 @@ prepareDelete() {
   condition=$1
   count=$(sql $db "SELECT count(*) FROM $table WHERE $condition" 2>/dev/null)
   [ "$count" = "" ] && return
+  [ "$count" = "0" ] && return
   if [ "$count" -a $count -gt 0 ]
   then
     log 1 "found $count row$s in $db.$table where $condition"
@@ -105,7 +106,6 @@ echo "-- Collected offending user data $(date)" > $PGM.hg_traveling_data
 
 cat $PGM.users | while read userid firstname lastname grid
 do
-  log 1 "CHECKPOINT $firstname.$lastname@$grid"
   log prepare delete for $firstname.$lastname@$grid $grid
   (
     log "  $firstname.$lastname@$grid in UserAccounts"
