@@ -185,13 +185,25 @@ startSim() {
     touch "$LogFile" && log "LogFile $LogFile touched"
 	fi
 
+  log "RestEnabled: $RestEnabled"
+  if [ "$RestEnabled" = "true" ]
+  then
+    cmd="$cmd -console rest"
+  fi
+
 	# touch $TMP.wait
   log "Working directory: $PWD"
 	log "launching $instance "
 	log "$cmd"
 
-	eval "screen -S $instance -d -m $cmd"
-	screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]"
+
+  if [ "$RestEnabled" = "true" ]
+  then
+    nohup $cmd >$TMP.$instance.nohup 2>&1 &
+    timeout 60 tail -Fn0 $TMP.$instance.nohup 2>/dev/null | egrep -m 1 "Error|UserAgentServerConnector loaded successfully|RegionReady|neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done|\[CONSOLE\] Quitting"
+  else
+    eval "screen -S $instance -d -m $cmd"
+    screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]"
 
     # TAILTIMEOUT=120
     # log "logfile: $LogFile"
@@ -220,6 +232,8 @@ startSim() {
       # && echo "At least one region started" \
       # || echo "Startup still going on after $TAILTIMEOUT seconds, check again later"
     fi
+  fi
+
   done
 }
 
