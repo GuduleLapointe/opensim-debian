@@ -101,7 +101,7 @@ startSim() {
 	fi
 
 	log 1 "starting $instance"
-	
+
 	# for default in $(echo "$ETCPATH:" | sed "s|/*:|/default.ini |g")
 	# do
 	#     [ -f "$default" ] || continue
@@ -127,7 +127,6 @@ startSim() {
 
   log "BinDir: $BinDir"
 
-
   Executable=${executable:-${Executable}}
   BinDir=${bindir:-${BinDir}}
   log "Executable $Executable"
@@ -138,7 +137,7 @@ startSim() {
 	log "BinDir $BinDir"
 	[ -f $Executable ] || end 3 Executable $Executable not found
 
-  Include_Common=$(crudget $inifile Includes Include-Common)
+  Include_Common=$(crudget $inifile Includes Include-Common 2>/dev/null)
   # crudini --get $inifile Includes Include-Common
   LogsDirectory=$(crudget $Include_Common Const LogsDirectory | sed -e "s#\${Launch|SimName}#$instance#g" -e "s#\${Launch|MachineName}#$instance#g")
   LogsDirectory=${logsdirectory:-${LogsDirectory}}
@@ -324,8 +323,8 @@ buildIni() {
 
     if [ ! -n "$ini" ]
     then
-	log 1 "no ini file found for $sim"
-	continue
+    	log 1 "no ini file found for $sim"
+    	return
     fi
     log "$sim ini $ini"
     echo "$ini"
