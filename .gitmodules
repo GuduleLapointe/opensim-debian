@@ -1,16 +1,16 @@
 [submodule "contrib/web/flexible_helper_scripts"]
 	path = contrib/web/flexible_helper_scripts
-	url = https://git.magiiic.com/opensimulator/flexible_helper_scripts.git
+	url = https://github.com/GuduleLapointe/flexible_helper_scripts
 [submodule "contrib/web/offline-mail-forwarding"]
 	path = contrib/web/offline-mail-forwarding
-	url = https://git.magiiic.com/opensimulator/offline-mail-forwarding.git
+	url = https://github.com/GuduleLapointe/offline-mail-forwarding
 [submodule "contrib/drupal/d4os"]
 	path = contrib/drupal/d4os
 	url = https://git.drupalcode.org/project/d4os.git
 	branch = 7.x-1.x
 [submodule "contrib/wordpress/w4os"]
 	path = contrib/wordpress/w4os
-	url = https://git.magiiic.com/opensimulator/w4os.git
+	url = https://github.com/GuduleLapointe/w4os/
 [submodule "contrib/currency/Gloebit"]
 	path = contrib/currency/Gloebit
 	url = https://github.com/gloebit/opensim-moneymodule-gloebit.git
