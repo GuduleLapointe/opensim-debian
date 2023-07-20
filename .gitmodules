@@ -8,10 +8,6 @@
 	path = contrib/drupal/d4os
 	url = https://git.drupalcode.org/project/d4os.git
 	branch = 7.x-1.x
-[submodule "contrib/drupal/opensim-drupal"]
-	path = contrib/drupal/opensim-drupal
-	url = https://git.magiiic.com/opensimulator/opensim-drupal.git
-	branch = 7.x-2.x
 [submodule "contrib/wordpress/w4os"]
 	path = contrib/wordpress/w4os
 	url = https://git.magiiic.com/opensimulator/w4os.git
