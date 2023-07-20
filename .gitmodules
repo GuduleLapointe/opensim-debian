@@ -20,7 +20,7 @@
 	url = https://github.com/gloebit/opensim-moneymodule-gloebit.git
 [submodule "contrib/bash-helpers"]
 	path = contrib/bash-helpers
-	url = https://git.magiiic.com/magicoli/bash-helpers.git
+	url = https://github.com/magicoli/bash-helpers
 [submodule "contrib/currency/OMEconomy-Modules"]
 	path = contrib/currency/OMEconomy-Modules
 	url = https://github.com/OpenMetaverseEconomy/OMEconomy-Modules.git
