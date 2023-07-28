@@ -19,7 +19,7 @@ USAGE="Usage: $PGM GridName startX,startY [quantity]"
 [ "$1" = "-e" ] && exclude=$2 && shift 2
 [ $1 ] && grid=$1 || end $? "$USAGE"
 [ -d "$ETC/grids/$grid" ] && ETCGRID="$ETC/grids/$grid" || end $? "$ETC/$grid does not exist.\n$USAGE"
-[ $2 ] && wish=$2 || wish=$defaultPos
+[ $2 ] && wish=$2
 [ $3 ] && quantity=$3 || quantity=1
 
 
@@ -110,6 +110,51 @@ function generate_image() {
   eval "$cmd" && echo "Image generated: $(realpath "$output_file")" >&2 && identify "$output_file" >&2
 }
 
+# Function to find the location with the largest number of neighbors
+find_location_with_most_neighbors() {
+  # Read locations from the $TMP.ini file
+  declare -A location_counts
+  while IFS=, read -r x y; do
+    location="${x},${y}"
+    location_counts["$location"]=0
+  done < "$TMP.inuse"
+
+  # Calculate the number of neighbors for each location
+  while IFS=, read -r x y; do
+    for ((dx = -1; dx <= 1; dx++)); do
+      for ((dy = -1; dy <= 1; dy++)); do
+        if [[ $dx -eq 0 && $dy -eq 0 ]]; then
+          continue  # Skip the location itself
+        fi
+        neighbor_x=$((x + dx))
+        neighbor_y=$((y + dy))
+        neighbor="${neighbor_x},${neighbor_y}"
+        if [[ -n "${location_counts["$neighbor"]}" ]]; then
+          location_counts["$neighbor"]=$((location_counts["$neighbor"] + 1))
+        fi
+      done
+    done
+  done < "$TMP.inuse"
+
+  # Find the location with the largest number of neighbors
+  local max_neighbors=0
+  local nearest_location=""
+  for location in "${!location_counts[@]}"; do
+    neighbors="${location_counts["$location"]}"
+    if ((neighbors > max_neighbors)); then
+      max_neighbors=$neighbors
+      nearest_location="$location"
+    fi
+  done
+
+  # Output the location with the largest number of neighbors
+  if [[ -n "$nearest_location" ]]; then
+    echo "$nearest_location"
+  else
+    echo $defaultPos
+  fi
+}
+
 # Get the positions in use from the file
 (
   echo "$exclude" | grep [0-9]
@@ -128,6 +173,9 @@ function generate_image() {
   done
 
 ) | sort -u | sort -n >> "$TMP.inuse"
+
+[ "$wish" = "" ] && wish=$(find_location_with_most_neighbors)
+
 
 # Parse x and y values from wish
 IFS=',' read -r x_wish y_wish <<< "$wish"
@@ -172,4 +220,4 @@ elif [ $f -lt $quantity ]; then
 fi
 
 # DEBUG: Generate the image after finding the positions
-generate_image
+# generate_image
