@@ -1,0 +1,175 @@
+#!/bin/bash
+
+defaultPos=1000,1000
+
+PGM=$(basename $0)
+TMP=/tmp/$PGM.$$
+outputdir=$PWD
+
+trap 'rm -f $TMP $TMP.*' EXIT
+
+BASEDIR=$(dirname $(dirname $(realpath "$0")))
+. $BASEDIR/lib/os-helpers || exit 1
+[ "$OSBIN" ] || exit 1
+[ "$ETC" ] || exit 1
+cd "$ETC" && cd "$OLDPWD" || exit 1
+
+USAGE="Usage: $PGM GridName startX,startY [quantity]"
+
+[ "$1" = "-e" ] && exclude=$2 && shift 2
+[ $1 ] && grid=$1 || end $? "$USAGE"
+[ -d "$ETC/grids/$grid" ] && ETCGRID="$ETC/grids/$grid" || end $? "$ETC/$grid does not exist.\n$USAGE"
+[ $2 ] && wish=$2 || wish=$defaultPos
+[ $3 ] && quantity=$3 || quantity=1
+
+
+# Function to calculate the distance between two points (x1,y1) and (x2,y2)
+function calculate_distance() {
+  local x1=$1
+  local y1=$2
+  local x2=$3
+  local y2=$4
+
+  local dx=$(bc -l <<< "$x2 - $x1")
+  local dy=$(bc -l <<< "$y2 - $y1")
+  echo $(bc -l <<< "scale=10; $dx*$dx + $dy*$dy")
+}
+
+# Function to calculate the maximum number of steps for a given distance
+function calculate_max_steps() {
+  local distance=$1
+  # d=$(($distance + 1))
+  local perimeter=$(bc -l <<< "scale=10; 2 * 3.14159265358979323846 * $distance")
+  local step_size=1  # smaller factor increases number of steps
+  local max_steps=$(bc -l <<< "scale=0; ($perimeter / $step_size) + 1")
+  # echo "max_steps for $distance = $max_steps" >&2
+  echo "$max_steps"
+}
+
+# Function to check if a position is already in use
+function is_position_in_use() {
+  local x=$1
+  local y=$2
+  for position in "${positions[@]}"; do
+    IFS=',' read -r x_pos y_pos <<< "$position"
+    if [[ $x_pos -eq $x && $y_pos -eq $y ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Function to generate the image using ImageMagick
+function generate_image() {
+  local img_input="$TMP.found"
+  local inuse_input="$TMP.inuse"
+  local output_file="$outputdir/$(basename "$0" .sh).png"
+
+  # Calculate the bounding box for the drawn positions
+  min_x=$(cut -d "," -f 1 "$img_input" | sort -n | head -1)
+  max_x=$(cut -d "," -f 1 "$img_input" | sort -n | tail -1)
+  min_y=$(cut -d "," -f 2 "$img_input" | sort -n | head -1)
+  max_y=$(cut -d "," -f 2 "$img_input" | sort -n | tail -1)
+
+  width=$((max_x - min_x + 1))
+  height=$((max_y - min_y + 1))
+
+  # Calculate the image size including a margin
+  # margin_base=$((width > height ? width : height))
+  # margin=$((margin_base * 10 / 100))
+  # [ $margin -lt 1 ] && margin=1
+  margin=1
+  max_x=$((max_x + margin))
+  max_y=$((max_y + margin))
+  min_x=$((min_x - margin))
+  min_y=$((min_y - margin))
+
+  width=$((width + 2 * margin))
+  height=$((height + 2 * margin))
+
+  # Calculate the offset for centering the drawn positions in the image
+  offset_x=$(( (width - (max_x - min_x)) / 2 ))
+  offset_y=$(( (height - (max_y - min_y)) / 2 ))
+
+  # Start generating the ImageMagick command
+  local cmd="convert -size ${width}x${height} xc:darkblue"
+
+  # Draw the in-use positions with grey color
+  while IFS=, read -r x y; do
+    cmd+=" -fill grey -draw \"point $((x - min_x + offset_x)),$((y - min_y + offset_y))\""
+  done < "$inuse_input"
+
+  # Draw the found positions with green color
+  while IFS=, read -r x y; do
+    cmd+=" -fill green -draw \"point $((x - min_x + offset_x)),$((y - min_y + offset_y))\""
+  done < "$img_input"
+
+  # Output file
+  cmd+=" $output_file"
+  # echo "$cmd" >&2
+  eval "$cmd" && echo "Image generated: $(realpath "$output_file")" >&2 && identify "$output_file" >&2
+}
+
+# Get the positions in use from the file
+(
+  echo "$exclude" | grep [0-9]
+  find $ETCGRID/sims/*/regions -name "*.ini" 2>/dev/null \
+  | grep -v "#" \
+  | xargs egrep "^[[:blank:];]*(Location)[[:blank:]]*=" 2>/dev/null \
+  | cut -d "=" -f 2 | sed "s/[^0-9,]//g"
+
+  grep -h "^\s*ConnectionString\s*=" $ETCGRID/*.ini $ETCGRID/sims/*.ini | while read ConnectionString
+  do
+    hostname=$(echo "$ConnectionString" | grep -o 'Data Source=[^;]*' | cut -d '=' -f 2)
+    database=$(echo "$ConnectionString" | grep -o 'Database=[^;]*' | cut -d '=' -f 2)
+    user_id=$(echo "$ConnectionString" | grep -o 'User ID=[^;]*' | cut -d '=' -f 2)
+    password=$(echo "$ConnectionString" | grep -o 'Password=[^;]*' | cut -d '=' -f 2)
+    echo "SELECT CONCAT(locX DIV 256, ',', locY DIV 256) FROM regions;" | mysql -BN -h "$hostname" -u$user_id -p"$password" $database 2>/dev/null
+  done
+
+) | sort -u | sort -n >> "$TMP.inuse"
+
+# Parse x and y values from wish
+IFS=',' read -r x_wish y_wish <<< "$wish"
+
+# Initialize variables to store the closest position and distance
+found_position=""
+min_distance=-1
+max_distance=30 # Adjust this value to limit the maximum distance to test
+
+
+mapfile -t positions < "$TMP.inuse"
+# Iterate over possible positions, expanding around the wish position
+f=0
+# for ((distance = 0; distance <= max_distance; distance += 0.5)); do
+distance=0
+while (( $(bc <<< "$distance <= $max_distance") )); do
+  max_steps=$(calculate_max_steps $distance)
+  for ((step = 1; step <= max_steps; step++)); do
+    mapfile -t positions < "$TMP.inuse"
+    angle_deg=$((step * 360 / max_steps))
+    angle_rad=$(bc -l <<< "scale=10; $angle_deg * (3.14159265358979323846 / 180)")
+    dx=$(bc -l <<< "scale=10; $distance * c($angle_rad)")
+    dy=$(bc -l <<< "scale=10; $distance * s($angle_rad)")
+    new_x=$(awk "BEGIN { printf \"%.0f\", $x_wish + $dx }")
+    new_y=$(awk "BEGIN { printf \"%.0f\", $y_wish + $dy }")
+
+    if ! is_position_in_use "$new_x" "$new_y"; then
+      echo "$new_x,$new_y" | tee -a $TMP.inuse | tee -a $TMP.found
+      mapfile -t positions < "$TMP.inuse"
+      f=$(($f + 1))
+      [ $f -ge $quantity ] && break 2
+    fi
+  done
+  distance=$(bc -l <<< "$distance + 0.5")
+done
+
+if [ $f -eq 0 ]; then
+  echo "No new closest position found within the maximum distance of $max_distance units." >&2
+  exit 1
+elif [ $f -lt $quantity ]; then
+  echo "Generated only $f for $quantity requested." >&2
+fi
+
+# DEBUG: Generate the image after finding the positions
+generate_image

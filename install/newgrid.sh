@@ -21,7 +21,7 @@ GridDir=$ETC/grids/${gridnick}
 readvar GridDir && [ "${GridDir}" != "" ] || end $? "GridDir cannot be empty"
 [ -d "$GridDir" ] || mkdir "$GridDir" || end $?
 
-RobustOutput=$GridDir/Robust.HG.ini
+RobustOutput=$GridDir/Robust.ini
 readvar RobustOutput && [ "${RobustOutput}" != "" ] || end $? "RobustOutput cannot be empty"
 
 if [ -f "$RobustOutput" ]
@@ -174,7 +174,7 @@ cat <<EOF >$TMP.thisgrid.ini || end $? "could not create $TMP.thisgrid.ini"
   BaseDirectory = "\${Const|CacheDirectory}/bakes"
 EOF
 
-cp $BinDir/Robust.HG.ini.example $TMP.Robust.ini \
+cp $BinDir/Robust.ini.example $TMP.Robust.ini \
 && sed -i "s/^[[:blank:]]*//" $TMP.thisgrid.ini  $TMP.Robust.ini \
 && crudini --merge $TMP.Robust.ini < $TMP.thisgrid.ini \
 && cat $TMP.launch.ini $TMP.Robust.ini > $TMP.ini \
