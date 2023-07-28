@@ -187,6 +187,14 @@ ConnectionString="Data Source=$db_host;Database=$db_name;User ID=$db_user;Passwo
 crudini --set $TMP.ini DatabaseService StorageProvider "OpenSim.Data.MySQL.dll"
 crudini --set $TMP.ini DatabaseService ConnectionString "\"$ConnectionString\""
 
+remote_enabled=$(crudget $TMP.OpenSim.ini RemoteAdmin enabled)
+if [ "$remote_enabled" = "true" ]
+then
+  # crudini --set $TMP.ini RemoteAdmin enabled true
+  crudini --set $TMP.ini RemoteAdmin port $(nextfreeports $((http_listener_port + 1)) )
+fi
+
+
 crudini --set $TMP.ini Includes Include-Common "$EtcDirectory/OpenSim.ini"
 
 [ -f "$EtcDirectory/Vivox.ini" ] \
