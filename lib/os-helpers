@@ -181,10 +181,18 @@ createDatabase() {
   DatabaseHost=$1
   DatabaseUser=$2
   DatabaseName=$3
-  echo "CREATE DATABASE $DatabaseName character set UTF8;"  | sudo mysql -h$DatabaseHost \
-  && echo "GRANT ALL ON $DatabaseName.* TO $DatabaseUser;" | sudo mysql -h$DatabaseHost \
-  && echo "set global innodb_large_prefix=on; set global innodb_file_format=Barracuda;" | sudo mysql -h$DatabaseHost  2>/dev/null \
-  && log "Database created"
+  last="create database" && echo "CREATE DATABASE $DatabaseName character set UTF8;"  | sudo mysql -h$DatabaseHost \
+  && last="grant rights" && echo "GRANT ALL ON $DatabaseName.* TO $DatabaseUser;" | sudo mysql -h$DatabaseHost \
+  && (
+  sql="set global innodb_file_format = 'Barracuda'" && echo "$sql" | sudo mysql -h$DatabaseHost \
+  && sql="set global innodb_large_prefix = 'ON'" && echo "$sql" | sudo mysql -h$DatabaseHost \
+  || log $? "$sql returned error $?. Make sure that your mysql sever accepts large prefix."
+  ) && log "Database created" \
+  || (
+  return=$?
+  log $return "error $last"
+  return $return
+  )
   return $?
 }
 
