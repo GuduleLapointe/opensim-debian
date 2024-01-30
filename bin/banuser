@@ -192,37 +192,3 @@ then
   echo
   echo "Additional info in $PWD/$PGM.users and $PWD/$PGM.hg_traveling_data"
 fi
-
-# exit
-#
-# for uuid in $@
-# do
-#     echo "show databases" | mysql | while read db
-#     do
-# 	count=$(echo "select count('ownerid') from prims where ownerID = '$uuid';" | mysql -uopensim -p7Z85PNvQCaWyscDn $db | tail -1)
-# 	echo "select estateid from estate_settings" | mysql $db \
-# 	    | while read estateid
-# 	do
-# 	    bancount=$(echo "select count(*) from estateban where banneduuid = '$uuid'" | mysql $db)
-# 	    [ $bancount -gt 0 ] && continue
-# 	    echo "INSERT INTO estateban (EstateID, bannedUUID) VALUES ($estateid, '$uuid');" | mysql $db \
-# 		&& echo "$uuid added to estate $estateid ban list in $db"
-# 	done
-#
-# 	[ "$count" ] || continue
-# 	[ $count -eq 0 ] && continue
-# 	printf "$db\t $count\n" >> $TMP.counts
-#
-# 	echo "delete from prims where ownerID = '$uuid';" | mysql $db
-# 	echo "delete from assets where creatorid  = '$uuid';" | mysql $db
-# 	echo "$count prims and assets of $uuid deleted in $db"
-#     done 2>/dev/null
-# done
-#
-# [ -f $TMP.counts ] || exit 0
-#
-# echo "Griefer prims found in following db, restart regions accordingly"
-#
-# cat $TMP.counts
-#
-# rm $TMP.counts
