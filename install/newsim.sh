@@ -19,7 +19,7 @@ do
   gridnick=$(basename $ini .ini | sed "s/ //g")
   for file in "$ini" "$ETC/grids/$gridnick/Robust.HG.ini" "$ETC/grids/$gridnick/Robust.ini" "$(realpath "$ini")"
   do
-    [ -e  "$(dirname "$file")/OpenSim.ini" ] && ini="$file" && break
+    [ -e "$file" -a -e "$(dirname "$file")/OpenSim.ini" ] && ini="$file" && break
     # log testing "$(dirname "$file")/OpenSim.ini"
   done
   echo "$gridnick $ini" >> $TMP.grids
