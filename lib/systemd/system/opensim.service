@@ -1,0 +1,13 @@
+[Unit]
+Description=OpenSim Service
+After=syslog.target network.target
+
+[Service]
+User=magic
+WorkingDirectory=/opt/opensim
+ExecStart=/opt/opensim/bin/opensim start
+ExecStop=/opt/opensim/bin/opensim stop now
+KillMode=none
+
+[Install]
+WantedBy=multi-user.target
