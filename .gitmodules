@@ -23,3 +23,6 @@
 [submodule "webtools/currency-omc/helper/phpxmlrpc"]
 	path = webtools/currency-omc/helper/phpxmlrpc
 	url = https://github.com/gggeek/phpxmlrpc.git
+[submodule "contrib/drupal/opensim-drupal"]
+	path = contrib/drupal/opensim-drupal
+	url = https://git.magiiic.com/opensimulator/opensim-drupal.git
