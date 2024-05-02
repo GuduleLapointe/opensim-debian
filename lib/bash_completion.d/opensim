@@ -1,5 +1,7 @@
 # bash completion for opensim script
 
+echo ":$PATH:" | grep -q ":/opt/opensim/bin:" || export PATH="$PATH:/opt/opensim/bin"
+
 _opensim()
 {
   local cur
