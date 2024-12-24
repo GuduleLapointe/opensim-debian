@@ -1,6 +1,6 @@
 [submodule "contrib/web/flexible_helper_scripts"]
 	path = contrib/web/flexible_helper_scripts
-	url = https://github.com/GuduleLapointe/flexible_helper_scripts
+	url = https://github.com/magicoli/opensim-helpers.git
 [submodule "contrib/web/offline-mail-forwarding"]
 	path = contrib/web/offline-mail-forwarding
 	url = https://github.com/GuduleLapointe/offline-mail-forwarding
@@ -23,3 +23,6 @@
 [submodule "webtools/currency-omc/helper/phpxmlrpc"]
 	path = webtools/currency-omc/helper/phpxmlrpc
 	url = https://github.com/gggeek/phpxmlrpc.git
+[submodule "contrib/OpenSimSearch"]
+	path = contrib/OpenSimSearch
+	url = https://github.com/kcozens/OpenSimSearch
