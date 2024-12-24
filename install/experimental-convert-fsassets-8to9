@@ -1,0 +1,19 @@
+#!/bin/bash
+
+PGM=$(basename $0)
+[ ! "$1" ] && echo "usage: $PGM <fsassets directory>" >&2 && exit 1
+cd $1 || exit $?
+[ -d data ] && cd $data
+
+echo $PGM $PWD
+find [0-F][0-F][0-F] -iname "*.gz" | head | while read file
+do
+  newfile=$(basename "$file" | sed -E "s:([0-F]{2})([0-F]{2})([0-F]{4})([0-F]{56}).gz:\\1/\\2/\\3/\\1\\2\\3\\4.gz:")
+  newdir=$(dirname "$newfile")
+  mkdir -p $newdir \
+  && echo mv -v $file $newfile \
+  || exit $?
+
+  rmdir $(dirname "$file") 2>/dev/null
+  rmdir $(dirname $(dirname $file)) 2>/dev/null
+done
