@@ -198,10 +198,14 @@ startSim() {
       touch "$LogFile" && log "LogFile $LogFile touched"
     fi
 
-    log "RestEnabled: $RestEnabled"
-    if [ "$RestEnabled" = "true" ]
+    if [ "$ConsoleUser" ] && [ "$ConsolePass" ] && [ "$ConsolePort" ]
     then
+      RestEnabled=true
+      log "RestEnabled: $RestEnabled"
+      # log "console_port: $console_port"
       cmd="$cmd -console rest"
+    else
+      RestEnabled=false
     fi
 
     # touch $TMP.wait
