@@ -83,6 +83,7 @@ startSim() {
   unset IFS
   for arg in $@
   do
+    unset ConsoleUser ConsolePass ConsolePort console_port
 	ls -d "$arg" 2>/dev/null | grep -q "\.ini$" \
 	    && { inifile=$arg; instance=$(basename $arg .ini | tr "[:upper:]" "[:lower:]"); } \
 	    || { instance=$(echo $arg | tr "[:upper:]" "[:lower:]"); inifile=$(buildIni "$instance"); }
@@ -124,6 +125,10 @@ startSim() {
   crudget $inifile Const 2>/dev/null || end $? "error reading launch section"
   crudget $inifile Launch 2>/dev/null || end $? "error $? reading section Launch"
   crudget $inifile Startup 2>/dev/null || end $? "error $? reading section Launch"
+  crudget $inifile Network 2>/dev/null || end $? "error $? reading section Launch" 
+
+  [ "$ConsolePort" = "0" ] && ConsolePort=""
+  [ "$console_port" = "0" ] && console_port=""
 
   log "BinDir: $BinDir"
 
@@ -155,6 +160,7 @@ startSim() {
     cmd="$cmd -logfile='$LogFile' -prompt '$ConsolePrompt'"
   else
     [ ! "$ConsolePrompt" ] && ConsolePrompt="$instance (\R) "
+    ConsolePort=$console_port
   fi
   #		LogConfig=${inifile/.ini/.LogConfig}
 
@@ -185,17 +191,21 @@ startSim() {
     touch "$LogFile" && log "LogFile $LogFile touched"
 	fi
 
-  log "RestEnabled: $RestEnabled"
-  if [ "$RestEnabled" = "true" ]
+  if [ "$ConsoleUser" ] && [ "$ConsolePass" ] && [ "$ConsolePort" ]
   then
+    RestEnabled=true
+    log "RestEnabled: $RestEnabled"
+    # log "console_port: $console_port"
     cmd="$cmd -console rest"
+  else
+    RestEnabled=false
   fi
+  continue
 
 	# touch $TMP.wait
   log "Working directory: $PWD"
 	log "launching $instance "
 	log "$cmd"
-
 
   if [ "$RestEnabled" = "true" ]
   then
