@@ -396,7 +396,7 @@ status() {
     ucpu=0
     umem=0
     cat $TMP.usage | grep -v PID \
-	| awk '{count+=1; cpu += $3; mem += $4; rss += $5} END {print "TOTAL\n" count "\tprocesses\n" cpu "\t% cpu\n" mem "\t% mem\n" rss "\trss"}'
+	| awk '{count+=1; cpu += $3; mem += $4; rss += $5} END {print "Instances: " count " up - cpu " cpu "% - mem " mem "% - rss " rss }'
     return
     #e | grep -v "PID" | cut -f 1 | paste -sd+
     printf "" | sed "s/\.//g"  \
