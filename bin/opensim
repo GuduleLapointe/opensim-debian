@@ -388,25 +388,68 @@ cleanpath() {
 }
 
 status() {
-    ps -C mono -o  pid,uname,pcpu,pmem,rss,args --sort=-pcpu,pmem \
-	| grep -v mcs\.exe \
-	| sed "s/mono.*inifile=//" \
-	| sed "s/-log.*//" \
-	| tee $TMP.usage
-    ucpu=0
-    umem=0
-    cat $TMP.usage | grep -v PID \
-	| awk '{count+=1; cpu += $3; mem += $4; rss += $5} END {print "Instances: " count " up - cpu " cpu "% - mem " mem "% - rss " rss }'
-    return
-    #e | grep -v "PID" | cut -f 1 | paste -sd+
-    printf "" | sed "s/\.//g"  \
-	| while read pid user cpu mem command
-	  do
-	      ucpu=$(($ucpu + $cpu))
-	      umem=$(($umem + $mem))
-	  done
-    echo "cpu usage: $ucpu"
-    echo "mem usage: $umem"
+    # Get running process data
+    ps -C mono --no-headers -o pid,uname,pcpu,pmem,rss,args --sort=-pcpu,pmem \
+        | grep -v mcs\.exe \
+        | sed "s/mono.*inifile=//;s/-log.*//" \
+        > $TMP.ps_raw
+
+    # Extract running instance names from inifile paths
+    awk '{print $NF}' $TMP.ps_raw \
+        | tr -d "'\"\\ " \
+        | xargs -r -I{} basename {} .ini \
+        | tr "[:upper:]" "[:lower:]" \
+        > $TMP.running_names 2>/dev/null
+
+    # Collect configured-but-not-running instances before the pipe (subshell issue)
+    seen=""
+    > $TMP.down_list
+    IFS=":"
+    for etc in $ETCPATH
+    do
+        unset IFS
+        for inifile in \
+            "$etc"/robust.d/*.ini \
+            "$etc"/robust-enabled/*.ini \
+            "$etc"/opensim.d/*.ini \
+            "$etc"/simulators-enabled/*.ini
+        do
+            [ -f "$inifile" ] || continue
+            real=$(realpath "$inifile")
+            echo ":$seen:" | grep -qF ":$real:" && continue
+            seen="$seen:$real"
+            instance=$(basename "$inifile" .ini | tr "[:upper:] " "[:lower:]_")
+            # grep -qxF "$instance" $TMP.running_names 2>/dev/null && continue
+            info=$(grep "$inifile" $TMP.ps_raw)
+            [ -z "$info" ] && status=down || status=up
+            grep -qi robust <<< "$inifile" && type=robust || type=opensim
+            echo "$instance $type ${info:-[down]}" >> $TMP.list
+        done
+        IFS=":"
+    done
+    unset IFS
+
+    # Build tab-separated table and align with column
+    {
+        printf "INSTANCE\tTYPE\tPID\tUSER\t%%CPU\t%%MEM\tRSS\n"
+        while read instance type pid user cpu mem rss config rest; do
+        shortpath=$(echo "$config" | sed "s|$BASEDIR/||;s|'||g")
+            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n" "$instance" "$type" "$pid" "$user" "$cpu" "$mem" "$rss" "$rest"
+        done < $TMP.list
+    } | column -t -s $'\t'
+
+    # Summary
+    up=$(grep -cv "\[down\]" $TMP.list)
+    down=$(grep -c "\[down\]" $TMP.list)
+    stats=$(awk 'BEGIN{cpu=0;mem=0;rss=0} {cpu+=$3; mem+=$4; rss+=$5} END {
+        printf "cpu %.1f%% - mem %.1f%% - rss %d", cpu, mem, rss
+    }' $TMP.ps_raw)
+
+    if [ -t 1 ]; then
+        printf "\033[32m%s up\033[0m, \033[31m%s down\033[0m - %s\n" "$up" "$down" "$stats"
+    else
+        printf "%s up, %s down - %s\n" "$up" "$down" "$stats"
+    fi
 }
 
 B="[[:blank:]]*"
