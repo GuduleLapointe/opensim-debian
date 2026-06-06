@@ -144,7 +144,6 @@ startSim() {
     crudget $inifile Network 2>/dev/null || end $? "error $? reading section Launch"
     [ "$ConsolePort" = "0" ] && ConsolePort=""
     [ "$console_port" = "0" ] && console_port=""
-    [ -z "$ConsolePort" ] && ConsolePort="$console_port"
 
     [ "$BinDir" ] || end 1 "Could not find a valid BinDir"
     log "BinDir: $BinDir"
@@ -211,6 +210,10 @@ startSim() {
       LogFile=$(egrep "LogFileAppender|<file" $LogConfig | grep -A1 "LogFileAppender" | head -2 | tail -1 | cut -d '"' -f 2)
       touch "$LogFile" && log "LogFile $LogFile touched"
     fi
+
+	ConsoleUser=${ConsoleUser:-${consoleuser}}
+	ConsolePass=${ConsolePass:-${consolepass}}
+	ConsolePort=${ConsolePort:-${consoleport:-${console_port}}}
 
     if [ "$ConsoleUser" ] && [ "$ConsolePass" ] && [ "$ConsolePort" ]
     then
