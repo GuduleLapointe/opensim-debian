@@ -150,7 +150,11 @@ startSim() {
 
     Executable=${executable:-${Executable}}
     BinDir=${bindir:-${BinDir}}
-    log "Executable $Executable"
+    case "${Executable##*.}" in
+        dll) runtime=dotnet ;;
+        *)   runtime=mono ;;
+    esac
+    log "Executable $Executable ($runtime)"
 
     log "starting $instance with $inifile"
 
@@ -169,8 +173,8 @@ startSim() {
 
     ConsolePrompt=${consoleprompt:-${ConsolePrompt}}
 
-    cmd="mono $Executable -inifile='$inifile'"
-    if [ "$Executable" = "Robust.exe" ]
+    cmd="$runtime $Executable -inifile='$inifile'"
+    if [ "${Executable%.*}" = "Robust" ]
     then
       [ ! "$ConsolePrompt" ] && ConsolePrompt="Robust ($instance) "
       cmd="$cmd -logfile='$LogFile' -prompt '$ConsolePrompt'"
@@ -188,12 +192,12 @@ startSim() {
     log Executable $Executable
     if [ ! -f "$LogConfig" ]
     then
-      ExecName=$(basename $Executable .exe)
+      ExecName=$(basename $Executable | sed 's/\.\(exe\|dll\)$//')
       sed -e "s|[a-zA-Z0-9\./_-]*/*$ExecName.log|$LogsDirectory/$instance.log|" \
       -e "s|[a-zA-Z0-9\./_-]*/*${ExecName}Stats.log|$LogsDirectory/${instance}.Stats.log|" \
-      $BinDir/$(basename $Executable).config >$TMP.logconfig \
+      $BinDir/$ExecName.exe.config >$TMP.logconfig \
       && mv $TMP.logconfig "$LogConfig" \
-      && log created LogConfig file $LogConfig from core model $BinDir/$Executable.config \
+      && log created LogConfig file $LogConfig from core model $BinDir/$ExecName.exe.config \
       || end $?
       # cd /opt/opensim/var/data/config
       # ln -s $LogConfig 2>/dev/null
@@ -231,7 +235,7 @@ startSim() {
 
       # TAILTIMEOUT=120
       # log "logfile: $LogFile"
-      if [ "$Executable" = "Robust.exe" ]
+      if [ "${Executable%.*}" = "Robust" ]
       then
         osConsoleWait $instance "UserAgentServerConnector loaded successfully" \
         && log "Robust server $instance started" \
@@ -279,7 +283,7 @@ stopSim() {
     crudget $inifile Const || crudget $inifile const
     crudget $inifile Launch || crudget $inifile launch
 
-    if [ "$Executable" = "OpenSim.exe" ]
+    if [ "${Executable%.*}" = "OpenSim" ]
     then
       log notiy users in $simName
       [ $shutdownDelay = 0 ] && warnDelay=0 || warnDelay=$(($shutdownDelay / $shutdownWarnings))
@@ -389,9 +393,11 @@ cleanpath() {
 
 status() {
     # Get running process data
-    ps -C mono --no-headers -o pid,uname,pcpu,pmem,rss,args --sort=-pcpu,pmem \
+    { ps -C mono --no-headers -o pid,uname,pcpu,pmem,rss,args 2>/dev/null; \
+      ps -C dotnet --no-headers -o pid,uname,pcpu,pmem,rss,args 2>/dev/null; } \
         | grep -v mcs\.exe \
-        | sed "s/mono.*inifile=//;s/-log.*//" \
+        | grep " -inifile=" \
+        | sed -E "s/(mono|dotnet).*-inifile=//;s/-log.*//" \
         > $TMP.ps_raw
 
     # Collect configured-but-not-running instances before the pipe (subshell issue)
