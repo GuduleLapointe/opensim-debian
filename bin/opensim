@@ -211,9 +211,11 @@ startSim() {
       touch "$LogFile" && log "LogFile $LogFile touched"
     fi
 
-	ConsoleUser=${ConsoleUser:-${consoleuser}}
-	ConsolePass=${ConsolePass:-${consolepass}}
-	ConsolePort=${ConsolePort:-${consoleport:-${console_port}}}
+    ConsoleUser=${ConsoleUser:-${consoleuser}}
+    ConsolePass=${ConsolePass:-${consolepass}}
+    [ "${Executable%.*}" = "Robust" ] \
+        && ConsolePort=${ConsolePort:-${consoleport}} \
+        || ConsolePort=${console_port:-${consoleport}}
 
     if [ "$ConsoleUser" ] && [ "$ConsolePass" ] && [ "$ConsolePort" ]
     then
