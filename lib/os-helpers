@@ -75,7 +75,7 @@ osConsoleRead() {
   then
     egrep "$pattern" $TMP.console && return
     printf "\33[2K"
-    printf "$(grep . $TMP.console | tail -1 | cut -c -$COLUMNS)\r"
+    printf "$(grep -a . $TMP.console | tail -1 | cut -c -$COLUMNS)\r"
     return 1
   else
     cat $TMP.console | sed "s/^/cat /"

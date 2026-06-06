@@ -229,7 +229,7 @@ startSim() {
     if [ "$RestEnabled" = "true" ]
     then
       nohup $cmd >$TMP.$instance.nohup 2>&1 &
-      timeout 60 tail -Fn0 $TMP.$instance.nohup 2>/dev/null | egrep -m 1 "Error|UserAgentServerConnector loaded successfully|RegionReady|neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done|\[CONSOLE\] Quitting"
+      timeout 60 tail -Fn0 $TMP.$instance.nohup 2>/dev/null | egrep -am 1 "Error|UserAgentServerConnector loaded successfully|RegionReady|neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done|\[CONSOLE\] Quitting"
     else
       eval "screen -S $instance -d -m $cmd"
       screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]"
