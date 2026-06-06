@@ -7,12 +7,13 @@
  *   php -d phar.readonly=off src/bin/build-phar.php
  **/
 
-$executable = 'opensim-rest-cli';
+$baseDir    = dirname( __DIR__ );
+$execName   = 'opensim-rest-cli';
+$executable = "$baseDir/bin/$execName";
 $pharFile   = $executable . '.phar';
-$baseDir    = dirname( dirname( __DIR__ ) );
 
 // Create a new Phar archive
-$phar = new Phar( $pharFile, 0, $pharFile );
+$phar = new Phar( $pharFile, 0, "$execName.phar" );
 
 // Start buffering for Phar creation
 $phar->startBuffering();

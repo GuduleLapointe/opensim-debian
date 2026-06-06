@@ -60,6 +60,11 @@ osConsole() {
   osInstance=$1
   shift
   osCommand="$@"
+  if [ "$OSIM_REST_INI" ]
+  then
+    "$BASEDIR/bin/rest-cli" "$OSIM_REST_INI" $osCommand
+    return
+  fi
   [ "$osCommand" = "\n" ] && unset osCommand
   lr=$(printf "\n\b")
   # pre=$(printf "\n\b")

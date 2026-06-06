@@ -27,6 +27,16 @@ You must choose a specific port, not already used by another service. It is good
   ; choose a port not already used by another service
 ```
 
+## Building
+
+Requires PHP with `phar.readonly` disabled (already the case for CLI by default on most systems).
+
+```bash
+php -d phar.readonly=off dev/build-phar.php
+```
+
+The executable is created at `bin/opensim-rest-cli`.
+
 ## Command-line client
 
 [Download the executable](https://raw.githubusercontent.com/magicoli/opensim-rest-php/master/opensim-rest-cli) from this repository, make sure `opensim-rest-cli` is executable and move it to /usr/local/bin/.

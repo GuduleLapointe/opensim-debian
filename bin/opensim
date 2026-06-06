@@ -289,6 +289,18 @@ stopSim() {
   	# ini_section_Launch 2>/dev/null
     crudget $inifile Const || crudget $inifile const
     crudget $inifile Launch || crudget $inifile launch
+    crudget $inifile Network 2>/dev/null
+    ConsoleUser=${ConsoleUser:-${consoleuser}}
+    ConsolePass=${ConsolePass:-${consolepass}}
+    [ "${Executable%.*}" = "Robust" ] \
+        && ConsolePort=${ConsolePort:-${consoleport}} \
+        || ConsolePort=${console_port:-${consoleport}}
+    [ "$ConsolePort" = "0" ] && ConsolePort=""
+    if [ "$ConsoleUser" ] && [ "$ConsolePass" ] && [ "$ConsolePort" ]; then
+        export OSIM_REST_INI="$inifile"
+    else
+        unset OSIM_REST_INI
+    fi
 
     if [ "${Executable%.*}" = "OpenSim" ]
     then

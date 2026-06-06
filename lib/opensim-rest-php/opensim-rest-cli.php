@@ -147,10 +147,14 @@ function get_option( $option, $default = null ) {
 
 	switch ( $option ) {
 		case 'opensim_rest_config':
-			$baseURL     = $config['Const']['BaseURL'] ?? 'localhost';
-			$consolePort = $config['Network']['ConsolePort'] ?? 8002;
-			$consoleUser = $config['Network']['ConsoleUser'] ?? '';
-			$consolePass = $config['Network']['ConsolePass'] ?? '';
+			$constSection   = array_get_case_insensitive( $config, 'Const' ) ?? [];
+			$networkSection = array_get_case_insensitive( $config, 'Network' ) ?? [];
+			$baseURL     = array_get_case_insensitive( $constSection, 'BaseURL' ) ?? 'localhost';
+			$consolePort = array_get_case_insensitive( $networkSection, 'ConsolePort' )
+			            ?? array_get_case_insensitive( $networkSection, 'console_port' )
+			            ?? 8002;
+			$consoleUser = array_get_case_insensitive( $networkSection, 'ConsoleUser' ) ?? '';
+			$consolePass = array_get_case_insensitive( $networkSection, 'ConsolePass' ) ?? '';
 			return array(
 				'uri'         => "$baseURL:$consolePort",
 				'ConsoleUser' => $consoleUser,
@@ -210,7 +214,7 @@ if ( is_opensim_rest_error( $session ) ) {
 	$responseLines = $session->sendCommand( $command );
 	if ( is_opensim_rest_error( $responseLines ) ) {
 		echo 'OpenSim_Rest->sendCommand error: ' . $responseLines->getMessage() . "\n";
-	} else {
+	} elseif ( is_array( $responseLines ) ) {
 		echo trim( join( "\n", $responseLines ) ) . "\n";
 	}
 }
