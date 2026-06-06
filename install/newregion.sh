@@ -9,7 +9,7 @@ log "ETC $ETC"
 log "OSBIN $OSBIN"
 log "OSBINDIR $OSBINDIR"
 
-which uuidgen >/dev/null || end $? "this scripts depends on uuidgen"
+[ -z "$uuidgen" ] && end 1 "this script requires uuid generator, run sudo apt install uuid to install one"
 
 [ "$2" ] && SimName=$1 && shift
 [ "$1" ] && RegionName=$1 && shift
@@ -39,7 +39,7 @@ netstat -an | egrep ":$InternalPort[[:blank:]].*LISTEN" && end 1 "Port $Internal
 [ $InternalPort -gt 9000 -a $InternalPort -lt 10000 ] \
 || yesno "Port $InternalPort is outside the usual 9000-9999 range, are you sure?" \
 || end $? Cancelled
-# crudini --set $TMP.region.ini "$RegionName" RegionUUID $(uuidgen)
+# crudini --set $TMP.region.ini "$RegionName" RegionUUID $($uuidgen)
 crudini --set $TMP.region.ini "$RegionName" InternalPort $InternalPort
 
 echo "Last locations on this server"

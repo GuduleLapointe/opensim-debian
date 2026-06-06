@@ -6,6 +6,8 @@ firstport=9010
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/lib/os-helpers || exit 1
 
+[ -z "$uuidgen" ] && end 1 "this script requires uuid generator, run sudo apt install uuid to install one"
+which bc >/dev/null || end $? "this script requires bc, run sudo apt install bc to install it"
 log "ETC $ETC"
 log "OSBIN $OSBIN"
 log "OSBINDIR $OSBINDIR"
@@ -237,7 +239,7 @@ then
     readvar RegionName
     [ "$RegionName" = "" ] && log $? RegionName must be provided, using $SimName && RegionName=$SimName
 
-    RegionUUID=$(uuidgen)
+    RegionUUID=$($uuidgen)
     readvar RegionUUID
 
     Location=$(nextlocation $gridnick)

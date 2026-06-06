@@ -243,3 +243,6 @@ uncomment() {
 isuuid() {
   echo $1 | grep -qEi "^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$"
 }
+
+uuidgen=$(which uuid || which uuidgen)
+log "uuidgen $uuidgen"
