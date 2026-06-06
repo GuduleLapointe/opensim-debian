@@ -150,10 +150,12 @@ startSim() {
 
     Executable=${executable:-${Executable}}
     BinDir=${bindir:-${BinDir}}
+    ExecName=$(basename $Executable | sed 's/\.\(exe\|dll\)$//')
     case "${Executable##*.}" in
         dll) runtime=dotnet ;;
         *)   runtime=mono ;;
     esac
+    echo "$BinDir" | grep -q "opensim-0\.9\.3" && runtime=dotnet && Executable="$ExecName.dll"
     log "Executable $Executable ($runtime)"
 
     log "starting $instance with $inifile"
@@ -192,7 +194,6 @@ startSim() {
     log Executable $Executable
     if [ ! -f "$LogConfig" ]
     then
-      ExecName=$(basename $Executable | sed 's/\.\(exe\|dll\)$//')
       sed -e "s|[a-zA-Z0-9\./_-]*/*$ExecName.log|$LogsDirectory/$instance.log|" \
       -e "s|[a-zA-Z0-9\./_-]*/*${ExecName}Stats.log|$LogsDirectory/${instance}.Stats.log|" \
       $BinDir/$ExecName.exe.config >$TMP.logconfig \
