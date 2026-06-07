@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2015 Olivier van Helden <olivier@van-helden.net>
 # Released under GNU Affero GPL v3.0 license
@@ -33,27 +33,20 @@ case "$(uname -s)" in
 esac
 
 # Tool dependencies (ask before installing each missing tool)
-which pv     >/dev/null || yesno "Install pv?"     && pkg_install pv     || end $? "Could not install pv"
-which screen >/dev/null || yesno "Install screen?" && pkg_install screen || end $? "Could not install screen"
+if ! which pv >/dev/null; then
+	yesno "Install pv?" && pkg_install pv || end $? "Could not install pv"
+fi
+if ! which screen >/dev/null; then
+	yesno "Install screen?" && pkg_install screen || end $? "Could not install screen"
+fi
 
 # Python venv + crudini (isolated from system Python)
 . $BASEDIR/libexec/venv-setup || end $? "Could not set up Python venv"
+log "using $(which python3)"
 require crudini
 
 echo "Initialize submodules" >&2
 git submodule update --init
-
-log checking preferences
-if [ ! -d "$ETC" ]
-then
-  log "No preferences folder, creating one"
-  for etc in $BASEDIR/etc /etc/opensim ~/etc/opensim
-  do
-    mkdir "$etc" 2>/dev/null && ETC=$etc && break
-  done
-  [ ! "$ETC" ] && end 1 "Could not create preferences folder"
-fi
-log "Preferences folder: $ETC"
 
 yesno "Update system packages?" && {
   pkg_update || log $? "System update failed, continuing anyway"
@@ -62,13 +55,18 @@ yesno "Update system packages?" && {
 # Runtime: mono for OpenSim < 0.9.3, dotnet for >= 0.9.3
 # Both can coexist; install what's missing based on the target version.
 log "Checking runtimes"
-if ! which mono >/dev/null 2>&1; then
-  yesno "Install Mono (required for OpenSim < 0.9.3)?" && {
-    pkg_install mono-complete || end $? "Mono installation failed"
-  }
+if which mono >/dev/null 2>&1; then
+	log "mono installed $(mono --version)"
+else
+  	yesno "Install Mono (required for OpenSim < 0.9.3)?" && {
+    	pkg_install mono-complete || end $? "Mono installation failed"
+    }
 fi
-if ! which dotnet >/dev/null 2>&1; then
-  yesno "Install .NET runtime (required for OpenSim >= 0.9.3)?" && {
+
+if which dotnet >/dev/null 2>&1; then
+	log "dotnet installed $(dotnet --version)"
+else
+  	yesno "Install .NET runtime (required for OpenSim >= 0.9.3)?" && {
     # Universal installer from Microsoft — works on Linux and macOS
     curl -fsSL https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh \
       | bash -s -- --runtime dotnet --channel LTS \
@@ -79,58 +77,202 @@ if ! which dotnet >/dev/null 2>&1; then
   }
 fi
 
-log "## Checking standard directories"
-for dir in $LIB $SRC $VAR $CACHE $DATA $ETC \
-  $ETC/opensim.d $ETC/robust.d $ETC/grids $DATA $CACHE $VAR/logs $VAR/tmp
+# --- OpenSim version selection (no download yet) ---
+echo ""
+log "Fetching OpenSimulator release list from $OSDOWNLOADPAGE ..."
+_releases=$(curl -s "$OSDOWNLOADPAGE/" \
+  | grep -o 'href="opensim-[0-9][^"]*\.tar\.gz"' \
+  | grep -v source \
+  | cut -d'"' -f2 \
+  | sort -r)
+[ -n "$_releases" ] || end 1 "Could not fetch release list from $OSDOWNLOADPAGE"
+
+echo ""
+echo "OpenSimulator version to install:"
+i=1
+while IFS= read -r _f; do
+  printf "  %2d) %s\n" "$i" "$(basename "$_f" .tar.gz)"
+  i=$((i+1))
+done <<< "$_releases"
+echo "   d) Development version (build from source — not yet implemented)"
+echo "   s) Skip (install OpenSim manually later)"
+echo ""
+read -p "  Version [1]: " _vchoice
+_vchoice=${_vchoice:-1}
+
+case "$_vchoice" in
+  d|D)
+    OSVERSION=dev
+    OSDOWNLOAD=
+    ;;
+  s|S)
+    OSVERSION=
+    OSDOWNLOAD=
+    ;;
+  [0-9]*)
+    _vsel=$(echo "$_releases" | sed -n "${_vchoice}p")
+    [ -n "$_vsel" ] || end 1 "Invalid choice: $_vchoice"
+    OSVERSION=$(basename "$_vsel" .tar.gz | sed 's/^opensim-//')
+    OSDOWNLOAD="$OSDOWNLOADPAGE/$_vsel"
+    ;;
+  *) end 1 "Invalid choice: $_vchoice" ;;
+esac
+unset _releases _f _vchoice _vsel i
+
+# --- Layout selection ---
+echo ""
+echo "Installation layout:"
+echo "  1) System    — Standard Linux paths: /etc/opensim, /var/lib/opensim, /usr/share/opensim"
+echo "  2) Bundled   — Organized structure under a single directory: /opt/opensim, ~/opensim, ..."
+echo "  3) Flat      — OpenSim's default layout, all files in core directory"
+echo ""
+read -p "  Layout [1]: " _layout_choice
+
+## Set install base directory
+case "${_layout_choice:-1}" in
+  1|system|debian)
+    LAYOUT=debian
+    BaseInstallPath=/usr/share/opensim
+    ;;
+  2|bundled)
+    LAYOUT=bundled
+    BaseInstallPath=/opt/opensim
+    readvar BaseInstallPath
+    ;;
+  3|flat)
+    LAYOUT=flat
+    BaseInstallPath=$BASEDIR/core
+    readvar BaseInstallPath
+    ;;
+  *)
+    end 1 "Invalid layout choice"
+    ;;
+esac
+
+INSTALLPATH=$BaseInstallPath
+log "INSTALLPATH=$INSTALLPATH"
+
+case "${_layout_choice:-1}" in
+  1|system|debian)
+    LAYOUT=debian
+    ETC=/etc/opensim
+    VAR=/var/lib/opensim
+    CORE_BASE=/usr/share/opensim
+    CORE=$CORE_BASE/opensim-$OSVERSION
+    LOGS=/var/log/opensim
+    CACHE=/var/cache/opensim
+    DATA=/var/lib/opensim/data
+    ;;
+  2|bundled)
+    LAYOUT=bundled
+    ETC=$INSTALLPATH/etc
+    VAR=$INSTALLPATH/var
+    CORE_BASE=$INSTALLPATH/core
+    CORE=$CORE_BASE/opensim-$OSVERSION
+    LOGS=$INSTALLPATH/var/logs
+    CACHE=$INSTALLPATH/var/cache
+    DATA=$INSTALLPATH/var/data
+    ;;
+  3|flat)
+    LAYOUT=flat
+    CORE_BASE=$INSTALLPATH/opensim-$OSVERSION
+    CORE=$CORE_BASE
+    ETC=$CORE_BASE/bin
+    VAR=$CORE_BASE/bin
+    LOGS=$CORE_BASE/bin
+    CACHE=$CORE_BASE/bin
+    DATA=$CORE_BASE/bin
+    ;;
+  *)
+    end 1 "Invalid layout choice"
+    ;;
+esac
+
+# --- Save config to repo (gitignored) so Deployer can read it ---
+mkdir -p "$BASEDIR/config"
+
+cat > "$BASEDIR/config/install.ini" <<CONF
+# Generated by install.sh — $(date +"%Y-%m-%d %H:%M")
+LAYOUT='$LAYOUT'
+OSVERSION='${OSVERSION:-}'
+OSDOWNLOAD='${OSDOWNLOAD:-}'
+INSTALLPATH='${INSTALLPATH:-}'
+ETC='$ETC'
+VAR='$VAR'
+CORE_BASE='$CORE_BASE'
+LOGS='$LOGS'
+CACHE='$CACHE'
+DATA='$DATA'
+CONF
+log "Install preferences saved to $BASEDIR/config/install.ini"
+
+# --- Summary + confirm ---
+cat <<EOF
+
+Installation plan:
+  OpenSim version: ${OSVERSION:-skipped}
+  Layout:          $LAYOUT
+  INSTALLPATH:     $INSTALLPATH
+  CORE:            $CORE
+  ETC:             $ETC
+  VAR:             $VAR
+  DATA:            $DATA
+  CACHE:           $CACHE
+  LOGS:            $LOGS
+
+EOF
+
+yesno -y "Create directories and proceed?" || end 0 "Aborted"
+end DEBUG
+
+# --- Create ETC and write paths.ini ---
+mkdir -p "$ETC" 2>/dev/null || sudo mkdir -p "$ETC" || end $? "Could not create $ETC"
+{
+  echo "# Generated by install.sh — layout: $LAYOUT"
+  echo "INSTALLPATH='$INSTALLPATH'"
+  echo "CORE='$CORE'"
+  echo "ETC='$ETC'"
+  echo "VAR='$VAR'"
+  echo "LOGS='$LOGS'"
+  echo "CACHE='$CACHE'"
+  echo "DATA='$DATA'"
+} | sudo tee "$ETC/paths.ini" > /dev/null
+log "Wrote $ETC/paths.ini"
+
+# --- Create standard directories ---
+for dir in $SRC $VAR $CACHE $DATA \
+  $ETC/opensim.d $ETC/robust.d $ETC/grids $VAR/logs $VAR/tmp
 do
   [ -d "$dir" ] && continue
-  mkdir -p "$dir" \
-    && log "Created $dir" \
-    || end $? "Could not create $dir"
+  mkdir -p "$dir" 2>/dev/null || sudo mkdir -p "$dir" || end $? "Could not create $dir"
+  log "Created $dir"
 done
 
-log "Looking for OpenSimulator binaries"
-if [ ! -f "$OSBIN" ]
-then
-  log "OpenSim binaries missing, lets fix that"
-  if yesno "Download latest official release?"
-  then
-    log "Downloading latest official release"
-    OSDOWNLOAD=$( curl -s $OSDOWNLOADPAGE/ | tr " " "\n" \
-    | grep 'href="opensim.*tar.gz' | grep -v source | cut -d '"' -f 2  | tail -1)
-    [ "$OSDOWNLOAD" != "" ] && OSDOWNLOAD=$OSDOWNLOADPAGE/$OSDOWNLOAD \
-    || end 1 could not find a release to download
-
-    mkdir -p "$SRC" || end $? "Could not create $SRC"
-    tar=$(basename "$OSDOWNLOAD")
-    if [ ! -f "$SRC/$tar" ]
-    then
-      log "loading OpenSimulator supported release"
-      log "$OSDOWNLOAD"
-      wget -nd -P "$SRC" "$OSDOWNLOAD" \
-      || end $? Error $? while downloading OpenSim
-    fi
-    log "unpacking OpenSimulator"
-    cd "$CORE" \
-    && log extracting OpenSimulator archive to "$CORE/$OPENSIM" \
-    && tar xvfz "$SRC/$tar" \
-    || end $? Error $? while unpacking OpenSim
-    OSDIR=$CORE/$(basename $OSDOWNLOAD .tar.gz)
-    [ -d "$OSDIR" ] || end 1 "unexpectedly didn't find $OSDIR"
-    OSBINDIR=$OSDIR/bin
-    [ -d "$OSBINDIR" ] || end 1 "unexpectedly didn't find $OSBINDIR"
-    OSBIN=$OSBINDIR/OpenSim.exe
-    [ -f "$OSBIN" ] || end 1 "unexpectedly didn't find $OSBIN"
+# --- Download and extract OpenSim ---
+if [ -n "$OSDOWNLOAD" ] && [ ! -f "$OSBIN" ]; then
+  log "Downloading $OSDOWNLOAD"
+  mkdir -p "$SRC" 2>/dev/null || sudo mkdir -p "$SRC" || end $? "Could not create $SRC"
+  _tar=$(basename "$OSDOWNLOAD")
+  if [ -f "$SRC/$_tar" ]; then
+    log "Already downloaded: $SRC/$_tar"
   else
-    if yesno "Download development version?"
-    then
-      log 1 "TODO: Download and build development version"
-    else
-      log 1 "OpenSimulator core is not installed"
-    fi
+    wget -nd -P "$SRC" "$OSDOWNLOAD" \
+      || end $? "Error downloading OpenSim"
   fi
+  log "Unpacking to $CORE_BASE"
+  mkdir -p "$CORE_BASE" 2>/dev/null || sudo mkdir -p "$CORE_BASE" || end $? "Could not create $CORE_BASE"
+  pv "$SRC/$_tar" | sudo tar xzf - -C "$CORE_BASE" \
+    || end $? "Error unpacking OpenSim"
+  OSDIR=$CORE_BASE/$(basename "$OSDOWNLOAD" .tar.gz)
+  [ -d "$OSDIR" ]    || end 1 "Unexpected: $OSDIR not found"
+  OSBINDIR=$OSDIR/bin
+  [ -d "$OSBINDIR" ] || end 1 "Unexpected: $OSBINDIR not found"
+  OSBIN=$OSBINDIR/OpenSim.exe
+  [ -f "$OSBIN" ]    || end 1 "Unexpected: $OSBIN not found"
+  log "OpenSim installed: $OSDIR"
+  unset _tar
 fi
-[ ! "$OSBINDIR" ] && OSBINDIR=$OSDIR/bin
+[ -z "$OSBINDIR" ] && [ -n "$OSDIR" ] && OSBINDIR=$OSDIR/bin
 
 export OSBINDIR
 
