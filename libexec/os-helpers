@@ -19,45 +19,42 @@ BINDIR=$(dirname $(realpath "$0"))
 export PATH=$PATH:$BINDIR
 
 BASEDIR=$(dirname "$BINDIR")
+OPTSINHELPER=yes
 . $BASEDIR/libexec/bash-helpers/helpers \
   || . $BASEDIR/contrib/bash-helpers/helpers \
   || echo "$PGM: Missing helpers library, run ./install/install.sh"
 
-[ "$1" = "-v" ] && DEBUG=yes && shift
-[ "$1" = "-q" ] && DEBUG=no && shift
-
-# Load layout-specific paths written by install.sh or Deployer.
-# Looks for paths.ini first (current format), falls back to paths.conf (legacy).
-# When found, sets ETC/VAR/CORE/etc. and we skip ETC auto-detection.
+# Load layout-specific paths from install.ini (written by install.sh or Deployer).
+# Uses crudini from the venv for reliable ini parsing.
+_CRUDINI="$BASEDIR/venv/bin/crudini"
 _paths_loaded=no
-for _paths_conf in \
-  /etc/opensim/paths.ini \
-  /etc/opensim/paths.conf \
-  /usr/local/etc/opensim/paths.ini \
-  /usr/local/etc/opensim/paths.conf \
-  $BASEDIR/etc/paths.ini \
-  $BASEDIR/etc/paths.conf \
-  ~/etc/opensim/paths.ini \
-  ~/etc/opensim/paths.conf
-do
-  if [ -f "$_paths_conf" ]; then
-    . "$_paths_conf"
+if [ -x "$_CRUDINI" ]; then
+  for _iconf in \
+    /etc/opensim/install.ini \
+    /usr/local/etc/opensim/install.ini \
+    $BASEDIR/etc/install.ini \
+    ~/etc/opensim/install.ini
+  do
+    [ -f "$_iconf" ] || continue
+    eval "$("$_CRUDINI" --get --format=sh "$_iconf" install 2>/dev/null)"
     _paths_loaded=yes
     break
-  fi
-done
-unset _paths_conf
+  done
+  unset _iconf
+fi
+unset _CRUDINI
 
+# Map PascalCase config keys to script variables, with fallbacks for standalone use
 LIB=${LIB:-$BASEDIR/lib}
-VAR=${VAR:-$BASEDIR/var}
-CORE=${CORE:-$BASEDIR/core}
-LOGS=${LOGS:-$VAR/logs}
-CACHE=${CACHE:-$VAR/cache}
-DATA=${DATA:-$VAR/data}
 SRC=${SRC:-$BASEDIR/src}
-ETC=${ETC:-$BASEDIR/etc}
+ETC=${EtcDirectory:-${ETC:-$BASEDIR/etc}}
+VAR=${VarDirectory:-${VAR:-$BASEDIR/var}}
+CORE=${CoreDir:-${CORE:-$BASEDIR/core}}
+LOGS=${LogsDirectory:-${LOGS:-$VAR/logs}}
+CACHE=${CacheDirectory:-${CACHE:-$VAR/cache}}
+DATA=${DataDirectory:-${DATA:-$VAR/data}}
 
-# Auto-detect ETC and source opensim.conf (skipped when paths.ini/conf was loaded)
+# Source opensim.conf from ETC if present (skipped when install.ini sets a known ETC)
 if [ "$_paths_loaded" = no ]; then
   for etc in /etc/opensim $BASEDIR/etc ~/etc/opensim
   do
@@ -65,21 +62,28 @@ if [ "$_paths_loaded" = no ]; then
       [ -f "$etc/opensim.conf" ] && . $etc/opensim.conf 2>/dev/null
   done
 else
-  # paths.ini/conf was loaded; still honour opensim.conf in the resolved ETC if present
   [ -f "$ETC/opensim.conf" ] && . "$ETC/opensim.conf" 2>/dev/null
 fi
 unset _paths_loaded
 
-[ -d "$OSBINDIR" ] && OSBIN=$OSBINDIR/bin/OpenSim.exe \
-|| OSBIN=$( ls \
-$BASEDIR/lib/opensim*/bin/OpenSim.exe \
-$BASEDIR/core/opensim*/bin/OpenSim.exe \
-$OSBINDIR/bin/OpenSim.exe \
-2>/dev/null | tail -1 )
+OSBINDIR=${CORE:-OSBINDIR:-}
+if [ -n "$OSBINDIR" -a -d "$OSBINDIR" ]; then
+	OSBIN=${CORE:-OSBINDIR:-}/bin/OpenSim.exe
+	if [ ! -e "$OSBIN" ]; then
+		OSBIN=$( ls \
+		$BASEDIR/core/opensim*/bin/OpenSim.exe \
+		$CORE/bin/OpenSim.exe \
+		2>/dev/null | tail -1 )
+	fi
+fi
 
-[ "$OSBIN" ] \
-&& log "$OSBIN found" && OSBINDIR=$(dirname $OSBIN) && OSDIR=$(dirname $OSBINDIR)\
-|| log 1 "OpenSim.exe not found, run ./install/install.sh"
+if  [ -n "${OSBIN:-}" ]; then
+	log "$OSBIN found"
+	OSBINDIR=$(dirname $OSBIN)
+	OSDIR=$(dirname $OSBINDIR)
+else
+	log 1 "OpenSim.exe not found, run ./install/install.sh"
+fi
 
 osConsole() {
   [ ! "$2" ] && return

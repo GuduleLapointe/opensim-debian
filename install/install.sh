@@ -4,6 +4,8 @@
 # Released under GNU Affero GPL v3.0 license
 #    http://www.gnu.org/licenses/agpl-3.0.html
 
+set -euo pipefail
+
 OSDOWNLOADPAGE=http://opensimulator.org/dist
 # DEBUG=yes
 #AUTOMATIC=yes
@@ -58,15 +60,15 @@ log "Checking runtimes"
 if which mono >/dev/null 2>&1; then
 	log "mono installed $(mono --version)"
 else
-  	yesno "Install Mono (required for OpenSim < 0.9.3)?" && {
-    	pkg_install mono-complete || end $? "Mono installation failed"
+	yesno "Install Mono (required for OpenSim < 0.9.3)?" && {
+  	pkg_install mono-complete || end $? "Mono installation failed"
     }
 fi
 
 if which dotnet >/dev/null 2>&1; then
 	log "dotnet installed $(dotnet --version)"
 else
-  	yesno "Install .NET runtime (required for OpenSim >= 0.9.3)?" && {
+	yesno "Install .NET runtime (required for OpenSim >= 0.9.3)?" && {
     # Universal installer from Microsoft — works on Linux and macOS
     curl -fsSL https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh \
       | bash -s -- --runtime dotnet --channel LTS \
@@ -122,7 +124,7 @@ unset _releases _f _vchoice _vsel i
 # --- Layout selection ---
 echo ""
 echo "Installation layout:"
-echo "  1) System    — Standard Linux paths: /etc/opensim, /var/lib/opensim, /usr/share/opensim"
+echo "  1) System    — Standard Linux paths: /etc/opensim, /var/lib/opensim, /usr/local/share/opensim"
 echo "  2) Bundled   — Organized structure under a single directory: /opt/opensim, ~/opensim, ..."
 echo "  3) Flat      — OpenSim's default layout, all files in core directory"
 echo ""
@@ -132,7 +134,7 @@ read -p "  Layout [1]: " _layout_choice
 case "${_layout_choice:-1}" in
   1|system|debian)
     DirectoryLayout=debian
-    BaseInstallPath=/usr/share/opensim
+    BaseInstallPath=/usr/local/share/opensim
     ;;
   2|bundled)
     DirectoryLayout=bundled
@@ -157,8 +159,8 @@ case "${_layout_choice:-1}" in
     DirectoryLayout=debian
     EtcDirectory=/etc/opensim
     VarDirectory=/var/lib/opensim
-    _core_base=/usr/share/opensim
-    CoreDir=$_core_base/opensim-$OpensimVersion
+    _core_base=/usr/local/share/opensim
+    CoreDirectory=$_core_base/opensim-$OpensimVersion
     LogsDirectory=/var/log/opensim
     CacheDirectory=/var/cache/opensim
     DataDirectory=/var/lib/opensim/data
@@ -168,7 +170,7 @@ case "${_layout_choice:-1}" in
     EtcDirectory=$InstallPath/etc
     VarDirectory=$InstallPath/var
     _core_base=$InstallPath/core
-    CoreDir=$_core_base/opensim-$OpensimVersion
+    CoreDirectory=$_core_base/opensim-$OpensimVersion
     LogsDirectory=$InstallPath/var/logs
     CacheDirectory=$InstallPath/var/cache
     DataDirectory=$InstallPath/var/data
@@ -176,7 +178,7 @@ case "${_layout_choice:-1}" in
   3|flat)
     DirectoryLayout=flat
     _core_base=$InstallPath/opensim-$OpensimVersion
-    CoreDir=$_core_base
+    CoreDirectory=$_core_base
     EtcDirectory=$_core_base/bin
     VarDirectory=$_core_base/bin
     LogsDirectory=$_core_base/bin
@@ -188,6 +190,8 @@ case "${_layout_choice:-1}" in
     ;;
 esac
 
+SourcesDirectory=${SRC:-$BASEDIR/src}
+
 # --- Save config to repo (gitignored) so Deployer can read it ---
 # crudini --set: updates only listed keys, leaves other settings untouched
 mkdir -p "$BASEDIR/config"
@@ -195,7 +199,7 @@ _iconf="$BASEDIR/config/install.ini"
 crudini --set "$_iconf" install DirectoryLayout   "$DirectoryLayout"
 crudini --set "$_iconf" install OpensimVersion    "${OpensimVersion:-}"
 crudini --set "$_iconf" install InstallPath       "${InstallPath:-}"
-crudini --set "$_iconf" install CoreDir           "$CoreDir"
+crudini --set "$_iconf" install CoreDirectory           "$CoreDirectory"
 crudini --set "$_iconf" install EtcDirectory      "$EtcDirectory"
 crudini --set "$_iconf" install VarDirectory  "$VarDirectory"
 crudini --set "$_iconf" install LogsDirectory     "$LogsDirectory"
@@ -211,82 +215,75 @@ Installation plan:
   OpenSim version:   ${OpensimVersion:-skipped}
   Layout:            $DirectoryLayout
   Install base:      $InstallPath
-  CoreDir:           $CoreDir
+  Core Directory:    $CoreDirectory
   Etc Directory:     $EtcDirectory
   Var Directory:     $VarDirectory
   Data Directory:    $DataDirectory
   Cache Directory:   $CacheDirectory
   Logs Directory:    $LogsDirectory
+  Sources:           $SourcesDirectory
 
 EOF
 
 yesno -y "Create directories and proceed?" || end 0 "Aborted"
-end DEBUG
 
-# --- Create EtcDirectory and write install.ini ---
-# install.ini is shell-sourceable (KEY=value, no section headers).
-# Uses temp-file approach so we don't wipe existing keys.
-# TODO: once sections are defined, migrate to crudini sections + crudget in os-helpers
-mkdir -p "$EtcDirectory" 2>/dev/null || sudo mkdir -p "$EtcDirectory" || end $? "Could not create $EtcDirectory"
-_ptmp=$(mktemp /tmp/opensim-paths.XXXXXX.ini)
-sudo cat "$EtcDirectory/install.ini" > "$_ptmp" 2>/dev/null || true  # start from existing if any
-_paths_upsert() {
-    local k="$1" v="$2"
-    if grep -q "^${k}=" "$_ptmp" 2>/dev/null; then
-        sed -i '' "s|^${k}=.*|${k}='${v}'|" "$_ptmp" 2>/dev/null \
-          || sed -i  "s|^${k}=.*|${k}='${v}'|" "$_ptmp"
-    else
-        printf "%s='%s'\n" "$k" "$v" >> "$_ptmp"
-    fi
-}
-_paths_upsert InstallPath          "$InstallPath"
-_paths_upsert CoreDir              "$CoreDir"
-_paths_upsert EtcDirectory         "$EtcDirectory"
-_paths_upsert VarDirectory         "$VarDirectory"
-_paths_upsert LogsDirectory        "$LogsDirectory"
-_paths_upsert CacheDirectory       "$CacheDirectory"
-_paths_upsert DataDirectory        "$DataDirectory"
-sudo install -m 644 "$_ptmp" "$EtcDirectory/install.ini"
-rm -f "$_ptmp"
-unset -f _paths_upsert; unset _ptmp
-log "Wrote $EtcDirectory/install.ini"
+# --- Create directories, owned by current user ---
+for dir in \
+  "$EtcDirectory" "$EtcDirectory/opensim.d" "$EtcDirectory/robust.d" "$EtcDirectory/grids" \
+  "$SourcesDirectory" "$_core_base" "$CoreDirectory" \
+  "$VarDirectory" "$LogsDirectory" "$CacheDirectory" "$DataDirectory" \
 
-# --- Create standard directories ---
-for dir in $SRC $VarDirectory $CacheDirectory $DataDirectory \
-  $EtcDirectory/opensim.d $EtcDirectory/robust.d $EtcDirectory/grids $VarDirectory/logs $VarDirectory/tmp
 do
   [ -d "$dir" ] && continue
-  mkdir -p "$dir" 2>/dev/null || sudo mkdir -p "$dir" || end $? "Could not create $dir"
-  log "Created $dir"
+  [ "$VERBOSE" = "yes" ] && v="-v" || v=
+  sudo install $v -d -o "$USER" "$dir" || end $? "Could not create $dir"
 done
 
+# --- Write EtcDirectory/install.ini ---
+log "Update $EtcDirectory/install.ini"
+_iconf="$EtcDirectory/install.ini"
+crudini --set "$_iconf" install DirectoryLayout  "$DirectoryLayout"
+crudini --set "$_iconf" install OpensimVersion   "${OpensimVersion:-}"
+crudini --set "$_iconf" install InstallPath      "${InstallPath:-}"
+crudini --set "$_iconf" install CoreDirectory    "${CoreDirectory}"
+crudini --set "$_iconf" install EtcDirectory     "$EtcDirectory"
+crudini --set "$_iconf" install VarDirectory     "$VarDirectory"
+crudini --set "$_iconf" install LogsDirectory    "$LogsDirectory"
+crudini --set "$_iconf" install CacheDirectory   "$CacheDirectory"
+crudini --set "$_iconf" install DataDirectory    "$DataDirectory"
+unset _iconf
+
 # --- Download and extract OpenSim ---
-if [ -n "$OSDOWNLOAD" ] && [ ! -f "$OSBIN" ]; then
-  log "Downloading $OSDOWNLOAD"
-  mkdir -p "$SRC" 2>/dev/null || sudo mkdir -p "$SRC" || end $? "Could not create $SRC"
-  _tar=$(basename "$OSDOWNLOAD")
-  if [ -f "$SRC/$_tar" ]; then
-    log "Already downloaded: $SRC/$_tar"
-  else
-    wget -nd -P "$SRC" "$OSDOWNLOAD" \
-      || end $? "Error downloading OpenSim"
-  fi
-  log "Unpacking to $_core_base"
-  mkdir -p "$_core_base" 2>/dev/null || sudo mkdir -p "$_core_base" || end $? "Could not create $_core_base"
-  pv "$SRC/$_tar" | sudo tar xzf - -C "$_core_base" \
-    || end $? "Error unpacking OpenSim"
-  OSDIR=$_core_base/$(basename "$OSDOWNLOAD" .tar.gz)
-  [ -d "$OSDIR" ]    || end 1 "Unexpected: $OSDIR not found"
-  OSBINDIR=$OSDIR/bin
-  [ -d "$OSBINDIR" ] || end 1 "Unexpected: $OSBINDIR not found"
-  OSBIN=$OSBINDIR/OpenSim.exe
-  [ -f "$OSBIN" ]    || end 1 "Unexpected: $OSBIN not found"
-  log "OpenSim installed: $OSDIR"
-  unset _tar
+
+if [ -n "$OSDOWNLOAD" ]; then
+	_tar_name=$(basename "$OSDOWNLOAD")
+	_tar_path=$SourcesDirectory/$_tar_name
+# if [ -n "$OSDOWNLOAD" ] && [ ! -f "${OSBIN:-}" ]; then
+	if [ -f "$_tar_path" ]; then
+		log "Using previous download $_tar_path"
+	else
+		log "Downloading $OSDOWNLOAD"
+		wget -nd -P "$SourcesDirectory" "$OSDOWNLOAD" \
+		|| end $? "Error downloading OpenSim"
+	fi
+ 	[ -f "$_tar_path" ] || end $? "Unexpected: $_tar_path not found"
+
+	log "Unpacking $_tar_name to $_core_base"
+
+	pv "$_tar_path" | tar xzf - -C "$_core_base" \
+	|| end $? "Error unpacking OpenSim"
+
+	OSDIR=$_core_base/$(basename "$_tar_name" .tar.gz)
+	[ -d "$OSDIR" ]    || end 1 "Unexpected: $OSDIR not found"
+	OSBINDIR=$OSDIR/bin
+	[ -d "$OSBINDIR" ] || end 1 "Unexpected: $OSBINDIR not found"
+	OSBIN=$OSBINDIR/OpenSim.exe
+	[ -f "$OSBIN" ]    || end 1 "Unexpected: $OSBIN not found"
+	log "OpenSim installed: $OSDIR"
+	unset _tar_name
+	unset _tar_path
 fi
 [ -z "$OSBINDIR" ] && [ -n "$OSDIR" ] && OSBINDIR=$OSDIR/bin
-
-export OSBINDIR
 
 #cd "$OSBIN" || end 2 could not cd to $OSBIN
 #(
