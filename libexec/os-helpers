@@ -49,7 +49,7 @@ LIB=${LIB:-$BASEDIR/lib}
 SRC=${SRC:-$BASEDIR/src}
 ETC=${EtcDirectory:-${ETC:-$BASEDIR/etc}}
 VAR=${VarDirectory:-${VAR:-$BASEDIR/var}}
-CORE=${CoreDir:-${CORE:-$BASEDIR/core}}
+CORE=${CoreDirectory:-${CORE:-$BASEDIR/core}}
 LOGS=${LogsDirectory:-${LOGS:-$VAR/logs}}
 CACHE=${CacheDirectory:-${CACHE:-$VAR/cache}}
 DATA=${DataDirectory:-${DATA:-$VAR/data}}
@@ -66,13 +66,13 @@ else
 fi
 unset _paths_loaded
 
-OSBINDIR=${CORE:-OSBINDIR:-}
+OSBINDIR=${OSBINDIR:-}
 if [ -n "$OSBINDIR" -a -d "$OSBINDIR" ]; then
-	OSBIN=${CORE:-OSBINDIR:-}/bin/OpenSim.exe
+	OSBIN=${CORE:-${OSBINDIR:-}}/bin/OpenSim.exe
 	if [ ! -e "$OSBIN" ]; then
 		OSBIN=$( ls \
 		$BASEDIR/core/opensim*/bin/OpenSim.exe \
-		$CORE/bin/OpenSim.exe \
+		$OSBINDIR/bin/OpenSim.exe \
 		2>/dev/null | tail -1 )
 	fi
 fi
@@ -81,8 +81,13 @@ if  [ -n "${OSBIN:-}" ]; then
 	log "$OSBIN found"
 	OSBINDIR=$(dirname $OSBIN)
 	OSDIR=$(dirname $OSBINDIR)
+	log "default OpenSim core $OSBINDIR"
 else
-	log 1 "OpenSim.exe not found, run ./install/install.sh"
+	if grep -q "install" <<< "$PGM"; then
+		log "No pre-existing OpenSim core, but we're here to handle that"
+	else
+		log 1 "No OpenSim.exe found, run ./install/install.sh to insall OpenSim core"
+	fi
 fi
 
 osConsole() {

@@ -273,17 +273,19 @@ if [ -n "$OSDOWNLOAD" ]; then
 	pv "$_tar_path" | tar xzf - -C "$_core_base" \
 	|| end $? "Error unpacking OpenSim"
 
-	OSDIR=$_core_base/$(basename "$_tar_name" .tar.gz)
-	[ -d "$OSDIR" ]    || end 1 "Unexpected: $OSDIR not found"
-	OSBINDIR=$OSDIR/bin
-	[ -d "$OSBINDIR" ] || end 1 "Unexpected: $OSBINDIR not found"
-	OSBIN=$OSBINDIR/OpenSim.exe
-	[ -f "$OSBIN" ]    || end 1 "Unexpected: $OSBIN not found"
-	log "OpenSim installed: $OSDIR"
+	log "OpenSim installed: $CoreDirectory"
 	unset _tar_name
 	unset _tar_path
 fi
-[ -z "$OSBINDIR" ] && [ -n "$OSDIR" ] && OSBINDIR=$OSDIR/bin
+
+## Set standard os-helpers env variables to installed values for
+# the next processes
+OSDIR=$CoreDirectory
+[ -d "$OSDIR" ]    || end 1 "Unexpected: $OSDIR not found"
+OSBINDIR=$OSDIR/bin
+[ -d "$OSBINDIR" ] || end 1 "Unexpected: $OSBINDIR not found"
+OSBIN=$OSBINDIR/OpenSim.exe
+[ -f "$OSBIN" ]    || end 1 "Unexpected: $OSBIN not found"
 
 #cd "$OSBIN" || end 2 could not cd to $OSBIN
 #(
