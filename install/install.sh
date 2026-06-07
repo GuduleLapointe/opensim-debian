@@ -64,18 +64,13 @@ if ! which mono >/dev/null 2>&1; then
 fi
 if ! which dotnet >/dev/null 2>&1; then
   yesno "Install .NET runtime (required for OpenSim >= 0.9.3)?" && {
-    case "$(uname -s)" in
-      Darwin) pkg_install dotnet ;;
-      Linux)
-        # Microsoft .NET repo
-        wget -q https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb \
-          -O /tmp/packages-microsoft-prod.deb \
-          && sudo dpkg -i /tmp/packages-microsoft-prod.deb \
-          && pkg_update \
-          && pkg_install dotnet-runtime-8.0 \
-          || end $? ".NET runtime installation failed"
-        ;;
-    esac
+    # Universal installer from Microsoft — works on Linux and macOS
+    curl -fsSL https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh \
+      | bash -s -- --runtime dotnet --channel LTS \
+      || end $? ".NET runtime installation failed"
+    # dotnet-install.sh installs to ~/.dotnet by default; add to PATH if needed
+    export DOTNET_ROOT="$HOME/.dotnet"
+    export PATH="$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools"
   }
 fi
 
