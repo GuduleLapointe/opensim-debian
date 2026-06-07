@@ -12,39 +12,71 @@ BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/libexec/os-helpers || exit 1
 trap 'rm -f $TMP*' EXIT
 
-require apt || end $? "Depends on apt, install on a Debian-based system"
-which pv > /dev/null || sudo apt install -y pv || end $? "Could not install pv"
-require crudini || end $? "Install crudini >= 0.9.3:
-  git clone https://github.com/pixelb/crudini.git && sudo mv crudini /opt/ && sudo ln -s /opt/crudini/crudini.py /usr/local/bin/crudini"
+# Package manager abstraction
+case "$(uname -s)" in
+  Darwin)
+    pkg_install() { brew install "$@"; }
+    pkg_update()  { brew update && brew upgrade; }
+    pkg_check()   { brew list "$1" &>/dev/null; }
+    which brew >/dev/null || end 1 "Homebrew required on macOS: https://brew.sh"
+    ;;
+  Linux)
+    which apt-get >/dev/null \
+      || end 1 "Unsupported Linux distribution (no apt-get)"
+    pkg_install() { sudo apt-get install -y "$@"; }
+    pkg_update()  { sudo apt-get update && sudo apt-get upgrade -y; }
+    pkg_check()   { dpkg -l "$1" 2>/dev/null | grep -q "^ii"; }
+    ;;
+  *)
+    end 1 "Unsupported OS: $(uname -s)"
+    ;;
+esac
+
+# Tool dependencies
+which pv      >/dev/null || pkg_install pv      || end $? "Could not install pv"
+which screen  >/dev/null || pkg_install screen  || end $? "Could not install screen"
+which crudini >/dev/null || pip3 install crudini || end $? "Could not install crudini (requires python3-pip)"
 
 echo "Initialize submodules" >&2
 git submodule update --init
 
-# End of user configurable data
-
-
-
 log checking preferences
 if [ ! -d "$ETC" ]
 then
-  log No preferences folder, createing one
-  for etc in $BASEDIR/etc /etc/$OPENSIM ~/etc/$OPENSIM
+  log "No preferences folder, creating one"
+  for etc in $BASEDIR/etc /etc/opensim ~/etc/opensim
   do
     mkdir "$etc" 2>/dev/null && ETC=$etc && break
   done
   [ ! "$ETC" ] && end 1 "Could not create preferences folder"
 fi
-log "Preferences folder is $ETC"
+log "Preferences folder: $ETC"
 
-sudo apt update && sudo apt upgrade -y || exit $?
+pkg_update || log $? "System update failed, continuing anyway"
 
-log checking mono
-if ! (dpkg --get-selections mono-complete | cut -f 1 | grep -q "^mono-complete$")
-then
-  log 1 "Mono is required to run OpenSimulator"
-  yesno "Install mono?" || end $? "Mono installation cancelled"
-  sudo apt install mono-complete \
-  || end $? "Mono installation failed"
+# Runtime: mono for OpenSim < 0.9.3, dotnet for >= 0.9.3
+# Both can coexist; install what's missing based on the target version.
+log "Checking runtimes"
+if ! which mono >/dev/null 2>&1; then
+  yesno "Install Mono (required for OpenSim < 0.9.3)?" && {
+    pkg_install mono-complete || end $? "Mono installation failed"
+  }
+fi
+if ! which dotnet >/dev/null 2>&1; then
+  yesno "Install .NET runtime (required for OpenSim >= 0.9.3)?" && {
+    case "$(uname -s)" in
+      Darwin) pkg_install dotnet ;;
+      Linux)
+        # Microsoft .NET repo
+        wget -q https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb \
+          -O /tmp/packages-microsoft-prod.deb \
+          && sudo dpkg -i /tmp/packages-microsoft-prod.deb \
+          && pkg_update \
+          && pkg_install dotnet-runtime-8.0 \
+          || end $? ".NET runtime installation failed"
+        ;;
+    esac
+  }
 fi
 
 log "## Checking standard directories"
