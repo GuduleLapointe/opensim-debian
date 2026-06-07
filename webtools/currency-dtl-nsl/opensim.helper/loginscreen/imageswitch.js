@@ -1,1 +1,0 @@
-imageswitch2.js

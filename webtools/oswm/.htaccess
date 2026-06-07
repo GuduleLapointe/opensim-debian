@@ -1,4 +1,0 @@
-<FilesMatch "\.ini$">
-    Order allow,deny
-    Deny from all
-</FilesMatch>

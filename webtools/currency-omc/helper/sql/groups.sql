@@ -1,1 +1,0 @@
-../../flotsam_XmlRpcGroup/sql/groups.sql

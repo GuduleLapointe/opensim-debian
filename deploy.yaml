@@ -1,0 +1,73 @@
+# Deployer configuration for opensim-debian
+# Requires Deployer 7.3+ — install: composer require deployer/deployer --dev
+#
+# Usage:
+#   dep deploy staging              # deploy core to staging servers
+#   dep deploy:module staging web   # deploy web module to staging
+#   dep configs:push speculoos      # push grid configs from private repo
+#   dep sim:enable <name> ursull    # activate a simulator via symlink
+
+import:
+  - deploy/layouts.php
+  - deploy/tasks/code.php
+  - deploy/tasks/configs.php
+  - deploy/tasks/services.php
+
+config:
+  # Default layout: debian | strict | flat
+  layout: debian
+
+  # Default module group to deploy
+  module: core
+
+  # Local path to private configs repo (set via .env or env var OPENSIM_CONFIGS_REPO)
+  # configs_repo_local: ~/projects/opensim-configs
+
+hosts:
+  # --- Staging ---
+  ursull:
+    remote_user: opensim
+    labels:
+      stage: staging
+      roles: [staging]
+
+  sting:
+    remote_user: opensim
+    labels:
+      stage: staging
+      roles: [staging]
+
+  # --- speculoos.world ---
+  robust.speculoos.world:
+    remote_user: opensim
+    labels:
+      grid: speculoos
+      roles: [robust]
+
+  sim1.speculoos.world:
+    remote_user: opensim
+    labels:
+      grid: speculoos
+      roles: [simulator]
+
+  sim2.speculoos.world:
+    remote_user: opensim
+    labels:
+      grid: speculoos
+      roles: [simulator]
+
+  # Add sim3..simN here following the same pattern
+
+  # --- w4os.org ---
+  w4os.org:
+    remote_user: opensim
+    labels:
+      grid: w4os
+      roles: [robust, simulator]
+
+  # --- kimbe.red ---
+  kimbe.red:
+    remote_user: opensim
+    labels:
+      grid: kimbe
+      roles: [robust, simulator]

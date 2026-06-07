@@ -1,0 +1,8 @@
+# Exclude list for the 'core' module deployment.
+# Extends the defaults in deploy/.rsync-exclude.
+
+# Only a subset of install/ is deployed (see code.php for the list)
+/install/
+
+# contrib submodules except bash-helpers (synced explicitly)
+/contrib/

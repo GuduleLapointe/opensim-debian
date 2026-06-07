@@ -9,7 +9,7 @@ outputdir=$PWD
 trap 'rm -f $TMP $TMP.*' EXIT
 
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
-. $BASEDIR/lib/os-helpers || exit 1
+. $BASEDIR/libexec/os-helpers || exit 1
 [ "$OSBIN" ] || exit 1
 [ "$ETC" ] || exit 1
 cd "$ETC" && cd "$OLDPWD" || exit 1

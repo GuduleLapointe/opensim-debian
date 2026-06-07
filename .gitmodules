@@ -1,27 +1,27 @@
 [submodule "contrib/web/flexible_helper_scripts"]
-	path = contrib/web/flexible_helper_scripts
+	path = lib/opensim-helpers
 	url = https://github.com/GuduleLapointe/opensim-helpers/
 [submodule "contrib/web/offline-mail-forwarding"]
-	path = contrib/web/offline-mail-forwarding
+	path = dev/contrib/offline-mail-forwarding
 	url = https://github.com/GuduleLapointe/offline-mail-forwarding
 [submodule "contrib/drupal/d4os"]
-	path = contrib/drupal/d4os
+	path = dev/contrib/drupal/d4os
 	url = https://git.drupalcode.org/project/d4os.git
 	branch = 7.x-1.x
 [submodule "contrib/wordpress/w4os"]
-	path = contrib/wordpress/w4os
+	path = dev/contrib/w4os
 	url = https://github.com/GuduleLapointe/w4os/
 [submodule "contrib/currency/Gloebit"]
-	path = contrib/currency/Gloebit
+	path = contrib/Gloebit/src
 	url = https://github.com/gloebit/opensim-moneymodule-gloebit.git
 [submodule "contrib/bash-helpers"]
-	path = contrib/bash-helpers
+	path = libexec/bash-helpers
 	url = https://github.com/magicoli/bash-helpers
 [submodule "contrib/currency/OMEconomy-Modules"]
-	path = contrib/currency/OMEconomy-Modules
+	path = contrib/OMEconomy-Modules
 	url = https://github.com/OpenMetaverseEconomy/OMEconomy-Modules.git
 [submodule "webtools/currency-omc/helper/phpxmlrpc"]
-	path = webtools/currency-omc/helper/phpxmlrpc
+	path = dev/contrib/currency-omc/helper/phpxmlrpc
 	url = https://github.com/gggeek/phpxmlrpc.git
 [submodule "contrib/OpenSimSearch"]
 	path = contrib/OpenSimSearch

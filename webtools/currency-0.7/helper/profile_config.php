@@ -1,1 +1,0 @@
-../osprofile/webroot/profile_config.php

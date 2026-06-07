@@ -1,9 +1,0 @@
-#!/bin/bash
-
-if [ -n $1 ] && [ -n $2 ]
-then
-        name=$1
-		command=$2
-        shift
-        screen -S $name -X stuff "$*"
-fi

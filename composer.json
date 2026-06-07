@@ -1,0 +1,12 @@
+{
+    "name": "gudulelapointe/opensim-debian",
+    "description": "OpenSim deployment and management tools for Debian-based systems",
+    "type": "project",
+    "license": "AGPL-3.0",
+    "require-dev": {
+        "deployer/deployer": "^7.3"
+    },
+    "config": {
+        "allow-plugins": {}
+    }
+}

@@ -1,1 +1,0 @@
-../flotsam_XmlRpcGroup/xmlrpci.php

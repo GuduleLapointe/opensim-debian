@@ -1,1 +1,0 @@
-../ossearch/webroot/query.php

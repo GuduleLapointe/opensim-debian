@@ -1,5 +1,0 @@
-Si c'est la premiere instalation:
-Login
-Prenom:	root
-Nom:	root
-Pass:	osmw

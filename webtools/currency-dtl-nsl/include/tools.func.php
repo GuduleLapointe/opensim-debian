@@ -1,1 +1,0 @@
-../jbxl/tools.func.php

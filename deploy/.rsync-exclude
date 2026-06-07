@@ -1,0 +1,31 @@
+# Default rsync exclude list for opensim-debian deployments.
+
+# Version control
+/.git/
+/.gitmodules
+
+# Historical / reference sources (never deployed)
+/dev/
+
+# OpenSim addon-modules (deployed separately via deploy:opensim-modules)
+/contrib/
+
+# Deployer and PHP tooling
+/vendor/
+/composer.json
+/composer.lock
+/deploy/
+
+# Runtime / build artifacts
+/var/
+/src/
+/core/
+/venv/
+/install/
+
+# Misc
+*.log
+*.phar
+*.pyc
+__pycache__/
+.DS_Store
