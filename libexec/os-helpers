@@ -25,13 +25,18 @@ BASEDIR=$(dirname "$BINDIR")
 [ "$1" = "-v" ] && DEBUG=yes && shift
 [ "$1" = "-q" ] && DEBUG=no && shift
 
-# Load layout-specific paths written by Deployer.
-# When paths.conf is found, it sets ETC/VAR/CORE/etc. and we skip ETC auto-detection.
+# Load layout-specific paths written by install.sh or Deployer.
+# Looks for paths.ini first (current format), falls back to paths.conf (legacy).
+# When found, sets ETC/VAR/CORE/etc. and we skip ETC auto-detection.
 _paths_loaded=no
 for _paths_conf in \
+  /etc/opensim/paths.ini \
   /etc/opensim/paths.conf \
+  /usr/local/etc/opensim/paths.ini \
   /usr/local/etc/opensim/paths.conf \
+  $BASEDIR/etc/paths.ini \
   $BASEDIR/etc/paths.conf \
+  ~/etc/opensim/paths.ini \
   ~/etc/opensim/paths.conf
 do
   if [ -f "$_paths_conf" ]; then
@@ -51,7 +56,7 @@ DATA=${DATA:-$VAR/data}
 SRC=${SRC:-$BASEDIR/src}
 ETC=${ETC:-$BASEDIR/etc}
 
-# Auto-detect ETC and source opensim.conf (skipped when paths.conf was loaded)
+# Auto-detect ETC and source opensim.conf (skipped when paths.ini/conf was loaded)
 if [ "$_paths_loaded" = no ]; then
   for etc in /etc/opensim $BASEDIR/etc ~/etc/opensim
   do
@@ -59,7 +64,7 @@ if [ "$_paths_loaded" = no ]; then
       [ -f "$etc/opensim.conf" ] && . $etc/opensim.conf 2>/dev/null
   done
 else
-  # paths.conf was loaded; still honour opensim.conf in the resolved ETC if present
+  # paths.ini/conf was loaded; still honour opensim.conf in the resolved ETC if present
   [ -f "$ETC/opensim.conf" ] && . "$ETC/opensim.conf" 2>/dev/null
 fi
 unset _paths_loaded
