@@ -1,8 +1,9 @@
 #!/bin/bash
 
-[ ! "$OPENSIM" ] && OPENSIM=core/opensim
-[ ! "$PGM" ] && PGM=$(basename "$0")
-[ ! "$TMP" ] && TMP=/tmp/$PGM.$$
+OPENSIM=${OPENSIM:-core/opensim}
+PGM=${PGM:-$(basename "$0")}
+TMP=${TMP:-$(mktemp -t $PGM || echo /tmp/$PGM.$$)}
+DEBUG=${DEBUG:-}
 
 if ! which realpath >/dev/null; then
   realpath() {
