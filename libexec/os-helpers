@@ -20,7 +20,7 @@ export PATH=$PATH:$BINDIR
 BASEDIR=$(dirname "$BINDIR")
 . $BASEDIR/libexec/bash-helpers/helpers \
   || . $BASEDIR/contrib/bash-helpers/helpers \
-  || echo "$PGM: Missing helpers library, run install.sh"
+  || echo "$PGM: Missing helpers library, run ./install/install.sh"
 
 [ "$1" = "-v" ] && DEBUG=yes && shift
 [ "$1" = "-q" ] && DEBUG=no && shift
@@ -73,7 +73,7 @@ $OSBINDIR/bin/OpenSim.exe \
 
 [ "$OSBIN" ] \
 && log "$OSBIN found" && OSBINDIR=$(dirname $OSBIN) && OSDIR=$(dirname $OSBINDIR)\
-|| log 1 "OpenSim.exe not found, run install.sh"
+|| log 1 "OpenSim.exe not found, run ./install/install.sh"
 
 osConsole() {
   [ ! "$2" ] && return

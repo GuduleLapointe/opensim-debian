@@ -4,31 +4,21 @@
 # Released under GNU Affero GPL v3.0 license
 #    http://www.gnu.org/licenses/agpl-3.0.html
 
-which apt > /dev/null || end $? "Depends to apt installation tool, you must install it"
-which pv > /dev/null || sudo apt install pv || end $? "Depends to crudini ini file parsers, you must install it"
-which crudini > /dev/null || end $? "Install crudini version >= 0.9.3
-git clone https://github.com/pixelb/crudini.git && sudo mv crudini /opt/ && sudo ln -s /opt/crudini/crudini.py /usr/local/bin/crudini
-"
-
-## Must add some checks before automating this:
-#
-# git clone https://github.com/pixelb/crudini.git && sudo mv crudini /opt/ && sudo ln -s /opt/crudini/crudini.py /usr/local/bin/crudini
-
-
-echo "Initialize submodules" >&2
-git submodule init
-git submodule update
-# git submodule update --remote
-
 OSDOWNLOADPAGE=http://opensimulator.org/dist
 DEBUG=yes
 #AUTOMATIC=yes
 
-
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
-. $BASEDIR/lib/os-helpers || exit 1
-# . $CONTRIB/bash-helpers/ini_parser || (echo "Missing ini_parser librarie" >&2; exit 2 )
+. $BASEDIR/libexec/os-helpers || exit 1
 trap 'rm -f $TMP*' EXIT
+
+require apt || end $? "Depends on apt, install on a Debian-based system"
+which pv > /dev/null || sudo apt install -y pv || end $? "Could not install pv"
+require crudini || end $? "Install crudini >= 0.9.3:
+  git clone https://github.com/pixelb/crudini.git && sudo mv crudini /opt/ && sudo ln -s /opt/crudini/crudini.py /usr/local/bin/crudini"
+
+echo "Initialize submodules" >&2
+git submodule update --init
 
 # End of user configurable data
 
@@ -136,7 +126,7 @@ export OSBINDIR
 if yesno "Create Robust config?"
 then
   user=$(getent passwd $USER | cut -d : -f 5 | cut -d , -f 1 | cut -d " " -f 1 | grep -i [a-z] || echo "$USER" | sed -r -e 's/(\W)/\L\1/g' -e 's/(^|[ _-])(\w)/\U\2/g')
-  newgrid.sh "${user}s Grid" || end $?
+  $BASEDIR/libexec/newgrid "${user}s Grid" || end $?
 
   # log setting defaults
   # crudini --set $TMP.new.ini Launch BinDir "\"$OpenSimBinDirectory\""

@@ -24,5 +24,5 @@
 	path = dev/contrib/currency-omc/helper/phpxmlrpc
 	url = https://github.com/gggeek/phpxmlrpc.git
 [submodule "contrib/OpenSimSearch"]
-	path = contrib/OpenSimSearch
+	path = contrib/OpenSimSearch/src
 	url = https://github.com/kcozens/OpenSimSearch
