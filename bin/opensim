@@ -13,14 +13,13 @@ shutdownWarnings=3
 
 # End of user configurable data
 
-BASEDIR=$(dirname $(dirname $(realpath "$0")))
+BASEDIR=$(cd $(dirname "$0")/.. && pwd)
+
 . $BASEDIR/libexec/os-helpers || exit 1
 [ "$OSBIN" ] || exit 1
 [ "$ETC" ] || exit 1
 
 trap 'rm -f $TMP*' EXIT
-
-which crudini >/dev/null || end $? Install crudini
 
 python=$(which python3 || which python) || end $? Install python
 log using $python
@@ -36,6 +35,7 @@ else
 	DEBUG=yes log "Venv setup complete"
 fi
 
+require crudini
 
 HELP="
   $PGM <start|stop [now]|restart [now]> [instance1] [instance2] [...]
@@ -421,15 +421,17 @@ cleanpath() {
 status() {
     # Get running process data
     { ps -C mono --no-headers -o pid,uname,pcpu,pmem,rss,args 2>/dev/null; \
-      ps -C dotnet --no-headers -o pid,uname,pcpu,pmem,rss,args 2>/dev/null; } \
+      ps -C dotnet --no-headers -o pid,uname,pcpu,pmem,rss,args 2>/dev/null;
+    } \
         | grep -v mcs\.exe \
         | grep " -inifile=" \
         | sed -E "s/(mono|dotnet).*-inifile=//;s/-log.*//" \
-        > $TMP.ps_raw
+        > "$TMP.ps_raw"
 
     # Collect configured-but-not-running instances before the pipe (subshell issue)
     seen=""
     IFS=":"
+	touch $TMP.list
     for etc in $ETCPATH
     do
         unset IFS

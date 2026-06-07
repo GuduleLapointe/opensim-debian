@@ -22,11 +22,6 @@ BASEDIR=$(dirname "$BINDIR")
   || . $BASEDIR/contrib/bash-helpers/helpers \
   || echo "$PGM: Missing helpers library, run install.sh"
 
-for exe in crudini pv #mono
-do
-  which $exe >/dev/null || end $? "missing '$exe', install it and try again"
-done
-
 [ "$1" = "-v" ] && DEBUG=yes && shift
 [ "$1" = "-q" ] && DEBUG=no && shift
 
