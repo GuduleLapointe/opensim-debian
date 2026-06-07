@@ -32,10 +32,13 @@ case "$(uname -s)" in
     ;;
 esac
 
-# Tool dependencies
-which pv      >/dev/null || pkg_install pv      || end $? "Could not install pv"
-which screen  >/dev/null || pkg_install screen  || end $? "Could not install screen"
-which crudini >/dev/null || pip3 install crudini || end $? "Could not install crudini (requires python3-pip)"
+# Tool dependencies (ask before installing each missing tool)
+which pv     >/dev/null || yesno "Install pv?"     && pkg_install pv     || end $? "Could not install pv"
+which screen >/dev/null || yesno "Install screen?" && pkg_install screen || end $? "Could not install screen"
+
+# Python venv + crudini (isolated from system Python)
+. $BASEDIR/libexec/venv-setup || end $? "Could not set up Python venv"
+require crudini
 
 echo "Initialize submodules" >&2
 git submodule update --init
@@ -52,7 +55,9 @@ then
 fi
 log "Preferences folder: $ETC"
 
-pkg_update || log $? "System update failed, continuing anyway"
+yesno "Update system packages?" && {
+  pkg_update || log $? "System update failed, continuing anyway"
+}
 
 # Runtime: mono for OpenSim < 0.9.3, dotnet for >= 0.9.3
 # Both can coexist; install what's missing based on the target version.

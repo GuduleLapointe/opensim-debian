@@ -19,23 +19,11 @@ BASEDIR=$(cd $(dirname "$0")/.. && pwd)
 [ "$OSBIN" ] || exit 1
 [ "$ETC" ] || exit 1
 
-trap 'rm -f $TMP*' EXIT
-
-python=$(which python3 || which python) || end $? Install python
-log using $python
-if [ -f $BASEDIR/venv/bin/activate ]; then
-	. $BASEDIR/venv/bin/activate || end $? could not activate venv
-else
-	DEBUG=yes log "Setup $python venv"
-	$python -m venv --prompt "$($python --version | tr -d ' ') " $BASEDIR/venv \
-	|| end $? could not create python environment
-	. $BASEDIR/venv/bin/activate || end $? could not activate venv
-	log PATH $PATH
-	pip install crudini || end $? Install crudini
-	DEBUG=yes log "Venv setup complete"
-fi
+source $BASEDIR/libexec/venv-setup   || end $? "Could not setup python venv"
 
 require crudini
+
+trap 'rm -f $TMP*' EXIT
 
 HELP="
   $PGM <start|stop [now]|restart [now]> [instance1] [instance2] [...]
