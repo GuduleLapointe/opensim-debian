@@ -168,7 +168,7 @@ do
   do
     value=$(crudget $sim.local.ini $section $variable)
     # echo "  $section->$variable = $value"
-    sed -i "s#\${$section|$variable}#$value#g" $sim.local.ini || end $?
+    sed -i~ "s#\${$section|$variable}#$value#g" $sim.local.ini || end $?
   done
 
   echo "AssetCache CacheRoot

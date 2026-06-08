@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# set -euo pipefail
+set -euo pipefail
 
 export PATH=$PATH:$(dirname $(dirname "$0"))/bin
 DEBUG=yes
@@ -77,14 +77,14 @@ then
 	# cat $TMP.get
 	log PublicPort $PublicPort
 	# crudget $RobustOutput Startup
-	savedPublicPort=$PublicPort
-	savedPrivatePort=$PrivatePort
 else
 	log "No pre-existing Robust config, no worry"
 fi
+savedPublicPort=${PublicPort:-}
+savedPrivatePort=${PrivatePort:-}
 
 
-if [ -z "$BinDir" ]; then
+if [ -z "${BinDir:-}" ]; then
 	log "No BinDir, no big deal"
 	if [ -z "${CoreRoot:-}" ]; then
 		for folder in /usr/local/share/opensim /opt/opensim/core $BASEDIR/core; do
@@ -109,7 +109,7 @@ readvar BaseHostname && [ "${BaseHostname}" != "" ] || end $? "BaseHostname cann
 PublicPort=${PublicPort:-$(nextfreeports 8002)}
 readvar PublicPort && [ "${PublicPort}" != "" ] || end $? "PublicPort cannot be empty"
 
-if [ "$update" != "yes" -o "$PublicPort" != "$savedPublicPort" ]; then
+if [ "${update:-}" != "yes" -o "$PublicPort" != "$savedPublicPort" ]; then
 	PublicPort=$(nextfreeports $PublicPort)
 fi
 
@@ -117,7 +117,7 @@ log "PublicPort: $PublicPort"
 
 PrivatePort=${PrivatePort:-$(nextfreeports $(($PublicPort + 1)))}
 readvar PrivatePort && [ "${PrivatePort}" != "" ] || end $? "PrivatePort cannot be empty"
-if [ "$update" != "yes" -o "$PublicPort" != "$savedPublicPort" ]
+if [ "${update:-}" != "yes" -o "$PublicPort" != "$savedPublicPort" ]
 then
 	PrivatePort=$(nextfreeports $PrivatePort)
 fi
@@ -132,8 +132,8 @@ LogFile="$LogsRoot/$gridnick.log"
 
 log LogConfig=$LogConfig
 log LogFile=$LogFile
-crudget $RobustDefaults DatabaseService
-crudget $RobustOutput DatabaseService
+crudget $RobustDefaults DatabaseService || true
+crudget $RobustOutput DatabaseService || true
 
 
 echo "$ConnectionString" | tr ";" "\n" | sed -r "s/ (.*)=/\\1=/g" | grep [a-z].*= > $TMP.db
@@ -236,17 +236,12 @@ cp $BinDir/Robust.ini.example $TMP.Robust.ini \
 && cat $TMP.launch.ini $TMP.Robust.ini > $TMP.ini \
 || end $? "Unexpected: error processing Robust.ini"
 
-log CHECKPOINT $LINENO
 cleanupIni $TMP.ini > $TMP.Robust.ini
-log CHECKPOINT $LINENO
 uncomment UserProfilesServiceConnector $TMP.Robust.ini
-log CHECKPOINT $LINENO
 crudini --set $TMP.Robust.ini  UserProfilesService Enabled true
-log CHECKPOINT $LINENO
 
 if [ -f "$RobustOutput" ]
 then
-	log CHECKPOINT $LINENO
 	diff "$RobustOutput" $TMP.Robust.ini  &&
 	echo "No change in $RobustOutput" && exit
 
@@ -260,7 +255,6 @@ then
 		echo "$RobustOutput left unchanged"
 	fi
 else
-	log CHECKPOINT $LINENO
 	cp $TMP.Robust.ini  $RobustOutput \
 	&& echo "$RobustOutput file created" \
 	|| end $? "create file $RobustOutput failed"

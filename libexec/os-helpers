@@ -95,8 +95,13 @@ crudget() {
 		return $?
 	else
 		sed -i~ "s/^\([^=]\)-/\\1_/" $TMP.get
-		eval $(crudini --get --format=sh $TMP.get $2 | sed -e "s/'\"/'/" -e "s/\"'/'/")
-		return $?
+		# Strip redundant double-quoting only when both delimiters are present: ='"..."' → ='...'
+		# Do NOT blindly strip leading '" which breaks values starting with ( or special chars
+		crudini --get --format=sh $TMP.get $2 \
+			| sed "s/='\"\(.*\)\"'$/='\1'/" \
+			> $TMP.crudget.sh 2>/dev/null || true
+		[ -s "$TMP.crudget.sh" ] && . "$TMP.crudget.sh" || true
+		return 0
 	fi
 }
 
@@ -110,7 +115,7 @@ crudmerge() {
 
 cleanupIni4Prod() {
   [ "$1" ] || return
-  sed -i "s/Include_/Include-/" $1
+  sed -i~ "s/Include_/Include-/" $1
   crudini --get $1 > $TMP.sections
   cat $TMP.sections | while read section
   do
@@ -204,7 +209,7 @@ iniMergeAndForget() {
   log mergin $common
   crudmerge $thisini $file
   crudini --del $thisini $section $variable
-  sed -i "s/Include_/Include-/" $thisini
+  sed -i~ "s/Include_/Include-/" $thisini
   iniExpandVariables $thisini
 }
 
@@ -215,7 +220,7 @@ sql() {
 
 uncomment() {
   [ "$2" ] || return
-  sed -i "s/; *$1 *= */$1 = /" "$2"
+  sed -i~ "s/; *$1 *= */$1 = /" "$2"
 }
 
 isuuid() {

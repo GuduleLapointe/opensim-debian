@@ -14,6 +14,7 @@ trap 'rm -f $TMP*' EXIT
 
 crudget $TMP.conf Defaults
 crudget $TMP.conf Install
+
 log "Config loaded
   OpenSim version:   ${OpensimVersion:-}
   Layout:            ${DirectoryLayout:-}
@@ -208,6 +209,13 @@ SourcesDirectory=${SourcesDirectory:-$BASEDIR/src}
 # crudini --set: updates only listed keys, leaves other settings untouched
 mkdir -p "$BASEDIR/config"
 _iconf="$BASEDIR/config/$PKG.conf"
+
+# TODO: request confirmation if these value already exist in Defaults section
+crudini --set "$_iconf" Defaults DirectoryLayout   "$DirectoryLayout"
+crudini --set "$_iconf" Defaults CoreRoot          "$CoreRoot"
+crudini --set "$_iconf" Defaults CoreDirectory     "$CoreDirectory"
+
+# Save install config
 crudini --set "$_iconf" Install DirectoryLayout   "$DirectoryLayout"
 crudini --set "$_iconf" Install OpensimVersion    "${OpensimVersion:-}"
 crudini --set "$_iconf" Install InstallPath       "${InstallPath:-}"
@@ -217,10 +225,6 @@ crudini --set "$_iconf" Install VarRoot      "$VarRoot"
 crudini --set "$_iconf" Install LogsRoot     "$LogsRoot"
 crudini --set "$_iconf" Install CacheRoot    "$CacheRoot"
 crudini --set "$_iconf" Install DataRoot     "$DataRoot"
-
-# TODO: request confirmation if these value already exist in Defaults section
-crudini --set "$_iconf" Defaults DirectoryLayout  "$DirectoryLayout"
-crudini --set "$_iconf" Defaults CoreRoot         "$CoreRoot"
 
 unset _iconf
 log "Install preferences saved to $BASEDIR/config/$PKG.conf"
@@ -466,7 +470,7 @@ end
   #   readvar $flag
   #   regionvar=$(echo Region_${!flag} | sed "s/ /_/g")
   #   grep -q "^$regionvar *= *" $TMP.regions \
-  #     && sed -i "s/^$regionvar *= *\"\(.*\)\"/$regionvar = \"\\1, $flag\"/" $TMP.regions \
+  #     && sed -i~ "s/^$regionvar *= *\"\(.*\)\"/$regionvar = \"\\1, $flag\"/" $TMP.regions \
   #     || echo "$regionvar = \"$flag\"" >> $TMP.regions
   # done
   # crudmerge $TMP.new.ini $TMP.regions
