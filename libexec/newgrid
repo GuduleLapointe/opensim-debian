@@ -262,7 +262,7 @@ else
 	|| end $? "create file $RobustOutput failed"
 fi
 
-# Create grid directory structure
+log Create grid directory structure
 for directory in \
 	$DataRoot \
 	$CacheRoot \
@@ -287,33 +287,31 @@ do
 	install $verbose -d "$directory" || end $? "Could not create $directory"
 done
 
+log Create or update grid config files
+for file in \
+	OpenSimDefaults.ini \
+	OpenSim.ini \
+	config-include/GridHypergrid.ini \
+	config-include/GridCommon.ini \
+	config-include/FlotsamCache.ini \
+	config-include/osslDefaultEnable.ini \
+	config-include/osslEnable.ini
+	# config-include/StandaloneCommon.ini \
+do
+	[ -f "$EtcDirectory/$file" ] && continue
+	[ -f "$BinDir/${file}.example" ] \
+	&& original=$BinDir/${file}.example \
+	|| original=$BinDir/${file}
+	if echo "$file" | grep -q "\.ini$"
+	then
+    	cleanupIni $original > $EtcDirectory/$file && continue || end $? "error copying up $original"
+	else
+		cp $original $EtcDirectory/$file && continue || end $?
+	fi
+done
+
 log CHECKPOINT $LINENO
 end DEBUG STOP
-
-for file in \
-  OpenSimDefaults.ini \
-  OpenSim.ini \
-  config-include/GridHypergrid.ini \
-  config-include/GridCommon.ini \
-  config-include/FlotsamCache.ini \
-  config-include/osslDefaultEnable.ini \
-  config-include/osslEnable.ini
-  # config-include/StandaloneCommon.ini \
-do
-  [ -f "$EtcDirectory/$file" ] && continue
-  [ -f "$BinDir/${file}.example" ] \
-  && original=$BinDir/${file}.example \
-  || original=$BinDir/${file}
-  if echo "$file" | grep -q "\.ini$"
-  then
-    # cleanupIni $original > $TMP.merge  || end $? "error cleaning up $original"
-    # crudmerge $EtcDirectory/OpenSim.ini $TMP.merge || end $? "error merging $original"
-    # [ "$file" != "OpenSim.ini" ] && cleanupIni $original > $EtcDirectory/$file && continue || end $? "error copying up $original"
-    cleanupIni $original > $EtcDirectory/$file && continue || end $? "error copying up $original"
-  else
-    cp $original $EtcDirectory/$file && continue || end $?
-  fi
-done
 
 crudmerge $EtcDirectory/OpenSim.ini $EtcDirectory/config-include/GridHypergrid.ini || end $? "error merging $_"
 crudmerge $EtcDirectory/OpenSim.ini $EtcDirectory/config-include/GridCommon.ini || end $? "error merging $_"
