@@ -8,6 +8,8 @@ DEBUG=yes
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/libexec/os-helpers || exit 1
 
+[ "${VERBOSE:-}" = "yes" -o "${DEBUG:-}" = "yes" ] && verbose="-v" || verbose=
+
 crudget $TMP.conf Install 2>/dev/null
 crudget $TMP.conf Defaults 2>/dev/null
 
@@ -260,37 +262,33 @@ else
 	|| end $? "create file $RobustOutput failed"
 fi
 
+# Create grid directory structure
+for directory in \
+	$DataRoot \
+	$CacheRoot \
+	$LogsDirectory \
+	$DataDirectory \
+	$DataDirectory/fsassets \
+	$DataDirectory/fsassets/data \
+	$DataDirectory/maptiles \
+	$DataDirectory/registry \
+	$CacheDirectory \
+	$CacheDirectory/bakes \
+	$CacheDirectory/fsassets \
+	$CacheDirectory/fsassets/tmp \
+	$CacheDirectory/maptiles \
+	$EtcDirectory \
+	$EtcDirectory/assets \
+	$EtcDirectory/config-include \
+	$EtcDirectory/sims \
+	$EtcDirectory/inventory \
+	$EtcDirectory/robust-include
+do
+	install $verbose -d "$directory" || end $? "Could not create $directory"
+done
+
 log CHECKPOINT $LINENO
 end DEBUG STOP
-
-for directory in \
-  /opt/opensim/var/ \
-  /opt/opensim/var/cache \
-  ${DataDirectory} \
-  /opt/opensim/var/run \
-  /opt/opensim/var/run/crashes \
-  $CacheDirectory \
-  $CacheDirectory/bakes \
-  $CacheDirectory/fsassetcache \
-  $CacheDirectory/fsassets \
-  $CacheDirectory/fsassets/tmp \
-  $CacheDirectory/maptiles \
-  $DataDirectory \
-  $DataDirectory/fsassets \
-  $DataDirectory/fsassets/data \
-  $DataDirectory/maptiles \
-  $DataDirectory/registry \
-  $EtcDirectory \
-  $EtcDirectory/assets \
-  $EtcDirectory/config-include \
-  $EtcDirectory/sims \
-  $EtcDirectory/inventory \
-  $EtcDirectory/robust-include \
-  $LogsDirectory
-do
-	[ -e "$directory" ] && cd "$directory" && continue
-	mkdir "$directory" && log "created directory $directory" || end $? "could not create $directory"
-done
 
 for file in \
   OpenSimDefaults.ini \
