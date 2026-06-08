@@ -6,8 +6,8 @@ DEBUG=yes
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/libexec/os-helpers || exit 1
 
-crudget $TMP.conf Defaults 2>/dev/null
 crudget $TMP.conf Install 2>/dev/null
+crudget $TMP.conf Defaults 2>/dev/null
 
 log "Config loaded
   OpenSim version:   ${OpensimVersion}
@@ -78,25 +78,19 @@ fi
 
 if [ -z "$BinDir" ]; then
 	log "No BinDir, no big deal"
-	if [ -z "$CoreBase:-}" ]; then
-		for folder in /usr/local/share/opensim /opt/opensim/core $BASEDIR/core
-		do
+	if [ -z "${CoreBase:-}" ]; then
+		for folder in /usr/local/share/opensim /opt/opensim/core $BASEDIR/core; do
 			[ -d "$folder" ] && CoreBase=$folder && break
 		done
 	fi
-	if [ -n $CoreBase ]; then
-		ls $CoreBase/opensim-[0-9]*/bin/OpenSim.exe | sort -n  | sed "s:/bin/OpenSim.exe::" > $TMP.cores
-	fi
-	echo "Available Core OpenSim installations"
-
-	i=0; while read coredir; do
-		i=$((i + 1))
-		printf "\t%d. %s\n" $i "$coredir"
-		CoreDirectory=$coredir
-	done < $TMP.cores
-	echo "Select OpenSim core directory (full path or number above)"
-	readvar CoreDirectory
-	[ -d "$CoreDirectory/bin" ] && BinDir=$CoreDirectory/bin || end 1 "Invalid core directry"
+	echo "Available OpenSim core installations:"
+	ls "${CoreBase:-$BASEDIR/core}"/opensim-[0-9]*/bin/OpenSim.exe 2>/dev/null \
+		| sort | sed "s:/bin/OpenSim.exe::" > $TMP.cores
+	CoreDirectory=${CoreDirectory:-$(tail -1 $TMP.cores)}
+	picklist CoreDirectory "Core directory" < $TMP.cores
+	[ -d "$CoreDirectory/bin" ] || end 1 "Invalid core directory: $CoreDirectory"
+	BinDir=$CoreDirectory/bin
+	log BinDir $BinDir
 fi
 
 end DEBUG STOP
