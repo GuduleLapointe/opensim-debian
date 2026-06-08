@@ -10,7 +10,7 @@
 #####################################################################
 # DO NOT RUN IF NEW HOST IS ALREADY MYSQL HOST FOR REMOTE SIMULATOR #
 #####################################################################
-# - some parameters in $EtcDirectory/opensim.conf will replace the imported ones:
+# - some parameters in $EtcRoot/opensim.conf will replace the imported ones:
 #     BinDirectory
 #     EstateConnectionString
 #     GLBSpecificConnectionString
@@ -25,7 +25,7 @@ BASEDIR=$(dirname $(dirname $(realpath "$0")))
 BINDIR=$BASEDIR/bin
 
 [ "$OpenSimExe" ] || exit 1
-[ "$EtcDirectory" ] || exit 1
+[ "$EtcRoot" ] || exit 1
 DEBUG=yes
 
 trap 'rm -f $TMP*; rm -rf $TMPDIR' EXIT
@@ -37,7 +37,7 @@ log TMP $TMP
 
 [ "$2" ] || end 1 "usage $PGM <source host> <simulator 1> [<simulator 2] [...]"
 log BASEDIR $BASEDIR
-log EtcDirectory $EtcDirectory
+log EtcRoot $EtcRoot
 log BINDIR $BINDIR
 log BinDirectory $BinDirectory
 log OpenSimExe $OpenSimExe
@@ -48,7 +48,7 @@ source=$1; shift
 echo "$source" | egrep -q "[[:alnum:]-]\.[[:alnum:]-]" || end $? "$source: need a fully qualified host name"
 check=$(ping  -c1 $source 2>&1 >/dev/null) || end $? "${check/ping: /}"
 
-log get local config from $EtcDirectory
+log get local config from $EtcRoot
 log BinDirectory $BinDirectory
 log Include-Common ${Include_Common}
 
@@ -57,8 +57,8 @@ do
   log transfering simulator $sim from $source
   mkdir $TMPDIR/$sim && cd $TMPDIR/$sim || end $?
 
-  log get remote config file $source:$EtcDirectory/opensim.d/$sim.ini
-  scp $source:$EtcDirectory/opensim.d/$sim.ini $TMP.ini || end $?
+  log get remote config file $source:$EtcRoot/opensim.d/$sim.ini
+  scp $source:$EtcRoot/opensim.d/$sim.ini $TMP.ini || end $?
   cleanupIni $TMP.ini > $sim.remote.ini
 
   log get remote db config
@@ -67,13 +67,13 @@ do
   | sed -e "s/^Data Source/REMOTEDBHOST/" -e "s/^Database/REMOTEDBNAME/" -e "s/^User ID/REMOTEDBUSER/" -e "s/^Password/REMOTEDBPASS/" \
   | tee $TMP.remotedb.ini && . $TMP.remotedb.ini || end $?
 
-  if [ -e $EtcDirectory/opensim.d/$sim.ini ]
+  if [ -e $EtcRoot/opensim.d/$sim.ini ]
   then
-    log 1 "$EtcDirectory/opensim.d/$sim.ini already exists"
+    log 1 "$EtcRoot/opensim.d/$sim.ini already exists"
     if ! yesno "Replace with remote config?"
     then
       yesno "Erase other data and replace with remote content?" || end $?
-      cp $EtcDirectory/opensim.d/$sim.ini $TMP.ini
+      cp $EtcRoot/opensim.d/$sim.ini $TMP.ini
     fi
   fi
   cleanupIni $TMP.ini > $sim.ini
@@ -105,8 +105,8 @@ do
   # log MachineName $MachineName
 
   # log rough and dirty LogConfig fix
-  crudini --set $sim.ini Launch LogConfig "$(crudget $GridCommon Const DataDirectory | sed -e "s#\${Launch|SimName}#${SimName}#g" -e "s#\${Launch|MachineName}#${SimName}#g")/config/log.config"
-  # crudini --set $sim.ini Launch LogConfig "$(crudget $GridCommon Const DataDirectory | sed -e "s#\${Launch|SimName}#${MachineName}#g" -e "s#\${Launch|MachineName}#${MachineName}#g")/config/log.config"
+  crudini --set $sim.ini Launch LogConfig "$(crudget $GridCommon Const DataRoot | sed -e "s#\${Launch|SimName}#${SimName}#g" -e "s#\${Launch|MachineName}#${SimName}#g")/config/log.config"
+  # crudini --set $sim.ini Launch LogConfig "$(crudget $GridCommon Const DataRoot | sed -e "s#\${Launch|SimName}#${MachineName}#g" -e "s#\${Launch|MachineName}#${MachineName}#g")/config/log.config"
 
   log "Creating user $DBUSER (if not exists)"
   echo "CREATE USER IF NOT EXISTS $DBUSER IDENTIFIED BY '$DBPASS'" | sudo mysql -BN
@@ -171,10 +171,10 @@ do
     sed -i "s#\${$section|$variable}#$value#g" $sim.local.ini || end $?
   done
 
-  echo "AssetCache CacheDirectory
-Const CacheDirectory
-Const DataDirectory
-Const LogsDirectory
+  echo "AssetCache CacheRoot
+Const CacheRoot
+Const DataRoot
+Const LogsRoot
 Const ConfigDirectory
 DataSnapshot snapshot_cache_directory
 GridService MapTileDirectory
@@ -194,15 +194,15 @@ Startup regionload_regionsdir" | while read section param
   [ "$regionload_regionsdir" ] ||end $? regionload_regionsdir not set
   find $regionload_regionsdir -name "*.ini" | grep -q . || end $? "no region found in $regionload_regionsdir"
 
-  log "activate $EtcDirectory/opensim.d/$sim.ini"
-  mkdir -p $EtcDirectory/opensim.d
-  cp $sim.ini $EtcDirectory/opensim.d/$sim.ini
+  log "activate $EtcRoot/opensim.d/$sim.ini"
+  mkdir -p $EtcRoot/opensim.d
+  cp $sim.ini $EtcRoot/opensim.d/$sim.ini
 
   log starting local simulator $sim
   opensim start $sim || end $?
 
   log "deactivate $sim on source"
-  ssh $source "mv $EtcDirectory/opensim.d/$sim.ini $EtcDirectory/opensim.d/$sim.transfered" || end $?
+  ssh $source "mv $EtcRoot/opensim.d/$sim.ini $EtcRoot/opensim.d/$sim.transfered" || end $?
   log "We should be good now"
 done
 

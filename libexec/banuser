@@ -18,7 +18,7 @@
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/libexec/os-helpers || exit 1
 [ "$OpenSimExe" ] || exit 1
-[ "$EtcDirectory" ] || exit 1
+[ "$EtcRoot" ] || exit 1
 
 [ "$1" ] || end 1 "Usage:
   $PGM 'Firstname Lastname'
@@ -37,16 +37,16 @@ as well as objects belonging to matching users. It will genearate SQL commands t
 
 The simulators must be shut down before proceeding."
 
-if [ -d "$EtcDirectory" -a "$ROBUSTDB" = "" ]
+if [ -d "$EtcRoot" -a "$ROBUSTDB" = "" ]
 then
-  ROBUSTDB=$(egrep "^[[:blank:]]*(Estate)?ConnectionString" $EtcDirectory/robust.d/*.ini | sed -e "s/.*Database=//" -e "s/;.*//")
+  ROBUSTDB=$(egrep "^[[:blank:]]*(Estate)?ConnectionString" $EtcRoot/robust.d/*.ini | sed -e "s/.*Database=//" -e "s/;.*//")
 fi
 [ "$ROBUSTDB" = "" ] && ROBUSTDB=opensim && log "ROBUSTDB not set, default to 'opensim'"
 echo; echo "Confirm the name of ROBUST database: "
 readvar ROBUSTDB || end $? "could not read ROBUSTDB"
 # log "using '$ROBUSTDB' robust database"
 
-SIMDBS=$(echo $(egrep "^[[:blank:]]*(Estate)?ConnectionString" $EtcDirectory/opensim.d/*.ini 2>/dev/null | sed -e "s/.*Database=//" -e "s/;.*//" | sort -u))
+SIMDBS=$(echo $(egrep "^[[:blank:]]*(Estate)?ConnectionString" $EtcRoot/opensim.d/*.ini 2>/dev/null | sed -e "s/.*Database=//" -e "s/;.*//" | sort -u))
 echo; echo "Confirm the name of estate databases (for robust and/or simulators, separate with a space): "
 readvar SIMDBS || end $? "could not read SIMDBS"
 # log "using '$SIMDBS' estate database"

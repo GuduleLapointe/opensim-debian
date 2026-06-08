@@ -19,11 +19,11 @@ log "Config loaded
   Layout:            ${DirectoryLayout:-}
   Install base:      ${InstallPath:-}
   Core Directory:    ${CoreDirectory:-}
-  Etc Directory:     ${EtcDirectory:-}
-  Var Directory:     ${VarDirectory:-}
-  Data Directory:    ${DataDirectory:-}
-  Cache Directory:   ${CacheDirectory:-}
-  Logs Directory:    ${LogsDirectory:-}
+  Etc Directory:     ${EtcRoot:-}
+  Var Directory:     ${VarRoot:-}
+  Data Directory:    ${DataRoot:-}
+  Cache Directory:   ${CacheRoot:-}
+  Logs Directory:    ${LogsRoot:-}
   Sources:           ${SourcesDirectory:-}"
 
 # Package manager abstraction
@@ -171,31 +171,31 @@ log "InstallPath=$InstallPath"
 
 case "${DirectoryLayout:-1}" in
   system)
-    EtcDirectory=/etc/opensim
-    VarDirectory=/var/lib/opensim
-    CoreBase=/usr/local/share/opensim
-    CoreDirectory=$CoreBase/opensim-$OpensimVersion
-    LogsDirectory=/var/log/opensim
-    CacheDirectory=/var/cache/opensim
-    DataDirectory=/var/lib/opensim/data
+    EtcRoot=/etc/opensim
+    VarRoot=/var/lib/opensim
+    CoreRoot=/usr/local/share/opensim
+    CoreDirectory=$CoreRoot/opensim-$OpensimVersion
+    LogsRoot=/var/log/opensim
+    CacheRoot=/var/cache/opensim
+    DataRoot=/var/lib/opensim/data
     ;;
   bundled)
-    EtcDirectory=$InstallPath/etc
-    VarDirectory=$InstallPath/var
-    CoreBase=$InstallPath/core
-    CoreDirectory=$CoreBase/opensim-$OpensimVersion
-    LogsDirectory=$InstallPath/var/logs
-    CacheDirectory=$InstallPath/var/cache
-    DataDirectory=$InstallPath/var/data
+    EtcRoot=$InstallPath/etc
+    VarRoot=$InstallPath/var
+    CoreRoot=$InstallPath/core
+    CoreDirectory=$CoreRoot/opensim-$OpensimVersion
+    LogsRoot=$InstallPath/var/logs
+    CacheRoot=$InstallPath/var/cache
+    DataRoot=$InstallPath/var/data
     ;;
   flat)
-    CoreBase=$InstallPath/opensim-$OpensimVersion
-    CoreDirectory=$CoreBase
-    EtcDirectory=$CoreBase/bin
-    VarDirectory=$CoreBase/bin
-    LogsDirectory=$CoreBase/bin
-    CacheDirectory=$CoreBase/bin
-    DataDirectory=$CoreBase/bin
+    CoreRoot=$InstallPath/opensim-$OpensimVersion
+    CoreDirectory=$CoreRoot
+    EtcRoot=$CoreRoot/bin
+    VarRoot=$CoreRoot/bin
+    LogsRoot=$CoreRoot/bin
+    CacheRoot=$CoreRoot/bin
+    DataRoot=$CoreRoot/bin
     ;;
   *)
     end 1 "Invalid layout choice"
@@ -212,15 +212,15 @@ crudini --set "$_iconf" Install DirectoryLayout   "$DirectoryLayout"
 crudini --set "$_iconf" Install OpensimVersion    "${OpensimVersion:-}"
 crudini --set "$_iconf" Install InstallPath       "${InstallPath:-}"
 crudini --set "$_iconf" Install CoreDirectory     "$CoreDirectory"
-crudini --set "$_iconf" Install EtcDirectory      "$EtcDirectory"
-crudini --set "$_iconf" Install VarDirectory      "$VarDirectory"
-crudini --set "$_iconf" Install LogsDirectory     "$LogsDirectory"
-crudini --set "$_iconf" Install CacheDirectory    "$CacheDirectory"
-crudini --set "$_iconf" Install DataDirectory     "$DataDirectory"
+crudini --set "$_iconf" Install EtcRoot      "$EtcRoot"
+crudini --set "$_iconf" Install VarRoot      "$VarRoot"
+crudini --set "$_iconf" Install LogsRoot     "$LogsRoot"
+crudini --set "$_iconf" Install CacheRoot    "$CacheRoot"
+crudini --set "$_iconf" Install DataRoot     "$DataRoot"
 
 # TODO: request confirmation if these value already exist in Defaults section
 crudini --set "$_iconf" Defaults DirectoryLayout  "$DirectoryLayout"
-crudini --set "$_iconf" Defaults CoreBase         "$CoreBase"
+crudini --set "$_iconf" Defaults CoreRoot         "$CoreRoot"
 
 unset _iconf
 log "Install preferences saved to $BASEDIR/config/$PKG.conf"
@@ -233,11 +233,11 @@ Installation plan:
   Layout:            $DirectoryLayout
   Install base:      $InstallPath
   Core Directory:    $CoreDirectory
-  Etc Directory:     $EtcDirectory
-  Var Directory:     $VarDirectory
-  Data Directory:    $DataDirectory
-  Cache Directory:   $CacheDirectory
-  Logs Directory:    $LogsDirectory
+  Etc Directory:     $EtcRoot
+  Var Directory:     $VarRoot
+  Data Directory:    $DataRoot
+  Cache Directory:   $CacheRoot
+  Logs Directory:    $LogsRoot
   Sources:           $SourcesDirectory
 
 EOF
@@ -246,9 +246,9 @@ yesno -y "Create directories and proceed?" || end 0 "Aborted"
 
 # --- Create directories, owned by current user ---
 for dir in \
-  "$EtcDirectory" "$EtcDirectory/opensim.d" "$EtcDirectory/robust.d" "$EtcDirectory/grids" \
-  "$SourcesDirectory" "$CoreBase" "$CoreDirectory" \
-  "$VarDirectory" "$LogsDirectory" "$CacheDirectory" "$DataDirectory" \
+  "$EtcRoot" "$EtcRoot/opensim.d" "$EtcRoot/robust.d" "$EtcRoot/grids" \
+  "$SourcesDirectory" "$CoreRoot" "$CoreDirectory" \
+  "$VarRoot" "$LogsRoot" "$CacheRoot" "$DataRoot" \
 
 do
   [ -d "$dir" ] && continue
@@ -256,18 +256,18 @@ do
   sudo install $v -d -o "$USER" "$dir" || end $? "Could not create $dir"
 done
 
-# --- Write EtcDirectory/$PKG.conf ---
-log "Update $EtcDirectory/$PKG.conf"
-_iconf="$EtcDirectory/$PKG.conf"
+# --- Write EtcRoot/$PKG.conf ---
+log "Update $EtcRoot/$PKG.conf"
+_iconf="$EtcRoot/$PKG.conf"
 crudini --set "$_iconf" Install DirectoryLayout  "$DirectoryLayout"
 crudini --set "$_iconf" Install OpensimVersion   "${OpensimVersion:-}"
 crudini --set "$_iconf" Install InstallPath      "${InstallPath:-}"
 crudini --set "$_iconf" Install CoreDirectory    "${CoreDirectory}"
-crudini --set "$_iconf" Install EtcDirectory     "$EtcDirectory"
-crudini --set "$_iconf" Install VarDirectory     "$VarDirectory"
-crudini --set "$_iconf" Install LogsDirectory    "$LogsDirectory"
-crudini --set "$_iconf" Install CacheDirectory   "$CacheDirectory"
-crudini --set "$_iconf" Install DataDirectory    "$DataDirectory"
+crudini --set "$_iconf" Install EtcRoot     "$EtcRoot"
+crudini --set "$_iconf" Install VarRoot     "$VarRoot"
+crudini --set "$_iconf" Install LogsRoot    "$LogsRoot"
+crudini --set "$_iconf" Install CacheRoot   "$CacheRoot"
+crudini --set "$_iconf" Install DataRoot    "$DataRoot"
 unset _iconf
 
 # --- Download and extract OpenSim ---
@@ -285,9 +285,9 @@ if [ -n "$OSDOWNLOAD" ]; then
 	fi
  	[ -f "$_tar_path" ] || end $? "Unexpected: $_tar_path not found"
 
-	log "Unpacking $_tar_name to $CoreBase"
+	log "Unpacking $_tar_name to $CoreRoot"
 
-	pv "$_tar_path" | tar xzf - -C "$CoreBase" \
+	pv "$_tar_path" | tar xzf - -C "$CoreRoot" \
 	|| end $? "Error unpacking OpenSim"
 
 	log "OpenSim installed: $CoreDirectory"
@@ -326,16 +326,16 @@ end
 #find -name "*.config"
 #) | sed "s%\./%%" | sed "s/\.example$//" | sort -u | while read file
 #do
-#	[ -f "$EtcDirectory/$file" ] && continue
-#	folder="$(dirname "$EtcDirectory/$file")"
+#	[ -f "$EtcRoot/$file" ] && continue
+#	folder="$(dirname "$EtcRoot/$file")"
 #	[ -d "$folder" ] || mkdir -p "$folder" || end 4 could not create $folder
-#	cp $OpenSimExe/$file $EtcDirectory/$file 2>/dev/null \
-#		|| cp $OpenSimExe/$file.example $EtcDirectory/$file 2>/dev/null \
+#	cp $OpenSimExe/$file $EtcRoot/$file 2>/dev/null \
+#		|| cp $OpenSimExe/$file.example $EtcRoot/$file 2>/dev/null \
 #		|| end 4 could not copy $file
 #done
 
-# CacheDirectory=$VarDirectory/cache
-# DataDirectory=$VarDirectory/data
+# CacheRoot=$VarRoot/cache
+# DataRoot=$VarRoot/data
 #
 # OpenSimBinDirectory=$BinDirectory
 # readvar OpenSimBinDirectory
@@ -352,11 +352,11 @@ end
   #
   # RobustConfig=$(
   #   (
-  #   ls $EtcDirectory/robust.d/*.ini 2>/dev/null
-  #   # ls $EtcDirectory/robust-enabled/*.ini
-  # 	# ls $EtcDirectory/robust-available/*.ini
-  #   # ls $EtcDirectory/opensim.d/Robust*.ini $EtcDirectory/opensim.d/robust*.ini
-  # 	# echo "$EtcDirectory/robust.d/NewRobust.ini"
+  #   ls $EtcRoot/robust.d/*.ini 2>/dev/null
+  #   # ls $EtcRoot/robust-enabled/*.ini
+  # 	# ls $EtcRoot/robust-available/*.ini
+  #   # ls $EtcRoot/opensim.d/Robust*.ini $EtcRoot/opensim.d/robust*.ini
+  # 	# echo "$EtcRoot/robust.d/NewRobust.ini"
   #   ) | head -1
   # )
   # if [ "$RobustConfig" ]
@@ -384,7 +384,7 @@ end
   # [ ! "$RobustName" ] && RobustName=$(echo "$GridName" | sed "s/ //g")
   # # RobustName=$(titlecase $(hostname -s | cut -d "." -f 1))
   # # readvar RobustName
-  # [ ! "$RobustConfig" ] && RobustConfig=$EtcDirectory/robust.d/$RobustName.ini
+  # [ ! "$RobustConfig" ] && RobustConfig=$EtcRoot/robust.d/$RobustName.ini
   # # [ ! -f "$RobustConfig" ] &&  touch $RobustConfig
   #
   # MachineName=$(echo "$GridNick" | tr "[:upper:]" "[:lower:]")
@@ -393,7 +393,7 @@ end
   # log 1 "## General settings"
   # eval $(crudini --get --format=sh $TMP.new.ini Const \
   # | sed -e "s/baseurl/BaseURL/" -e "s/publicport/PublicPort/" -e "s/privateport/PrivatePort/" \
-  # -e "s/cachedirectory/CacheDirectory/" -e "s/datadirectory/DataDirectory/" \
+  # -e "s/cachedirectory/CacheRoot/" -e "s/datadirectory/DataRoot/" \
   # -e "s/\"//g"
   # )
   # # ini.parse $TMP.new.ini
@@ -413,8 +413,8 @@ end
   # crudini --set $TMP.new.ini Const BaseURL "\"$BaseURL\""
   # crudini --set $TMP.new.ini Const PublicPort "$PublicPort"
   # crudini --set $TMP.new.ini Const PrivatePort "$PrivatePort"
-  # crudini --set $TMP.new.ini Const CacheDirectory "\"$CacheDirectory/$MachineName\""
-  # crudini --set $TMP.new.ini Const DataDirectory "\"$DataDirectory/$MachineName\""
+  # crudini --set $TMP.new.ini Const CacheRoot "\"$CacheRoot/$MachineName\""
+  # crudini --set $TMP.new.ini Const DataRoot "\"$DataRoot/$MachineName\""
   #
   # hostname=$(echo "$BaseURL" | sed "s%.*://%%" | cut -d "/" -f 1)
   # log hostname $hostname
@@ -445,7 +445,7 @@ end
   #
   # log "## LoginService configuration"
   #
-  # if [ -f "$EtcDirectory/$GridNick.Gloebit.ini" -o -f "$EtcDirectory/Gloebit.ini" ]
+  # if [ -f "$EtcRoot/$GridNick.Gloebit.ini" -o -f "$EtcRoot/Gloebit.ini" ]
   # then
   #   Currency="G$"
   # else
@@ -472,17 +472,17 @@ end
   # crudmerge $TMP.new.ini $TMP.regions
   #
   # ## Set robust name based on confif filename
-  # # enable="$EtcDirectory/robust-enabled/$RobustName.ini"
+  # # enable="$EtcRoot/robust-enabled/$RobustName.ini"
   #
   # log "## Setting Launcher info"
   # crudini --set $TMP.new.ini Launch BinDir "\"$BinDirectory\""
   # crudini --set $TMP.new.ini Launch Executable "\"Robust.exe\""
-  # crudini --set $TMP.new.ini Launch LogFile "\"$LogsDirectory/$MachineName.log\""
+  # crudini --set $TMP.new.ini Launch LogFile "\"$LogsRoot/$MachineName.log\""
   # crudini --set $TMP.new.ini Launch ConsolePrompt "\"$RobustName ($hostname:$PublicPort)\""
   #
   # log "## Startup section"
-  # crudini --set $TMP.new.ini Startup ConfigDirectory "$EtcDirectory/robust-include"
-  # crudini --set $TMP.new.ini Startup PIDFile "\"\${Const|CacheDirectory}/$MachineName.pid\""
+  # crudini --set $TMP.new.ini Startup ConfigDirectory "$EtcRoot/robust-include"
+  # crudini --set $TMP.new.ini Startup PIDFile "\"\${Const|CacheRoot}/$MachineName.pid\""
   # # crudini --set $TMP.new.ini Startup NoVerifyCertChain true
   # # crudini --set $TMP.new.ini Startup NoVerifyCertHostname true
   #
@@ -496,9 +496,9 @@ end
   #
   # log "## Checking $RobustNick directories"
   # for dir in \
-  #   $DataDirectory/$MachineName $DataDirectory/$MachineName/fsassets \
-  #   $CacheDirectory/$MachineName/bakes $CacheDirectory/$MachineName/fsassets $CacheDirectory/$MachineName/maptiles \
-  #   $CacheDirectory/$MachineName/registry
+  #   $DataRoot/$MachineName $DataRoot/$MachineName/fsassets \
+  #   $CacheRoot/$MachineName/bakes $CacheRoot/$MachineName/fsassets $CacheRoot/$MachineName/maptiles \
+  #   $CacheRoot/$MachineName/registry
   # do
   #   [ -d "$dir" ] && continue
   #   mkdir -p "$dir" \
@@ -528,13 +528,13 @@ end
   #
   # # [ ! -f "$enable" ] && ln -s "$RobustConfig" "$enable"
   # cat $BinDirectory/Robust.exe.config \
-  # | sed "s%\(<file value=\"\)Robust%\\1$LogsDirectory/$RobustName%" \
-  # > "$DataDirectory/$RobustName.logconfig"
+  # | sed "s%\(<file value=\"\)Robust%\\1$LogsRoot/$RobustName%" \
+  # > "$DataRoot/$RobustName.logconfig"
   #
-  # # if [ ! -f "$EtcDirectory/opensim.ini" ]
+  # # if [ ! -f "$EtcRoot/opensim.ini" ]
   # # then
   # #   echo "myhost=$newhost
   # #   mydb=$newdb
   # #   myuser=$newuser
-  # #   mypass=$newpass" > "$EtcDirectory/opensim.ini"
+  # #   mypass=$newpass" > "$EtcRoot/opensim.ini"
   # # fi

@@ -17,7 +17,7 @@ BASEDIR=$(cd $(dirname "$0")/.. && pwd)
 
 . $BASEDIR/libexec/os-helpers || exit 1
 [ "$OpenSimExe" ] || exit 1
-[ "$EtcDirectory" ] || exit 1
+[ "$EtcRoot" ] || exit 1
 
 source $BASEDIR/libexec/venv-setup   || end $? "Could not setup python venv"
 
@@ -154,12 +154,12 @@ startSim() {
 
     Include_Common=$(crudget $inifile Includes Include-Common 2>/dev/null)
     # crudini --get $inifile Includes Include-Common
-    LogsDirectory=$(crudget $Include_Common Const LogsDirectory | sed -e "s#\${Launch|SimName}#$instance#g" -e "s#\${Launch|MachineName}#$instance#g")
-    LogsDirectory=${logsdirectory:-${LogsDirectory}}
+    LogsRoot=$(crudget $Include_Common Const LogsRoot | sed -e "s#\${Launch|SimName}#$instance#g" -e "s#\${Launch|MachineName}#$instance#g")
+    LogsRoot=${logsdirectory:-${LogsRoot}}
 
-    [ ! "$LogsDirectory" ] && LogsDirectory=$DefaultLogDir
+    [ ! "$LogsRoot" ] && LogsRoot=$DefaultLogDir
     LogFile=${logfile:-${LogFile}}
-    [ ! "$LogFile" ] && LogFile="$LogsDirectory/$instance.log"
+    [ ! "$LogFile" ] && LogFile="$LogsRoot/$instance.log"
 
     ConsolePrompt=${consoleprompt:-${ConsolePrompt}}
 
@@ -173,17 +173,17 @@ startSim() {
     fi
     #		LogConfig=${inifile/.ini/.LogConfig}
 
-    log "LogsDirectory $LogsDirectory"
+    log "LogsRoot $LogsRoot"
 
     LogConfig=${logconfig:-${LogConfig}}
-    DataDirectory=${datadirectory:-${DataDirectory}}
-    [ ! "$LogConfig" ] && LogConfig="$DataDirectory/$(basename "$inifile" .ini).LogConfig"
+    DataRoot=${datadirectory:-${DataRoot}}
+    [ ! "$LogConfig" ] && LogConfig="$DataRoot/$(basename "$inifile" .ini).LogConfig"
     log "LogConfig $LogConfig"
     log Executable $Executable
     if [ ! -f "$LogConfig" ]
     then
-      sed -e "s|[a-zA-Z0-9\./_-]*/*$ExecName.log|$LogsDirectory/$instance.log|" \
-      -e "s|[a-zA-Z0-9\./_-]*/*${ExecName}Stats.log|$LogsDirectory/${instance}.Stats.log|" \
+      sed -e "s|[a-zA-Z0-9\./_-]*/*$ExecName.log|$LogsRoot/$instance.log|" \
+      -e "s|[a-zA-Z0-9\./_-]*/*${ExecName}Stats.log|$LogsRoot/${instance}.Stats.log|" \
       $BinDir/$ExecName.exe.config >$TMP.logconfig \
       && mv $TMP.logconfig "$LogConfig" \
       && log created LogConfig file $LogConfig from core model $BinDir/$ExecName.exe.config \
@@ -488,10 +488,10 @@ ETCPATH=$(cleanpath "$ETCPATH")
 #getRobustPath
 #end
 
-log looking in $EtcDirectory
+log looking in $EtcRoot
 
 IFS=":"
-for etc in $EtcDirectory $ETCPATH
+for etc in $EtcRoot $ETCPATH
 do
     folder=$(realpath "$etc")
     [ "$folder" ] || continue

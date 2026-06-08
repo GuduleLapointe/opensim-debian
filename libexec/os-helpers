@@ -240,7 +240,7 @@ done
 log base conf loaded
 
 # Map PascalCase config keys to script variables, with fallbacks for standalone use
-EtcDirectory=${EtcDirectory:-$BASEDIR/etc}
+EtcRoot=${EtcRoot:-$BASEDIR/etc}
 
 # eval "$(crudini --get --format=sh "$_iconf" install 2>/dev/null)"
 

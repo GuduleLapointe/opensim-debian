@@ -91,7 +91,7 @@ function layoutPathsConf(): string
         'LIBEXEC' => get('opensim_libexec'),
         'LIB'     => get('opensim_lib'),
         'SHARE'   => get('opensim_share'),
-        'EtcDirectory'     => get('opensim_etc'),
+        'EtcRoot'     => get('opensim_etc'),
         'VAR'     => get('opensim_var'),
         'CORE'    => get('opensim_core'),
         'LOGS'    => get('opensim_logs'),

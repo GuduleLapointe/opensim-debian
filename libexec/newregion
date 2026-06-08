@@ -5,7 +5,7 @@ DEBUG=no
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/libexec/os-helpers || exit 1
 
-log "EtcDirectory $EtcDirectory"
+log "EtcRoot $EtcRoot"
 log "OpenSimExe $OpenSimExe"
 log "BinDirectory $BinDirectory"
 
@@ -43,7 +43,7 @@ netstat -an | egrep ":$InternalPort[[:blank:]].*LISTEN" && end 1 "Port $Internal
 crudini --set $TMP.region.ini "$RegionName" InternalPort $InternalPort
 
 echo "Last locations on this server"
-ls -rt $DataDirectory/*/regions/*.ini 2>/dev/null | while read file
+ls -rt $DataRoot/*/regions/*.ini 2>/dev/null | while read file
 do
 grep -h Location $file | sed "s/.*= */  /"
 done | tail -20

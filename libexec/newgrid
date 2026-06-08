@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# set -euo pipefail
+
 export PATH=$PATH:$(dirname $(dirname "$0"))/bin
 DEBUG=yes
 
@@ -10,18 +12,18 @@ crudget $TMP.conf Install 2>/dev/null
 crudget $TMP.conf Defaults 2>/dev/null
 
 log "Config loaded
-  OpenSim version:   ${OpensimVersion}
-  Layout:            $DirectoryLayout
-  Install base:      $InstallPath
-  Core Directory:    $CoreDirectory
-  Etc Directory:     $EtcDirectory
-  Var Directory:     $VarDirectory
-  Data Directory:    $DataDirectory
-  Cache Directory:   $CacheDirectory
-  Logs Directory:    $LogsDirectory
-  Sources:           $SourcesDirectory"
+  OpenSim version:   ${OpensimVersion:-}
+  Layout:            ${DirectoryLayout:-}
+  Install base:      ${InstallPath:-}
+  Core Directory:    ${CoreDirectory:-}
+  Etc Directory:     ${EtcRoot:-}
+  Var Directory:     ${VarRoot:-}
+  Data Directory:    ${DataRoot:-}
+  Cache Directory:   ${CacheRoot:-}
+  Logs Directory:    ${LogsRoot:-}
+  Sources:           ${SourcesDirectory:-}"
 
-[ "$1" ] && gridname="$@"
+gridname="${@:-}"
 owner_name=$(
 	getent passwd $USER 2>/dev/null \
 	|| id -F \
@@ -38,7 +40,7 @@ readvar gridnick && [ "${gridnick}" != "" ] || end $? "gridnick cannot be empty"
 gridslug=$(/opt/magic/bin/webnormalize -D "$gridname")
 log gridslug: $gridslug
 
-GridDir=$EtcDirectory/grids/${gridnick}
+GridDir=$EtcRoot/grids/${gridnick}
 readvar GridDir && [ "${GridDir}" != "" ] || end $? "GridDir cannot be empty"
 [ -d "$GridDir" ] || mkdir "$GridDir" || end $?
 
@@ -84,13 +86,13 @@ fi
 
 if [ -z "$BinDir" ]; then
 	log "No BinDir, no big deal"
-	if [ -z "${CoreBase:-}" ]; then
+	if [ -z "${CoreRoot:-}" ]; then
 		for folder in /usr/local/share/opensim /opt/opensim/core $BASEDIR/core; do
-			[ -d "$folder" ] && CoreBase=$folder && break
+			[ -d "$folder" ] && CoreRoot=$folder && break
 		done
 	fi
 	echo "Available OpenSim core installations:"
-	ls "${CoreBase:-$BASEDIR/core}"/opensim-[0-9]*/bin/OpenSim.exe 2>/dev/null \
+	ls "${CoreRoot:-$BASEDIR/core}"/opensim-[0-9]*/bin/OpenSim.exe 2>/dev/null \
 		| sort | sed "s:/bin/OpenSim.exe::" > $TMP.cores
 	CoreDirectory=${CoreDirectory:-$(tail -1 $TMP.cores)}
 	picklist CoreDirectory "Core directory" < $TMP.cores
@@ -99,22 +101,10 @@ if [ -z "$BinDir" ]; then
 	log BinDir $BinDir
 fi
 
-
-BaseHostname=${BaseHostname:-$(hostname -f)}
+case ${BaseHostname:-} in
+	localhost|127.0.0.1|"") BaseHostname=$(hostname -f);;
+esac
 readvar BaseHostname && [ "${BaseHostname}" != "" ] || end $? "BaseHostname cannot be empty"
-# readvar BaseHostname && [ "${BaseHostname}" != "" ] || end $? "BaseHostname cannot be empty"
-
-# log "Checking $EtcDirectory and netstat for ports already used"
-# (
-# find $BASEDIR/etc $EtcDirectory/grids/*/sims/*/regions -name "*.ini" 2>/dev/null \
-#   | grep -v "#" \
-#   | xargs egrep "^[[:blank:];]*(InternalPort|PublicPort|PrivatePort|http_listener_port)[[:blank:]]*=" 2>/dev/null \
-#   | cut -d "=" -f 2 | sed "s/[^0-9]//g"
-# netstat -tulpn 2>/dev/null | grep LISTEN | sed -r -e "s/^[^:]*[0-9]*:+//" -e "s/[[:blank:]].*//"
-# ) | sort -u | sort -n >> $TMP.inuse
-# log "Debug Ports in use
-# $(cat $TMP.inuse)"
-
 
 PublicPort=${PublicPort:-$(nextfreeports 8002)}
 readvar PublicPort && [ "${PublicPort}" != "" ] || end $? "PublicPort cannot be empty"
@@ -137,8 +127,8 @@ readvar WebURL && [ "${WebURL}" != "" ] || end $? "WebURL cannot be empty"
 
 
 Executable="Robust.exe"
-LogConfig="${DataDirectory}/$gridnick/Robust.exe.config"
-LogFile="$LogsDirectory/$gridnick.log"
+LogConfig="${DataRoot}/$gridnick/Robust.exe.config"
+LogFile="$LogsRoot/$gridnick.log"
 
 log LogConfig=$LogConfig
 log LogFile=$LogFile
@@ -153,8 +143,8 @@ cat $TMP.db
 db_host=${DataSource:-localhost}
 db_name=$(echo ${gridnick}_robust | tr [:upper:] [:lower:])
 db_user=${UserID:-opensim}
-# db_pass="${Password:-}"
-db_pass=$(echo "${Password:-}" | sed -E "s/^\*+$//")
+# db_pass=$(echo "${Password:-}" | sed -E "s/^\*+$//")
+db_pass="${Password:-changeme}"
 
 readvar db_host && [ "${db_host}" != "" ] || end $? "db_host cannot be empty"
 readvar db_name && [ "${db_name}" != "" ] || end $? "db_name cannot be empty"
@@ -163,9 +153,7 @@ readvar db_pass && [ "${db_pass}" != "" ] || end $? "db_pass cannot be empty"
 
 yesno "Is the database ready for use with these credentials?" \
 && testDatabaseConnection $db_host $db_name $db_user "$db_pass" \
-|| end $? "Setup database $db_name with given credentials and start the script again"
-
-end DEBUG STOP
+|| log $? "Setup database $db_name with given credentials before trying to launch server"
 
 printf "\n$PGM: Building config\n\n" >&2
 
@@ -183,10 +171,10 @@ cat <<EOF >$TMP.launch.ini
 
 EOF
 
-EtcDirectory="/opt/opensim/etc/grids/$gridnick"
-DataDirectory="${DataDirectory}/$gridnick"
-CacheDirectory="/opt/opensim/var/cache/$gridnick"
-LogsDirectory="$LogsDirectory"
+EtcDirectory="$EtcRoot/grids/$gridnick"
+DataDirectory="${DataRoot}/$gridnick"
+CacheDirectory="${CacheRoot}/$gridnick"
+LogsDirectory="$LogsRoot"
 economyURL="\${Const|WebURL}/helpers"
 
 cat <<EOF >$TMP.thisgrid.ini || end $? "could not create $TMP.thisgrid.ini"
@@ -243,34 +231,43 @@ cat <<EOF >$TMP.thisgrid.ini || end $? "could not create $TMP.thisgrid.ini"
 EOF
 
 cp $BinDir/Robust.ini.example $TMP.Robust.ini \
-&& sed -i "s/^[[:blank:]]*//" $TMP.thisgrid.ini  $TMP.Robust.ini \
-&& crudini --merge $TMP.Robust.ini < $TMP.thisgrid.ini \
+&& sed -i~ "s/^[[:blank:]]*//" $TMP.thisgrid.ini  $TMP.Robust.ini \
+&& crudmerge $TMP.Robust.ini $TMP.thisgrid.ini \
 && cat $TMP.launch.ini $TMP.Robust.ini > $TMP.ini \
-|| exit $?
+|| end $? "Unexpected: error processing Robust.ini"
 
+log CHECKPOINT $LINENO
 cleanupIni $TMP.ini > $TMP.Robust.ini
+log CHECKPOINT $LINENO
 uncomment UserProfilesServiceConnector $TMP.Robust.ini
+log CHECKPOINT $LINENO
 crudini --set $TMP.Robust.ini  UserProfilesService Enabled true
+log CHECKPOINT $LINENO
 
 if [ -f "$RobustOutput" ]
 then
-  diff "$RobustOutput" $TMP.Robust.ini  &&
-  echo "No change in $RobustOutput" && exit
+	log CHECKPOINT $LINENO
+	diff "$RobustOutput" $TMP.Robust.ini  &&
+	echo "No change in $RobustOutput" && exit
 
-  if yesno -y "Apply changes?"
-  then
-    mv $RobustOutput $RobustOutput~ \
-    && cp $TMP.Robust.ini  $RobustOutput \
-    && echo "$RobustOutput modified" \
-    || end $? "apply changes failed"
-  else
-    echo "$RobustOutput left unchanged"
-  fi
+	if yesno -y "Apply changes?"
+	then
+	    mv $RobustOutput $RobustOutput~ \
+	    && cp $TMP.Robust.ini  $RobustOutput \
+	    && echo "$RobustOutput modified" \
+	    || end $? "apply changes failed"
+	else
+		echo "$RobustOutput left unchanged"
+	fi
 else
-  cp $TMP.Robust.ini  $RobustOutput \
-  && echo "$RobustOutput file created" \
-  || end $? "create file $RobustOutput failed"
+	log CHECKPOINT $LINENO
+	cp $TMP.Robust.ini  $RobustOutput \
+	&& echo "$RobustOutput file created" \
+	|| end $? "create file $RobustOutput failed"
 fi
+
+log CHECKPOINT $LINENO
+end DEBUG STOP
 
 for directory in \
   /opt/opensim/var/ \
@@ -297,8 +294,8 @@ for directory in \
   $EtcDirectory/robust-include \
   $LogsDirectory
 do
- [ -e "$directory" ] && cd "$directory" && continue
- mkdir "$directory" && log "created directory $directory" || end $? "could not create $directory"
+	[ -e "$directory" ] && cd "$directory" && continue
+	mkdir "$directory" && log "created directory $directory" || end $? "could not create $directory"
 done
 
 for file in \
@@ -455,10 +452,10 @@ cat << EOF | sed -e "s/^[[:blank:]]*//" > $TMP.OpenSim.tweaks
 
 EOF
 
-# sed -i "s/^[[:blank:]]*Include-Architecture/; Include-Architecture/" $EtcDirectory/OpenSim.ini
-# sed -i "s/^;[[:blank:]]*\(Include-Architecture.*GridHypergrid\)/\\1/" $EtcDirectory/OpenSim.ini
-# sed -i "s/\(\[Architecture\]\):; \\1:" $EtcDirectory/OpenSim.ini
-# sed -i "s/^[^;]*\(\[Include\]\):; \\1:" $EtcDirectory/OpenSim.ini
+# sed -i~ "s/^[[:blank:]]*Include-Architecture/; Include-Architecture/" $EtcDirectory/OpenSim.ini
+# sed -i~ "s/^;[[:blank:]]*\(Include-Architecture.*GridHypergrid\)/\\1/" $EtcDirectory/OpenSim.ini
+# sed -i~ "s/\(\[Architecture\]\):; \\1:" $EtcDirectory/OpenSim.ini
+# sed -i~ "s/^[^;]*\(\[Include\]\):; \\1:" $EtcDirectory/OpenSim.ini
 
 # for var in $(grep "^[^;]*=" $TMP.OpenSim.tweaks | cut -d = -f 1)
 # do
@@ -472,12 +469,12 @@ crudmerge $EtcDirectory/OpenSim.ini $TMP.OpenSim.tweaks
 
 crudini --set $EtcDirectory/config-include/FlotsamCache.ini AssetCache CacheDirectory "\${Const|CacheDirectory}/assetcache"
 
-sed -i "s/^[[:blank:]]*\(Include-Storage\)/; \\1/" $EtcDirectory/config-include/GridCommon.ini
-sed -i "s/^;[[:blank:]]*\(StorageProvider.*MySQL\)/\\1/" $EtcDirectory/config-include/GridCommon.ini
+sed -i~ "s/^[[:blank:]]*\(Include-Storage\)/; \\1/" $EtcDirectory/config-include/GridCommon.ini
+sed -i~ "s/^;[[:blank:]]*\(StorageProvider.*MySQL\)/\\1/" $EtcDirectory/config-include/GridCommon.ini
 crudini --set $EtcDirectory/config-include/GridCommon.ini DatabaseService StorageProvider "OpenSim.Data.MySQL.dll"
-# sed -i "s/^;[[:blank:]]*\(ConnectionString.*Data Source=localhost;\)/\\1/" $EtcDirectory/config-include/GridCommon.ini
+# sed -i~ "s/^;[[:blank:]]*\(ConnectionString.*Data Source=localhost;\)/\\1/" $EtcDirectory/config-include/GridCommon.ini
 # crudini --set $EtcDirectory/config-include/GridCommon.ini DatabaseService ConnectionString "\"Data Source=$db_host;Database=${gridslug}_\${Launch|SimName};User ID=$db_user;Password=$db_pass;Old Guids=true;\""
-sed -i "s/^;[[:blank:]]*\(EstateConnectionString\)/\\1/" $EtcDirectory/config-include/GridCommon.ini
+sed -i~ "s/^;[[:blank:]]*\(EstateConnectionString\)/\\1/" $EtcDirectory/config-include/GridCommon.ini
 crudini --set $EtcDirectory/config-include/GridCommon.ini DatabaseService EstateConnectionString "\"Data Source=$db_host;Database=$db_name;User ID=$db_user;Password=$db_pass;Old Guids=true;\""
 uncomment GatekeeperURI $EtcDirectory/config-include/GridCommon.ini
 crudini --set $EtcDirectory/config-include/GridCommon.ini DatabaseService EstateConnectionString "\"Data Source=$db_host;Database=$db_name;User ID=$db_user;Password=$db_pass;Old Guids=true;\""
@@ -495,14 +492,13 @@ crudini --set $EtcDirectory/config-include/osslEnable.ini OSSL PermissionErrorTo
 crudini --set $EtcDirectory/config-include/osslEnable.ini OSSL osslParcelO '"PARCEL_OWNER,"'
 crudini --set $EtcDirectory/config-include/osslEnable.ini OSSL osslParcelOG '"PARCEL_GROUP_MEMBER,PARCEL_OWNER,"'
 
-
 crudini --del $EtcDirectory/OpenSim.ini Architecture
 crudini --set $EtcDirectory/OpenSim.ini Architecture Include-Architecture "\${Const|EtcDirectory}/config-include/GridHypergrid.ini"
 
 crudmerge $EtcDirectory/OpenSim.ini $EtcDirectory/config-include/GridHypergrid.ini
 crudmerge $EtcDirectory/OpenSim.ini $EtcDirectory/config-include/GridCommon.ini
 
-sed -i "s/^[[:blank:]]*\(Include-Storage\)/; \\1/" $EtcDirectory/OpenSim.ini
+sed -i~ "s/^[[:blank:]]*\(Include-Storage\)/; \\1/" $EtcDirectory/OpenSim.ini
 
 startupIni="$EtcDirectory/robust.d/$gridnick.ini"
 [ -e "$startupIni" ] || ln -frs "$RobustOutput" "$startupIni" && ls "$startupIni" || end $?

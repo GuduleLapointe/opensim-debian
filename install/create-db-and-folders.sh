@@ -43,14 +43,14 @@ then
   # inigrep "^[[:blank:]]*Include" $TMP.ini
 fi
 
-echo "AssetCache CacheDirectory
+echo "AssetCache CacheRoot
 AssetService BaseDirectory
 AssetService SpoolDirectory
 BakedTextureService BaseDirectory
-Const CacheDirectory
+Const CacheRoot
 Const ConfigDirectory
-Const DataDirectory
-Const LogsDirectory
+Const DataRoot
+Const LogsRoot
 DataSnapshot snapshot_cache_directory
 GridService MapTileDirectory
 Launch LogConfig
