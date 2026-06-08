@@ -44,15 +44,21 @@ readvar GridDir && [ "${GridDir}" != "" ] || end $? "GridDir cannot be empty"
 
 if yesno -y "Enable Hypergrid?"; then
 	EnableHypergrid=yes
+	RobustDefaults=$CoreDirectory/bin/Robust.HG.ini.example
 	RobustOutput=$GridDir/Robust.HG.ini
 else
 	EnableHypergrid=
+	RobustDefaults=$CoreDirectory/bin/Robust.ini.example
 	RobustOutput=$GridDir/Robust.ini
 fi
 
 log EnableHypergrid ${EnableHypergrid:-no}
 
 readvar RobustOutput && [ "${RobustOutput}" != "" ] || end $? "RobustOutput cannot be empty"
+
+crudget $RobustDefaults Launch
+crudget $RobustDefaults Const
+crudget $RobustDefaults Startup
 
 ## Cleanup and read Robust if it exists
 if [ -f "$RobustOutput" ]
@@ -93,60 +99,73 @@ if [ -z "$BinDir" ]; then
 	log BinDir $BinDir
 fi
 
-end DEBUG STOP
 
 BaseHostname=${BaseHostname:-$(hostname -f)}
 readvar BaseHostname && [ "${BaseHostname}" != "" ] || end $? "BaseHostname cannot be empty"
 # readvar BaseHostname && [ "${BaseHostname}" != "" ] || end $? "BaseHostname cannot be empty"
 
-(
-find . $EtcDirectory/grids/*/sims/*/regions -name "*.ini" 2>/dev/null \
-  | grep -v "#" \
-  | xargs egrep "^[[:blank:];]*(InternalPort|PublicPort|PrivatePort|http_listener_port)[[:blank:]]*=" 2>/dev/null \
-  | cut -d "=" -f 2 | sed "s/[^0-9]//g"
-netstat -tulpn 2>/dev/null | grep LISTEN | sed -r -e "s/^[^:]*[0-9]*:+//" -e "s/[[:blank:]].*//"
-) | sort -u | sort -n >> $TMP.inuse
+# log "Checking $EtcDirectory and netstat for ports already used"
+# (
+# find $BASEDIR/etc $EtcDirectory/grids/*/sims/*/regions -name "*.ini" 2>/dev/null \
+#   | grep -v "#" \
+#   | xargs egrep "^[[:blank:];]*(InternalPort|PublicPort|PrivatePort|http_listener_port)[[:blank:]]*=" 2>/dev/null \
+#   | cut -d "=" -f 2 | sed "s/[^0-9]//g"
+# netstat -tulpn 2>/dev/null | grep LISTEN | sed -r -e "s/^[^:]*[0-9]*:+//" -e "s/[[:blank:]].*//"
+# ) | sort -u | sort -n >> $TMP.inuse
+# log "Debug Ports in use
+# $(cat $TMP.inuse)"
+
 
 PublicPort=${PublicPort:-$(nextfreeports 8002)}
 readvar PublicPort && [ "${PublicPort}" != "" ] || end $? "PublicPort cannot be empty"
-if [ "$update" != "yes" -o "$PublicPort" != "$savedPublicPort" ]
-then
-  grep -q "^$PublicPort$" $TMP.inuse && end 1 "Port $PublicPort is already in use, try $(nextfreeports $(($PublicPort + 1))) next time?"
+
+if [ "$update" != "yes" -o "$PublicPort" != "$savedPublicPort" ]; then
+	PublicPort=$(nextfreeports $PublicPort)
 fi
-echo $PublicPort >> $TMP.inuse
+
+log "PublicPort: $PublicPort"
 
 PrivatePort=${PrivatePort:-$(nextfreeports $(($PublicPort + 1)))}
 readvar PrivatePort && [ "${PrivatePort}" != "" ] || end $? "PrivatePort cannot be empty"
 if [ "$update" != "yes" -o "$PublicPort" != "$savedPublicPort" ]
 then
-  grep -q "^$PrivatePort$" $TMP.inuse && end 1 "Port $PrivatePort is already in use, try $(nextfreeports $(($PrivatePort + 1))) next time?"
+	PrivatePort=$(nextfreeports $PrivatePort)
 fi
-echo $PrivatePort >> $TMP.inuse
 
 WebURL="https://$BaseHostname"
 readvar WebURL && [ "${WebURL}" != "" ] || end $? "WebURL cannot be empty"
 
-Executable="Robust.exe"
-LogConfig="/opt/opensim/var/data/$gridnick/Robust.exe.config"
-LogFile="/opt/opensim/var/logs/$gridnick.log"
 
+Executable="Robust.exe"
+LogConfig="${DataDirectory}/$gridnick/Robust.exe.config"
+LogFile="$LogsDirectory/$gridnick.log"
+
+log LogConfig=$LogConfig
+log LogFile=$LogFile
+crudget $RobustDefaults DatabaseService
 crudget $RobustOutput DatabaseService
 
-echo "$ConnectionString" | tr " ;" "\n" | grep [a-z].*= > $TMP.db
+
+echo "$ConnectionString" | tr ";" "\n" | sed -r "s/ (.*)=/\\1=/g" | grep [a-z].*= > $TMP.db
+cat $TMP.db
 . $TMP.db || end $?
 
-[ "$Source" != "" ] && db_host=$Source || db_host="localhost"
+db_host=${DataSource:-localhost}
 db_name=$(echo ${gridnick}_robust | tr [:upper:] [:lower:])
-[ "$ID"  != "" ] && db_user=$ID || db_user="opensim"
-db_pass="$Password"
+db_user=${UserID:-opensim}
+# db_pass="${Password:-}"
+db_pass=$(echo "${Password:-}" | sed -E "s/^\*+$//")
 
 readvar db_host && [ "${db_host}" != "" ] || end $? "db_host cannot be empty"
 readvar db_name && [ "${db_name}" != "" ] || end $? "db_name cannot be empty"
 readvar db_user && [ "${db_user}" != "" ] || end $? "db_user cannot be empty"
 readvar db_pass && [ "${db_pass}" != "" ] || end $? "db_pass cannot be empty"
 
-testDatabaseConnection $db_host $db_name $db_user "$db_pass" \
-|| end $? "Could not connect to database $db_name with given credentials"
+yesno "Is the database ready for use with these credentials?" \
+&& testDatabaseConnection $db_host $db_name $db_user "$db_pass" \
+|| end $? "Setup database $db_name with given credentials and start the script again"
+
+end DEBUG STOP
 
 printf "\n$PGM: Building config\n\n" >&2
 
@@ -165,9 +184,9 @@ cat <<EOF >$TMP.launch.ini
 EOF
 
 EtcDirectory="/opt/opensim/etc/grids/$gridnick"
-DataDirectory="/opt/opensim/var/data/$gridnick"
+DataDirectory="${DataDirectory}/$gridnick"
 CacheDirectory="/opt/opensim/var/cache/$gridnick"
-LogsDirectory="/opt/opensim/var/logs"
+LogsDirectory="$LogsDirectory"
 economyURL="\${Const|WebURL}/helpers"
 
 cat <<EOF >$TMP.thisgrid.ini || end $? "could not create $TMP.thisgrid.ini"
@@ -256,7 +275,7 @@ fi
 for directory in \
   /opt/opensim/var/ \
   /opt/opensim/var/cache \
-  /opt/opensim/var/data \
+  ${DataDirectory} \
   /opt/opensim/var/run \
   /opt/opensim/var/run/crashes \
   $CacheDirectory \
