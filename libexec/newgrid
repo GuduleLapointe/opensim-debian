@@ -42,32 +42,64 @@ GridDir=$EtcDirectory/grids/${gridnick}
 readvar GridDir && [ "${GridDir}" != "" ] || end $? "GridDir cannot be empty"
 [ -d "$GridDir" ] || mkdir "$GridDir" || end $?
 
-end "DEBUG - About to create $gridname for $owner_name"
-
-RobustOutput=$GridDir/Robust.ini
-readvar RobustOutput && [ "${RobustOutput}" != "" ] || end $? "RobustOutput cannot be empty"
-
-if [ -f "$RobustOutput" ]
-then
-  cp $RobustOutput ${RobustOutput}~
-  cleanupIni $RobustOutput > $TMP.clean.ini && mv $TMP.clean.ini $RobustOutput
-  echo "Grid config file exists, updating"
-  update=yes
-  crudget $RobustOutput Launch
-  crudget $RobustOutput Const
-  crudget $RobustOutput Startup
-  # [ "$PublicPort" ] || PublicPort=$(crudini  --get $RobustOutput Const PublicPort)
-  # [ "$PrivatePort" ] || PrivatePort=$(crudini  --get $RobustOutput Const PrivatePort)
-  # cat $TMP.get
-  echo PublicPort $PublicPort
-  # crudget $RobustOutput Startup
-  savedPublicPort=$PublicPort
-  savedPrivatePort=$PrivatePort
+if yesno -y "Enable Hypergrid?"; then
+	EnableHypergrid=yes
+	RobustOutput=$GridDir/Robust.HG.ini
+else
+	EnableHypergrid=
+	RobustOutput=$GridDir/Robust.ini
 fi
 
-BinDir=${BinDir:-$(ls -drt /opt/opensim/core/opensim-[0-9]*/bin | sort | tail -1)}
-readvar BinDir && [ "${BinDir}" != "" ] || end $? "BinDir cannot be empty"
-ls -d "$BinDir" >/dev/null || end $?
+log EnableHypergrid ${EnableHypergrid:-no}
+
+readvar RobustOutput && [ "${RobustOutput}" != "" ] || end $? "RobustOutput cannot be empty"
+
+## Cleanup and read Robust if it exists
+if [ -f "$RobustOutput" ]
+then
+	cp $RobustOutput ${RobustOutput}~
+	cleanupIni $RobustOutput > $TMP.clean.ini && mv $TMP.clean.ini $RobustOutput
+	log "Grid config file exists, updating"
+	update=yes
+	crudget $RobustOutput Launch
+	crudget $RobustOutput Const
+	crudget $RobustOutput Startup
+	# [ "$PublicPort" ] || PublicPort=$(crudini  --get $RobustOutput Const PublicPort)
+	# [ "$PrivatePort" ] || PrivatePort=$(crudini  --get $RobustOutput Const PrivatePort)
+	# cat $TMP.get
+	log PublicPort $PublicPort
+	# crudget $RobustOutput Startup
+	savedPublicPort=$PublicPort
+	savedPrivatePort=$PrivatePort
+else
+	log "No pre-existing Robust config, no worry"
+fi
+
+
+if [ -z "$BinDir" ]; then
+	log "No BinDir, no big deal"
+	if [ -z "$CoreBase:-}" ]; then
+		for folder in /usr/local/share/opensim /opt/opensim/core $BASEDIR/core
+		do
+			[ -d "$folder" ] && CoreBase=$folder && break
+		done
+	fi
+	if [ -n $CoreBase ]; then
+		ls $CoreBase/opensim-[0-9]*/bin/OpenSim.exe | sort -n  | sed "s:/bin/OpenSim.exe::" > $TMP.cores
+	fi
+	echo "Available Core OpenSim installations"
+
+	i=0; while read coredir; do
+		i=$((i + 1))
+		printf "\t%d. %s\n" $i "$coredir"
+		CoreDirectory=$coredir
+	done < $TMP.cores
+	echo "Select OpenSim core directory (full path or number above)"
+	readvar CoreDirectory
+	[ -d "$CoreDirectory/bin" ] && BinDir=$CoreDirectory/bin || end 1 "Invalid core directry"
+fi
+
+end DEBUG STOP
 
 BaseHostname=${BaseHostname:-$(hostname -f)}
 readvar BaseHostname && [ "${BaseHostname}" != "" ] || end $? "BaseHostname cannot be empty"

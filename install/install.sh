@@ -173,8 +173,8 @@ case "${DirectoryLayout:-1}" in
   system)
     EtcDirectory=/etc/opensim
     VarDirectory=/var/lib/opensim
-    _core_base=/usr/local/share/opensim
-    CoreDirectory=$_core_base/opensim-$OpensimVersion
+    CoreBase=/usr/local/share/opensim
+    CoreDirectory=$CoreBase/opensim-$OpensimVersion
     LogsDirectory=/var/log/opensim
     CacheDirectory=/var/cache/opensim
     DataDirectory=/var/lib/opensim/data
@@ -182,20 +182,20 @@ case "${DirectoryLayout:-1}" in
   bundled)
     EtcDirectory=$InstallPath/etc
     VarDirectory=$InstallPath/var
-    _core_base=$InstallPath/core
-    CoreDirectory=$_core_base/opensim-$OpensimVersion
+    CoreBase=$InstallPath/core
+    CoreDirectory=$CoreBase/opensim-$OpensimVersion
     LogsDirectory=$InstallPath/var/logs
     CacheDirectory=$InstallPath/var/cache
     DataDirectory=$InstallPath/var/data
     ;;
   flat)
-    _core_base=$InstallPath/opensim-$OpensimVersion
-    CoreDirectory=$_core_base
-    EtcDirectory=$_core_base/bin
-    VarDirectory=$_core_base/bin
-    LogsDirectory=$_core_base/bin
-    CacheDirectory=$_core_base/bin
-    DataDirectory=$_core_base/bin
+    CoreBase=$InstallPath/opensim-$OpensimVersion
+    CoreDirectory=$CoreBase
+    EtcDirectory=$CoreBase/bin
+    VarDirectory=$CoreBase/bin
+    LogsDirectory=$CoreBase/bin
+    CacheDirectory=$CoreBase/bin
+    DataDirectory=$CoreBase/bin
     ;;
   *)
     end 1 "Invalid layout choice"
@@ -217,6 +217,11 @@ crudini --set "$_iconf" Install VarDirectory      "$VarDirectory"
 crudini --set "$_iconf" Install LogsDirectory     "$LogsDirectory"
 crudini --set "$_iconf" Install CacheDirectory    "$CacheDirectory"
 crudini --set "$_iconf" Install DataDirectory     "$DataDirectory"
+
+# TODO: request confirmation if these value already exist in Defaults section
+crudini --set "$_iconf" Defaults DirectoryLayout  "$DirectoryLayout"
+crudini --set "$_iconf" Defaults CoreBase         "$CoreBase"
+
 unset _iconf
 log "Install preferences saved to $BASEDIR/config/$PKG.conf"
 
@@ -242,7 +247,7 @@ yesno -y "Create directories and proceed?" || end 0 "Aborted"
 # --- Create directories, owned by current user ---
 for dir in \
   "$EtcDirectory" "$EtcDirectory/opensim.d" "$EtcDirectory/robust.d" "$EtcDirectory/grids" \
-  "$SourcesDirectory" "$_core_base" "$CoreDirectory" \
+  "$SourcesDirectory" "$CoreBase" "$CoreDirectory" \
   "$VarDirectory" "$LogsDirectory" "$CacheDirectory" "$DataDirectory" \
 
 do
@@ -280,9 +285,9 @@ if [ -n "$OSDOWNLOAD" ]; then
 	fi
  	[ -f "$_tar_path" ] || end $? "Unexpected: $_tar_path not found"
 
-	log "Unpacking $_tar_name to $_core_base"
+	log "Unpacking $_tar_name to $CoreBase"
 
-	pv "$_tar_path" | tar xzf - -C "$_core_base" \
+	pv "$_tar_path" | tar xzf - -C "$CoreBase" \
 	|| end $? "Error unpacking OpenSim"
 
 	log "OpenSim installed: $CoreDirectory"
