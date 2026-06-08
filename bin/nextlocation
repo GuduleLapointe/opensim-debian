@@ -10,15 +10,15 @@ trap 'rm -f $TMP $TMP.*' EXIT
 
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/libexec/os-helpers || exit 1
-[ "$OSBIN" ] || exit 1
-[ "$ETC" ] || exit 1
-cd "$ETC" && cd "$OLDPWD" || exit 1
+[ "$OpenSimExe" ] || exit 1
+[ "$EtcDirectory" ] || exit 1
+cd "$EtcDirectory" && cd "$OLDPWD" || exit 1
 
 USAGE="Usage: $PGM GridName startX,startY [quantity]"
 
 [ "$1" = "-e" ] && exclude=$2 && shift 2
 [ $1 ] && grid=$1 || end $? "$USAGE"
-[ -d "$ETC/grids/$grid" ] && ETCGRID="$ETC/grids/$grid" || end $? "$ETC/$grid does not exist.\n$USAGE"
+[ -d "$EtcDirectory/grids/$grid" ] && ETCGRID="$EtcDirectory/grids/$grid" || end $? "$EtcDirectory/$grid does not exist.\n$USAGE"
 [ $2 ] && wish=$2
 [ $3 ] && quantity=$3 || quantity=1
 

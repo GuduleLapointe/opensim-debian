@@ -2,6 +2,8 @@
 
 OPENSIM=${OPENSIM:-core/opensim}
 PGM=${PGM:-$(basename "$0")}
+PGM=$(echo "$PGM" | sed -E "s/\.[a-z]+$//")
+PKG="opensim-helpers"
 TMP=${TMP:-$(mktemp -t $PGM || echo /tmp/$PGM.$$)}
 DEBUG=${DEBUG:-}
 
@@ -15,80 +17,16 @@ fi
 
 # echo ":$PATH:" | grep -q ":$BINDIR:" || export PATH=$PATH:$BINDIR
 # [ ! "$LIB" ] && LIB=$BASEDIR/lib
-BINDIR=$(dirname $(realpath "$0"))
-export PATH=$PATH:$BINDIR
+BINDIR=$(cd $(dirname "$0") && pwd)
+LIBEXECDIR=$(cd $(dirname "${BASH_SOURCE}") && pwd)
+
+export PATH=$BINDIR:$LIBEXECDIR:$LIBEXECDIR/bash-helpers:$PATH
 
 BASEDIR=$(dirname "$BINDIR")
-OPTSINHELPER=yes
-. $BASEDIR/libexec/bash-helpers/helpers \
-  || . $BASEDIR/contrib/bash-helpers/helpers \
-  || echo "$PGM: Missing helpers library, run ./install/install.sh"
+OPTSINHELPER=${OPTSINHELPER:-yes}
+. $BASEDIR/libexec/bash-helpers/helpers || exit 1
 
-# Load layout-specific paths from install.ini (written by install.sh or Deployer).
-# Uses crudini from the venv for reliable ini parsing.
-_CRUDINI="$BASEDIR/venv/bin/crudini"
-_paths_loaded=no
-if [ -x "$_CRUDINI" ]; then
-  for _iconf in \
-    /etc/opensim/install.ini \
-    /usr/local/etc/opensim/install.ini \
-    $BASEDIR/etc/install.ini \
-    ~/etc/opensim/install.ini
-  do
-    [ -f "$_iconf" ] || continue
-    eval "$("$_CRUDINI" --get --format=sh "$_iconf" install 2>/dev/null)"
-    _paths_loaded=yes
-    break
-  done
-  unset _iconf
-fi
-unset _CRUDINI
-
-# Map PascalCase config keys to script variables, with fallbacks for standalone use
-LIB=${LIB:-$BASEDIR/lib}
-SRC=${SRC:-$BASEDIR/src}
-ETC=${EtcDirectory:-${ETC:-$BASEDIR/etc}}
-VAR=${VarDirectory:-${VAR:-$BASEDIR/var}}
-CORE=${CoreDirectory:-${CORE:-$BASEDIR/core}}
-LOGS=${LogsDirectory:-${LOGS:-$VAR/logs}}
-CACHE=${CacheDirectory:-${CACHE:-$VAR/cache}}
-DATA=${DataDirectory:-${DATA:-$VAR/data}}
-
-# Source opensim.conf from ETC if present (skipped when install.ini sets a known ETC)
-if [ "$_paths_loaded" = no ]; then
-  for etc in /etc/opensim $BASEDIR/etc ~/etc/opensim
-  do
-      [ -d "$etc" ] && ETC=$etc || continue
-      [ -f "$etc/opensim.conf" ] && . $etc/opensim.conf 2>/dev/null
-  done
-else
-  [ -f "$ETC/opensim.conf" ] && . "$ETC/opensim.conf" 2>/dev/null
-fi
-unset _paths_loaded
-
-OSBINDIR=${OSBINDIR:-}
-if [ -n "$OSBINDIR" -a -d "$OSBINDIR" ]; then
-	OSBIN=${CORE:-${OSBINDIR:-}}/bin/OpenSim.exe
-	if [ ! -e "$OSBIN" ]; then
-		OSBIN=$( ls \
-		$BASEDIR/core/opensim*/bin/OpenSim.exe \
-		$OSBINDIR/bin/OpenSim.exe \
-		2>/dev/null | tail -1 )
-	fi
-fi
-
-if  [ -n "${OSBIN:-}" ]; then
-	log "$OSBIN found"
-	OSBINDIR=$(dirname $OSBIN)
-	OSDIR=$(dirname $OSBINDIR)
-	log "default OpenSim core $OSBINDIR"
-else
-	if grep -q "install" <<< "$PGM"; then
-		log "No pre-existing OpenSim core, but we're here to handle that"
-	else
-		log 1 "No OpenSim.exe found, run ./install/install.sh to insall OpenSim core"
-	fi
-fi
+## Rest of the Business logic after functions...
 
 osConsole() {
   [ ! "$2" ] && return
@@ -148,18 +86,18 @@ randomPassword() {
 }
 
 crudget() {
-  [ "$2" ] || return $?
-  [ -f "$1" ] || return $?
-  cleanupIni "$1" > $TMP.get
-  if [ "$3" ]
-  then
-    crudini --get $TMP.get $2 $3 | sed -e 's/^"//' -e  's/"$//'
-    return $?
-  else
-    sed -i "s/^\([^=]\)-/\\1_/" $TMP.get
-    eval $(crudini --get --format=sh $TMP.get $2 $3  | sed -e "s/'\"/'/" -e "s/\"'/'/")
-    return $?
-  fi
+	[ -n "${2:-}" ] || return $?
+	[ -f "${1:-}" ] || return $?
+	cleanupIni "$1" > $TMP.get
+
+	if [ -n "${3:-}" ]; then
+		crudini --get $TMP.get $2 $3 | sed -e 's/^"//' -e  's/"$//'
+		return $?
+	else
+		sed -i~ "s/^\([^=]\)-/\\1_/" $TMP.get
+		eval $(crudini --get --format=sh $TMP.get $2 | sed -e "s/'\"/'/" -e "s/\"'/'/")
+		return $?
+	fi
 }
 
 crudmerge() {
@@ -284,5 +222,48 @@ isuuid() {
   echo $1 | grep -qEi "^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$"
 }
 
+# Python venv + crudini (isolated from system Python)
+. $BASEDIR/libexec/venv-setup || end $? "Could not set up Python venv"
+log "using $(which python3)"
+
+
 uuidgen=$(which uuid || which uuidgen)
-log "uuidgen $uuidgen"
+
+echo "[Defaults]" > $TMP.conf
+for conf_file in $HOME/.$PKG.conf $HOME/.config/$PGM/$PKG.conf \
+	/opt/opensim/etc/$PKG.conf $BASEDIR/config/$PKG.conf
+do
+	[ -e "$conf_file" ] || continue
+	log "loading conf $conf_file"
+	crudmerge $TMP.conf $conf_file
+done
+log base conf loaded
+
+# Map PascalCase config keys to script variables, with fallbacks for standalone use
+EtcDirectory=${EtcDirectory:-$BASEDIR/etc}
+
+# eval "$(crudini --get --format=sh "$_iconf" install 2>/dev/null)"
+
+# BinDirectory=${BinDirectory:-}
+# if [ -n "$BinDirectory" -a -d "$BinDirectory" ]; then
+# 	OpenSimExe=${CORE:-${BinDirectory:-}}/bin/OpenSim.exe
+# 	if [ ! -e "$OpenSimExe" ]; then
+# 		OpenSimExe=$( ls \
+# 		$BASEDIR/core/opensim*/bin/OpenSim.exe \
+# 		$BinDirectory/bin/OpenSim.exe \
+# 		2>/dev/null | tail -1 )
+# 	fi
+# fi
+
+# if  [ -n "${OpenSimExe:-}" ]; then
+# 	log "$OpenSimExe found"
+# 	BinDirectory=$(dirname $OpenSimExe)
+# 	CoreDirectory=$(dirname $BinDirectory)
+# 	log "default OpenSim core $BinDirectory"
+# else
+# 	if grep -q "install" <<< "$PGM"; then
+# 		log "No pre-existing OpenSim core, but we're here to handle that"
+# 	else
+# 		log 1 "No OpenSim.exe found, run ./install/install.sh to install OpenSim core"
+# 	fi
+# fi

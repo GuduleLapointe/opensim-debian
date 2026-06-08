@@ -7,12 +7,24 @@
 set -euo pipefail
 
 OSDOWNLOADPAGE=http://opensimulator.org/dist
-# DEBUG=yes
-#AUTOMATIC=yes
 
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/libexec/os-helpers || exit 1
 trap 'rm -f $TMP*' EXIT
+
+crudget $TMP.conf Defaults
+crudget $TMP.conf Install
+log "Config loaded
+  OpenSim version:   ${OpensimVersion:-}
+  Layout:            ${DirectoryLayout:-}
+  Install base:      ${InstallPath:-}
+  Core Directory:    ${CoreDirectory:-}
+  Etc Directory:     ${EtcDirectory:-}
+  Var Directory:     ${VarDirectory:-}
+  Data Directory:    ${DataDirectory:-}
+  Cache Directory:   ${CacheDirectory:-}
+  Logs Directory:    ${LogsDirectory:-}
+  Sources:           ${SourcesDirectory:-}"
 
 # Package manager abstraction
 case "$(uname -s)" in
@@ -42,10 +54,10 @@ if ! which screen >/dev/null; then
 	yesno "Install screen?" && pkg_install screen || end $? "Could not install screen"
 fi
 
-# Python venv + crudini (isolated from system Python)
-. $BASEDIR/libexec/venv-setup || end $? "Could not set up Python venv"
-log "using $(which python3)"
-require crudini
+# # Python venv + crudini (isolated from system Python)
+# . $BASEDIR/libexec/venv-setup || end $? "Could not set up Python venv"
+# log "using $(which python3)"
+# require crudini
 
 echo "Initialize submodules" >&2
 git submodule update --init
@@ -124,16 +136,19 @@ unset _releases _f _vchoice _vsel i
 # --- Layout selection ---
 echo ""
 echo "Installation layout:"
-echo "  1) System    — Standard Linux paths: /etc/opensim, /var/lib/opensim, /usr/local/share/opensim"
+echo "  1) Flat      — OpenSim's default layout, all files in core directory"
 echo "  2) Bundled   — Organized structure under a single directory: /opt/opensim, ~/opensim, ..."
-echo "  3) Flat      — OpenSim's default layout, all files in core directory"
+echo "  3) System    — Standard Linux paths: /etc/opensim, /var/lib/opensim, /usr/local/share/opensim"
 echo ""
-read -p "  Layout [1]: " _layout_choice
+
+DirectoryLayout=${DirectoryLayout:-1}
+# read -p "  Layout [1]: " DirectoryLayout
+readvar DirectoryLayout
 
 ## Set install base directory
-case "${_layout_choice:-1}" in
-  1|system|debian)
-    DirectoryLayout=debian
+case "${DirectoryLayout:-1}" in
+  3|system|debian)
+    DirectoryLayout=system
     BaseInstallPath=/usr/local/share/opensim
     ;;
   2|bundled)
@@ -141,7 +156,7 @@ case "${_layout_choice:-1}" in
     BaseInstallPath=/opt/opensim
     readvar BaseInstallPath
     ;;
-  3|flat)
+  1|flat)
     DirectoryLayout=flat
     BaseInstallPath=$BASEDIR/core
     readvar BaseInstallPath
@@ -154,9 +169,8 @@ esac
 InstallPath=$BaseInstallPath
 log "InstallPath=$InstallPath"
 
-case "${_layout_choice:-1}" in
-  1|system|debian)
-    DirectoryLayout=debian
+case "${DirectoryLayout:-1}" in
+  system)
     EtcDirectory=/etc/opensim
     VarDirectory=/var/lib/opensim
     _core_base=/usr/local/share/opensim
@@ -165,8 +179,7 @@ case "${_layout_choice:-1}" in
     CacheDirectory=/var/cache/opensim
     DataDirectory=/var/lib/opensim/data
     ;;
-  2|bundled)
-    DirectoryLayout=bundled
+  bundled)
     EtcDirectory=$InstallPath/etc
     VarDirectory=$InstallPath/var
     _core_base=$InstallPath/core
@@ -175,8 +188,7 @@ case "${_layout_choice:-1}" in
     CacheDirectory=$InstallPath/var/cache
     DataDirectory=$InstallPath/var/data
     ;;
-  3|flat)
-    DirectoryLayout=flat
+  flat)
     _core_base=$InstallPath/opensim-$OpensimVersion
     CoreDirectory=$_core_base
     EtcDirectory=$_core_base/bin
@@ -190,23 +202,23 @@ case "${_layout_choice:-1}" in
     ;;
 esac
 
-SourcesDirectory=${SRC:-$BASEDIR/src}
+SourcesDirectory=${SourcesDirectory:-$BASEDIR/src}
 
 # --- Save config to repo (gitignored) so Deployer can read it ---
 # crudini --set: updates only listed keys, leaves other settings untouched
 mkdir -p "$BASEDIR/config"
-_iconf="$BASEDIR/config/install.ini"
-crudini --set "$_iconf" install DirectoryLayout   "$DirectoryLayout"
-crudini --set "$_iconf" install OpensimVersion    "${OpensimVersion:-}"
-crudini --set "$_iconf" install InstallPath       "${InstallPath:-}"
-crudini --set "$_iconf" install CoreDirectory           "$CoreDirectory"
-crudini --set "$_iconf" install EtcDirectory      "$EtcDirectory"
-crudini --set "$_iconf" install VarDirectory  "$VarDirectory"
-crudini --set "$_iconf" install LogsDirectory     "$LogsDirectory"
-crudini --set "$_iconf" install CacheDirectory    "$CacheDirectory"
-crudini --set "$_iconf" install DataDirectory     "$DataDirectory"
+_iconf="$BASEDIR/config/$PKG.conf"
+crudini --set "$_iconf" Install DirectoryLayout   "$DirectoryLayout"
+crudini --set "$_iconf" Install OpensimVersion    "${OpensimVersion:-}"
+crudini --set "$_iconf" Install InstallPath       "${InstallPath:-}"
+crudini --set "$_iconf" Install CoreDirectory     "$CoreDirectory"
+crudini --set "$_iconf" Install EtcDirectory      "$EtcDirectory"
+crudini --set "$_iconf" Install VarDirectory      "$VarDirectory"
+crudini --set "$_iconf" Install LogsDirectory     "$LogsDirectory"
+crudini --set "$_iconf" Install CacheDirectory    "$CacheDirectory"
+crudini --set "$_iconf" Install DataDirectory     "$DataDirectory"
 unset _iconf
-log "Install preferences saved to $BASEDIR/config/install.ini"
+log "Install preferences saved to $BASEDIR/config/$PKG.conf"
 
 # --- Summary + confirm ---
 cat <<EOF
@@ -239,18 +251,18 @@ do
   sudo install $v -d -o "$USER" "$dir" || end $? "Could not create $dir"
 done
 
-# --- Write EtcDirectory/install.ini ---
-log "Update $EtcDirectory/install.ini"
-_iconf="$EtcDirectory/install.ini"
-crudini --set "$_iconf" install DirectoryLayout  "$DirectoryLayout"
-crudini --set "$_iconf" install OpensimVersion   "${OpensimVersion:-}"
-crudini --set "$_iconf" install InstallPath      "${InstallPath:-}"
-crudini --set "$_iconf" install CoreDirectory    "${CoreDirectory}"
-crudini --set "$_iconf" install EtcDirectory     "$EtcDirectory"
-crudini --set "$_iconf" install VarDirectory     "$VarDirectory"
-crudini --set "$_iconf" install LogsDirectory    "$LogsDirectory"
-crudini --set "$_iconf" install CacheDirectory   "$CacheDirectory"
-crudini --set "$_iconf" install DataDirectory    "$DataDirectory"
+# --- Write EtcDirectory/$PKG.conf ---
+log "Update $EtcDirectory/$PKG.conf"
+_iconf="$EtcDirectory/$PKG.conf"
+crudini --set "$_iconf" Install DirectoryLayout  "$DirectoryLayout"
+crudini --set "$_iconf" Install OpensimVersion   "${OpensimVersion:-}"
+crudini --set "$_iconf" Install InstallPath      "${InstallPath:-}"
+crudini --set "$_iconf" Install CoreDirectory    "${CoreDirectory}"
+crudini --set "$_iconf" Install EtcDirectory     "$EtcDirectory"
+crudini --set "$_iconf" Install VarDirectory     "$VarDirectory"
+crudini --set "$_iconf" Install LogsDirectory    "$LogsDirectory"
+crudini --set "$_iconf" Install CacheDirectory   "$CacheDirectory"
+crudini --set "$_iconf" Install DataDirectory    "$DataDirectory"
 unset _iconf
 
 # --- Download and extract OpenSim ---
@@ -258,7 +270,7 @@ unset _iconf
 if [ -n "$OSDOWNLOAD" ]; then
 	_tar_name=$(basename "$OSDOWNLOAD")
 	_tar_path=$SourcesDirectory/$_tar_name
-# if [ -n "$OSDOWNLOAD" ] && [ ! -f "${OSBIN:-}" ]; then
+# if [ -n "$OSDOWNLOAD" ] && [ ! -f "${OpenSimExe:-}" ]; then
 	if [ -f "$_tar_path" ]; then
 		log "Using previous download $_tar_path"
 	else
@@ -278,16 +290,31 @@ if [ -n "$OSDOWNLOAD" ]; then
 	unset _tar_path
 fi
 
-## Set standard os-helpers env variables to installed values for
-# the next processes
-OSDIR=$CoreDirectory
-[ -d "$OSDIR" ]    || end 1 "Unexpected: $OSDIR not found"
-OSBINDIR=$OSDIR/bin
-[ -d "$OSBINDIR" ] || end 1 "Unexpected: $OSBINDIR not found"
-OSBIN=$OSBINDIR/OpenSim.exe
-[ -f "$OSBIN" ]    || end 1 "Unexpected: $OSBIN not found"
+##
+# Last checks
+#
+[ -d "$CoreDirectory" ] || end 1 "Unexpected: $CoreDirectory not found"
+[ -d "$CoreDirectory/bin" ] || end 1 "Unexpected: $CoreDirectory/bin not found"
+[ -f "$CoreDirectory/bin/OpenSim.exe" ] || end 1 "Unexpected: $CoreDirectory/bin/OpenSim.exe not found"
 
-#cd "$OSBIN" || end 2 could not cd to $OSBIN
+##
+# Launch new grid config
+#
+if yesno -y "Create Robust config?"
+then
+  # user=$(getent passwd $USER | cut -d : -f 5 | cut -d , -f 1 | cut -d " " -f 1 | grep -i [a-z] || echo "$USER" | sed -r -e 's/(\W)/\L\1/g' -e 's/(^|[ _-])(\w)/\U\2/g')
+  $BASEDIR/libexec/newgrid || end $?
+ # "${user}s Grid"
+fi
+
+end
+
+##
+# What follows is old code
+# Keep until transition is finished, only for reference
+#
+
+#cd "$OpenSimExe" || end 2 could not cd to $OpenSimExe
 #(
 #find -name "*.ini"
 #find -name "*.ini.example"
@@ -297,26 +324,21 @@ OSBIN=$OSBINDIR/OpenSim.exe
 #	[ -f "$EtcDirectory/$file" ] && continue
 #	folder="$(dirname "$EtcDirectory/$file")"
 #	[ -d "$folder" ] || mkdir -p "$folder" || end 4 could not create $folder
-#	cp $OSBIN/$file $EtcDirectory/$file 2>/dev/null \
-#		|| cp $OSBIN/$file.example $EtcDirectory/$file 2>/dev/null \
+#	cp $OpenSimExe/$file $EtcDirectory/$file 2>/dev/null \
+#		|| cp $OpenSimExe/$file.example $EtcDirectory/$file 2>/dev/null \
 #		|| end 4 could not copy $file
 #done
 
 # CacheDirectory=$VarDirectory/cache
 # DataDirectory=$VarDirectory/data
 #
-# OpenSimBinDirectory=$OSBINDIR
+# OpenSimBinDirectory=$BinDirectory
 # readvar OpenSimBinDirectory
-
-if yesno "Create Robust config?"
-then
-  user=$(getent passwd $USER | cut -d : -f 5 | cut -d , -f 1 | cut -d " " -f 1 | grep -i [a-z] || echo "$USER" | sed -r -e 's/(\W)/\L\1/g' -e 's/(^|[ _-])(\w)/\U\2/g')
-  $BASEDIR/libexec/newgrid "${user}s Grid" || end $?
 
   # log setting defaults
   # crudini --set $TMP.new.ini Launch BinDir "\"$OpenSimBinDirectory\""
   # crudini --set $TMP.new.ini Launch Executable "\"Robust.exe\#"
-  # cleanupIni $OSBINDIR/Robust.HG.ini.example > $TMP.defaults.ini
+  # cleanupIni $BinDirectory/Robust.HG.ini.example > $TMP.defaults.ini
   # crudmerge $TMP.new.ini $TMP.defaults.ini
   # crudmerge $TMP.new.ini $BASEDIR/install/Robust.Tweaks.ini
   # crudini --set $TMP.new.ini DatabaseService ConnectionString "\"Data Source=localhost;Database=os_$(hostname -s);User ID=opensim;Password=password;Old Guids=true;\""
@@ -448,7 +470,7 @@ then
   # # enable="$EtcDirectory/robust-enabled/$RobustName.ini"
   #
   # log "## Setting Launcher info"
-  # crudini --set $TMP.new.ini Launch BinDir "\"$OSBINDIR\""
+  # crudini --set $TMP.new.ini Launch BinDir "\"$BinDirectory\""
   # crudini --set $TMP.new.ini Launch Executable "\"Robust.exe\""
   # crudini --set $TMP.new.ini Launch LogFile "\"$LogsDirectory/$MachineName.log\""
   # crudini --set $TMP.new.ini Launch ConsolePrompt "\"$RobustName ($hostname:$PublicPort)\""
@@ -500,7 +522,7 @@ then
   # cp $TMP.new.ini $RobustConfig && echo "$RobustConfig saved"
   #
   # # [ ! -f "$enable" ] && ln -s "$RobustConfig" "$enable"
-  # cat $OSBINDIR/Robust.exe.config \
+  # cat $BinDirectory/Robust.exe.config \
   # | sed "s%\(<file value=\"\)Robust%\\1$LogsDirectory/$RobustName%" \
   # > "$DataDirectory/$RobustName.logconfig"
   #
@@ -511,6 +533,3 @@ then
   # #   myuser=$newuser
   # #   mypass=$newpass" > "$EtcDirectory/opensim.ini"
   # # fi
-fi
-
-end

@@ -16,8 +16,8 @@ shutdownWarnings=3
 BASEDIR=$(cd $(dirname "$0")/.. && pwd)
 
 . $BASEDIR/libexec/os-helpers || exit 1
-[ "$OSBIN" ] || exit 1
-[ "$ETC" ] || exit 1
+[ "$OpenSimExe" ] || exit 1
+[ "$EtcDirectory" ] || exit 1
 
 source $BASEDIR/libexec/venv-setup   || end $? "Could not setup python venv"
 
@@ -488,10 +488,10 @@ ETCPATH=$(cleanpath "$ETCPATH")
 #getRobustPath
 #end
 
-log looking in $ETC
+log looking in $EtcDirectory
 
 IFS=":"
-for etc in $ETC $ETCPATH
+for etc in $EtcDirectory $ETCPATH
 do
     folder=$(realpath "$etc")
     [ "$folder" ] || continue
