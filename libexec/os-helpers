@@ -8,12 +8,11 @@ TMP=${TMP:-$(mktemp -t $PGM || echo /tmp/$PGM.$$)}
 DEBUG=${DEBUG:-}
 
 if ! which realpath >/dev/null; then
-  realpath() {
-    readlink -f "$@" 2>/dev/null && return
-    cd "$@" 2>/dev/null && pwd -P && return
-  }
+	realpath() {
+		readlink -f "$@" 2>/dev/null && return
+		cd "$@" 2>/dev/null && pwd -P && return
+	}
 fi
-
 
 # echo ":$PATH:" | grep -q ":$BINDIR:" || export PATH=$PATH:$BINDIR
 # [ ! "$LIB" ] && LIB=$BASEDIR/lib
@@ -29,215 +28,212 @@ OPTSINHELPER=${OPTSINHELPER:-yes}
 ## Rest of the Business logic after functions...
 
 osConsole() {
-  [ ! "$2" ] && return
-  osInstance=$1
-  shift
-  osCommand="$@"
-  if [ "$OSIM_REST_INI" ]
-  then
-    "$BASEDIR/bin/rest-cli" "$OSIM_REST_INI" $osCommand
-    return
-  fi
-  [ "$osCommand" = "\n" ] && unset osCommand
-  lr=$(printf "\n\b")
-  # pre=$(printf "\n\b")
-  screen -x $osInstance -X stuff "$(echo "$pre$osCommand$lr")"
+	[ ! "$2" ] && return
+	osInstance=$1
+	shift
+	osCommand="$@"
+	if [ "$OSIM_REST_INI" ]; then
+		"$BASEDIR/bin/rest-cli" "$OSIM_REST_INI" $osCommand
+		return
+	fi
+	[ "$osCommand" = "\n" ] && unset osCommand
+	lr=$(printf "\n\b")
+	# pre=$(printf "\n\b")
+	screen -x $osInstance -X stuff "$(echo "$pre$osCommand$lr")"
 }
 osConsoleRead() {
-  [ ! "$1" ] && return
-  [ ! "$COLUMNS" ] && COLUMNS=75
-  osInstance=$1; shift
-  pattern="$@"
-  screen -x $osInstance -X hardcopy -h $TMP.console
-  if [ "$pattern" ]
-  then
-    egrep "$pattern" $TMP.console && return
-    printf "\33[2K"
-    printf "$(grep -a . $TMP.console | tail -1 | cut -c -$COLUMNS)\r"
-    return 1
-  else
-    cat $TMP.console | sed "s/^/cat /"
-  fi
+	[ ! "$1" ] && return
+	[ ! "$COLUMNS" ] && COLUMNS=75
+	osInstance=$1
+	shift
+	pattern="$@"
+	screen -x $osInstance -X hardcopy -h $TMP.console
+	if [ "$pattern" ]; then
+		egrep "$pattern" $TMP.console && return
+		printf "\33[2K"
+		printf "$(grep -a . $TMP.console | tail -1 | cut -c -$COLUMNS)\r"
+		return 1
+	else
+		cat $TMP.console | sed "s/^/cat /"
+	fi
 }
 osConsoleWait() {
-  [ "$2" ] || return $?
-  [ "$3" ] && timeout=$1 && shift || timeOut=60
-  osInstance=$1; shift
-  pattern="$@"
-  [ "$pattern" = "" ] && return 2
-  t=0; while [ $t -lt 60 ]
-  do
-    osConsoleRead $osInstance "$pattern" && return
-    sleep 0.5
-    t=$(($t + 1))
-  done
-  # echo
-  return 1
+	[ "$2" ] || return $?
+	[ "$3" ] && timeout=$1 && shift || timeOut=60
+	osInstance=$1
+	shift
+	pattern="$@"
+	[ "$pattern" = "" ] && return 2
+	t=0
+	while [ $t -lt 60 ]; do
+		osConsoleRead $osInstance "$pattern" && return
+		sleep 0.5
+		t=$(($t + 1))
+	done
+	# echo
+	return 1
 }
 
 cleanupIni() {
-  [ "$1" ] || return
-  [ -f "$1" ] || return
-  cat "$1" | sed "s/^[[:blank:]]*//"
+	[ "$1" ] || return
+	[ -f "$1" ] || return
+	cat "$1" | sed "s/^[[:blank:]]*//"
 }
 
 randomPassword() {
-  echo $(< /dev/urandom tr -dc "[:alnum:]" | head -c32)
+	echo $(</dev/urandom tr -dc "[:alnum:]" | head -c32)
 }
 
 crudget() {
 	[ -n "${2:-}" ] || return $?
 	[ -f "${1:-}" ] || return $?
-	cleanupIni "$1" > $TMP.get
+	cleanupIni "$1" >$TMP.get
 
 	if [ -n "${3:-}" ]; then
-		crudini --get $TMP.get $2 $3 | sed -e 's/^"//' -e  's/"$//'
+		crudini --get $TMP.get $2 $3 | sed -e 's/^"//' -e 's/"$//'
 		return $?
 	else
 		sed -i~ "s/^\([^=]\)-/\\1_/" $TMP.get
 		# Strip redundant double-quoting only when both delimiters are present: ='"..."' → ='...'
 		# Do NOT blindly strip leading '" which breaks values starting with ( or special chars
-		crudini --get --format=sh $TMP.get $2 \
-			| sed "s/='\"\(.*\)\"'$/='\1'/" \
-			> $TMP.crudget.sh 2>/dev/null || true
+		crudini --get --format=sh $TMP.get $2 |
+			sed "s/='\"\(.*\)\"'$/='\1'/" \
+				>$TMP.crudget.sh 2>/dev/null || true
 		[ -s "$TMP.crudget.sh" ] && . "$TMP.crudget.sh" || true
 		return 0
 	fi
 }
 
 crudmerge() {
-  [ -f "$2" ] || return
-  log merging $2 in $1
-  # cleanupIni $2 | sed "s/^Include-/Include_/" > $TMP.merge.ini
-  cleanupIni $2 > $TMP.merge.ini
-  crudini --merge $1 <$TMP.merge.ini || end $? $2 Merge failed
+	[ -f "$2" ] || return
+	log merging $2 in $1
+	# cleanupIni $2 | sed "s/^Include-/Include_/" > $TMP.merge.ini
+	cleanupIni $2 >$TMP.merge.ini
+	crudini --merge $1 <$TMP.merge.ini || end $? $2 Merge failed
 }
 
 cleanupIni4Prod() {
-  [ "$1" ] || return
-  sed -i~ "s/Include_/Include-/" $1
-  crudini --get $1 > $TMP.sections
-  cat $TMP.sections | while read section
-  do
-    crudini --get $1 $section | grep -qi [a-z] || crudini --del $1 "$section"
-  done
+	[ "$1" ] || return
+	sed -i~ "s/Include_/Include-/" $1
+	crudini --get $1 >$TMP.sections
+	cat $TMP.sections | while read section; do
+		crudini --get $1 $section | grep -qi [a-z] || crudini --del $1 "$section"
+	done
 }
 
 testDatabaseConnection() {
-  [ "$4" ] || return $?
-  DatabaseHost=$1
-  DatabaseName=$2
-  DatabaseUser=$3
-  DatabasePassword=$4
-  log "Testing database $DatabaseName connection"
+	[ "$4" ] || return $?
+	DatabaseHost=$1
+	DatabaseName=$2
+	DatabaseUser=$3
+	DatabasePassword=$4
+	log "Testing database $DatabaseName connection"
 
-  echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" $DatabaseName 2>/dev/null
-  if [ $? -ne 0 ]
-  then
-    echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" 2>/dev/null
-    if [ $? -ne 0 ]
-    then
-      createDatabaseUser $DatabaseHost $DatabaseUser "$DatabasePassword" || return $?
-    fi
-    createDatabase $DatabaseHost $DatabaseUser $DatabaseName \
-    && echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p$DatabasePassword $DatabaseName \
-    && log "Database OK" && return \
-    || return $?
-  fi
-  log "Database Connection OK"
-  return
+	echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" $DatabaseName 2>/dev/null
+	if [ $? -ne 0 ]; then
+		echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" 2>/dev/null
+		if [ $? -ne 0 ]; then
+			createDatabaseUser $DatabaseHost $DatabaseUser "$DatabasePassword" || return $?
+		fi
+		createDatabase $DatabaseHost $DatabaseUser $DatabaseName &&
+			echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p$DatabasePassword $DatabaseName &&
+			log "Database OK" && return ||
+			return $?
+	fi
+	log "Database Connection OK"
+	return
 }
 
 createDatabaseUser() {
-  [ "$3" ] || return $?
-  yesno "Create database user $DatabaseUser on $DatabaseHost?" || return $?
-  DatabaseHost=$1
-  DatabaseUser=$2
-  DatabasePassword=$3
-  echo "CREATE USER $DatabaseUser IDENTIFIED BY '$DatabasePassword';" | sudo mysql -h$DatabaseHost 2>/dev/null
-  return $?
+	[ "$3" ] || return $?
+	yesno "Create database user $DatabaseUser on $DatabaseHost?" || return $?
+	DatabaseHost=$1
+	DatabaseUser=$2
+	DatabasePassword=$3
+	echo "CREATE USER $DatabaseUser IDENTIFIED BY '$DatabasePassword';" | sudo mysql -h$DatabaseHost 2>/dev/null
+	return $?
 }
 
 createDatabase() {
-  [ "$3" ] || return $?
-  yesno "Create database $DatabaseName and grant rights to $DatabaseUser?" || return $?
-  DatabaseHost=$1
-  DatabaseUser=$2
-  DatabaseName=$3
-  last="create database" && echo "CREATE DATABASE $DatabaseName character set UTF8;"  | sudo mysql -h$DatabaseHost \
-  && last="grant rights" && echo "GRANT ALL ON $DatabaseName.* TO $DatabaseUser;" | sudo mysql -h$DatabaseHost \
-  && (
-  sql="set global innodb_file_format = 'Barracuda'" && echo "$sql" | sudo mysql -h$DatabaseHost \
-  && sql="set global innodb_large_prefix = 'ON'" && echo "$sql" | sudo mysql -h$DatabaseHost \
-  || log $? "$sql returned error $?. Make sure that your mysql sever accepts large prefix."
-  ) && log "Database created" \
-  || (
-  return=$?
-  log $return "error $last"
-  return $return
-  )
-  return $?
+	[ "$3" ] || return $?
+	yesno "Create database $DatabaseName and grant rights to $DatabaseUser?" || return $?
+	DatabaseHost=$1
+	DatabaseUser=$2
+	DatabaseName=$3
+	last="create database" && echo "CREATE DATABASE $DatabaseName character set UTF8;" | sudo mysql -h$DatabaseHost &&
+		last="grant rights" && echo "GRANT ALL ON $DatabaseName.* TO $DatabaseUser;" | sudo mysql -h$DatabaseHost &&
+		(
+			sql="set global innodb_file_format = 'Barracuda'" && echo "$sql" | sudo mysql -h$DatabaseHost &&
+				sql="set global innodb_large_prefix = 'ON'" && echo "$sql" | sudo mysql -h$DatabaseHost ||
+				log $? "$sql returned error $?. Make sure that your mysql sever accepts large prefix."
+		) && log "Database created" ||
+		(
+			return=$?
+			log $return "error $last"
+			return $return
+		)
+	return $?
 }
 
 iniExpandVariables() {
-  [ ! "$1" ] && log 1 iniExpandVariables no ini file specified && return
-  thisini="$1"
-  grep -q '${' $thisini || { log "no var in $thisini, skipping"; return; }
-  log expanding $thisini
-  sed -E "s/($varPattern)/\n\\1\n/g" $TMP.ini \
-  | grep -E --color "$varPattern" | sed -e "s/[{}$]//g" -e "s/|/ /" \
-  | sort -u | while read section variable
-  do
-    value=$(crudget $TMP.ini $section $variable)
-    # echo $section $variable = $value
-    echo "$value" | grep -q "/" \
-    && sed -E -i "s%[$]\{$section\|$variable}%$value%g" $thisini \
-    || sed -E -i "s/[$]\{$section\|$variable}/$value/g" $thisini
-    # grep --color "$section|$variable" $thisini
-    # grep $value $thisini
-  done
+	[ ! "$1" ] && log 1 iniExpandVariables no ini file specified && return
+	thisini="$1"
+	grep -q '${' $thisini || {
+		log "no var in $thisini, skipping"
+		return
+	}
+	log expanding $thisini
+	sed -E "s/($varPattern)/\n\\1\n/g" $TMP.ini |
+		grep -E --color "$varPattern" | sed -e "s/[{}$]//g" -e "s/|/ /" |
+		sort -u | while read section variable; do
+		value=$(crudget $TMP.ini $section $variable)
+		# echo $section $variable = $value
+		echo "$value" | grep -q "/" &&
+			sed -E -i "s%[$]\{$section\|$variable}%$value%g" $thisini ||
+			sed -E -i "s/[$]\{$section\|$variable}/$value/g" $thisini
+		# grep --color "$section|$variable" $thisini
+		# grep $value $thisini
+	done
 }
 
 iniMergeAndForget() {
-  [ ! "$3" ] && log 1 "usage iniMergeAndForget ini section variable" && return 1
-  thisini=$1
-  section=$2
-  variable=$3
-  file=$(crudget $thisini $section $variable)
-  [ ! -e "$file" ] && log 2 "file $file not found" && return 2
+	[ ! "$3" ] && log 1 "usage iniMergeAndForget ini section variable" && return 1
+	thisini=$1
+	section=$2
+	variable=$3
+	file=$(crudget $thisini $section $variable)
+	[ ! -e "$file" ] && log 2 "file $file not found" && return 2
 
-  log mergin $common
-  crudmerge $thisini $file
-  crudini --del $thisini $section $variable
-  sed -i~ "s/Include_/Include-/" $thisini
-  iniExpandVariables $thisini
+	log mergin $common
+	crudmerge $thisini $file
+	crudini --del $thisini $section $variable
+	sed -i~ "s/Include_/Include-/" $thisini
+	iniExpandVariables $thisini
 }
 
 sql() {
-  [ "$1" = "-v" ] && options="-v" && shift || options="-BN"
-  echo "$@" | mysql --defaults-file=$TMP.my.cnf $options
+	[ "$1" = "-v" ] && options="-v" && shift || options="-BN"
+	echo "$@" | mysql --defaults-file=$TMP.my.cnf $options
 }
 
 uncomment() {
-  [ "$2" ] || return
-  sed -i~ "s/; *$1 *= */$1 = /" "$2"
+	[ "$2" ] || return
+	sed -i~ "s/; *$1 *= */$1 = /" "$2"
 }
 
 isuuid() {
-  echo $1 | grep -qEi "^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$"
+	echo $1 | grep -qEi "^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$"
 }
 
 # Python venv + crudini (isolated from system Python)
 . $BASEDIR/libexec/venv-setup || end $? "Could not set up Python venv"
 log "using $(which python3)"
 
-
 uuidgen=$(which uuid || which uuidgen)
 
-echo "[Defaults]" > $TMP.conf
+echo "[Defaults]" >$TMP.conf
 for conf_file in $HOME/.$PKG.conf $HOME/.config/$PGM/$PKG.conf \
-	/opt/opensim/etc/$PKG.conf $BASEDIR/config/$PKG.conf
-do
+	/opt/opensim/etc/$PKG.conf $BASEDIR/config/$PKG.conf; do
 	[ -e "$conf_file" ] || continue
 	log "loading conf $conf_file"
 	crudmerge $TMP.conf $conf_file

@@ -1,8 +1,10 @@
 OpenSim Debian Distribution
 ===========================
-Version: 2.0.0
+![Version 3.0.0-dev](https://badgen.net/badge/Version/3.0.0-dev/FFaa00)
+![Stable 2.0.0](https://badgen.net/badge/2.0.0/Stable/00aa00)
+![License AGPLv3](https://badgen.net/badge/License/AGPLv3/552b55)
 
-This is an framework to facilitate installation and use of OpenSim with Debian.
+This is an framework to facilitate installation and use of OpenSim with Debian or other *nix flavors.
 
 https://www.speculoos.world/opensim-debian-installation-framework/
 

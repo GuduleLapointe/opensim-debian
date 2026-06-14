@@ -22,21 +22,20 @@ EtcRoot=${EtcRoot:-$BASEDIR/etc}
 DataRoot=${DataRoot:-$BASEDIR/data}
 
 (
-  echo "$exclude" | grep [0-9]
-  find $BASEDIR/etc  $BASEDIR/config $DataRoot/regions $EtcRoot/grids/*/sims/*/regions -name "*.ini" 2>/dev/null \
-        | grep -v "#" \
-        | xargs egrep "^[[:blank:];]*(InternalPort|PublicPort|PrivatePort|http_listener_port)[[:blank:]]*=" 2>/dev/null \
-        | cut -d "=" -f 2 | sed "s/[^0-9]//g"
-  netstat -an | grep ":" | cut -d ":" -f 2 | cut -f 1 | cut -d " " -f 1
-) | sort -u | sort -n >> $TMP.inuse
+	echo "$exclude" | grep [0-9]
+	find $BASEDIR/etc $BASEDIR/config $DataRoot/regions $EtcRoot/grids/*/sims/*/regions -name "*.ini" 2>/dev/null |
+		grep -v "#" |
+		xargs egrep "^[[:blank:];]*(InternalPort|PublicPort|PrivatePort|http_listener_port)[[:blank:]]*=" 2>/dev/null |
+		cut -d "=" -f 2 | sed "s/[^0-9]//g"
+	netstat -an | grep ":" | cut -d ":" -f 2 | cut -f 1 | cut -d " " -f 1
+) | sort -u | sort -n >>$TMP.inuse
 
 i=$(($min - 1))
 found=0
-while [ $found -lt $find ]
-do
-    i=$(($i + 1))
-    grep -q "^$i$" $TMP.inuse \
-        && continue
-    echo "$i"
-    found=$((found + 1))
+while [ $found -lt $find ]; do
+	i=$(($i + 1))
+	grep -q "^$i$" $TMP.inuse &&
+		continue
+	echo "$i"
+	found=$((found + 1))
 done

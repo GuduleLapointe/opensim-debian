@@ -8,22 +8,22 @@
 #   . $BASEDIR/libexec/venv-setup || exit 1
 
 _venv="$BASEDIR/venv"
-_python=$(which python3 || which python 2>/dev/null) \
-  || end $? "Python not found — install python3"
+_python=$(which python3 || which python 2>/dev/null) ||
+	end $? "Python not found — install python3"
 
 if [ ! -f "$_venv/bin/activate" ]; then
-  log "Creating Python venv at $_venv"
-  "$_python" -m venv --prompt "$("$_python" --version 2>&1 | tr -d ' ')" "$_venv" \
-    || end $? "Could not create Python venv"
+	log "Creating Python venv at $_venv"
+	"$_python" -m venv --prompt "$("$_python" --version 2>&1 | tr -d ' ')" "$_venv" ||
+		end $? "Could not create Python venv"
 fi
 
-. "$_venv/bin/activate" \
-  || end $? "Could not activate Python venv at $_venv"
+. "$_venv/bin/activate" ||
+	end $? "Could not activate Python venv at $_venv"
 
 if ! which crudini >/dev/null 2>&1; then
-  log "Installing crudini in venv"
-  pip install crudini \
-    || end $? "Could not install crudini in venv"
+	log "Installing crudini in venv"
+	pip install crudini ||
+		end $? "Could not install crudini in venv"
 fi
 
 unset _venv _python

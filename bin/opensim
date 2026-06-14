@@ -19,7 +19,7 @@ BASEDIR=$(cd $(dirname "$0")/.. && pwd)
 [ "$OpenSimExe" ] || exit 1
 [ "$EtcRoot" ] || exit 1
 
-source $BASEDIR/libexec/venv-setup   || end $? "Could not setup python venv"
+source $BASEDIR/libexec/venv-setup || end $? "Could not setup python venv"
 
 require crudini
 
@@ -33,49 +33,49 @@ HELP="
       -v verbose mode
       -q quiet mode"
 
-
 OPTS="shvq"
-while getopts $OPTS PARAM
-do
-    case $PARAM in
+while getopts $OPTS PARAM; do
+	case $PARAM in
 	"?")
-	    ERROR=1
-	        ;;
+		ERROR=1
+		;;
 	-)
-	    case $OPTARG in
+		case $OPTARG in
 		help)
-		    help
-		    end
-		    ;;
+			help
+			end
+			;;
 		*)
-		    printf "$PGM: illegal option -- $OPTARG"
-#    ERROR=1
-	    esac
-	    ;;
+			printf "$PGM: illegal option -- $OPTARG"
+			#    ERROR=1
+			;;
+		esac
+		;;
 	s)
-	    action=start
-	    ;;
+		action=start
+		;;
 	h)
-	    help
-	    end
-	    ;;
+		help
+		end
+		;;
 	v)
-	    STDERR="&1"
-            DEBUG=yes
-	    QUIET=no
-	    ;;
+		STDERR="&1"
+		DEBUG=yes
+		QUIET=no
+		;;
 	q)
-	    STDOUT="/dev/null"
-	    QUIET=yes
-	    DEBUG=no
-	    ;;
+		STDOUT="/dev/null"
+		QUIET=yes
+		DEBUG=no
+		;;
 	*)
-	    VALUES="$VALUES $PARAM"
-	    LASTVAL=$PARAM
-    esac
+		VALUES="$VALUES $PARAM"
+		LASTVAL=$PARAM
+		;;
+	esac
 
 done 2>/dev/null
-shift `expr $OPTIND - 1`
+shift $(expr $OPTIND - 1)
 
 #ini_parser="$(which ini_parser)"
 #[ -n "$ini_parser" ] || end 1 no ini parser
@@ -83,404 +83,396 @@ shift `expr $OPTIND - 1`
 # . "$(which ini_parser)" || end 2 could not launch ini parser
 
 startSim() {
-  unset IFS
-  for arg in $@
-  do
-    unset ConsoleUser ConsolePass ConsolePort console_port
-	  ls -d "$arg" 2>/dev/null | grep -q "\.ini$" \
-	    && { inifile=$arg; instance=$(basename $arg .ini | tr "[:upper:]" "[:lower:]"); } \
-	    || { instance=$(echo $arg | tr "[:upper:]" "[:lower:]"); inifile=$(buildIni "$instance"); }
+	unset IFS
+	for arg in $@; do
+		unset ConsoleUser ConsolePass ConsolePort console_port
+		ls -d "$arg" 2>/dev/null | grep -q "\.ini$" &&
+			{
+				inifile=$arg
+				instance=$(basename $arg .ini | tr "[:upper:]" "[:lower:]")
+			} ||
+			{
+				instance=$(echo $arg | tr "[:upper:]" "[:lower:]")
+				inifile=$(buildIni "$instance")
+			}
 
-  	[ ! -e "$inifile" ] && continue
+		[ ! -e "$inifile" ] && continue
 
-    instance=$(echo "$instance" | sed "s/[^a-zA-Z0-9_]*//g")
+		instance=$(echo "$instance" | sed "s/[^a-zA-Z0-9_]*//g")
 
-    log "$instance ($ini)"
+		log "$instance ($ini)"
 
-    screen -ls | egrep -q "[0-9][0-9]*\.$instance[[:blank:]]"
-    if [ $? -eq 0 ]
-      then
-      log "$instance is already running"
-      continue
-    fi
+		screen -ls | egrep -q "[0-9][0-9]*\.$instance[[:blank:]]"
+		if [ $? -eq 0 ]; then
+			log "$instance is already running"
+			continue
+		fi
 
-    log 1 "starting $instance"
+		log 1 "starting $instance"
 
-    # for default in $(echo "$ETCPATH:" | sed "s|/*:|/default.ini |g")
-    # do
-    #     [ -f "$default" ] || continue
-    #     ini_parser "$default" || continue
-    #     ini_section_Const 2>/dev/null
-    #     ini_section_Startup 2>/dev/null
-    #     ini_section_Launch 2>/dev/null
-    # done
-    log extracting launch info from $inifile file
+		# for default in $(echo "$ETCPATH:" | sed "s|/*:|/default.ini |g")
+		# do
+		#     [ -f "$default" ] || continue
+		#     ini_parser "$default" || continue
+		#     ini_section_Const 2>/dev/null
+		#     ini_section_Startup 2>/dev/null
+		#     ini_section_Launch 2>/dev/null
+		# done
+		log extracting launch info from $inifile file
 
-    # cat "$inifile" | sed '/\[Const]/,/^\[/!d' | sed "$ d" > $TMP.ini
-    # cat "$inifile" | sed '/\[Launch]/,/^\[/!d' | sed "$ d" >> $TMP.ini
-    # cat "$inifile" | sed '/\[Startup]/,/^\[/!d' | sed "$ d" >> $TMP.ini
-    # log reading $inifile file
-    # ini_parser "$TMP.ini" || continue
-    # # ini_parser "$inifile" || continue
-    # #2>/dev/null || continue
-    # log reading section Launch
-    crudget $inifile Const 2>/dev/null || end $? "error reading launch section"
-    crudini --get $TMP.get Const BinDirectory
-    crudget $inifile Launch 2>/dev/null || end $? "error $? reading section Launch"
-    crudget $inifile Startup 2>/dev/null || end $? "error $? reading section Launch"
+		# cat "$inifile" | sed '/\[Const]/,/^\[/!d' | sed "$ d" > $TMP.ini
+		# cat "$inifile" | sed '/\[Launch]/,/^\[/!d' | sed "$ d" >> $TMP.ini
+		# cat "$inifile" | sed '/\[Startup]/,/^\[/!d' | sed "$ d" >> $TMP.ini
+		# log reading $inifile file
+		# ini_parser "$TMP.ini" || continue
+		# # ini_parser "$inifile" || continue
+		# #2>/dev/null || continue
+		# log reading section Launch
+		crudget $inifile Const 2>/dev/null || end $? "error reading launch section"
+		crudini --get $TMP.get Const BinDirectory
+		crudget $inifile Launch 2>/dev/null || end $? "error $? reading section Launch"
+		crudget $inifile Startup 2>/dev/null || end $? "error $? reading section Launch"
 
-    crudget $inifile Network 2>/dev/null || end $? "error $? reading section Launch"
-    [ "$ConsolePort" = "0" ] && ConsolePort=""
-    [ "$console_port" = "0" ] && console_port=""
+		crudget $inifile Network 2>/dev/null || end $? "error $? reading section Launch"
+		[ "$ConsolePort" = "0" ] && ConsolePort=""
+		[ "$console_port" = "0" ] && console_port=""
 
-    [ "$BinDir" ] || end 1 "Could not find a valid BinDir"
-    log "BinDir: $BinDir"
+		[ "$BinDir" ] || end 1 "Could not find a valid BinDir"
+		log "BinDir: $BinDir"
 
-    Executable=${executable:-${Executable}}
-    BinDir=${bindir:-${BinDir}}
-    ExecName=$(basename $Executable | sed 's/\.\(exe\|dll\)$//')
-    case "${Executable##*.}" in
-        dll) runtime=dotnet ;;
-        *)   runtime=mono ;;
-    esac
-    echo "$BinDir" | grep -q "opensim-0\.9\.3" && runtime=dotnet && Executable="$ExecName.dll"
-    log "Executable $Executable ($runtime)"
+		Executable=${executable:-${Executable}}
+		BinDir=${bindir:-${BinDir}}
+		ExecName=$(basename $Executable | sed 's/\.\(exe\|dll\)$//')
+		case "${Executable##*.}" in
+		dll) runtime=dotnet ;;
+		*) runtime=mono ;;
+		esac
+		echo "$BinDir" | grep -q "opensim-0\.9\.3" && runtime=dotnet && Executable="$ExecName.dll"
+		log "Executable $Executable ($runtime)"
 
-    log "starting $instance with $inifile"
+		log "starting $instance with $inifile"
 
-    cd $BinDir 2>/dev/null || end 2 $instance Cannot cd to $BinDir
-    log "BinDir $BinDir"
-    [ -f $Executable ] || end 3 Executable $Executable not found
+		cd $BinDir 2>/dev/null || end 2 $instance Cannot cd to $BinDir
+		log "BinDir $BinDir"
+		[ -f $Executable ] || end 3 Executable $Executable not found
 
-    Include_Common=$(crudget $inifile Includes Include-Common 2>/dev/null)
-    # crudini --get $inifile Includes Include-Common
-    LogsRoot=$(crudget $Include_Common Const LogsRoot | sed -e "s#\${Launch|SimName}#$instance#g" -e "s#\${Launch|MachineName}#$instance#g")
-    LogsRoot=${logsdirectory:-${LogsRoot}}
+		Include_Common=$(crudget $inifile Includes Include-Common 2>/dev/null)
+		# crudini --get $inifile Includes Include-Common
+		LogsRoot=$(crudget $Include_Common Const LogsRoot | sed -e "s#\${Launch|SimName}#$instance#g" -e "s#\${Launch|MachineName}#$instance#g")
+		LogsRoot=${logsdirectory:-${LogsRoot}}
 
-    [ ! "$LogsRoot" ] && LogsRoot=$DefaultLogDir
-    LogFile=${logfile:-${LogFile}}
-    [ ! "$LogFile" ] && LogFile="$LogsRoot/$instance.log"
+		[ ! "$LogsRoot" ] && LogsRoot=$DefaultLogDir
+		LogFile=${logfile:-${LogFile}}
+		[ ! "$LogFile" ] && LogFile="$LogsRoot/$instance.log"
 
-    ConsolePrompt=${consoleprompt:-${ConsolePrompt}}
+		ConsolePrompt=${consoleprompt:-${ConsolePrompt}}
 
-    cmd="$runtime $Executable -inifile='$inifile'"
-    if [ "${Executable%.*}" = "Robust" ]
-    then
-      [ ! "$ConsolePrompt" ] && ConsolePrompt="Robust ($instance) "
-      cmd="$cmd -logfile='$LogFile' -prompt '$ConsolePrompt'"
-    else
-      [ ! "$ConsolePrompt" ] && ConsolePrompt="$instance (\R) "
-    fi
-    #		LogConfig=${inifile/.ini/.LogConfig}
+		cmd="$runtime $Executable -inifile='$inifile'"
+		if [ "${Executable%.*}" = "Robust" ]; then
+			[ ! "$ConsolePrompt" ] && ConsolePrompt="Robust ($instance) "
+			cmd="$cmd -logfile='$LogFile' -prompt '$ConsolePrompt'"
+		else
+			[ ! "$ConsolePrompt" ] && ConsolePrompt="$instance (\R) "
+		fi
+		#		LogConfig=${inifile/.ini/.LogConfig}
 
-    log "LogsRoot $LogsRoot"
+		log "LogsRoot $LogsRoot"
 
-    LogConfig=${logconfig:-${LogConfig}}
-    DataRoot=${datadirectory:-${DataRoot}}
-    [ ! "$LogConfig" ] && LogConfig="$DataRoot/$(basename "$inifile" .ini).LogConfig"
-    log "LogConfig $LogConfig"
-    log Executable $Executable
-    if [ ! -f "$LogConfig" ]
-    then
-      sed -e "s|[a-zA-Z0-9\./_-]*/*$ExecName.log|$LogsRoot/$instance.log|" \
-      -e "s|[a-zA-Z0-9\./_-]*/*${ExecName}Stats.log|$LogsRoot/${instance}.Stats.log|" \
-      $BinDir/$ExecName.exe.config >$TMP.logconfig \
-      && mv $TMP.logconfig "$LogConfig" \
-      && log created LogConfig file $LogConfig from core model $BinDir/$ExecName.exe.config \
-      || end $?
-      # cd /opt/opensim/var/data/config
-      # ln -s $LogConfig 2>/dev/null
-    fi
+		LogConfig=${logconfig:-${LogConfig}}
+		DataRoot=${datadirectory:-${DataRoot}}
+		[ ! "$LogConfig" ] && LogConfig="$DataRoot/$(basename "$inifile" .ini).LogConfig"
+		log "LogConfig $LogConfig"
+		log Executable $Executable
+		if [ ! -f "$LogConfig" ]; then
+			sed -e "s|[a-zA-Z0-9\./_-]*/*$ExecName.log|$LogsRoot/$instance.log|" \
+				-e "s|[a-zA-Z0-9\./_-]*/*${ExecName}Stats.log|$LogsRoot/${instance}.Stats.log|" \
+				$BinDir/$ExecName.exe.config >$TMP.logconfig &&
+				mv $TMP.logconfig "$LogConfig" &&
+				log created LogConfig file $LogConfig from core model $BinDir/$ExecName.exe.config ||
+				end $?
+			# cd /opt/opensim/var/data/config
+			# ln -s $LogConfig 2>/dev/null
+		fi
 
-    if [ -f "$LogConfig" ]
-    then
-      cmd="$cmd -logconfig='$LogConfig'"
-      LogFile=$(egrep "LogFileAppender|<file" $LogConfig | grep -A1 "LogFileAppender" | head -2 | tail -1 | cut -d '"' -f 2)
-      touch "$LogFile" && log "LogFile $LogFile touched"
-    fi
+		if [ -f "$LogConfig" ]; then
+			cmd="$cmd -logconfig='$LogConfig'"
+			LogFile=$(egrep "LogFileAppender|<file" $LogConfig | grep -A1 "LogFileAppender" | head -2 | tail -1 | cut -d '"' -f 2)
+			touch "$LogFile" && log "LogFile $LogFile touched"
+		fi
 
-    ConsoleUser=${ConsoleUser:-${consoleuser}}
-    ConsolePass=${ConsolePass:-${consolepass}}
-    [ "${Executable%.*}" = "Robust" ] \
-        && ConsolePort=${ConsolePort:-${consoleport}} \
-        || ConsolePort=${console_port:-${consoleport}}
+		ConsoleUser=${ConsoleUser:-${consoleuser}}
+		ConsolePass=${ConsolePass:-${consolepass}}
+		[ "${Executable%.*}" = "Robust" ] &&
+			ConsolePort=${ConsolePort:-${consoleport}} ||
+			ConsolePort=${console_port:-${consoleport}}
 
-    if [ "$ConsoleUser" ] && [ "$ConsolePass" ] && [ "$ConsolePort" ]
-    then
-      RestEnabled=true
-      log "RestEnabled: $RestEnabled"
-      # log "console_port: $console_port"
-      cmd="$cmd -console rest"
-    else
-      RestEnabled=false
-    fi
+		if [ "$ConsoleUser" ] && [ "$ConsolePass" ] && [ "$ConsolePort" ]; then
+			RestEnabled=true
+			log "RestEnabled: $RestEnabled"
+			# log "console_port: $console_port"
+			cmd="$cmd -console rest"
+		else
+			RestEnabled=false
+		fi
 
-    # touch $TMP.wait
-    log "Working directory: $PWD"
-    log "launching $instance "
-    log "$cmd"
+		# touch $TMP.wait
+		log "Working directory: $PWD"
+		log "launching $instance "
+		log "$cmd"
 
-    if [ "$RestEnabled" = "true" ]
-    then
-      nohup $cmd >$TMP.$instance.nohup 2>&1 &
-      timeout 60 tail -Fn0 $TMP.$instance.nohup 2>/dev/null | egrep -am 1 "Error|UserAgentServerConnector loaded successfully|RegionReady|neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done|\[CONSOLE\] Quitting"
-    else
-      eval "screen -S $instance -d -m $cmd"
-      screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]"
+		if [ "$RestEnabled" = "true" ]; then
+			nohup $cmd >$TMP.$instance.nohup 2>&1 &
+			timeout 60 tail -Fn0 $TMP.$instance.nohup 2>/dev/null | egrep -am 1 "Error|UserAgentServerConnector loaded successfully|RegionReady|neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done|\[CONSOLE\] Quitting"
+		else
+			eval "screen -S $instance -d -m $cmd"
+			screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]"
 
-      # TAILTIMEOUT=120
-      # log "logfile: $LogFile"
-      if [ "${Executable%.*}" = "Robust" ]
-      then
-        osConsoleWait $instance "UserAgentServerConnector loaded successfully" \
-        && log "Robust server $instance started" \
-        || log "Robust not started after 30 seconds, giving up"
-        # TAILTIMEOUT=60
-        # timeout $TAILTIMEOUT tailgrep "UserAgentServerConnector loaded successfully" $LogFile \
-        # && echo "At least one region started" \
-        # || echo "Startup still going on after $TAILTIMEOUT seconds, check again later"
-      else
-        osConsoleWait 5 $instance "RegionUUID" && osConsole $instance "\n"
-        osConsoleWait 1 $instance "Internal IP address" && osConsole $instance "\n"
-        osConsoleWait 1 $instance "External host name" && osConsole $instance "\n"
-        osConsoleWait 1 $instance "Do you wish to join region .* to an existing estate" && osConsole $instance "\n" \
-        && osConsoleWait 1 $instance "Name of estate to join." && osConsole $instance "\n"
+			# TAILTIMEOUT=120
+			# log "logfile: $LogFile"
+			if [ "${Executable%.*}" = "Robust" ]; then
+				osConsoleWait $instance "UserAgentServerConnector loaded successfully" &&
+					log "Robust server $instance started" ||
+					log "Robust not started after 30 seconds, giving up"
+				# TAILTIMEOUT=60
+				# timeout $TAILTIMEOUT tailgrep "UserAgentServerConnector loaded successfully" $LogFile \
+				# && echo "At least one region started" \
+				# || echo "Startup still going on after $TAILTIMEOUT seconds, check again later"
+			else
+				osConsoleWait 5 $instance "RegionUUID" && osConsole $instance "\n"
+				osConsoleWait 1 $instance "Internal IP address" && osConsole $instance "\n"
+				osConsoleWait 1 $instance "External host name" && osConsole $instance "\n"
+				osConsoleWait 1 $instance "Do you wish to join region .* to an existing estate" && osConsole $instance "\n" &&
+					osConsoleWait 1 $instance "Name of estate to join." && osConsole $instance "\n"
 
-        osConsoleWait 120 $instance "RegionReady|neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done" \
-        && log "Simulator $instance started" \
-        || log $? "Simulator $instance still starting after 120 seconds, let it go and see later"
-        #
-        # echo timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up" $LogFile
-        # timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up|loaded successfully" $LogFile \
-        # && echo "At least one region started" \
-        # || echo "Startup still going on after $TAILTIMEOUT seconds, check again later"
-      fi
-    fi
+				osConsoleWait 120 $instance "RegionReady|neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done" &&
+					log "Simulator $instance started" ||
+					log $? "Simulator $instance still starting after 120 seconds, let it go and see later"
+				#
+				# echo timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up" $LogFile
+				# timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up|loaded successfully" $LogFile \
+				# && echo "At least one region started" \
+				# || echo "Startup still going on after $TAILTIMEOUT seconds, check again later"
+			fi
+		fi
 
-  done
+	done
 }
 
 stopSim() {
-  [ "$1" ] && sims=$@ || sims=$(enabledIni opensim robust)
-  for sim in $sims
-  do
-    simName=$(ini2Name $sim)
-    ls -d "$sim" 2>/dev/null | grep -q "\.ini$" \
-  	    && { inifile=$sim; instance=$(basename $sim .ini | tr "[:upper:]" "[:lower:]"); } \
-  	    || { instance=$(echo $sim | tr "[:upper:]" "[:lower:]"); inifile=$(buildIni "$sim"); }
+	[ "$1" ] && sims=$@ || sims=$(enabledIni opensim robust)
+	for sim in $sims; do
+		simName=$(ini2Name $sim)
+		ls -d "$sim" 2>/dev/null | grep -q "\.ini$" &&
+			{
+				inifile=$sim
+				instance=$(basename $sim .ini | tr "[:upper:]" "[:lower:]")
+			} ||
+			{
+				instance=$(echo $sim | tr "[:upper:]" "[:lower:]")
+				inifile=$(buildIni "$sim")
+			}
 
-  	# cat "$inifile" | sed '/\[Const]/,/^\[/!d' | sed "$ d" > $TMP.ini
-  	# cat "$inifile" | sed '/\[Launch]/,/^\[/!d' | sed "$ d" >> $TMP.ini
-  	# cat "$inifile" | sed '/\[Startup]/,/^\[/!d' | sed "$ d" >> $TMP.ini
-  	# ini_parser "$TMP.ini" || continue
-  	# ini_section_Const 2>/dev/null
-  	# ini_section_Launch 2>/dev/null
-    crudget $inifile Const || crudget $inifile const
-    crudget $inifile Launch || crudget $inifile launch
-    crudget $inifile Network 2>/dev/null
-    ConsoleUser=${ConsoleUser:-${consoleuser}}
-    ConsolePass=${ConsolePass:-${consolepass}}
-    [ "${Executable%.*}" = "Robust" ] \
-        && ConsolePort=${ConsolePort:-${consoleport}} \
-        || ConsolePort=${console_port:-${consoleport}}
-    [ "$ConsolePort" = "0" ] && ConsolePort=""
-    if [ "$ConsoleUser" ] && [ "$ConsolePass" ] && [ "$ConsolePort" ]; then
-        export OSIM_REST_INI="$inifile"
-    else
-        unset OSIM_REST_INI
-    fi
+		# cat "$inifile" | sed '/\[Const]/,/^\[/!d' | sed "$ d" > $TMP.ini
+		# cat "$inifile" | sed '/\[Launch]/,/^\[/!d' | sed "$ d" >> $TMP.ini
+		# cat "$inifile" | sed '/\[Startup]/,/^\[/!d' | sed "$ d" >> $TMP.ini
+		# ini_parser "$TMP.ini" || continue
+		# ini_section_Const 2>/dev/null
+		# ini_section_Launch 2>/dev/null
+		crudget $inifile Const || crudget $inifile const
+		crudget $inifile Launch || crudget $inifile launch
+		crudget $inifile Network 2>/dev/null
+		ConsoleUser=${ConsoleUser:-${consoleuser}}
+		ConsolePass=${ConsolePass:-${consolepass}}
+		[ "${Executable%.*}" = "Robust" ] &&
+			ConsolePort=${ConsolePort:-${consoleport}} ||
+			ConsolePort=${console_port:-${consoleport}}
+		[ "$ConsolePort" = "0" ] && ConsolePort=""
+		if [ "$ConsoleUser" ] && [ "$ConsolePass" ] && [ "$ConsolePort" ]; then
+			export OSIM_REST_INI="$inifile"
+		else
+			unset OSIM_REST_INI
+		fi
 
-    if [ "${Executable%.*}" = "OpenSim" ]
-    then
-      log notiy users in $simName
-      [ $shutdownDelay = 0 ] && warnDelay=0 || warnDelay=$(($shutdownDelay / $shutdownWarnings))
-      warn=0
-      [ $shutdownDelay -le 10 ] && shutdownWarnings=1
-      [ $shutdownDelay -eq 0 ] && shutdownWarnings=0
-      while [ $warn -lt $shutdownWarnings ]
-      do
-        remaining=$(($shutdownDelay - $warn * $warnDelay))
-        log " $remaining seconds left"
-        osConsole $simName "alert Attention: this simulator will be stopped in $remaining seconds. Please teleport to another region to avoid being disconnected."
-        sleep $warnDelay
-        warn=$(($warn + 1))
-      done
-      osConsole $simName "alert Shutting down now."
-    fi
-    log shutting down $simName
-    pid=$(ps -C mono -C dotnet --no-headers -o pid,args 2>/dev/null \
-        | grep " -inifile=" | grep -F "$inifile" | awk '{print $1}' | head -1)
-    osConsole $simName shutdown
-    timeout=60
-    screen -x $simName 2>/dev/null
-    if [ "$pid" ]; then
-        log "Waiting for $simName (pid $pid) to exit..."
-        timeout $timeout tail --pid=$pid -f /dev/null 2>/dev/null
-        kill -0 $pid 2>/dev/null && log "$simName still running after ${timeout}s"
-    fi
-  done
+		if [ "${Executable%.*}" = "OpenSim" ]; then
+			log notiy users in $simName
+			[ $shutdownDelay = 0 ] && warnDelay=0 || warnDelay=$(($shutdownDelay / $shutdownWarnings))
+			warn=0
+			[ $shutdownDelay -le 10 ] && shutdownWarnings=1
+			[ $shutdownDelay -eq 0 ] && shutdownWarnings=0
+			while [ $warn -lt $shutdownWarnings ]; do
+				remaining=$(($shutdownDelay - $warn * $warnDelay))
+				log " $remaining seconds left"
+				osConsole $simName "alert Attention: this simulator will be stopped in $remaining seconds. Please teleport to another region to avoid being disconnected."
+				sleep $warnDelay
+				warn=$(($warn + 1))
+			done
+			osConsole $simName "alert Shutting down now."
+		fi
+		log shutting down $simName
+		pid=$(ps -C mono -C dotnet --no-headers -o pid,args 2>/dev/null |
+			grep " -inifile=" | grep -F "$inifile" | awk '{print $1}' | head -1)
+		osConsole $simName shutdown
+		timeout=60
+		screen -x $simName 2>/dev/null
+		if [ "$pid" ]; then
+			log "Waiting for $simName (pid $pid) to exit..."
+			timeout $timeout tail --pid=$pid -f /dev/null 2>/dev/null
+			kill -0 $pid 2>/dev/null && log "$simName still running after ${timeout}s"
+		fi
+	done
 }
 
 restartSim() {
-  [ "$1" ] && sims="$@" || sims=$(enabledIni robust opensim)
-  for sim in $sims
-  do
-    simName=$(ini2Name $sim)
-    echo restart $simName
-    stopSim $simName
-    startSim $simName
-  done
+	[ "$1" ] && sims="$@" || sims=$(enabledIni robust opensim)
+	for sim in $sims; do
+		simName=$(ini2Name $sim)
+		echo restart $simName
+		stopSim $simName
+		startSim $simName
+	done
 }
 
 ini2Name() {
-  [ ! "$1" ] && return "no-name"
-  ini=$1
-  [ -f "$1" ] && name=$(egrep "^[[:blank:]]SimName *=" $ini)
-  [ ! $name ] && name=$(basename $ini .ini | tr [:upper:] [:lower:])
-  echo $name
+	[ ! "$1" ] && return "no-name"
+	ini=$1
+	[ -f "$1" ] && name=$(egrep "^[[:blank:]]SimName *=" $ini)
+	[ ! $name ] && name=$(basename $ini .ini | tr [:upper:] [:lower:])
+	echo $name
 }
 enabledIni() {
-  [ "$1" ] && types=$@ || types="robust opensim"
-  for type in $types
-  do
-    case $type in
-      robust)
-      ls "$etc"/robust.d/*.ini 2>/dev/null | sort -n
-      ls "$etc"/robust-enabled/*.ini 2>/dev/null | sort -n
-      ;;
-      opensim)
-      ls "$etc"/opensim.d/*.ini 2>/dev/null | sort -n
-      ls "$etc"/simulators-enabled/*.ini 2>/dev/null | sort -n
-      ;;
-    esac
-  done
+	[ "$1" ] && types=$@ || types="robust opensim"
+	for type in $types; do
+		case $type in
+		robust)
+			ls "$etc"/robust.d/*.ini 2>/dev/null | sort -n
+			ls "$etc"/robust-enabled/*.ini 2>/dev/null | sort -n
+			;;
+		opensim)
+			ls "$etc"/opensim.d/*.ini 2>/dev/null | sort -n
+			ls "$etc"/simulators-enabled/*.ini 2>/dev/null | sort -n
+			;;
+		esac
+	done
 }
 
-
 buildIni() {
-    unset ini
-    sim="$@"
-    ini=$(
-    IFS=":"
-    for etc in $ETCPATH
-    do
-	log "looking in $etc"
-	(
-	    ls "$etc"/*.d/*.ini 2>/dev/null
-	    ls "$etc"/*-enabled/*.ini 2>/dev/null
-	) | grep -i "/$sim.ini$" && break
-#	lookup="$etc/simulators-enabled/$sim.ini"
-#	log "looking for $lookup"
-#	[ -f "$lookup" ] || continue
-#	log "gotcha $lookup"
-#	ini="$lookup"
-#	break
-    done | head -1
-    )
+	unset ini
+	sim="$@"
+	ini=$(
+		IFS=":"
+		for etc in $ETCPATH; do
+			log "looking in $etc"
+			(
+				ls "$etc"/*.d/*.ini 2>/dev/null
+				ls "$etc"/*-enabled/*.ini 2>/dev/null
+			) | grep -i "/$sim.ini$" && break
+			#	lookup="$etc/simulators-enabled/$sim.ini"
+			#	log "looking for $lookup"
+			#	[ -f "$lookup" ] || continue
+			#	log "gotcha $lookup"
+			#	ini="$lookup"
+			#	break
+		done | head -1
+	)
 
-    if [ ! -n "$ini" ]
-    then
-    	log 1 "no ini file found for $sim"
-    	return
-    fi
-    log "$sim ini $ini"
-    echo "$ini"
+	if [ ! -n "$ini" ]; then
+		log 1 "no ini file found for $sim"
+		return
+	fi
+	log "$sim ini $ini"
+	echo "$ini"
 }
 
 cleanpath() {
-    IFS=:
-    printf "" > $TMP.realpath
-    for etc in $@
-    do
-	real=$(realpath "$etc")
-#	echo path $etc >&2
-#	echo real $real >&2
-	[ ! -d "$real" ] && continue
-	grep -q "^$real$" $TMP.realpath && continue
-	echo "$real" >> $TMP.realpath
-    done
-    unset IFS
+	IFS=:
+	printf "" >$TMP.realpath
+	for etc in $@; do
+		real=$(realpath "$etc")
+		#	echo path $etc >&2
+		#	echo real $real >&2
+		[ ! -d "$real" ] && continue
+		grep -q "^$real$" $TMP.realpath && continue
+		echo "$real" >>$TMP.realpath
+	done
+	unset IFS
 
-    newpath=$(cat $TMP.realpath | tr "\n" ":" | sed "s/:$//")
-    rm "$TMP.realpath"
-    echo $newpath
+	newpath=$(cat $TMP.realpath | tr "\n" ":" | sed "s/:$//")
+	rm "$TMP.realpath"
+	echo $newpath
 }
 
 status() {
-    # Get running process data
-    { ps -C mono --no-headers -o pid,uname,pcpu,pmem,rss,args 2>/dev/null; \
-      ps -C dotnet --no-headers -o pid,uname,pcpu,pmem,rss,args 2>/dev/null;
-    } \
-        | grep -v mcs\.exe \
-        | grep " -inifile=" \
-        | sed -E "s/(mono|dotnet).*-inifile=//;s/-log.*//" \
-        > "$TMP.ps_raw"
+	# Get running process data
+	{
+		ps -C mono --no-headers -o pid,uname,pcpu,pmem,rss,args 2>/dev/null
+		ps -C dotnet --no-headers -o pid,uname,pcpu,pmem,rss,args 2>/dev/null
+	} |
+		grep -v mcs\.exe |
+		grep " -inifile=" |
+		sed -E "s/(mono|dotnet).*-inifile=//;s/-log.*//" \
+			>"$TMP.ps_raw"
 
-    # Collect configured-but-not-running instances before the pipe (subshell issue)
-    seen=""
-    IFS=":"
+	# Collect configured-but-not-running instances before the pipe (subshell issue)
+	seen=""
+	IFS=":"
 	touch $TMP.list
-    for etc in $ETCPATH
-    do
-        unset IFS
-        for inifile in \
-            "$etc"/robust.d/*.ini \
-            "$etc"/robust-enabled/*.ini \
-            "$etc"/opensim.d/*.ini \
-            "$etc"/simulators-enabled/*.ini
-        do
-            [ -f "$inifile" ] || continue
-            real=$(realpath "$inifile")
-            echo ":$seen:" | grep -qF ":$real:" && continue
-            seen="$seen:$real"
-            instance=$(basename "$inifile" .ini | tr "[:upper:] " "[:lower:]_")
-            info=$(grep "$inifile" $TMP.ps_raw)
-            [ -z "$info" ] && status=down || status=up
-            grep -qi robust <<< "$inifile" && type=robust || type=opensim
-            echo "$instance $type ${info:-[down]}" >> $TMP.list
-        done
-        IFS=":"
-    done
-    unset IFS
+	for etc in $ETCPATH; do
+		unset IFS
+		for inifile in \
+			"$etc"/robust.d/*.ini \
+			"$etc"/robust-enabled/*.ini \
+			"$etc"/opensim.d/*.ini \
+			"$etc"/simulators-enabled/*.ini; do
+			[ -f "$inifile" ] || continue
+			real=$(realpath "$inifile")
+			echo ":$seen:" | grep -qF ":$real:" && continue
+			seen="$seen:$real"
+			instance=$(basename "$inifile" .ini | tr "[:upper:] " "[:lower:]_")
+			info=$(grep "$inifile" $TMP.ps_raw)
+			[ -z "$info" ] && status=down || status=up
+			grep -qi robust <<<"$inifile" && type=robust || type=opensim
+			echo "$instance $type ${info:-[down]}" >>$TMP.list
+		done
+		IFS=":"
+	done
+	unset IFS
 
-    # Build tab-separated table and align with column
-    {
-        printf "INSTANCE\tTYPE\tPID\tUSER\t%%CPU\t%%MEM\tRSS\n"
-        while read instance type pid user cpu mem rss _; do
-            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n" "$instance" "$type" "$pid" "$user" "$cpu" "$mem" "$rss"
-        done < $TMP.list
-    } | column -t -s $'\t'
+	# Build tab-separated table and align with column
+	{
+		printf "INSTANCE\tTYPE\tPID\tUSER\t%%CPU\t%%MEM\tRSS\n"
+		while read instance type pid user cpu mem rss _; do
+			printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n" "$instance" "$type" "$pid" "$user" "$cpu" "$mem" "$rss"
+		done <$TMP.list
+	} | column -t -s $'\t'
 
-    # Summary
-    up=$(grep -cv "\[down\]" $TMP.list)
-    down=$(grep -c "\[down\]" $TMP.list)
-    stats=$(awk 'BEGIN{cpu=0;mem=0;rss=0} {cpu+=$3; mem+=$4; rss+=$5} END {
+	# Summary
+	up=$(grep -cv "\[down\]" $TMP.list)
+	down=$(grep -c "\[down\]" $TMP.list)
+	stats=$(awk 'BEGIN{cpu=0;mem=0;rss=0} {cpu+=$3; mem+=$4; rss+=$5} END {
         printf "cpu %.1f%% - mem %.1f%% - rss %d", cpu, mem, rss
     }' $TMP.ps_raw)
 
-    if [ -t 1 ]; then
-        printf "\033[32m%s up\033[0m, \033[31m%s down\033[0m - %s\n" "$up" "$down" "$stats"
-    else
-        printf "%s up, %s down - %s\n" "$up" "$down" "$stats"
-    fi
+	if [ -t 1 ]; then
+		printf "\033[32m%s up\033[0m, \033[31m%s down\033[0m - %s\n" "$up" "$down" "$stats"
+	else
+		printf "%s up, %s down - %s\n" "$up" "$down" "$stats"
+	fi
 }
 
 B="[[:blank:]]*"
 
 getRobustPath() {
-    IFS=:
-    for etc in $ETCPATH
-    do
+	IFS=:
+	for etc in $ETCPATH; do
+		unset IFS
+		for ini in $(
+			egrep -li "^[[:blank:]]*Executable[[:blank:]]*=[[:blank:]]*Robust.exe[[:blank:]]*$" "$etc"/*-enabled/*.ini 2>/dev/null | sort -n
+			ls "$etc"/default.ini 2>/dev/null
+		); do
+			egrep "^${B}BinDir${B}=" "$ini"
+		done
+	done | head -1 | sed "s/^[[:blank:]]*BinDir[[:blank:]]*=[[:blank:]]*//"
 	unset IFS
-	for ini in $(
-	    egrep -li "^[[:blank:]]*Executable[[:blank:]]*=[[:blank:]]*Robust.exe[[:blank:]]*$" "$etc"/*-enabled/*.ini 2>/dev/null | sort -n
-	    ls "$etc"/default.ini 2>/dev/null
-	)
-	do
-	    egrep "^${B}BinDir${B}=" "$ini";
-	done
-    done | head -1 | sed "s/^[[:blank:]]*BinDir[[:blank:]]*=[[:blank:]]*//"
-    unset IFS
 }
 
 ETCPATH=$(cleanpath "$ETCPATH")
@@ -491,79 +483,74 @@ ETCPATH=$(cleanpath "$ETCPATH")
 log looking in $EtcRoot
 
 IFS=":"
-for etc in $EtcRoot $ETCPATH
-do
-    folder=$(realpath "$etc")
-    [ "$folder" ] || continue
-    echo ":$LOOKUP:" | grep -q ":$folder:" && log "ignoring duplicate $etc" && continue
-    LOOKUP="$LOOKUP:$folder" && continue
+for etc in $EtcRoot $ETCPATH; do
+	folder=$(realpath "$etc")
+	[ "$folder" ] || continue
+	echo ":$LOOKUP:" | grep -q ":$folder:" && log "ignoring duplicate $etc" && continue
+	LOOKUP="$LOOKUP:$folder" && continue
 done
 unset IFS
 LOOKUP="$(echo $LOOKUP | sed "s/^:*//")"
 
-if [ ! -n "$LOOKUP" ]
-then
-    end 1 "No valid folder found in $ETCPATH"
+if [ ! -n "$LOOKUP" ]; then
+	end 1 "No valid folder found in $ETCPATH"
 fi
 ETCPATH=$LOOKUP
 log "ETCPATH: $ETCPATH"
 
 case "$1" in
-  "help")
-    help
-    end ""
-    ;;
-  "start")
-    action=$1
-    shift
-    ;;
-  "stop")
-    action=$1
-    shift
-    [ "$1" = "now" ] && shutdownDelay=0 && shift
-    stopSim "$@"
-    ;;
-  "restart")
-    action=$1
-    shift
-    [ "$1" = "now" ] && shutdownDelay=0 && shift
-    restartSim "$@"
-    ;;
-  "status")
-    action=$1
-    shift
-    ;;
+"help")
+	help
+	end ""
+	;;
+"start")
+	action=$1
+	shift
+	;;
+"stop")
+	action=$1
+	shift
+	[ "$1" = "now" ] && shutdownDelay=0 && shift
+	stopSim "$@"
+	;;
+"restart")
+	action=$1
+	shift
+	[ "$1" = "now" ] && shutdownDelay=0 && shift
+	restartSim "$@"
+	;;
+"status")
+	action=$1
+	shift
+	;;
 esac
 
 case $action in
-  status)
-    status
-    ;;
-  start)
-    if [ -n "$1" ]
-    then
-      startSim "$@"
-    else
-      log Starting all
-      IFS=:
-      for etc in $ETCPATH
-      do
-    unset IFS
-    for ini in $(
-      ls "$etc"/robust.d/*.ini 2>/dev/null | sort -n
-      ls "$etc"/robust-enabled/*.ini 2>/dev/null | sort -n
-      ls "$etc"/opensim.d/*.ini 2>/dev/null | sort -n
-      ls "$etc"/simulators-enabled/*.ini 2>/dev/null | sort -n
-      )
-    do
-        [ -f "$TMP.wait" -a "$DELAY" ] && read -p "waiting $DELAY seconds between instances " -t $DELAY
-        rm -f "$TMP.wait"
-        startSim "$ini"
-    done
-      done
-      unset IFS
-    fi
-    ;;
-  connections)
-    ;;
+status)
+	status
+	;;
+start)
+	if [ -n "$1" ]; then
+		startSim "$@"
+	else
+		log Starting all
+		IFS=:
+		for etc in $ETCPATH; do
+			unset IFS
+			for ini in $(
+				ls "$etc"/robust.d/*.ini 2>/dev/null | sort -n
+				ls "$etc"/robust-enabled/*.ini 2>/dev/null | sort -n
+				ls "$etc"/opensim.d/*.ini 2>/dev/null | sort -n
+				ls "$etc"/simulators-enabled/*.ini 2>/dev/null | sort -n
+			); do
+				[ -f "$TMP.wait" -a "$DELAY" ] && read -p "waiting $DELAY seconds between instances " -t $DELAY
+				rm -f "$TMP.wait"
+				startSim "$ini"
+			done
+		done
+		unset IFS
+	fi
+	;;
+connections)
+	;;
 esac

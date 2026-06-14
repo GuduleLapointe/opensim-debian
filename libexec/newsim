@@ -16,21 +16,18 @@ log "BinDirectory $BinDirectory"
 [ "$2" ] && gridnick=$1 && shift
 [ "$1" ] && SimName=$1 && shift
 
-ls $EtcRoot/robust.d/*.ini 2>/dev/null | while read ini
-do
-  gridnick=$(basename $ini .ini | sed "s/ //g")
-  for file in "$ini" "$EtcRoot/grids/$gridnick/Robust.HG.ini" "$EtcRoot/grids/$gridnick/Robust.ini" "$(realpath "$ini")"
-  do
-    [ -e "$file" -a -e "$(dirname "$file")/OpenSim.ini" ] && ini="$file" && break
-    # log testing "$(dirname "$file")/OpenSim.ini"
-  done
-  echo "$gridnick $ini" >> $TMP.grids
+ls $EtcRoot/robust.d/*.ini 2>/dev/null | while read ini; do
+	gridnick=$(basename $ini .ini | sed "s/ //g")
+	for file in "$ini" "$EtcRoot/grids/$gridnick/Robust.HG.ini" "$EtcRoot/grids/$gridnick/Robust.ini" "$(realpath "$ini")"; do
+		[ -e "$file" -a -e "$(dirname "$file")/OpenSim.ini" ] && ini="$file" && break
+		# log testing "$(dirname "$file")/OpenSim.ini"
+	done
+	echo "$gridnick $ini" >>$TMP.grids
 done
-ls $EtcRoot/*.OpenSim.ini 2>/dev/null  | while read ini
-do
-  nick=$(basename $ini .OpenSim.ini)
-  grep -q "^$nick[[:blank:]]" $TMP.grids 2>/dev/null && continue
-  echo "$nick $ini" >> $TMP.grids
+ls $EtcRoot/*.OpenSim.ini 2>/dev/null | while read ini; do
+	nick=$(basename $ini .OpenSim.ini)
+	grep -q "^$nick[[:blank:]]" $TMP.grids 2>/dev/null && continue
+	echo "$nick $ini" >>$TMP.grids
 done
 
 [ -f $TMP.grids ] && defaultGrid=$(head -1 $TMP.grids | cut -d " " -f 1)
@@ -42,33 +39,31 @@ log default grid $defaultGrid
 readvar gridnick
 
 RobustConfig=$(grep "^$gridnick " $TMP.grids | cut -d " " -f 2)
-if [ ! "$RobustConfig" ]
-then
-  end 1 "No robust config found, manual setup not implemented"
+if [ ! "$RobustConfig" ]; then
+	end 1 "No robust config found, manual setup not implemented"
 fi
 [ -f "$RobustConfig" ] || end 1 RobustConfig $RobustConfig not found
 
 grep -q "\[GridInfoService\]" $RobustConfig
-if [ $? -eq 0 ]
-then
-  log "robust type ini file"
-  crudget $RobustConfig Const || crudget $RobustConfig const
-  crudget $RobustConfig Launch || crudget $RobustConfig launch
-  # BinDir=$bindir
-  crudget $RobustConfig GridInfoService || crudget $RobustConfig gridinfoservice
+if [ $? -eq 0 ]; then
+	log "robust type ini file"
+	crudget $RobustConfig Const || crudget $RobustConfig const
+	crudget $RobustConfig Launch || crudget $RobustConfig launch
+	# BinDir=$bindir
+	crudget $RobustConfig GridInfoService || crudget $RobustConfig gridinfoservice
 else
-  log "simulator type ini file"
-  crudget $RobustConfig Const || crudget $RobustConfig const
-  # gridname=$gridname
-  curl -s $baseurl:$publicport/get_grid_info > $TMP.gridinfo
-  which xmlstarlet >/dev/null \
-   && gridnick=$(xmlstarlet sel -t -m /gridinfo -v gridnick -nl < $TMP.gridinfo)
+	log "simulator type ini file"
+	crudget $RobustConfig Const || crudget $RobustConfig const
+	# gridname=$gridname
+	curl -s $baseurl:$publicport/get_grid_info >$TMP.gridinfo
+	which xmlstarlet >/dev/null &&
+		gridnick=$(xmlstarlet sel -t -m /gridinfo -v gridnick -nl <$TMP.gridinfo)
 fi
 gridslug=$(echo "$gridnick" | tr [:upper:] [:lower:])
 
 PrivatePort=${privateport:-${PrivatePort}}
 PrivatePort=${PrivatePort:-8002}
-firstport=$(( ( $PrivatePort / 10 + 1 ) * 10 ))
+firstport=$((($PrivatePort / 10 + 1) * 10))
 
 log grid name $gridname
 log grid nick $gridnick
@@ -83,11 +78,11 @@ log simslug $simslug
 log "list of core opensim directories"
 # find "$CORE" -name OpenSim.exe | xargs dirname | grep "bin$" > $TMP.list
 ls $BASEDIR/lib/opensim*/bin/OpenSim.exe \
-$BASEDIR/core/opensim*/bin/OpenSim.exe \
-$BinDirectory/bin/OpenSim.exe 2>/dev/null | sed "s:/OpenSim.exe$::" | sort > $TMP.list
+	$BASEDIR/core/opensim*/bin/OpenSim.exe \
+	$BinDirectory/bin/OpenSim.exe 2>/dev/null | sed "s:/OpenSim.exe$::" | sort >$TMP.list
 
-grep -v "/opensim-[0-9\.]*/" $TMP.list > $TMP.osdirs
-grep "/opensim-[0-9\.]*/" $TMP.list >> $TMP.osdirs
+grep -v "/opensim-[0-9\.]*/" $TMP.list >$TMP.osdirs
+grep "/opensim-[0-9\.]*/" $TMP.list >>$TMP.osdirs
 defaultOSDir=$(tail -1 $TMP.osdirs)
 log default CoreDirectory $defaultOSDir
 echo "Found OpenSimulator distributions:"
@@ -104,28 +99,26 @@ EtcRoot=${etcdirectory:-${EtcRoot}}
 [ "$EtcRoot" = "" ] && EtcRoot="$(dirname "$RobustConfig")"
 log EtcRoot $EtcRoot
 
-[ -f "$EtcRoot/OpenSim.ini" ] \
-&& log "Using $EtcRoot/OpenSim.ini" \
-|| end 1 "Configuration not found, use newgrid.sh to build $EtcRoot/ ($etcdirectory)"
-cleanupIni "$EtcRoot/OpenSim.ini" > $TMP.OpenSim.ini
+[ -f "$EtcRoot/OpenSim.ini" ] &&
+	log "Using $EtcRoot/OpenSim.ini" ||
+	end 1 "Configuration not found, use newgrid.sh to build $EtcRoot/ ($etcdirectory)"
+cleanupIni "$EtcRoot/OpenSim.ini" >$TMP.OpenSim.ini
 
 simConfigDir="$EtcRoot/sims/$simslug"
 simConfig="$EtcRoot/sims/$simslug.ini"
-ls $simConfig 2>/dev/null \
-&& {
-  log 1 "There is already a config for $simslug"
-  if yesno "Proceed and replace the config?"
-  then
-    log "using $simConfig"
-    # cleanupIni $simConfig > $TMP.ini || end $?
-    # crudmerge $TMP.ini $simConfig || end $?
-  else
-    end 1 "current $simslug config left untouched"
-  fi
-} || log Creating new $simConfig
+ls $simConfig 2>/dev/null &&
+	{
+		log 1 "There is already a config for $simslug"
+		if yesno "Proceed and replace the config?"; then
+			log "using $simConfig"
+			# cleanupIni $simConfig > $TMP.ini || end $?
+			# crudmerge $TMP.ini $simConfig || end $?
+		else
+			end 1 "current $simslug config left untouched"
+		fi
+	} || log Creating new $simConfig
 
 crudget $TMP.OpenSim.ini Const 2>/dev/null || crudget $TMP.OpenSim.ini const 2>/dev/null || end $? "could not get Const section from $EtcRoot/OpenSim.ini"
-
 
 cat <<EOF >$TMP.launch
 ;; Generated by $0 $(date)
@@ -142,17 +135,16 @@ cat <<EOF >$TMP.launch
 
 EOF
 
-if [ -f $simConfig ]
-then
-  cleanupIni $simConfig > $TMP.ini || end $? "error while cleaning up $simConfig"
-  # crudmerge $TMP.ini $TMP.launch || end $? "error while merging launch section"
-  #
-  # cp $TMP.saved.ini $EtcRoot/tmp.saved.ini
-  # crudmerge $TMP.ini $TMP.saved.ini || end $? "error while merging $simConfig"
-  # cp $TMP.ini $EtcRoot/tmp.ini
+if [ -f $simConfig ]; then
+	cleanupIni $simConfig >$TMP.ini || end $? "error while cleaning up $simConfig"
+	# crudmerge $TMP.ini $TMP.launch || end $? "error while merging launch section"
+	#
+	# cp $TMP.saved.ini $EtcRoot/tmp.saved.ini
+	# crudmerge $TMP.ini $TMP.saved.ini || end $? "error while merging $simConfig"
+	# cp $TMP.ini $EtcRoot/tmp.ini
 else
-  cleanupIni $TMP.launch > $TMP.ini || end $?
-  # cleanupIni $EtcRoot/OpenSim.ini >> $TMP.ini || end $?
+	cleanupIni $TMP.launch >$TMP.ini || end $?
+	# cleanupIni $EtcRoot/OpenSim.ini >> $TMP.ini || end $?
 fi
 
 crudget $TMP.ini Network 2>/dev/null || crudget $TMP.ini network 2>/dev/null || end $? could not read $TMP.ini Network section
@@ -164,13 +156,12 @@ log "getting db settings"
 # inigrep Include_ $TMP.ini
 
 crudget $TMP.ini DatabaseService 2>/dev/null || end $?
-if [ "$ConnectionString" ]
-then
-  db_name=$(echo "$ConnectionString;" | sed "s/.*Database=//" | cut -d ';' -f 1)
-  [ ! "$db_name" -o "$db_name" = "opensim" ] && db_name="${gridslug}_${simslug}"
+if [ "$ConnectionString" ]; then
+	db_name=$(echo "$ConnectionString;" | sed "s/.*Database=//" | cut -d ';' -f 1)
+	[ ! "$db_name" -o "$db_name" = "opensim" ] && db_name="${gridslug}_${simslug}"
 else
-  crudget $RobustConfig DatabaseService || end $? get DatabaseService failed
-  db_name="${simslug}"
+	crudget $RobustConfig DatabaseService || end $? get DatabaseService failed
+	db_name="${simslug}"
 fi
 db_host=$(echo "$ConnectionString;" | sed "s/.*Data Source=//" | cut -d ';' -f 1)
 [ ! "$db_host" ] && db_host=localhost
@@ -181,78 +172,73 @@ db_pass=$(echo "$ConnectionString;" | sed "s/.*Password=//" | cut -d ';' -f 1)
 [ ! "$db_pass" ] && db_pass=$(randomPassword) && echo "Generated random password $db_pass"
 readvar db_host db_name db_user db_pass
 
-testDatabaseConnection $db_host $db_name $db_user "$db_pass" \
-|| end $?
+testDatabaseConnection $db_host $db_name $db_user "$db_pass" ||
+	end $?
 
 ConnectionString="Data Source=$db_host;Database=$db_name;User ID=$db_user;Password=$db_pass;Old Guids=true;"
 crudini --set $TMP.ini DatabaseService StorageProvider "OpenSim.Data.MySQL.dll"
 crudini --set $TMP.ini DatabaseService ConnectionString "\"$ConnectionString\""
 
 remote_enabled=$(crudget $TMP.OpenSim.ini RemoteAdmin enabled)
-if [ "$remote_enabled" = "true" ]
-then
-  # crudini --set $TMP.ini RemoteAdmin enabled true
-  crudini --set $TMP.ini RemoteAdmin port $(nextfreeports $((http_listener_port + 1)) )
+if [ "$remote_enabled" = "true" ]; then
+	# crudini --set $TMP.ini RemoteAdmin enabled true
+	crudini --set $TMP.ini RemoteAdmin port $(nextfreeports $((http_listener_port + 1)))
 fi
-
 
 crudini --set $TMP.ini Includes Include-Common "$EtcRoot/OpenSim.ini"
 
-[ -f "$EtcRoot/Vivox.ini" ] \
-&& crudini --set $TMP.ini Includes Include-Voice "$EtcRoot/Vivox.ini" \
+[ -f "$EtcRoot/Vivox.ini" ] &&
+	crudini --set $TMP.ini Includes Include-Voice "$EtcRoot/Vivox.ini"
 
 # crudini --del $TMP.ini Architecture
 # crudini --set $TMP.ini Architecture Include_Architecture '"${Const|BinDirectory}/config-include/GridHypergrid.ini"'
 CacheRoot=${cachedirectory:-${CacheRoot}}
-eval CacheRoot=$( echo $CacheRoot | sed "s/{[a-Z]*|\([a-z]*\)}/{\\1}/i")
+eval CacheRoot=$(echo $CacheRoot | sed "s/{[a-Z]*|\([a-z]*\)}/{\\1}/i")
 DataRoot=${datadirectory:-${DataRoot}}
-eval DataRoot=$( echo $DataRoot | sed "s/{[a-Z]*|\([a-z]*\)}/{\\1}/i")
+eval DataRoot=$(echo $DataRoot | sed "s/{[a-Z]*|\([a-z]*\)}/{\\1}/i")
 simConfigDir=${simconfigdir:-${simConfigDir}}
-eval simConfigDir=$( echo $simConfigDir | sed "s/{[a-Z]*|\([a-z]*\)}/{\\1}/i")
+eval simConfigDir=$(echo $simConfigDir | sed "s/{[a-Z]*|\([a-z]*\)}/{\\1}/i")
 log CacheRoot $CacheRoot
 log DataRoot $DataRoot
 log simConfigDir $simConfigDir
 for folder in \
-  "$(dirname "$CacheRoot")" \
-  "$(dirname "$DataRoot")" \
-  "$(dirname "$simConfigDir")" \
-  "$CacheRoot" \
-  "$DataRoot" \
-  "$simConfigDir" \
-  "$simConfigDir/regions"
-do
-  [ -e "$folder" ] && continue
-  mkdir "$folder" && log created folder $folder || end $? could not create $folder
+	"$(dirname "$CacheRoot")" \
+	"$(dirname "$DataRoot")" \
+	"$(dirname "$simConfigDir")" \
+	"$CacheRoot" \
+	"$DataRoot" \
+	"$simConfigDir" \
+	"$simConfigDir/regions"; do
+	[ -e "$folder" ] && continue
+	mkdir "$folder" && log created folder $folder || end $? could not create $folder
 done
 
-cleanupIni4Prod $TMP.ini \
-&& cp $TMP.ini "$simConfig" \
-&& ln -frs "$simConfig" "$EtcRoot/opensim.d/$simslug.ini"
+cleanupIni4Prod $TMP.ini &&
+	cp $TMP.ini "$simConfig" &&
+	ln -frs "$simConfig" "$EtcRoot/opensim.d/$simslug.ini"
 
 ls $simConfigDir/regions/*.ini 2>/dev/null
-if [ $? -ne 0 ]
-then
-  if yesno -y "Create first region?"
-  then
+if [ $? -ne 0 ]; then
+	if yesno -y "Create first region?"; then
 
-    RegionName=$SimName
-    readvar RegionName
-    [ "$RegionName" = "" ] && log $? RegionName must be provided, using $SimName && RegionName=$SimName
+		RegionName=$SimName
+		readvar RegionName
+		[ "$RegionName" = "" ] && log $? RegionName must be provided, using $SimName && RegionName=$SimName
 
-    RegionUUID=$($uuidgen)
-    readvar RegionUUID
+		RegionUUID=$($uuidgen)
+		readvar RegionUUID
 
-    Location=$(nextlocation $gridnick)
-    readvar Location
-    checklocation=$(nextlocation $gridnick $Location)
-    [ "$checklocation" != "$Location" ] && log $? "Invalid location, using $checklocation" && Location=$checklocation
+		Location=$(nextlocation $gridnick)
+		readvar Location
+		checklocation=$(nextlocation $gridnick $Location)
+		[ "$checklocation" != "$Location" ] && log $? "Invalid location, using $checklocation" && Location=$checklocation
 
-    InternalPort=$(nextfreeports $((http_listener_port + 2)) )
-    readvar InternalPort
-    checkInternalPort=$(nextfreeports $InternalPort)
-    [ $checkInternalPort != "$InternalPort" ] && log $? "Invalid InternalPort, using $checkInternalPort" && InternalPort=$checkInternalPort
+		InternalPort=$(nextfreeports $((http_listener_port + 2)))
+		readvar InternalPort
+		checkInternalPort=$(nextfreeports $InternalPort)
+		[ $checkInternalPort != "$InternalPort" ] && log $? "Invalid InternalPort, using $checkInternalPort" && InternalPort=$checkInternalPort
 
-    cat <<EOF >$simConfigDir/regions/$RegionName.ini
+		cat <<EOF >$simConfigDir/regions/$RegionName.ini
 ;; Generated by $PGM $(date)
 [$RegionName]
 RegionUUID = $RegionUUID
@@ -266,12 +252,11 @@ ResolveAddress = False
 ExternalHostName = SYSTEMIP
 MaptileStaticUUID = 00000000-0000-0000-0000-000000000000
 EOF
-  fi
+	fi
 fi
-if yesno -y "(re)start $SimName ($simslug)?"
-then
-  opensim restart $simslug
-  end $?
+if yesno -y "(re)start $SimName ($simslug)?"; then
+	opensim restart $simslug
+	end $?
 fi
 
 end $?

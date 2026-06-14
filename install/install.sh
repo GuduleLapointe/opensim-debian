@@ -29,22 +29,22 @@ log "Config loaded
 
 # Package manager abstraction
 case "$(uname -s)" in
-  Darwin)
-    pkg_install() { brew install "$@"; }
-    pkg_update()  { brew update && brew upgrade; }
-    pkg_check()   { brew list "$1" &>/dev/null; }
-    which brew >/dev/null || end 1 "Homebrew required on macOS: https://brew.sh"
-    ;;
-  Linux)
-    which apt-get >/dev/null \
-      || end 1 "Unsupported Linux distribution (no apt-get)"
-    pkg_install() { sudo apt-get install -y "$@"; }
-    pkg_update()  { sudo apt-get update && sudo apt-get upgrade -y; }
-    pkg_check()   { dpkg -l "$1" 2>/dev/null | grep -q "^ii"; }
-    ;;
-  *)
-    end 1 "Unsupported OS: $(uname -s)"
-    ;;
+Darwin)
+	pkg_install() { brew install "$@"; }
+	pkg_update() { brew update && brew upgrade; }
+	pkg_check() { brew list "$1" &>/dev/null; }
+	which brew >/dev/null || end 1 "Homebrew required on macOS: https://brew.sh"
+	;;
+Linux)
+	which apt-get >/dev/null ||
+		end 1 "Unsupported Linux distribution (no apt-get)"
+	pkg_install() { sudo apt-get install -y "$@"; }
+	pkg_update() { sudo apt-get update && sudo apt-get upgrade -y; }
+	pkg_check() { dpkg -l "$1" 2>/dev/null | grep -q "^ii"; }
+	;;
+*)
+	end 1 "Unsupported OS: $(uname -s)"
+	;;
 esac
 
 # Tool dependencies (ask before installing each missing tool)
@@ -64,7 +64,7 @@ echo "Initialize submodules" >&2
 git submodule update --init
 
 yesno "Update system packages?" && {
-  pkg_update || log $? "System update failed, continuing anyway"
+	pkg_update || log $? "System update failed, continuing anyway"
 }
 
 # Runtime: mono for OpenSim < 0.9.3, dotnet for >= 0.9.3
@@ -74,41 +74,41 @@ if which mono >/dev/null 2>&1; then
 	log "mono installed $(mono --version)"
 else
 	yesno "Install Mono (required for OpenSim < 0.9.3)?" && {
-  	pkg_install mono-complete || end $? "Mono installation failed"
-    }
+		pkg_install mono-complete || end $? "Mono installation failed"
+	}
 fi
 
 if which dotnet >/dev/null 2>&1; then
 	log "dotnet installed $(dotnet --version)"
 else
 	yesno "Install .NET runtime (required for OpenSim >= 0.9.3)?" && {
-    # Universal installer from Microsoft — works on Linux and macOS
-    curl -fsSL https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh \
-      | bash -s -- --runtime dotnet --channel LTS \
-      || end $? ".NET runtime installation failed"
-    # dotnet-install.sh installs to ~/.dotnet by default; add to PATH if needed
-    export DOTNET_ROOT="$HOME/.dotnet"
-    export PATH="$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools"
-  }
+		# Universal installer from Microsoft — works on Linux and macOS
+		curl -fsSL https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh |
+			bash -s -- --runtime dotnet --channel LTS ||
+			end $? ".NET runtime installation failed"
+		# dotnet-install.sh installs to ~/.dotnet by default; add to PATH if needed
+		export DOTNET_ROOT="$HOME/.dotnet"
+		export PATH="$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools"
+	}
 fi
 
 # --- OpenSim version selection (no download yet) ---
 echo ""
 log "Fetching OpenSimulator release list from $OSDOWNLOADPAGE ..."
-_releases=$(curl -s "$OSDOWNLOADPAGE/" \
-  | grep -o 'href="opensim-[0-9][^"]*\.tar\.gz"' \
-  | grep -v source \
-  | cut -d'"' -f2 \
-  | sort -r)
+_releases=$(curl -s "$OSDOWNLOADPAGE/" |
+	grep -o 'href="opensim-[0-9][^"]*\.tar\.gz"' |
+	grep -v source |
+	cut -d'"' -f2 |
+	sort -r)
 [ -n "$_releases" ] || end 1 "Could not fetch release list from $OSDOWNLOADPAGE"
 
 echo ""
 echo "OpenSimulator version to install:"
 i=1
 while IFS= read -r _f; do
-  printf "  %2d) %s\n" "$i" "$(basename "$_f" .tar.gz)"
-  i=$((i+1))
-done <<< "$_releases"
+	printf "  %2d) %s\n" "$i" "$(basename "$_f" .tar.gz)"
+	i=$((i + 1))
+done <<<"$_releases"
 echo "   d) Development version (build from source — not yet implemented)"
 echo "   s) Skip (install OpenSim manually later)"
 echo ""
@@ -116,21 +116,21 @@ read -p "  Version [1]: " _vchoice
 _vchoice=${_vchoice:-1}
 
 case "$_vchoice" in
-  d|D)
-    OpensimVersion=dev
-    OSDOWNLOAD=
-    ;;
-  s|S)
-    OpensimVersion=
-    OSDOWNLOAD=
-    ;;
-  [0-9]*)
-    _vsel=$(echo "$_releases" | sed -n "${_vchoice}p")
-    [ -n "$_vsel" ] || end 1 "Invalid choice: $_vchoice"
-    OpensimVersion=$(basename "$_vsel" .tar.gz | sed 's/^opensim-//')
-    OSDOWNLOAD="$OSDOWNLOADPAGE/$_vsel"
-    ;;
-  *) end 1 "Invalid choice: $_vchoice" ;;
+d | D)
+	OpensimVersion=dev
+	OSDOWNLOAD=
+	;;
+s | S)
+	OpensimVersion=
+	OSDOWNLOAD=
+	;;
+[0-9]*)
+	_vsel=$(echo "$_releases" | sed -n "${_vchoice}p")
+	[ -n "$_vsel" ] || end 1 "Invalid choice: $_vchoice"
+	OpensimVersion=$(basename "$_vsel" .tar.gz | sed 's/^opensim-//')
+	OSDOWNLOAD="$OSDOWNLOADPAGE/$_vsel"
+	;;
+*) end 1 "Invalid choice: $_vchoice" ;;
 esac
 unset _releases _f _vchoice _vsel i
 
@@ -148,59 +148,59 @@ readvar DirectoryLayout
 
 ## Set install base directory
 case "${DirectoryLayout:-1}" in
-  3|system|debian)
-    DirectoryLayout=system
-    BaseInstallPath=/usr/local/share/opensim
-    ;;
-  2|bundled)
-    DirectoryLayout=bundled
-    BaseInstallPath=/opt/opensim
-    readvar BaseInstallPath
-    ;;
-  1|flat)
-    DirectoryLayout=flat
-    BaseInstallPath=$BASEDIR/core
-    readvar BaseInstallPath
-    ;;
-  *)
-    end 1 "Invalid layout choice"
-    ;;
+3 | system | debian)
+	DirectoryLayout=system
+	BaseInstallPath=/usr/local/share/opensim
+	;;
+2 | bundled)
+	DirectoryLayout=bundled
+	BaseInstallPath=/opt/opensim
+	readvar BaseInstallPath
+	;;
+1 | flat)
+	DirectoryLayout=flat
+	BaseInstallPath=$BASEDIR/core
+	readvar BaseInstallPath
+	;;
+*)
+	end 1 "Invalid layout choice"
+	;;
 esac
 
 InstallPath=$BaseInstallPath
 log "InstallPath=$InstallPath"
 
 case "${DirectoryLayout:-1}" in
-  system)
-    EtcRoot=/etc/opensim
-    VarRoot=/var/lib/opensim
-    CoreRoot=/usr/local/share/opensim
-    CoreDirectory=$CoreRoot/opensim-$OpensimVersion
-    LogsRoot=/var/log/opensim
-    CacheRoot=/var/cache/opensim
-    DataRoot=/var/lib/opensim/data
-    ;;
-  bundled)
-    EtcRoot=$InstallPath/etc
-    VarRoot=$InstallPath/var
-    CoreRoot=$InstallPath/core
-    CoreDirectory=$CoreRoot/opensim-$OpensimVersion
-    LogsRoot=$InstallPath/var/logs
-    CacheRoot=$InstallPath/var/cache
-    DataRoot=$InstallPath/var/data
-    ;;
-  flat)
-    CoreRoot=$InstallPath/opensim-$OpensimVersion
-    CoreDirectory=$CoreRoot
-    EtcRoot=$CoreRoot/bin
-    VarRoot=$CoreRoot/bin
-    LogsRoot=$CoreRoot/bin
-    CacheRoot=$CoreRoot/bin
-    DataRoot=$CoreRoot/bin
-    ;;
-  *)
-    end 1 "Invalid layout choice"
-    ;;
+system)
+	EtcRoot=/etc/opensim
+	VarRoot=/var/lib/opensim
+	CoreRoot=/usr/local/share/opensim
+	CoreDirectory=$CoreRoot/opensim-$OpensimVersion
+	LogsRoot=/var/log/opensim
+	CacheRoot=/var/cache/opensim
+	DataRoot=/var/lib/opensim/data
+	;;
+bundled)
+	EtcRoot=$InstallPath/etc
+	VarRoot=$InstallPath/var
+	CoreRoot=$InstallPath/core
+	CoreDirectory=$CoreRoot/opensim-$OpensimVersion
+	LogsRoot=$InstallPath/var/logs
+	CacheRoot=$InstallPath/var/cache
+	DataRoot=$InstallPath/var/data
+	;;
+flat)
+	CoreRoot=$InstallPath/opensim-$OpensimVersion
+	CoreDirectory=$CoreRoot
+	EtcRoot=$CoreRoot/bin
+	VarRoot=$CoreRoot/bin
+	LogsRoot=$CoreRoot/bin
+	CacheRoot=$CoreRoot/bin
+	DataRoot=$CoreRoot/bin
+	;;
+*)
+	end 1 "Invalid layout choice"
+	;;
 esac
 
 SourcesDirectory=${SourcesDirectory:-$BASEDIR/src}
@@ -211,20 +211,20 @@ mkdir -p "$BASEDIR/config"
 _iconf="$BASEDIR/config/$PKG.conf"
 
 # TODO: request confirmation if these value already exist in Defaults section
-crudini --set "$_iconf" Defaults DirectoryLayout   "$DirectoryLayout"
-crudini --set "$_iconf" Defaults CoreRoot          "$CoreRoot"
-crudini --set "$_iconf" Defaults CoreDirectory     "$CoreDirectory"
+crudini --set "$_iconf" Defaults DirectoryLayout "$DirectoryLayout"
+crudini --set "$_iconf" Defaults CoreRoot "$CoreRoot"
+crudini --set "$_iconf" Defaults CoreDirectory "$CoreDirectory"
 
 # Save install config
-crudini --set "$_iconf" Install DirectoryLayout   "$DirectoryLayout"
-crudini --set "$_iconf" Install OpensimVersion    "${OpensimVersion:-}"
-crudini --set "$_iconf" Install InstallPath       "${InstallPath:-}"
-crudini --set "$_iconf" Install CoreDirectory     "$CoreDirectory"
-crudini --set "$_iconf" Install EtcRoot      "$EtcRoot"
-crudini --set "$_iconf" Install VarRoot      "$VarRoot"
-crudini --set "$_iconf" Install LogsRoot     "$LogsRoot"
-crudini --set "$_iconf" Install CacheRoot    "$CacheRoot"
-crudini --set "$_iconf" Install DataRoot     "$DataRoot"
+crudini --set "$_iconf" Install DirectoryLayout "$DirectoryLayout"
+crudini --set "$_iconf" Install OpensimVersion "${OpensimVersion:-}"
+crudini --set "$_iconf" Install InstallPath "${InstallPath:-}"
+crudini --set "$_iconf" Install CoreDirectory "$CoreDirectory"
+crudini --set "$_iconf" Install EtcRoot "$EtcRoot"
+crudini --set "$_iconf" Install VarRoot "$VarRoot"
+crudini --set "$_iconf" Install LogsRoot "$LogsRoot"
+crudini --set "$_iconf" Install CacheRoot "$CacheRoot"
+crudini --set "$_iconf" Install DataRoot "$DataRoot"
 
 unset _iconf
 log "Install preferences saved to $BASEDIR/config/$PKG.conf"
@@ -250,28 +250,26 @@ yesno -y "Create directories and proceed?" || end 0 "Aborted"
 
 # --- Create directories, owned by current user ---
 for dir in \
-  "$EtcRoot" "$EtcRoot/opensim.d" "$EtcRoot/robust.d" "$EtcRoot/grids" \
-  "$SourcesDirectory" "$CoreRoot" "$CoreDirectory" \
-  "$VarRoot" "$LogsRoot" "$CacheRoot" "$DataRoot" \
-
-do
-  [ -d "$dir" ] && continue
-  [ "$VERBOSE" = "yes" ] && v="-v" || v=
-  sudo install $v -d -o "$USER" "$dir" || end $? "Could not create $dir"
+	"$EtcRoot" "$EtcRoot/opensim.d" "$EtcRoot/robust.d" "$EtcRoot/grids" \
+	"$SourcesDirectory" "$CoreRoot" "$CoreDirectory" \
+	"$VarRoot" "$LogsRoot" "$CacheRoot" "$DataRoot"; do
+	[ -d "$dir" ] && continue
+	[ "$VERBOSE" = "yes" ] && v="-v" || v=
+	sudo install $v -d -o "$USER" "$dir" || end $? "Could not create $dir"
 done
 
 # --- Write EtcRoot/$PKG.conf ---
 log "Update $EtcRoot/$PKG.conf"
 _iconf="$EtcRoot/$PKG.conf"
-crudini --set "$_iconf" Install DirectoryLayout  "$DirectoryLayout"
-crudini --set "$_iconf" Install OpensimVersion   "${OpensimVersion:-}"
-crudini --set "$_iconf" Install InstallPath      "${InstallPath:-}"
-crudini --set "$_iconf" Install CoreDirectory    "${CoreDirectory}"
-crudini --set "$_iconf" Install EtcRoot     "$EtcRoot"
-crudini --set "$_iconf" Install VarRoot     "$VarRoot"
-crudini --set "$_iconf" Install LogsRoot    "$LogsRoot"
-crudini --set "$_iconf" Install CacheRoot   "$CacheRoot"
-crudini --set "$_iconf" Install DataRoot    "$DataRoot"
+crudini --set "$_iconf" Install DirectoryLayout "$DirectoryLayout"
+crudini --set "$_iconf" Install OpensimVersion "${OpensimVersion:-}"
+crudini --set "$_iconf" Install InstallPath "${InstallPath:-}"
+crudini --set "$_iconf" Install CoreDirectory "${CoreDirectory}"
+crudini --set "$_iconf" Install EtcRoot "$EtcRoot"
+crudini --set "$_iconf" Install VarRoot "$VarRoot"
+crudini --set "$_iconf" Install LogsRoot "$LogsRoot"
+crudini --set "$_iconf" Install CacheRoot "$CacheRoot"
+crudini --set "$_iconf" Install DataRoot "$DataRoot"
 unset _iconf
 
 # --- Download and extract OpenSim ---
@@ -279,20 +277,20 @@ unset _iconf
 if [ -n "$OSDOWNLOAD" ]; then
 	_tar_name=$(basename "$OSDOWNLOAD")
 	_tar_path=$SourcesDirectory/$_tar_name
-# if [ -n "$OSDOWNLOAD" ] && [ ! -f "${OpenSimExe:-}" ]; then
+	# if [ -n "$OSDOWNLOAD" ] && [ ! -f "${OpenSimExe:-}" ]; then
 	if [ -f "$_tar_path" ]; then
 		log "Using previous download $_tar_path"
 	else
 		log "Downloading $OSDOWNLOAD"
-		wget -nd -P "$SourcesDirectory" "$OSDOWNLOAD" \
-		|| end $? "Error downloading OpenSim"
+		wget -nd -P "$SourcesDirectory" "$OSDOWNLOAD" ||
+			end $? "Error downloading OpenSim"
 	fi
- 	[ -f "$_tar_path" ] || end $? "Unexpected: $_tar_path not found"
+	[ -f "$_tar_path" ] || end $? "Unexpected: $_tar_path not found"
 
 	log "Unpacking $_tar_name to $CoreRoot"
 
-	pv "$_tar_path" | tar xzf - -C "$CoreRoot" \
-	|| end $? "Error unpacking OpenSim"
+	pv "$_tar_path" | tar xzf - -C "$CoreRoot" ||
+		end $? "Error unpacking OpenSim"
 
 	log "OpenSim installed: $CoreDirectory"
 	unset _tar_name
@@ -309,11 +307,10 @@ fi
 ##
 # Launch new grid config
 #
-if yesno -y "Create Robust config?"
-then
-  # user=$(getent passwd $USER | cut -d : -f 5 | cut -d , -f 1 | cut -d " " -f 1 | grep -i [a-z] || echo "$USER" | sed -r -e 's/(\W)/\L\1/g' -e 's/(^|[ _-])(\w)/\U\2/g')
-  $BASEDIR/libexec/newgrid || end $?
- # "${user}s Grid"
+if yesno -y "Create Robust config?"; then
+	# user=$(getent passwd $USER | cut -d : -f 5 | cut -d , -f 1 | cut -d " " -f 1 | grep -i [a-z] || echo "$USER" | sed -r -e 's/(\W)/\L\1/g' -e 's/(^|[ _-])(\w)/\U\2/g')
+	$BASEDIR/libexec/newgrid || end $?
+	# "${user}s Grid"
 fi
 
 end
@@ -344,201 +341,201 @@ end
 # OpenSimBinDirectory=$BinDirectory
 # readvar OpenSimBinDirectory
 
-  # log setting defaults
-  # crudini --set $TMP.new.ini Launch BinDir "\"$OpenSimBinDirectory\""
-  # crudini --set $TMP.new.ini Launch Executable "\"Robust.exe\#"
-  # cleanupIni $BinDirectory/Robust.HG.ini.example > $TMP.defaults.ini
-  # crudmerge $TMP.new.ini $TMP.defaults.ini
-  # crudmerge $TMP.new.ini $BASEDIR/install/Robust.Tweaks.ini
-  # crudini --set $TMP.new.ini DatabaseService ConnectionString "\"Data Source=localhost;Database=os_$(hostname -s);User ID=opensim;Password=password;Old Guids=true;\""
-  #
-  # log "## Choose robust config"
-  #
-  # RobustConfig=$(
-  #   (
-  #   ls $EtcRoot/robust.d/*.ini 2>/dev/null
-  #   # ls $EtcRoot/robust-enabled/*.ini
-  # 	# ls $EtcRoot/robust-available/*.ini
-  #   # ls $EtcRoot/opensim.d/Robust*.ini $EtcRoot/opensim.d/robust*.ini
-  # 	# echo "$EtcRoot/robust.d/NewRobust.ini"
-  #   ) | head -1
-  # )
-  # if [ "$RobustConfig" ]
-  # then
-  #   log 1 "Please choose the Robust .ini file location"
-  #   log 1 "  If present, it will be read, and overriden after settings completion"
-  #   log 2 "  If not present, it will be created"
-  #   readvar RobustConfig
-  #   #read -e -p "$PGM: Robust config file: " -i $RobustConfig RobustConfig
-  #   [ "$RobustConfig" ] || end 1 "You have to choose a file"
-  #   RobustName=$(basename $RobustConfig .ini)
-  #   cleanupIni $RobustConfig > $TMP.current.ini
-  #
-  #   log merging current config to defaults
-  #   crudmerge $TMP.new.ini $TMP.current.ini
-  # fi
-  #
-  # [ ! "$GridName" ] && GridName=$(titlecase $(hostname -s | cut -d "." -f 1))
-  # readvar GridName
-  # crudini --set $TMP.new.ini GridInfoService GridName "\"$GridName\""
-  # [ ! "$GridNick" ] && GridNick=$(echo $GridName | sed "s/ //g")
-  # readvar GridNick
-  # crudini --set $TMP.new.ini GridInfoService GridNick "\"$GridNick\""
-  #
-  # [ ! "$RobustName" ] && RobustName=$(echo "$GridName" | sed "s/ //g")
-  # # RobustName=$(titlecase $(hostname -s | cut -d "." -f 1))
-  # # readvar RobustName
-  # [ ! "$RobustConfig" ] && RobustConfig=$EtcRoot/robust.d/$RobustName.ini
-  # # [ ! -f "$RobustConfig" ] &&  touch $RobustConfig
-  #
-  # MachineName=$(echo "$GridNick" | tr "[:upper:]" "[:lower:]")
-  # log "MachineName $MachineName"
-  #
-  # log 1 "## General settings"
-  # eval $(crudini --get --format=sh $TMP.new.ini Const \
-  # | sed -e "s/baseurl/BaseURL/" -e "s/publicport/PublicPort/" -e "s/privateport/PrivatePort/" \
-  # -e "s/cachedirectory/CacheRoot/" -e "s/datadirectory/DataRoot/" \
-  # -e "s/\"//g"
-  # )
-  # # ini.parse $TMP.new.ini
-  # # ini.section.Const  || end $? broken at Const
-  # # eval $(crudini --get --format=sh $TMP.new.ini Const)
-  # # BaseURL=$baseurl
-  # # PublicPort=$publicport
-  # # PrivatePort=$privateport
-  # [ "$BaseURL" = "" ] && BaseURL=http://$(hostname -f)
-  # echo "$BaseURL" | grep -q "127\.0\.0\." && BaseURL="http://$(hostname -f)"
-  # echo "$BaseURL" | grep -q "^https*://" || BaseURL="http://$BaseURL"
-  # log BaseURL: $BaseURL
-  # BaseURL=$(echo "$BaseURL" | sed "s/\"//")
-  # PublicPort=$(echo "$PublicPort" | sed "s/\"//")
-  # PrivatePort=$(echo "$PrivatePort" | sed "s/\"//")
-  # readvar BaseURL PublicPort PrivatePort
-  # crudini --set $TMP.new.ini Const BaseURL "\"$BaseURL\""
-  # crudini --set $TMP.new.ini Const PublicPort "$PublicPort"
-  # crudini --set $TMP.new.ini Const PrivatePort "$PrivatePort"
-  # crudini --set $TMP.new.ini Const CacheRoot "\"$CacheRoot/$MachineName\""
-  # crudini --set $TMP.new.ini Const DataRoot "\"$DataRoot/$MachineName\""
-  #
-  # hostname=$(echo "$BaseURL" | sed "s%.*://%%" | cut -d "/" -f 1)
-  # log hostname $hostname
-  # ## Database configuration
-  # log 1 "## Database configuration"
-  # # ini.parse $TMP.new.ini
-  # # grep -A5 DatabaseService $TMP.new.ini
-  # eval $(crudini --get --format=sh $TMP.new.ini DatabaseService \
-  # | sed -e "s/storageprovider/StorageProvider/" -e "s/connectionstring/ConnectionString/" \
-  # -e "s/\"//g"
-  # )
-  #
-  # # ini.merge DatabaseService $tmpIni $TMP.db  $RobustConfig || end $? "ini merge failed"
-  # log ConnectionString $ConnectionString
-  # DatabaseHost=$(echo "$ConnectionString;" | sed "s/.*Data Source=//" | cut -d ';' -f 1)
-  # DatabaseName=$(echo "$ConnectionString;" | sed "s/.*Database=//" | cut -d ';' -f 1)
-  # DatabaseUser=$(echo "$ConnectionString;" | sed "s/.*User ID=//" | cut -d ';' -f 1)
-  # DatabasePassword=$(echo "$ConnectionString;" | sed "s/.*Password=//" | cut -d ';' -f 1)
-  #
-  # readvar DatabaseHost DatabaseName DatabaseUser DatabasePassword
-  #
-  # testDatabaseConnection $DatabaseHost $DatabaseName $DatabaseUser "$DatabasePassword" \
-  # || end $?
-  #
-  # ConnectionString="Data Source=$DatabaseHost;Database=$DatabaseName;User ID=$DatabaseUser;Password=$DatabasePassword;Old Guids=true;"
-  # crudini --set $TMP.new.ini DatabaseService ConnectionString "\"$ConnectionString\""
-  # log "ConnectionString $ConnectionString"
-  #
-  # log "## LoginService configuration"
-  #
-  # if [ -f "$EtcRoot/$GridNick.Gloebit.ini" -o -f "$EtcRoot/Gloebit.ini" ]
-  # then
-  #   Currency="G$"
-  # else
-  #   eval $(crudini --get --format=sh $TMP.new.ini LoginService \
-  #   | sed -e "s/\"//g" \
-  #   -e "s/currency/Currency/" -e "s/welcomemessage/WelcomeMessage/" -e "s/searchurl/SearchURL/" )
-  # fi
-  # readvar Currency  WelcomeMessage SearchURL
-  # crudini --set $TMP.new.ini LoginService Currency "\"$Currency\""
-  # crudini --set $TMP.new.ini LoginService WelcomeMessage "$WelcomeMessage"
-  # crudini --set $TMP.new.ini LoginService SearchURL "$SearchURL"
-  #
-  # log "## GridService"
-  # echo "[GridService]" > $TMP.regions
-  # for flag in DefaultRegion DefaultHGRegion FallbackRegion #NoDirectLogin Persistent
-  # do
-  #   eval "$flag=\"$( (grep "$flag" $TMP.new.ini || echo Welcome) | sed "s/^Region_//" | cut -d= -f 1 | sed -e "s/_/ /g" -e "s/ *$//")\""
-  #   readvar $flag
-  #   regionvar=$(echo Region_${!flag} | sed "s/ /_/g")
-  #   grep -q "^$regionvar *= *" $TMP.regions \
-  #     && sed -i~ "s/^$regionvar *= *\"\(.*\)\"/$regionvar = \"\\1, $flag\"/" $TMP.regions \
-  #     || echo "$regionvar = \"$flag\"" >> $TMP.regions
-  # done
-  # crudmerge $TMP.new.ini $TMP.regions
-  #
-  # ## Set robust name based on confif filename
-  # # enable="$EtcRoot/robust-enabled/$RobustName.ini"
-  #
-  # log "## Setting Launcher info"
-  # crudini --set $TMP.new.ini Launch BinDir "\"$BinDirectory\""
-  # crudini --set $TMP.new.ini Launch Executable "\"Robust.exe\""
-  # crudini --set $TMP.new.ini Launch LogFile "\"$LogsRoot/$MachineName.log\""
-  # crudini --set $TMP.new.ini Launch ConsolePrompt "\"$RobustName ($hostname:$PublicPort)\""
-  #
-  # log "## Startup section"
-  # crudini --set $TMP.new.ini Startup ConfigDirectory "$EtcRoot/robust-include"
-  # crudini --set $TMP.new.ini Startup PIDFile "\"\${Const|CacheRoot}/$MachineName.pid\""
-  # # crudini --set $TMP.new.ini Startup NoVerifyCertChain true
-  # # crudini --set $TMP.new.ini Startup NoVerifyCertHostname true
-  #
-  # log "## Grid info"
-  # crudini --set $TMP.new.ini GridInfoService GridName "\"$GridName\""
-  # crudini --set $TMP.new.ini GridInfoService GridNick "\"$GridNick\""
-  #
-  # log "## Just for fun"
-  # crudini --set $TMP.new.ini LibraryService LibraryName "\"$GridNick Library\""
-  #
-  #
-  # log "## Checking $RobustNick directories"
-  # for dir in \
-  #   $DataRoot/$MachineName $DataRoot/$MachineName/fsassets \
-  #   $CacheRoot/$MachineName/bakes $CacheRoot/$MachineName/fsassets $CacheRoot/$MachineName/maptiles \
-  #   $CacheRoot/$MachineName/registry
-  # do
-  #   [ -d "$dir" ] && continue
-  #   mkdir -p "$dir" \
-  #     && log "Created $dir" \
-  #     || end $? "Could not create $dir"
-  # done
-  #
-  # crudini --get $TMP.new.ini > $TMP.sections
-  # cat $TMP.sections | while read section
-  # do
-  #   crudini --get $TMP.new.ini $section | grep -qi [a-z] || crudini --del $TMP.new.ini "$section"
-  # done
-  #
-  # echo
-  # echo "# Generated configuration:"
-  # echo
-  # # cat $TMP.new.ini
-  # # echo
-  #
-  # if [ -f "$RobustConfig" ]
-  # then
-  #     yesno "File $RobustConfig exists, override?" || end Aborted
-  # else
-  #     yesno "Save $RobustConfig file?" || end Aborted
-  # fi
-  # cp $TMP.new.ini $RobustConfig && echo "$RobustConfig saved"
-  #
-  # # [ ! -f "$enable" ] && ln -s "$RobustConfig" "$enable"
-  # cat $BinDirectory/Robust.exe.config \
-  # | sed "s%\(<file value=\"\)Robust%\\1$LogsRoot/$RobustName%" \
-  # > "$DataRoot/$RobustName.logconfig"
-  #
-  # # if [ ! -f "$EtcRoot/opensim.ini" ]
-  # # then
-  # #   echo "myhost=$newhost
-  # #   mydb=$newdb
-  # #   myuser=$newuser
-  # #   mypass=$newpass" > "$EtcRoot/opensim.ini"
-  # # fi
+# log setting defaults
+# crudini --set $TMP.new.ini Launch BinDir "\"$OpenSimBinDirectory\""
+# crudini --set $TMP.new.ini Launch Executable "\"Robust.exe\#"
+# cleanupIni $BinDirectory/Robust.HG.ini.example > $TMP.defaults.ini
+# crudmerge $TMP.new.ini $TMP.defaults.ini
+# crudmerge $TMP.new.ini $BASEDIR/install/Robust.Tweaks.ini
+# crudini --set $TMP.new.ini DatabaseService ConnectionString "\"Data Source=localhost;Database=os_$(hostname -s);User ID=opensim;Password=password;Old Guids=true;\""
+#
+# log "## Choose robust config"
+#
+# RobustConfig=$(
+#   (
+#   ls $EtcRoot/robust.d/*.ini 2>/dev/null
+#   # ls $EtcRoot/robust-enabled/*.ini
+# 	# ls $EtcRoot/robust-available/*.ini
+#   # ls $EtcRoot/opensim.d/Robust*.ini $EtcRoot/opensim.d/robust*.ini
+# 	# echo "$EtcRoot/robust.d/NewRobust.ini"
+#   ) | head -1
+# )
+# if [ "$RobustConfig" ]
+# then
+#   log 1 "Please choose the Robust .ini file location"
+#   log 1 "  If present, it will be read, and overriden after settings completion"
+#   log 2 "  If not present, it will be created"
+#   readvar RobustConfig
+#   #read -e -p "$PGM: Robust config file: " -i $RobustConfig RobustConfig
+#   [ "$RobustConfig" ] || end 1 "You have to choose a file"
+#   RobustName=$(basename $RobustConfig .ini)
+#   cleanupIni $RobustConfig > $TMP.current.ini
+#
+#   log merging current config to defaults
+#   crudmerge $TMP.new.ini $TMP.current.ini
+# fi
+#
+# [ ! "$GridName" ] && GridName=$(titlecase $(hostname -s | cut -d "." -f 1))
+# readvar GridName
+# crudini --set $TMP.new.ini GridInfoService GridName "\"$GridName\""
+# [ ! "$GridNick" ] && GridNick=$(echo $GridName | sed "s/ //g")
+# readvar GridNick
+# crudini --set $TMP.new.ini GridInfoService GridNick "\"$GridNick\""
+#
+# [ ! "$RobustName" ] && RobustName=$(echo "$GridName" | sed "s/ //g")
+# # RobustName=$(titlecase $(hostname -s | cut -d "." -f 1))
+# # readvar RobustName
+# [ ! "$RobustConfig" ] && RobustConfig=$EtcRoot/robust.d/$RobustName.ini
+# # [ ! -f "$RobustConfig" ] &&  touch $RobustConfig
+#
+# MachineName=$(echo "$GridNick" | tr "[:upper:]" "[:lower:]")
+# log "MachineName $MachineName"
+#
+# log 1 "## General settings"
+# eval $(crudini --get --format=sh $TMP.new.ini Const \
+# | sed -e "s/baseurl/BaseURL/" -e "s/publicport/PublicPort/" -e "s/privateport/PrivatePort/" \
+# -e "s/cachedirectory/CacheRoot/" -e "s/datadirectory/DataRoot/" \
+# -e "s/\"//g"
+# )
+# # ini.parse $TMP.new.ini
+# # ini.section.Const  || end $? broken at Const
+# # eval $(crudini --get --format=sh $TMP.new.ini Const)
+# # BaseURL=$baseurl
+# # PublicPort=$publicport
+# # PrivatePort=$privateport
+# [ "$BaseURL" = "" ] && BaseURL=http://$(hostname -f)
+# echo "$BaseURL" | grep -q "127\.0\.0\." && BaseURL="http://$(hostname -f)"
+# echo "$BaseURL" | grep -q "^https*://" || BaseURL="http://$BaseURL"
+# log BaseURL: $BaseURL
+# BaseURL=$(echo "$BaseURL" | sed "s/\"//")
+# PublicPort=$(echo "$PublicPort" | sed "s/\"//")
+# PrivatePort=$(echo "$PrivatePort" | sed "s/\"//")
+# readvar BaseURL PublicPort PrivatePort
+# crudini --set $TMP.new.ini Const BaseURL "\"$BaseURL\""
+# crudini --set $TMP.new.ini Const PublicPort "$PublicPort"
+# crudini --set $TMP.new.ini Const PrivatePort "$PrivatePort"
+# crudini --set $TMP.new.ini Const CacheRoot "\"$CacheRoot/$MachineName\""
+# crudini --set $TMP.new.ini Const DataRoot "\"$DataRoot/$MachineName\""
+#
+# hostname=$(echo "$BaseURL" | sed "s%.*://%%" | cut -d "/" -f 1)
+# log hostname $hostname
+# ## Database configuration
+# log 1 "## Database configuration"
+# # ini.parse $TMP.new.ini
+# # grep -A5 DatabaseService $TMP.new.ini
+# eval $(crudini --get --format=sh $TMP.new.ini DatabaseService \
+# | sed -e "s/storageprovider/StorageProvider/" -e "s/connectionstring/ConnectionString/" \
+# -e "s/\"//g"
+# )
+#
+# # ini.merge DatabaseService $tmpIni $TMP.db  $RobustConfig || end $? "ini merge failed"
+# log ConnectionString $ConnectionString
+# DatabaseHost=$(echo "$ConnectionString;" | sed "s/.*Data Source=//" | cut -d ';' -f 1)
+# DatabaseName=$(echo "$ConnectionString;" | sed "s/.*Database=//" | cut -d ';' -f 1)
+# DatabaseUser=$(echo "$ConnectionString;" | sed "s/.*User ID=//" | cut -d ';' -f 1)
+# DatabasePassword=$(echo "$ConnectionString;" | sed "s/.*Password=//" | cut -d ';' -f 1)
+#
+# readvar DatabaseHost DatabaseName DatabaseUser DatabasePassword
+#
+# testDatabaseConnection $DatabaseHost $DatabaseName $DatabaseUser "$DatabasePassword" \
+# || end $?
+#
+# ConnectionString="Data Source=$DatabaseHost;Database=$DatabaseName;User ID=$DatabaseUser;Password=$DatabasePassword;Old Guids=true;"
+# crudini --set $TMP.new.ini DatabaseService ConnectionString "\"$ConnectionString\""
+# log "ConnectionString $ConnectionString"
+#
+# log "## LoginService configuration"
+#
+# if [ -f "$EtcRoot/$GridNick.Gloebit.ini" -o -f "$EtcRoot/Gloebit.ini" ]
+# then
+#   Currency="G$"
+# else
+#   eval $(crudini --get --format=sh $TMP.new.ini LoginService \
+#   | sed -e "s/\"//g" \
+#   -e "s/currency/Currency/" -e "s/welcomemessage/WelcomeMessage/" -e "s/searchurl/SearchURL/" )
+# fi
+# readvar Currency  WelcomeMessage SearchURL
+# crudini --set $TMP.new.ini LoginService Currency "\"$Currency\""
+# crudini --set $TMP.new.ini LoginService WelcomeMessage "$WelcomeMessage"
+# crudini --set $TMP.new.ini LoginService SearchURL "$SearchURL"
+#
+# log "## GridService"
+# echo "[GridService]" > $TMP.regions
+# for flag in DefaultRegion DefaultHGRegion FallbackRegion #NoDirectLogin Persistent
+# do
+#   eval "$flag=\"$( (grep "$flag" $TMP.new.ini || echo Welcome) | sed "s/^Region_//" | cut -d= -f 1 | sed -e "s/_/ /g" -e "s/ *$//")\""
+#   readvar $flag
+#   regionvar=$(echo Region_${!flag} | sed "s/ /_/g")
+#   grep -q "^$regionvar *= *" $TMP.regions \
+#     && sed -i~ "s/^$regionvar *= *\"\(.*\)\"/$regionvar = \"\\1, $flag\"/" $TMP.regions \
+#     || echo "$regionvar = \"$flag\"" >> $TMP.regions
+# done
+# crudmerge $TMP.new.ini $TMP.regions
+#
+# ## Set robust name based on confif filename
+# # enable="$EtcRoot/robust-enabled/$RobustName.ini"
+#
+# log "## Setting Launcher info"
+# crudini --set $TMP.new.ini Launch BinDir "\"$BinDirectory\""
+# crudini --set $TMP.new.ini Launch Executable "\"Robust.exe\""
+# crudini --set $TMP.new.ini Launch LogFile "\"$LogsRoot/$MachineName.log\""
+# crudini --set $TMP.new.ini Launch ConsolePrompt "\"$RobustName ($hostname:$PublicPort)\""
+#
+# log "## Startup section"
+# crudini --set $TMP.new.ini Startup ConfigDirectory "$EtcRoot/robust-include"
+# crudini --set $TMP.new.ini Startup PIDFile "\"\${Const|CacheRoot}/$MachineName.pid\""
+# # crudini --set $TMP.new.ini Startup NoVerifyCertChain true
+# # crudini --set $TMP.new.ini Startup NoVerifyCertHostname true
+#
+# log "## Grid info"
+# crudini --set $TMP.new.ini GridInfoService GridName "\"$GridName\""
+# crudini --set $TMP.new.ini GridInfoService GridNick "\"$GridNick\""
+#
+# log "## Just for fun"
+# crudini --set $TMP.new.ini LibraryService LibraryName "\"$GridNick Library\""
+#
+#
+# log "## Checking $RobustNick directories"
+# for dir in \
+#   $DataRoot/$MachineName $DataRoot/$MachineName/fsassets \
+#   $CacheRoot/$MachineName/bakes $CacheRoot/$MachineName/fsassets $CacheRoot/$MachineName/maptiles \
+#   $CacheRoot/$MachineName/registry
+# do
+#   [ -d "$dir" ] && continue
+#   mkdir -p "$dir" \
+#     && log "Created $dir" \
+#     || end $? "Could not create $dir"
+# done
+#
+# crudini --get $TMP.new.ini > $TMP.sections
+# cat $TMP.sections | while read section
+# do
+#   crudini --get $TMP.new.ini $section | grep -qi [a-z] || crudini --del $TMP.new.ini "$section"
+# done
+#
+# echo
+# echo "# Generated configuration:"
+# echo
+# # cat $TMP.new.ini
+# # echo
+#
+# if [ -f "$RobustConfig" ]
+# then
+#     yesno "File $RobustConfig exists, override?" || end Aborted
+# else
+#     yesno "Save $RobustConfig file?" || end Aborted
+# fi
+# cp $TMP.new.ini $RobustConfig && echo "$RobustConfig saved"
+#
+# # [ ! -f "$enable" ] && ln -s "$RobustConfig" "$enable"
+# cat $BinDirectory/Robust.exe.config \
+# | sed "s%\(<file value=\"\)Robust%\\1$LogsRoot/$RobustName%" \
+# > "$DataRoot/$RobustName.logconfig"
+#
+# # if [ ! -f "$EtcRoot/opensim.ini" ]
+# # then
+# #   echo "myhost=$newhost
+# #   mydb=$newdb
+# #   myuser=$newuser
+# #   mypass=$newpass" > "$EtcRoot/opensim.ini"
+# # fi
