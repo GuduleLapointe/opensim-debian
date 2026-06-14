@@ -129,39 +129,102 @@ testDatabaseConnection() {
 	DatabasePassword=$4
 	log "Testing database $DatabaseName connection"
 
-	echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" $DatabaseName 2>/dev/null
-	if [ $? -ne 0 ]; then
-		echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" 2>/dev/null
-		if [ $? -ne 0 ]; then
-			createDatabaseUser $DatabaseHost $DatabaseUser "$DatabasePassword" || return $?
-		fi
-		createDatabase $DatabaseHost $DatabaseUser $DatabaseName &&
-			echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p$DatabasePassword $DatabaseName &&
-			log "Database OK" && return ||
-			return $?
+	# The account host MariaDB applies depends on how we connect: a
+	# "localhost" target goes through the unix socket (account host
+	# 'localhost'), any other value is a TCP connection matching that host.
+	# Note: a '%' grant does NOT cover socket 'localhost' connections.
+	[ "$DatabaseHost" = "localhost" ] && grant_host="localhost" || grant_host="$DatabaseHost"
+
+	# Real target test, used directly as the condition so errexit never
+	# trips here. Capture stderr so we know *why* it fails instead of
+	# blindly assuming the user is missing (the old code retried CREATE USER
+	# on an already-existing account, without ever fixing anything).
+	if dberror=$(echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" $DatabaseName 2>&1); then
+		log "Database Connection OK"
+		return 0
 	fi
-	log "Database Connection OK"
-	return
+
+	case "$dberror" in
+	*"Unknown database"*)
+		# Authentication works, only the database itself is missing.
+		log "User $DatabaseUser authenticates but database $DatabaseName is missing"
+		;;
+	*"Access denied"*)
+		# Authentication failed: account absent, wrong password, or account
+		# exists but not for the host we connect as. Probe before deciding.
+		databaseAuthRepair "$DatabaseHost" "$DatabaseName" "$DatabaseUser" "$DatabasePassword" "$grant_host"
+		return $?
+		;;
+	*)
+		log 1 "Cannot reach database $DatabaseName on $DatabaseHost: $dberror"
+		return 1
+		;;
+	esac
+
+	# Unknown-database path: auth is fine, create the database and re-test.
+	createDatabase $DatabaseHost $DatabaseUser $DatabaseName "$grant_host" &&
+		echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" $DatabaseName &&
+		log "Database OK" && return 0
+	return $?
+}
+
+databaseAuthRepair() {
+	DatabaseHost=$1
+	DatabaseName=$2
+	DatabaseUser=$3
+	DatabasePassword=$4
+	grant_host=$5
+
+	# Which hosts does this account already exist for? (admin socket auth)
+	existing=$(echo "SELECT Host FROM mysql.user WHERE User='$DatabaseUser';" |
+		sudo mysql -h$DatabaseHost -BN 2>/dev/null)
+
+	if [ -z "$existing" ]; then
+		# Account truly absent -> create it for the connecting host.
+		log "User $DatabaseUser does not exist yet on $DatabaseHost"
+	elif echo "$existing" | grep -qx "$grant_host"; then
+		# Account already exists for this exact host -> the password is wrong,
+		# creating the user again would not help.
+		log 1 "User '$DatabaseUser'@'$grant_host' exists but the password is rejected. Fix the password in the connection string and retry."
+		return 1
+	else
+		# Account exists, but not for the host we connect as: the real cause
+		# (e.g. opensim@'%' present, but a localhost socket connection needs
+		# opensim@'localhost'). Offer to add the missing host grant.
+		log "User '$DatabaseUser' exists for host(s): $(echo $existing) - but not for '$grant_host'"
+		yesno "Create '$DatabaseUser'@'$grant_host' and grant access to $DatabaseName?" || {
+			log 1 "Run manually: CREATE USER '$DatabaseUser'@'$grant_host' IDENTIFIED BY '<password>'; GRANT ALL ON $DatabaseName.* TO '$DatabaseUser'@'$grant_host';"
+			return 1
+		}
+	fi
+
+	createDatabaseUser $DatabaseHost $DatabaseUser "$DatabasePassword" "$grant_host" || return $?
+	createDatabase $DatabaseHost $DatabaseUser $DatabaseName "$grant_host" &&
+		echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" $DatabaseName &&
+		log "Database OK" && return 0
+	return $?
 }
 
 createDatabaseUser() {
 	[ "$3" ] || return $?
-	yesno "Create database user $DatabaseUser on $DatabaseHost?" || return $?
 	DatabaseHost=$1
 	DatabaseUser=$2
 	DatabasePassword=$3
-	echo "CREATE USER $DatabaseUser IDENTIFIED BY '$DatabasePassword';" | sudo mysql -h$DatabaseHost 2>/dev/null
+	grant_host="${4:-%}"
+	yesno "Create database user '$DatabaseUser'@'$grant_host' on $DatabaseHost?" || return $?
+	echo "CREATE USER IF NOT EXISTS '$DatabaseUser'@'$grant_host' IDENTIFIED BY '$DatabasePassword';" | sudo mysql -h$DatabaseHost 2>/dev/null
 	return $?
 }
 
 createDatabase() {
 	[ "$3" ] || return $?
-	yesno "Create database $DatabaseName and grant rights to $DatabaseUser?" || return $?
 	DatabaseHost=$1
 	DatabaseUser=$2
 	DatabaseName=$3
-	last="create database" && echo "CREATE DATABASE $DatabaseName character set UTF8;" | sudo mysql -h$DatabaseHost &&
-		last="grant rights" && echo "GRANT ALL ON $DatabaseName.* TO $DatabaseUser;" | sudo mysql -h$DatabaseHost &&
+	grant_host="${4:-%}"
+	yesno "Create database $DatabaseName and grant rights to '$DatabaseUser'@'$grant_host'?" || return $?
+	last="create database" && echo "CREATE DATABASE IF NOT EXISTS $DatabaseName character set UTF8;" | sudo mysql -h$DatabaseHost &&
+		last="grant rights" && echo "GRANT ALL ON $DatabaseName.* TO '$DatabaseUser'@'$grant_host';" | sudo mysql -h$DatabaseHost &&
 		(
 			sql="set global innodb_file_format = 'Barracuda'" && echo "$sql" | sudo mysql -h$DatabaseHost &&
 				sql="set global innodb_large_prefix = 'ON'" && echo "$sql" | sudo mysql -h$DatabaseHost ||
