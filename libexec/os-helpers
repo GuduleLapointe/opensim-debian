@@ -294,30 +294,81 @@ log "using $(which python3)"
 
 uuidgen=$(which uuid || which uuidgen)
 
+# --- Resolve configuration: generic -> specific, the most specific wins ---
+# Phase 1: bootstrap configs that can be located without knowing EtcRoot yet.
+# They are merged in order, so a later (more specific) file overrides an
+# earlier (more generic) one.
 echo "[Defaults]" >$TMP.conf
-for conf_file in $HOME/.$PKG.conf $HOME/.config/$PGM/$PKG.conf \
-	/opt/opensim/etc/$PKG.conf $BASEDIR/config/$PKG.conf; do
+for conf_file in \
+	/etc/opensim/$PKG.conf \
+	$BASEDIR/config/$PKG.conf \
+	$HOME/.$PKG.conf \
+	$HOME/.config/$PGM/$PKG.conf; do
 	[ -e "$conf_file" ] || continue
 	log "loading conf $conf_file"
-	crudmerge $TMP.conf $conf_file
+	crudmerge $TMP.conf "$conf_file"
 done
-log base conf loaded
 
-# Map PascalCase config keys to script variables, with fallbacks for standalone use
+# Candidate EtcRoot from what we have so far (fallback: the repo's own etc).
+EtcRoot=$(crudget $TMP.conf Defaults EtcRoot)
 EtcRoot=${EtcRoot:-$BASEDIR/etc}
+
+# Phase 2: the live config under EtcRoot is the authoritative description of an
+# actual installation, wherever EtcRoot points (system/bundled/flat layout).
+# Merge it last so it wins, then re-resolve EtcRoot in case it is set there.
+if [ -e "$EtcRoot/$PKG.conf" ]; then
+	log "loading live conf $EtcRoot/$PKG.conf"
+	crudmerge $TMP.conf "$EtcRoot/$PKG.conf"
+	EtcRoot=$(crudget $TMP.conf Defaults EtcRoot)
+	EtcRoot=${EtcRoot:-$BASEDIR/etc}
+fi
+log "base conf loaded"
+
+# Runtime locations used by the helpers, all read from [Defaults]. Each
+# assignment always defines the variable (empty if absent) for set -u safety.
+CoreRoot=$(crudget $TMP.conf Defaults CoreRoot)
+CoreDirectory=$(crudget $TMP.conf Defaults CoreDirectory)
+VarRoot=$(crudget $TMP.conf Defaults VarRoot)
+LogsRoot=$(crudget $TMP.conf Defaults LogsRoot)
+CacheRoot=$(crudget $TMP.conf Defaults CacheRoot)
+DataRoot=$(crudget $TMP.conf Defaults DataRoot)
+
+# The etc directory is the entry point for every helper, so a missing one is
+# fatal -- except for install scripts, whose job is precisely to create it.
+if [ -d "$EtcRoot" ]; then
+	log "EtcRoot=$EtcRoot"
+else
+	case "$PGM" in
+	*install*)
+		log "EtcRoot '$EtcRoot' does not exist yet, install will create it"
+		;;
+	*)
+		end 1 "Etc directory '$EtcRoot' not found. Run ./install/install.sh, or set EtcRoot in [Defaults] of $BASEDIR/config/$PKG.conf"
+		;;
+	esac
+fi
 
 # eval "$(crudini --get --format=sh "$_iconf" install 2>/dev/null)"
 
-# BinDirectory=${BinDirectory:-}
-# if [ -n "$BinDirectory" -a -d "$BinDirectory" ]; then
-# 	OpenSimExe=${CORE:-${BinDirectory:-}}/bin/OpenSim.exe
-# 	if [ ! -e "$OpenSimExe" ]; then
-# 		OpenSimExe=$( ls \
-# 		$BASEDIR/core/opensim*/bin/OpenSim.exe \
-# 		$BinDirectory/bin/OpenSim.exe \
-# 		2>/dev/null | tail -1 )
-# 	fi
-# fi
+# Deprecated, use CoreDirectory/bin instead
+BinDirectory=${BinDirectory:-$CoreDirectory/bin}
+
+# Find Core best candidate
+if [ -n "$CoreDirectory" -a -e "$CoreDirectory/bin/OpenSim.exe" ]; then
+	OpenSimExe="$CoreDirectory/bin/OpenSim.exe"
+	log "Found OpenSim.exe in CoreDirectory $OpenSimExe"
+else
+	log "Looking for OpenSipm.exe"
+	OpenSimExe=$(ls \
+		$CoreRoot/*/bin/OpenSim.exe \
+		2>/dev/null | tail -1)
+	# $BinDirectory/bin/OpenSim.exe \
+	if [ -n "$OpenSimExe" -a -e "$OpenSimExe" ]; then
+		log "Found OpenSimExe $OpenSimExe"
+		BinDirectory=$(dirname "$OpenSimExe")
+		CoreDirectory=$(dirname "$BinDirectory")
+	fi
+fi
 
 # if  [ -n "${OpenSimExe:-}" ]; then
 # 	log "$OpenSimExe found"

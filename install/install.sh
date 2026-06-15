@@ -205,28 +205,29 @@ esac
 
 SourcesDirectory=${SourcesDirectory:-$BASEDIR/src}
 
-# --- Save config to repo (gitignored) so Deployer can read it ---
-# crudini --set: updates only listed keys, leaves other settings untouched
+# Write the helpers config. [Defaults] holds the runtime locations read by the
+# helpers (os-helpers, bin/opensim, libexec/*); [Install] keeps only the
+# install-time metadata used by the install scripts. crudini --set updates
+# only the listed keys and leaves any other settings untouched.
+writeHelpersConf() {
+	_hc="$1"
+	crudini --set "$_hc" Defaults DirectoryLayout "$DirectoryLayout"
+	crudini --set "$_hc" Defaults CoreRoot "$CoreRoot"
+	crudini --set "$_hc" Defaults CoreDirectory "$CoreDirectory"
+	crudini --set "$_hc" Defaults EtcRoot "$EtcRoot"
+	crudini --set "$_hc" Defaults VarRoot "$VarRoot"
+	crudini --set "$_hc" Defaults LogsRoot "$LogsRoot"
+	crudini --set "$_hc" Defaults CacheRoot "$CacheRoot"
+	crudini --set "$_hc" Defaults DataRoot "$DataRoot"
+	crudini --set "$_hc" Install DirectoryLayout "$DirectoryLayout"
+	crudini --set "$_hc" Install OpensimVersion "${OpensimVersion:-}"
+	crudini --set "$_hc" Install InstallPath "${InstallPath:-}"
+	unset _hc
+}
+
+# --- Save config to repo (gitignored) so Deployer and the helpers can read it ---
 mkdir -p "$BASEDIR/config"
-_iconf="$BASEDIR/config/$PKG.conf"
-
-# TODO: request confirmation if these value already exist in Defaults section
-crudini --set "$_iconf" Defaults DirectoryLayout "$DirectoryLayout"
-crudini --set "$_iconf" Defaults CoreRoot "$CoreRoot"
-crudini --set "$_iconf" Defaults CoreDirectory "$CoreDirectory"
-
-# Save install config
-crudini --set "$_iconf" Install DirectoryLayout "$DirectoryLayout"
-crudini --set "$_iconf" Install OpensimVersion "${OpensimVersion:-}"
-crudini --set "$_iconf" Install InstallPath "${InstallPath:-}"
-crudini --set "$_iconf" Install CoreDirectory "$CoreDirectory"
-crudini --set "$_iconf" Install EtcRoot "$EtcRoot"
-crudini --set "$_iconf" Install VarRoot "$VarRoot"
-crudini --set "$_iconf" Install LogsRoot "$LogsRoot"
-crudini --set "$_iconf" Install CacheRoot "$CacheRoot"
-crudini --set "$_iconf" Install DataRoot "$DataRoot"
-
-unset _iconf
+writeHelpersConf "$BASEDIR/config/$PKG.conf"
 log "Install preferences saved to $BASEDIR/config/$PKG.conf"
 
 # --- Summary + confirm ---
@@ -258,19 +259,9 @@ for dir in \
 	sudo install $v -d -o "$USER" "$dir" || end $? "Could not create $dir"
 done
 
-# --- Write EtcRoot/$PKG.conf ---
+# --- Write EtcRoot/$PKG.conf (live config for this installation) ---
 log "Update $EtcRoot/$PKG.conf"
-_iconf="$EtcRoot/$PKG.conf"
-crudini --set "$_iconf" Install DirectoryLayout "$DirectoryLayout"
-crudini --set "$_iconf" Install OpensimVersion "${OpensimVersion:-}"
-crudini --set "$_iconf" Install InstallPath "${InstallPath:-}"
-crudini --set "$_iconf" Install CoreDirectory "${CoreDirectory}"
-crudini --set "$_iconf" Install EtcRoot "$EtcRoot"
-crudini --set "$_iconf" Install VarRoot "$VarRoot"
-crudini --set "$_iconf" Install LogsRoot "$LogsRoot"
-crudini --set "$_iconf" Install CacheRoot "$CacheRoot"
-crudini --set "$_iconf" Install DataRoot "$DataRoot"
-unset _iconf
+writeHelpersConf "$EtcRoot/$PKG.conf"
 
 # --- Download and extract OpenSim ---
 

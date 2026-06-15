@@ -9,29 +9,43 @@ DefaultLogDir=/opt/opensim/var/logs
 DELAY=60
 shutdownDelay=120
 shutdownWarnings=3
-[ ! "$DEBUG" ] && DEBUG=no
-
-# End of user configurable data
+DEBUG=${DEBUG:-}
 
 BASEDIR=$(cd $(dirname "$0")/.. && pwd)
 
 . $BASEDIR/libexec/os-helpers || exit 1
-[ "$OpenSimExe" ] || exit 1
-[ "$EtcRoot" ] || exit 1
+trap 'rm -f $TMP*' EXIT
 
 source $BASEDIR/libexec/venv-setup || end $? "Could not setup python venv"
 
 require crudini
 
-trap 'rm -f $TMP*' EXIT
+crudget $TMP.conf Defaults
+
+log "DirectoryLayout: $DirectoryLayout"
+log "OpensimVersion: $OpensimVersion"
+log "InstallPath: $InstallPath"
+log "CoreRoot: $CoreRoot"
+log "CoreDirectory: $CoreDirectory"
+log "BinDirectory: $BinDirectory"
+log "OpenSimExe: $OpenSimExe"
+log "EtcRoot: $EtcRoot"
+log "VarRoot: $VarRoot"
+log "DataRoot: $DataRoot"
+log "CacheRoot: $CacheRoot"
+log "LogsRoot: $LogsRoot"
+
+[ -z "$EtcRoot" ] && end 1 "Etc directory not set"
+
+[ -z "$OpenSimExe" ] && end 2 "could not find OpenSim.exe"
 
 HELP="
-  $PGM <start|stop [now]|restart [now]> [instance1] [instance2] [...]
-  $PGM status
+$PGM <start|stop [now]|restart [now]> [instance1] [instance2] [...]
+$PGM status
 
-      -h display this help
-      -v verbose mode
-      -q quiet mode"
+	-h display this help
+	-v verbose mode
+	-q quiet mode"
 
 OPTS="shvq"
 while getopts $OPTS PARAM; do
