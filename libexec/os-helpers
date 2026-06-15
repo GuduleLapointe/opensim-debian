@@ -309,6 +309,15 @@ version_ge() {
 	return 0
 }
 
+# Echo the .NET version required by an assembly, read from its
+# <name>.runtimeconfig.json (falls back to 8.0.0 if not found).
+dotnetRequiredVersion() {
+	local cfg="${1%.dll}.runtimeconfig.json" v
+	[ -f "$cfg" ] && v=$(grep -A2 'Microsoft.NETCore.App' "$cfg" |
+		grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+	echo "${v:-8.0.0}"
+}
+
 # Verify the runtime needed to launch an executable is installed.
 # Args: runtime (dotnet|mono), executable path. Returns non-zero with an
 # explicit message if the runtime, or the required .NET major, is missing.
@@ -325,19 +334,23 @@ checkRuntimeAvailable() {
 			log 1 "dotnet is not installed. Run install/install.sh to install the .NET runtime"
 			return 1
 		fi
-		# Required .NET version is declared in <exe>.runtimeconfig.json.
-		local cfg="${exe%.dll}.runtimeconfig.json" required major
-		[ -f "$cfg" ] && required=$(grep -A2 'Microsoft.NETCore.App' "$cfg" |
-			grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-		required=${required:-8.0.0}
+		local required major m use=""
+		required=$(dotnetRequiredVersion "$exe")
 		major=${required%%.*}
-		if dotnet --list-runtimes 2>/dev/null | grep -q "Microsoft.NETCore.App $major\."; then
-			log "Found .NET runtime $major.x (required by ${exe##*/})"
+		# Roll-forward: any runtime at or above the required major can run the
+		# app (the launcher sets DOTNET_ROLL_FORWARD=Major). Pick the lowest.
+		for m in $(dotnet --list-runtimes 2>/dev/null |
+			grep -o 'Microsoft.NETCore.App [0-9]*' | awk '{print $2}' | sort -un); do
+			[ "$m" -ge "$major" ] && use=$m && break
+		done
+		if [ -n "$use" ]; then
+			[ "$use" = "$major" ] && log "Found .NET runtime $major" ||
+				log "Using .NET $use (roll-forward from required $major)"
 			return 0
 		fi
-		log 1 "OpenSim needs Microsoft.NETCore.App $major.x but it is not installed"
+		log 1 "OpenSim needs Microsoft.NETCore.App $major or newer, but none is installed"
 		log 1 "Installed: $(dotnet --list-runtimes 2>/dev/null | grep -o 'Microsoft.NETCore.App [0-9.]*' | tr '\n' ' ')"
-		log 1 "Install .NET $major (run install/install.sh) and retry"
+		log 1 "Install .NET $major+ (run install/install.sh) and retry"
 		return 1
 		;;
 	esac

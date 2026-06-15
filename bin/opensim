@@ -159,7 +159,6 @@ startSim() {
 		log "BinDirectory: $BinDirectory"
 
 		Executable=${executable:-${Executable}}
-		BinDirectory=${bindir:-${BinDirectory}}
 		ExecName=$(basename "$Executable")
 		ExecName=${ExecName%.exe}
 		ExecName=${ExecName%.dll}
@@ -171,9 +170,13 @@ startSim() {
 		if version_ge "${osversion:-0}" 0.9.3.0; then
 			runtime=dotnet
 			Executable="$ExecName.dll"
+			# Let a net8.0 build run on a newer .NET (e.g. 9). Kept as a command
+			# flag (not an env var) so the command logged by -v start is complete.
+			runtime_opts="--roll-forward Major"
 		else
 			runtime=mono
 			Executable="$ExecName.exe"
+			runtime_opts=""
 		fi
 		log "Executable $Executable ($runtime), OpenSim version ${osversion:-unknown}"
 
@@ -198,7 +201,7 @@ startSim() {
 
 		ConsolePrompt=${consoleprompt:-${ConsolePrompt}}
 
-		cmd="$runtime $Executable -inifile='$inifile'"
+		cmd="$runtime${runtime_opts:+ $runtime_opts} $Executable -inifile='$inifile'"
 		if [ "${Executable%.*}" = "Robust" ]; then
 			[ ! "$ConsolePrompt" ] && ConsolePrompt="Robust ($instance) "
 			cmd="$cmd -logfile='$LogFile' -prompt '$ConsolePrompt'"
