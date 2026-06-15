@@ -183,6 +183,10 @@ startSim() {
 		log "BinDirectory $BinDirectory"
 		[ -f $Executable ] || end 3 Executable $Executable not found
 
+		# Fail early with a clear message if the runtime is missing, rather
+		# than letting the instance crash on launch.
+		checkRuntimeAvailable "$runtime" "$Executable" || continue
+
 		Include_Common=$(crudget $inifile Includes Include-Common 2>/dev/null)
 		# crudini --get $inifile Includes Include-Common
 		LogsRoot=$(crudget $Include_Common Const LogsRoot | sed -e "s#\${Launch|SimName}#$instance#g" -e "s#\${Launch|MachineName}#$instance#g")

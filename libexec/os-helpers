@@ -309,6 +309,40 @@ version_ge() {
 	return 0
 }
 
+# Verify the runtime needed to launch an executable is installed.
+# Args: runtime (dotnet|mono), executable path. Returns non-zero with an
+# explicit message if the runtime, or the required .NET major, is missing.
+checkRuntimeAvailable() {
+	local runtime="$1" exe="$2"
+	case "$runtime" in
+	mono)
+		command -v mono >/dev/null 2>&1 && return 0
+		log 1 "mono is not installed (required for OpenSim < 0.9.3.0). Install it, or run install/install.sh"
+		return 1
+		;;
+	dotnet)
+		if ! command -v dotnet >/dev/null 2>&1; then
+			log 1 "dotnet is not installed. Run install/install.sh to install the .NET runtime"
+			return 1
+		fi
+		# Required .NET version is declared in <exe>.runtimeconfig.json.
+		local cfg="${exe%.dll}.runtimeconfig.json" required major
+		[ -f "$cfg" ] && required=$(grep -A2 'Microsoft.NETCore.App' "$cfg" |
+			grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+		required=${required:-8.0.0}
+		major=${required%%.*}
+		if dotnet --list-runtimes 2>/dev/null | grep -q "Microsoft.NETCore.App $major\."; then
+			log "Found .NET runtime $major.x (required by ${exe##*/})"
+			return 0
+		fi
+		log 1 "OpenSim needs Microsoft.NETCore.App $major.x but it is not installed"
+		log 1 "Installed: $(dotnet --list-runtimes 2>/dev/null | grep -o 'Microsoft.NETCore.App [0-9.]*' | tr '\n' ' ')"
+		log 1 "Install .NET $major (run install/install.sh) and retry"
+		return 1
+		;;
+	esac
+}
+
 # Python venv + crudini (isolated from system Python)
 . $BASEDIR/libexec/venv-setup || end $? "Could not set up Python venv"
 log "using $(which python3)"
