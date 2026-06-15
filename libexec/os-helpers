@@ -288,6 +288,21 @@ isuuid() {
 	echo $1 | grep -qEi "^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$"
 }
 
+# version_ge A B -> true (0) if dot-separated numeric version A >= B.
+# Portable (bash 3.2+, no external sort -V which BSD/macOS lacks).
+version_ge() {
+	[ "$1" = "$2" ] && return 0
+	# IFS must be set before the array splits, hence its own line.
+	local IFS=.
+	local i a=($1) b=($2)
+	for ((i = 0; i < ${#b[@]}; i++)); do
+		local x=${a[i]:-0} y=${b[i]:-0}
+		[ "$((10#$x))" -gt "$((10#$y))" ] && return 0
+		[ "$((10#$x))" -lt "$((10#$y))" ] && return 1
+	done
+	return 0
+}
+
 # Python venv + crudini (isolated from system Python)
 . $BASEDIR/libexec/venv-setup || end $? "Could not set up Python venv"
 log "using $(which python3)"

@@ -151,23 +151,35 @@ startSim() {
 		[ "$ConsolePort" = "0" ] && ConsolePort=""
 		[ "$console_port" = "0" ] && console_port=""
 
-		[ "$BinDir" ] || end 1 "Could not find a valid BinDir"
-		log "BinDir: $BinDir"
+		# Catch deprecated BinDir configuration
+		BinDirectory=${BinDirectory:-$BinDir}
+
+		[ -z "$BinDirectory" ] && end 1 "Could not find a valid BinDirectory"
+		log "BinDirectory: $BinDirectory"
 
 		Executable=${executable:-${Executable}}
-		BinDir=${bindir:-${BinDir}}
-		ExecName=$(basename $Executable | sed 's/\.\(exe\|dll\)$//')
-		case "${Executable##*.}" in
-		dll) runtime=dotnet ;;
-		*) runtime=mono ;;
-		esac
-		echo "$BinDir" | grep -q "opensim-0\.9\.3" && runtime=dotnet && Executable="$ExecName.dll"
-		log "Executable $Executable ($runtime)"
+		BinDirectory=${bindir:-${BinDirectory}}
+		ExecName=$(basename "$Executable")
+		ExecName=${ExecName%.exe}
+		ExecName=${ExecName%.dll}
+
+		# Runtime by OpenSim version: 0.9.3.0+ ships .NET assemblies (Robust.dll,
+		# run with dotnet); older releases are Mono (Robust.exe). Read the version
+		# from the core path (opensim-X.Y.Z) as it reflects the installed binaries.
+		osversion=$(echo "$BinDirectory" | grep -oE '[0-9]+(\.[0-9]+)+' | head -1)
+		if version_ge "${osversion:-0}" 0.9.3.0; then
+			runtime=dotnet
+			Executable="$ExecName.dll"
+		else
+			runtime=mono
+			Executable="$ExecName.exe"
+		fi
+		log "Executable $Executable ($runtime), OpenSim version ${osversion:-unknown}"
 
 		log "starting $instance with $inifile"
 
-		cd $BinDir 2>/dev/null || end 2 $instance Cannot cd to $BinDir
-		log "BinDir $BinDir"
+		cd $BinDirectory 2>/dev/null || end 2 $instance Cannot cd to $BinDirectory
+		log "BinDirectory $BinDirectory"
 		[ -f $Executable ] || end 3 Executable $Executable not found
 
 		Include_Common=$(crudget $inifile Includes Include-Common 2>/dev/null)
@@ -200,9 +212,9 @@ startSim() {
 		if [ ! -f "$LogConfig" ]; then
 			sed -e "s|[a-zA-Z0-9\./_-]*/*$ExecName.log|$LogsRoot/$instance.log|" \
 				-e "s|[a-zA-Z0-9\./_-]*/*${ExecName}Stats.log|$LogsRoot/${instance}.Stats.log|" \
-				$BinDir/$ExecName.exe.config >$TMP.logconfig &&
+				$BinDirectory/$ExecName.exe.config >$TMP.logconfig &&
 				mv $TMP.logconfig "$LogConfig" &&
-				log created LogConfig file $LogConfig from core model $BinDir/$ExecName.exe.config ||
+				log created LogConfig file $LogConfig from core model $BinDirectory/$ExecName.exe.config ||
 				end $?
 			# cd /opt/opensim/var/data/config
 			# ln -s $LogConfig 2>/dev/null
