@@ -175,6 +175,7 @@ economyURL="\${Const|WebURL}/helpers"
 
 cat <<EOF >$TMP.thisgrid.ini || end $? "could not create $TMP.thisgrid.ini"
 [Const]
+	BaseHostname = "$BaseHostname"
 	BaseURL = "http://$BaseHostname"
 	WebURL = "$WebURL"
 	PublicPort = $PublicPort
