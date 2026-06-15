@@ -72,12 +72,19 @@ yesno "Update system packages?" && {
 
 # --- OpenSim version selection (no download yet) ---
 echo ""
-log "Fetching OpenSimulator release list from $OSDOWNLOADPAGE ..."
-_releases=$(curl -s "$OSDOWNLOADPAGE/" |
-	grep -o 'href="opensim-[0-9][^"]*\.tar\.gz"' |
-	grep -v source |
-	cut -d'"' -f2 |
-	sort -r)
+# The release list changes once every year or two, so cache it (7-day TTL).
+_cache="${XDG_CACHE_HOME:-$HOME/.cache}/opensim/releases.list"
+mkdir -p "$(dirname "$_cache")"
+if [ -f "$_cache" ] && [ -z "$(find "$_cache" -mtime +7 2>/dev/null)" ]; then
+	_releases=$(cat "$_cache")
+	log "Using cached release list ($_cache)"
+else
+	echo "Fetching OpenSimulator release list from $OSDOWNLOADPAGE ..."
+	_releases=$(curl -s "$OSDOWNLOADPAGE/" |
+		grep -o 'href="opensim-[0-9][^"]*\.tar\.gz"' |
+		grep -v source | cut -d'"' -f2 | sort -r || true)
+	[ -n "$_releases" ] && printf '%s\n' "$_releases" >"$_cache"
+fi
 [ -n "$_releases" ] || end 1 "Could not fetch release list from $OSDOWNLOADPAGE"
 
 echo ""
@@ -85,7 +92,7 @@ echo "OpenSimulator version to install:"
 i=1
 while IFS= read -r _f; do
 	_name=$(basename "$_f" .tar.gz)
-	if [ -d "${CoreRoot:-}/$_name" ] || [ -d "$BASEDIR/core/$_name" ]; then
+	if [ -e "${CoreRoot:-}/$_name/bin/OpenSim.exe" ] || [ -e "$BASEDIR/core/$_name/bin/OpenSim.exe" ]; then
 		printf "  %2d) %s  (installed)\n" "$i" "$_name"
 	else
 		printf "  %2d) %s\n" "$i" "$_name"
@@ -187,9 +194,9 @@ fi
 # --- Layout selection ---
 echo ""
 echo "Installation layout:"
-echo "  1) Flat      — OpenSim's default layout, all files in core directory"
+echo "  1) System    — Standard Linux paths: /etc/opensim, /var/lib/opensim, /usr/local/share/opensim"
 echo "  2) Bundled   — Organized structure under a single directory: /opt/opensim, ~/opensim, ..."
-echo "  3) System    — Standard Linux paths: /etc/opensim, /var/lib/opensim, /usr/local/share/opensim"
+echo "  3) Flat      — OpenSim's default layout, all files in core directory"
 echo ""
 
 DirectoryLayout=${DirectoryLayout:-1}
@@ -198,7 +205,7 @@ readvar DirectoryLayout
 
 ## Set install base directory
 case "${DirectoryLayout:-1}" in
-3 | system | debian)
+1 | system | debian)
 	DirectoryLayout=system
 	BaseInstallPath=/usr/local/share/opensim
 	;;
@@ -207,7 +214,7 @@ case "${DirectoryLayout:-1}" in
 	BaseInstallPath=/opt/opensim
 	readvar BaseInstallPath
 	;;
-1 | flat)
+3 | flat)
 	DirectoryLayout=flat
 	BaseInstallPath=$BASEDIR/core
 	readvar BaseInstallPath
@@ -271,25 +278,28 @@ writeOpensimConf() {
 	version_ge "$OpensimVersion" 0.9.3.0 && _rt=dotnet || _rt=mono
 	_sec="${SectionName:-opensim-$OpensimVersion}"
 
-	# Write the full preference set into the profile's own section.
-	_writeProfile "$_conf" "$_sec"
-
-	# Default pointer: set if none, otherwise ask before changing it. When this
-	# profile becomes the default, mirror its values into [Defaults] too.
-	_cur=$(crudini --get "$_conf" Defaults Default 2>/dev/null || true)
-	if [ -z "$_cur" ] ||
-		{ [ "$_cur" != "$_sec" ] && yesno "Make '$_sec' the default install (current: $_cur)?"; }; then
-		crudini --set "$_conf" Defaults Default "$_sec"
-		_writeProfile "$_conf" Defaults
+	# Decide the default install. [Defaults] is written first (so it stays the
+	# first section in the file); its values mirror this profile only when this
+	# profile is, or becomes, the default.
+	_cur=$(crudini --get "$_conf" Defaults DefaultProfile 2>/dev/null || true)
+	if [ -z "$_cur" ] || [ "$_cur" = "$_sec" ] ||
+		yesno "Make '$_sec' the default install (current: $_cur)?"; then
+		_def="$_sec"
 	else
+		_def="$_cur"
 		log "Default install kept: $_cur"
 	fi
+	crudini --set "$_conf" Defaults DefaultProfile "$_def"
+	if [ "$_def" = "$_sec" ]; then _writeProfile "$_conf" Defaults; fi
+
+	# Write the full preference set into the profile's own section.
+	_writeProfile "$_conf" "$_sec"
 
 	# Predictable per-user path -> the canonical file in EtcRoot.
 	mkdir -p "$HOME/.config/opensim"
 	ln -sfn "$_conf" "$HOME/.config/opensim/$CONF"
 	log "Config written: $_conf [$_sec] (linked from ~/.config/opensim/$CONF)"
-	unset _conf _rt _sec _cur
+	unset _conf _rt _sec _cur _def
 }
 
 # Write the full preference set into a section of the config file.

@@ -21,7 +21,7 @@ source $BASEDIR/libexec/venv-setup || end $? "Could not setup python venv"
 require crudini
 
 log "DirectoryLayout: $DirectoryLayout"
-log "Profile: ${Default:-} (OpenSim $OpensimVersion)"
+log "Profile: ${DefaultProfile:-} (OpenSim $OpensimVersion)"
 log "CoreRoot: $CoreRoot"
 log "CoreDirectory: $CoreDirectory"
 log "BinDirectory: $BinDirectory"

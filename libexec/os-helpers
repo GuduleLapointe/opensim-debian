@@ -392,7 +392,7 @@ fi
 # it always wins. Each variable is given a definite value (empty if absent)
 # afterwards for set -u safety.
 crudget "$TMP.conf" Defaults
-active=${Default:-}
+active=${DefaultProfile:-}
 [ -n "$active" ] && crudget "$TMP.conf" "$active"
 DirectoryLayout=${DirectoryLayout:-}
 OpensimVersion=${OpensimVersion:-}
