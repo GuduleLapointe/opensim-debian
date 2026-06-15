@@ -89,6 +89,54 @@ final class Runtime
         }
     }
 
+    /** Install the runtime when the plan requires it (apply phase). */
+    public function install(Plan $plan): void
+    {
+        if (!$plan->installRuntime) {
+            return;
+        }
+
+        if ($plan->runtime === 'dotnet') {
+            $this->installDotnet((int) $plan->dotnetMajor);
+        } else {
+            $this->installMono();
+        }
+    }
+
+    private function installDotnet(int $major): void
+    {
+        // Install into the active dotnet root so the existing 'dotnet' finds it.
+        [$code, $path] = System::capture('command -v dotnet');
+        $dir = ($code === 0 && trim($path) !== '')
+            ? dirname(realpath(trim($path)) ?: trim($path))
+            : (getenv('HOME') ?: '') . '/.dotnet';
+        $sudo = is_writable($dir) ? '' : 'sudo ';
+
+        $script = sys_get_temp_dir() . '/dotnet-install.sh';
+        if (System::run('curl -fsSL https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh -o ' . System::arg($script)) !== 0) {
+            $this->ui->error('Could not fetch dotnet-install.sh.');
+            exit(1);
+        }
+
+        $this->ui->note("Installing .NET $major into $dir");
+        $code = System::run($sudo . 'bash ' . System::arg($script)
+            . ' --runtime dotnet --channel ' . System::arg("$major.0")
+            . ' --install-dir ' . System::arg($dir));
+        if ($code !== 0) {
+            $this->ui->error(".NET $major installation failed.");
+            exit(1);
+        }
+    }
+
+    private function installMono(): void
+    {
+        $package = PHP_OS_FAMILY === 'Darwin' ? 'mono' : 'mono-complete';
+        if ((new Packages($this->ui))->install($package) !== 0) {
+            $this->ui->error('Mono installation failed.');
+            exit(1);
+        }
+    }
+
     /** @return list<int> installed Microsoft.NETCore.App major versions, ascending */
     private function dotnetMajors(): array
     {

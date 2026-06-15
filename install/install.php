@@ -15,10 +15,13 @@ declare(strict_types=1);
 require __DIR__ . '/../vendor/autoload.php';
 
 use OpenSim\Installer\Config;
+use OpenSim\Installer\Distribution;
 use OpenSim\Installer\Layout;
+use OpenSim\Installer\Packages;
 use OpenSim\Installer\Plan;
 use OpenSim\Installer\Releases;
 use OpenSim\Installer\Runtime;
+use OpenSim\Installer\System;
 use OpenSim\Installer\Ui\PromptsUi;
 
 $ui = new PromptsUi();
@@ -97,4 +100,41 @@ foreach ($plan->summary() as $label => $value) {
     $lines[] = sprintf('  %-16s %s', $label . ':', $value);
 }
 $ui->note("Installation plan:\n" . implode("\n", $lines));
-$ui->outro('Phase 2 OK — plan gathered, no changes made yet.');
+
+// --- Apply -------------------------------------------------------------------
+if (!$ui->confirm('Proceed with the installation?', true)) {
+    $ui->outro('Aborted — nothing changed.');
+    exit(0);
+}
+
+$packages = new Packages($ui);
+$packages->ensure('screen', 'screen'); // needed to run instances later
+
+$ui->note('Updating git submodules…');
+System::run('git -C ' . System::arg(dirname(__DIR__)) . ' submodule update --init');
+
+// Create directories, owned by the current user.
+$user = getenv('USER') ?: get_current_user();
+$dirs = [
+    $plan->etcRoot, "{$plan->etcRoot}/opensim.d", "{$plan->etcRoot}/robust.d", "{$plan->etcRoot}/grids",
+    $plan->sourcesDirectory, $plan->coreRoot, $plan->coreDirectory,
+    $plan->varRoot, $plan->logsRoot, $plan->cacheRoot, $plan->dataRoot,
+];
+foreach (array_unique($dirs) as $dir) {
+    if (!is_dir($dir)) {
+        System::run('sudo install -d -o ' . System::arg($user) . ' ' . System::arg($dir));
+    }
+}
+
+(new Distribution($ui))->fetchAndExtract($plan);
+(new Runtime($ui))->install($plan);
+
+if (!is_file("{$plan->coreDirectory}/bin/OpenSim.exe")) {
+    $ui->error("Core not found after install: {$plan->coreDirectory}/bin/OpenSim.exe");
+    exit(1);
+}
+
+$path = (new Config())->write($plan);
+$ui->note("Config written: $path (linked from ~/.config/opensim/opensim.conf)");
+
+$ui->outro("OpenSim {$plan->version} installed. Configure a grid next (newgrid).");
