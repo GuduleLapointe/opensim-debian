@@ -116,8 +116,9 @@ startSim() {
 
 		log "$instance ($ini)"
 
-		screen -ls | egrep -q "[0-9][0-9]*\.$instance[[:blank:]]"
-		if [ $? -eq 0 ]; then
+		# Drop leftover dead sessions so they are not mistaken for a running one.
+		screen -wipe >/dev/null 2>&1
+		if osScreenExists "$instance"; then
 			log "$instance is already running"
 			continue
 		fi
@@ -250,19 +251,24 @@ startSim() {
 			nohup $cmd >$TMP.$instance.nohup 2>&1 &
 			timeout 60 tail -Fn0 $TMP.$instance.nohup 2>/dev/null | egrep -am 1 "Error|UserAgentServerConnector loaded successfully|RegionReady|neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done|\[CONSOLE\] Quitting"
 		else
-			eval "screen -S $instance -d -m $cmd"
-			screen -ls | egrep "[0-9][0-9]*\.$instance[[:blank:]]"
+			# Capture the session output so an early crash can be reported.
+			startlog="$TMP.$instance.startup.log"
+			eval "screen -L -Logfile '$startlog' -S $instance -d -m $cmd"
+			screen -S $instance -X logfile flush 1 2>/dev/null
 
-			# TAILTIMEOUT=120
-			# log "logfile: $LogFile"
+			# Confirm the session actually came up. An immediate exit (e.g. a
+			# missing or incompatible runtime) would otherwise leave us polling
+			# a dead session and spamming "No screen session found".
+			sleep 1
+			if ! osScreenExists "$instance"; then
+				log 1 "$instance failed to start: the process exited immediately"
+				[ -s "$startlog" ] && cat "$startlog" >&2
+				log "Reproduce the command with: $PGM -v start $instance"
+				continue
+			fi
+
 			if [ "${Executable%.*}" = "Robust" ]; then
-				osConsoleWait $instance "UserAgentServerConnector loaded successfully" &&
-					log "Robust server $instance started" ||
-					log "Robust not started after 30 seconds, giving up"
-				# TAILTIMEOUT=60
-				# timeout $TAILTIMEOUT tailgrep "UserAgentServerConnector loaded successfully" $LogFile \
-				# && echo "At least one region started" \
-				# || echo "Startup still going on after $TAILTIMEOUT seconds, check again later"
+				osConsoleWait $instance "UserAgentServerConnector loaded successfully"
 			else
 				osConsoleWait 5 $instance "RegionUUID" && osConsole $instance "\n"
 				osConsoleWait 1 $instance "Internal IP address" && osConsole $instance "\n"
@@ -270,15 +276,19 @@ startSim() {
 				osConsoleWait 1 $instance "Do you wish to join region .* to an existing estate" && osConsole $instance "\n" &&
 					osConsoleWait 1 $instance "Name of estate to join." && osConsole $instance "\n"
 
-				osConsoleWait 120 $instance "RegionReady|neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done" &&
-					log "Simulator $instance started" ||
-					log $? "Simulator $instance still starting after 120 seconds, let it go and see later"
-				#
-				# echo timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up" $LogFile
-				# timeout $TAILTIMEOUT tailgrep "neighbours.*region.*is up|loaded successfully" $LogFile \
-				# && echo "At least one region started" \
-				# || echo "Startup still going on after $TAILTIMEOUT seconds, check again later"
+				osConsoleWait 120 $instance "RegionReady|neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done"
 			fi
+
+			# Interpret the final wait result the same way for both server types.
+			case $? in
+			0) log "$instance started" ;;
+			3)
+				log 1 "$instance exited while starting"
+				[ -s "$startlog" ] && tail -n 20 "$startlog" >&2
+				log "Reproduce the command with: $PGM -v start $instance"
+				;;
+			*) log "$instance still starting, let it run and check status later" ;;
+			esac
 		fi
 
 	done

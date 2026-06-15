@@ -41,13 +41,18 @@ osConsole() {
 	# pre=$(printf "\n\b")
 	screen -x $osInstance -X stuff "$(echo "$pre$osCommand$lr")"
 }
+# True if a live (non-dead) screen session exists for the given instance.
+osScreenExists() {
+	screen -ls 2>/dev/null | grep -E "[0-9]+\.$1[[:space:]]" | grep -qv "Dead"
+}
+
 osConsoleRead() {
 	[ ! "$1" ] && return
 	[ ! "$COLUMNS" ] && COLUMNS=75
 	osInstance=$1
 	shift
 	pattern="$@"
-	screen -x $osInstance -X hardcopy -h $TMP.console
+	screen -x $osInstance -X hardcopy -h $TMP.console >/dev/null 2>&1
 	if [ "$pattern" ]; then
 		egrep "$pattern" $TMP.console && return
 		printf "\33[2K"
@@ -67,10 +72,11 @@ osConsoleWait() {
 	t=0
 	while [ $t -lt 60 ]; do
 		osConsoleRead $osInstance "$pattern" && return
+		# Stop waiting if the session is gone: the instance has exited.
+		osScreenExists "$osInstance" || return 3
 		sleep 0.5
 		t=$(($t + 1))
 	done
-	# echo
 	return 1
 }
 
