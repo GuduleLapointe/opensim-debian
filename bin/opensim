@@ -23,8 +23,7 @@ require crudini
 crudget $TMP.conf Defaults
 
 log "DirectoryLayout: $DirectoryLayout"
-log "OpensimVersion: $OpensimVersion"
-log "InstallPath: $InstallPath"
+log "Default version: $Version"
 log "CoreRoot: $CoreRoot"
 log "CoreDirectory: $CoreDirectory"
 log "BinDirectory: $BinDirectory"

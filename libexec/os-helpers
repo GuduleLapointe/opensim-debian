@@ -4,6 +4,7 @@ OPENSIM=${OPENSIM:-core/opensim}
 PGM=${PGM:-$(basename "$0")}
 PGM=$(echo "$PGM" | sed -E "s/\.[a-z]+$//")
 PKG="opensim-helpers"
+CONF="${CONF:-opensim.conf}"
 TMP=${TMP:-$(mktemp -t $PGM || echo /tmp/$PGM.$$)}
 DEBUG=${DEBUG:-}
 
@@ -362,44 +363,47 @@ log "using $(which python3)"
 
 uuidgen=$(which uuid || which uuidgen)
 
-# --- Resolve configuration: generic -> specific, the most specific wins ---
-# Phase 1: bootstrap configs that can be located without knowing EtcRoot yet.
-# They are merged in order, so a later (more specific) file overrides an
-# earlier (more generic) one.
-echo "[Defaults]" >$TMP.conf
-for conf_file in \
-	/etc/opensim/$PKG.conf \
-	$BASEDIR/config/$PKG.conf \
-	$HOME/.$PKG.conf \
-	$HOME/.config/$PGM/$PKG.conf; do
-	[ -e "$conf_file" ] || continue
-	log "loading conf $conf_file"
-	crudmerge $TMP.conf "$conf_file"
+# --- Resolve configuration ---------------------------------------------------
+# One config file. It is found at a predictable per-user path first (a symlink
+# into EtcRoot), then at common system/repo locations. [Defaults] holds the
+# shared, version-independent locations and the default Version; each installed
+# version has its own [opensim-X.Y.Z] section (CoreDirectory, Runtime).
+conf=""
+for candidate in \
+	"$HOME/.config/opensim/$CONF" \
+	"$HOME/.$CONF" \
+	/etc/opensim/$CONF \
+	"$BASEDIR/config/$CONF"; do
+	[ -f "$candidate" ] || continue
+	conf="$candidate"
+	break
 done
 
-# Candidate EtcRoot from what we have so far (fallback: the repo's own etc).
-EtcRoot=$(crudget $TMP.conf Defaults EtcRoot)
-EtcRoot=${EtcRoot:-$BASEDIR/etc}
-
-# Phase 2: the live config under EtcRoot is the authoritative description of an
-# actual installation, wherever EtcRoot points (system/bundled/flat layout).
-# Merge it last so it wins, then re-resolve EtcRoot in case it is set there.
-if [ -e "$EtcRoot/$PKG.conf" ]; then
-	log "loading live conf $EtcRoot/$PKG.conf"
-	crudmerge $TMP.conf "$EtcRoot/$PKG.conf"
-	EtcRoot=$(crudget $TMP.conf Defaults EtcRoot)
-	EtcRoot=${EtcRoot:-$BASEDIR/etc}
+if [ -n "$conf" ]; then
+	log "loading config $conf"
+	cp "$conf" "$TMP.conf"
+else
+	log "no config found, using built-in defaults"
+	echo "[Defaults]" >"$TMP.conf"
 fi
-log "base conf loaded"
 
-# Runtime locations used by the helpers, all read from [Defaults]. Each
-# assignment always defines the variable (empty if absent) for set -u safety.
-CoreRoot=$(crudget $TMP.conf Defaults CoreRoot)
-CoreDirectory=$(crudget $TMP.conf Defaults CoreDirectory)
-VarRoot=$(crudget $TMP.conf Defaults VarRoot)
-LogsRoot=$(crudget $TMP.conf Defaults LogsRoot)
-CacheRoot=$(crudget $TMP.conf Defaults CacheRoot)
-DataRoot=$(crudget $TMP.conf Defaults DataRoot)
+# Shared locations + default version, sourced from [Defaults]. Each variable is
+# given a definite value afterwards (empty if absent) for set -u safety.
+crudget "$TMP.conf" Defaults
+DirectoryLayout=${DirectoryLayout:-}
+EtcRoot=${EtcRoot:-$BASEDIR/etc}
+CoreRoot=${CoreRoot:-$BASEDIR/core}
+VarRoot=${VarRoot:-}
+LogsRoot=${LogsRoot:-}
+CacheRoot=${CacheRoot:-}
+DataRoot=${DataRoot:-}
+Version=${Version:-}
+
+# The active (default) version's section provides CoreDirectory and Runtime.
+[ -n "$Version" ] && crudget "$TMP.conf" "opensim-$Version"
+CoreDirectory=${CoreDirectory:-}
+Runtime=${Runtime:-}
+log "base conf loaded (default version ${Version:-unset})"
 
 # The etc directory is the entry point for every helper, so a missing one is
 # fatal -- except for install scripts, whose job is precisely to create it.
@@ -411,7 +415,7 @@ else
 		log "EtcRoot '$EtcRoot' does not exist yet, install will create it"
 		;;
 	*)
-		end 1 "Etc directory '$EtcRoot' not found. Run ./install/install.sh, or set EtcRoot in [Defaults] of $BASEDIR/config/$PKG.conf"
+		end 1 "Etc directory '$EtcRoot' not found. Run ./install/install.sh, or set EtcRoot in [Defaults] of $CONF"
 		;;
 	esac
 fi

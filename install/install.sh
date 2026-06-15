@@ -13,7 +13,6 @@ BASEDIR=$(dirname $(dirname $(realpath "$0")))
 trap 'rm -f $TMP*' EXIT
 
 crudget $TMP.conf Defaults
-crudget $TMP.conf Install
 
 log "Config loaded
   OpenSim version:   ${OpensimVersion:-}
@@ -85,9 +84,15 @@ echo ""
 echo "OpenSimulator version to install:"
 i=1
 while IFS= read -r _f; do
-	printf "  %2d) %s\n" "$i" "$(basename "$_f" .tar.gz)"
+	_name=$(basename "$_f" .tar.gz)
+	if [ -d "${CoreRoot:-}/$_name" ] || [ -d "$BASEDIR/core/$_name" ]; then
+		printf "  %2d) %s  (installed)\n" "$i" "$_name"
+	else
+		printf "  %2d) %s\n" "$i" "$_name"
+	fi
 	i=$((i + 1))
 done <<<"$_releases"
+unset _name
 echo "   d) Development version (build from source — not yet implemented)"
 echo "   s) Skip (install OpenSim manually later)"
 echo ""
@@ -250,30 +255,43 @@ esac
 
 SourcesDirectory=${SourcesDirectory:-$BASEDIR/src}
 
-# Write the helpers config. [Defaults] holds the runtime locations read by the
-# helpers (os-helpers, bin/opensim, libexec/*); [Install] keeps only the
-# install-time metadata used by the install scripts. crudini --set updates
-# only the listed keys and leaves any other settings untouched.
-writeHelpersConf() {
-	_hc="$1"
-	crudini --set "$_hc" Defaults DirectoryLayout "$DirectoryLayout"
-	crudini --set "$_hc" Defaults CoreRoot "$CoreRoot"
-	crudini --set "$_hc" Defaults CoreDirectory "$CoreDirectory"
-	crudini --set "$_hc" Defaults EtcRoot "$EtcRoot"
-	crudini --set "$_hc" Defaults VarRoot "$VarRoot"
-	crudini --set "$_hc" Defaults LogsRoot "$LogsRoot"
-	crudini --set "$_hc" Defaults CacheRoot "$CacheRoot"
-	crudini --set "$_hc" Defaults DataRoot "$DataRoot"
-	crudini --set "$_hc" Install DirectoryLayout "$DirectoryLayout"
-	crudini --set "$_hc" Install OpensimVersion "${OpensimVersion:-}"
-	crudini --set "$_hc" Install InstallPath "${InstallPath:-}"
-	unset _hc
-}
+# Write the single config file. [Defaults] holds the shared, version-independent
+# locations and the default version; each installed version gets its own
+# [opensim-X.Y.Z] section (additive -- other versions are left untouched).
+# crudini --set updates only the listed keys.
+writeOpensimConf() {
+	_conf="$EtcRoot/$CONF"
+	version_ge "$OpensimVersion" 0.9.3.0 && _rt=dotnet || _rt=mono
 
-# --- Save config to repo (gitignored) so Deployer and the helpers can read it ---
-mkdir -p "$BASEDIR/config"
-writeHelpersConf "$BASEDIR/config/$PKG.conf"
-log "Install preferences saved to $BASEDIR/config/$PKG.conf"
+	crudini --set "$_conf" Defaults DirectoryLayout "$DirectoryLayout"
+	crudini --set "$_conf" Defaults CoreRoot "$CoreRoot"
+	crudini --set "$_conf" Defaults EtcRoot "$EtcRoot"
+	crudini --set "$_conf" Defaults VarRoot "$VarRoot"
+	crudini --set "$_conf" Defaults LogsRoot "$LogsRoot"
+	crudini --set "$_conf" Defaults CacheRoot "$CacheRoot"
+	crudini --set "$_conf" Defaults DataRoot "$DataRoot"
+
+	# This version's own section; other [opensim-*] sections are preserved.
+	crudini --set "$_conf" "opensim-$OpensimVersion" CoreDirectory "$CoreDirectory"
+	crudini --set "$_conf" "opensim-$OpensimVersion" Runtime "$_rt"
+
+	# Default version: set it if none yet, otherwise ask before changing it.
+	_cur=$(crudini --get "$_conf" Defaults Version 2>/dev/null || true)
+	if [ -z "$_cur" ]; then
+		crudini --set "$_conf" Defaults Version "$OpensimVersion"
+	elif [ "$_cur" != "$OpensimVersion" ] &&
+		yesno "Make $OpensimVersion the default version (current default: $_cur)?"; then
+		crudini --set "$_conf" Defaults Version "$OpensimVersion"
+	else
+		log "Default version kept: ${_cur:-$OpensimVersion}"
+	fi
+
+	# Predictable per-user path -> the canonical file in EtcRoot.
+	mkdir -p "$HOME/.config/opensim"
+	ln -sfn "$_conf" "$HOME/.config/opensim/$CONF"
+	log "Config written: $_conf (linked from ~/.config/opensim/$CONF)"
+	unset _conf _rt _cur
+}
 
 # --- Summary + confirm ---
 cat <<EOF
@@ -304,9 +322,8 @@ for dir in \
 	sudo install $v -d -o "$USER" "$dir" || end $? "Could not create $dir"
 done
 
-# --- Write EtcRoot/$PKG.conf (live config for this installation) ---
-log "Update $EtcRoot/$PKG.conf"
-writeHelpersConf "$EtcRoot/$PKG.conf"
+# --- Write the config for this installation ---
+writeOpensimConf
 
 # --- Download and extract OpenSim ---
 
