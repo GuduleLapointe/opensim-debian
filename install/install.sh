@@ -255,42 +255,58 @@ esac
 
 SourcesDirectory=${SourcesDirectory:-$BASEDIR/src}
 
-# Write the single config file. [Defaults] holds the shared, version-independent
-# locations and the default version; each installed version gets its own
-# [opensim-X.Y.Z] section (additive -- other versions are left untouched).
-# crudini --set updates only the listed keys.
+# Confirm/adjust each location, then name this install profile. A machine may
+# hold several installs (light build, beta grid, test instances...), each with
+# its own locations, so the name defaults to opensim-<version> but is free.
+readvar CoreRoot CoreDirectory EtcRoot VarRoot LogsRoot CacheRoot DataRoot
+SectionName="opensim-$OpensimVersion"
+readvar SectionName
+
+# Write the config. Each install is a full, self-contained profile in its own
+# [<name>] section. [Defaults] keeps a Default pointer plus a copy of the
+# default profile's values (pre-fill / fallback); the named section overrides
+# it at read time, so it always wins. crudini --set updates only listed keys.
 writeOpensimConf() {
 	_conf="$EtcRoot/$CONF"
 	version_ge "$OpensimVersion" 0.9.3.0 && _rt=dotnet || _rt=mono
+	_sec="${SectionName:-opensim-$OpensimVersion}"
 
-	crudini --set "$_conf" Defaults DirectoryLayout "$DirectoryLayout"
-	crudini --set "$_conf" Defaults CoreRoot "$CoreRoot"
-	crudini --set "$_conf" Defaults EtcRoot "$EtcRoot"
-	crudini --set "$_conf" Defaults VarRoot "$VarRoot"
-	crudini --set "$_conf" Defaults LogsRoot "$LogsRoot"
-	crudini --set "$_conf" Defaults CacheRoot "$CacheRoot"
-	crudini --set "$_conf" Defaults DataRoot "$DataRoot"
+	# Write the full preference set into the profile's own section.
+	_writeProfile "$_conf" "$_sec"
 
-	# This version's own section; other [opensim-*] sections are preserved.
-	crudini --set "$_conf" "opensim-$OpensimVersion" CoreDirectory "$CoreDirectory"
-	crudini --set "$_conf" "opensim-$OpensimVersion" Runtime "$_rt"
-
-	# Default version: set it if none yet, otherwise ask before changing it.
-	_cur=$(crudini --get "$_conf" Defaults Version 2>/dev/null || true)
-	if [ -z "$_cur" ]; then
-		crudini --set "$_conf" Defaults Version "$OpensimVersion"
-	elif [ "$_cur" != "$OpensimVersion" ] &&
-		yesno "Make $OpensimVersion the default version (current default: $_cur)?"; then
-		crudini --set "$_conf" Defaults Version "$OpensimVersion"
+	# Default pointer: set if none, otherwise ask before changing it. When this
+	# profile becomes the default, mirror its values into [Defaults] too.
+	_cur=$(crudini --get "$_conf" Defaults Default 2>/dev/null || true)
+	if [ -z "$_cur" ] ||
+		{ [ "$_cur" != "$_sec" ] && yesno "Make '$_sec' the default install (current: $_cur)?"; }; then
+		crudini --set "$_conf" Defaults Default "$_sec"
+		_writeProfile "$_conf" Defaults
 	else
-		log "Default version kept: ${_cur:-$OpensimVersion}"
+		log "Default install kept: $_cur"
 	fi
 
 	# Predictable per-user path -> the canonical file in EtcRoot.
 	mkdir -p "$HOME/.config/opensim"
 	ln -sfn "$_conf" "$HOME/.config/opensim/$CONF"
-	log "Config written: $_conf (linked from ~/.config/opensim/$CONF)"
-	unset _conf _rt _cur
+	log "Config written: $_conf [$_sec] (linked from ~/.config/opensim/$CONF)"
+	unset _conf _rt _sec _cur
+}
+
+# Write the full preference set into a section of the config file.
+_writeProfile() {
+	_pf=$1 _ps=$2
+	crudini --set "$_pf" "$_ps" DirectoryLayout "$DirectoryLayout"
+	crudini --set "$_pf" "$_ps" OpensimVersion "$OpensimVersion"
+	crudini --set "$_pf" "$_ps" InstallPath "$InstallPath"
+	crudini --set "$_pf" "$_ps" CoreRoot "$CoreRoot"
+	crudini --set "$_pf" "$_ps" CoreDirectory "$CoreDirectory"
+	crudini --set "$_pf" "$_ps" EtcRoot "$EtcRoot"
+	crudini --set "$_pf" "$_ps" VarRoot "$VarRoot"
+	crudini --set "$_pf" "$_ps" LogsRoot "$LogsRoot"
+	crudini --set "$_pf" "$_ps" CacheRoot "$CacheRoot"
+	crudini --set "$_pf" "$_ps" DataRoot "$DataRoot"
+	crudini --set "$_pf" "$_ps" Runtime "$_rt"
+	unset _pf _ps
 }
 
 # --- Summary + confirm ---

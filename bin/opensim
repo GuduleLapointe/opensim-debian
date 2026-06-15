@@ -20,10 +20,8 @@ source $BASEDIR/libexec/venv-setup || end $? "Could not setup python venv"
 
 require crudini
 
-crudget $TMP.conf Defaults
-
 log "DirectoryLayout: $DirectoryLayout"
-log "Default version: $Version"
+log "Profile: ${Default:-} (OpenSim $OpensimVersion)"
 log "CoreRoot: $CoreRoot"
 log "CoreDirectory: $CoreDirectory"
 log "BinDirectory: $BinDirectory"

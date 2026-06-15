@@ -387,23 +387,25 @@ else
 	echo "[Defaults]" >"$TMP.conf"
 fi
 
-# Shared locations + default version, sourced from [Defaults]. Each variable is
-# given a definite value afterwards (empty if absent) for set -u safety.
+# [Defaults] gives the pointer to the active install profile plus fallback
+# values. The named profile section then overrides with its own full set, so
+# it always wins. Each variable is given a definite value (empty if absent)
+# afterwards for set -u safety.
 crudget "$TMP.conf" Defaults
+active=${Default:-}
+[ -n "$active" ] && crudget "$TMP.conf" "$active"
 DirectoryLayout=${DirectoryLayout:-}
+OpensimVersion=${OpensimVersion:-}
+InstallPath=${InstallPath:-}
 EtcRoot=${EtcRoot:-$BASEDIR/etc}
 CoreRoot=${CoreRoot:-$BASEDIR/core}
+CoreDirectory=${CoreDirectory:-}
 VarRoot=${VarRoot:-}
 LogsRoot=${LogsRoot:-}
 CacheRoot=${CacheRoot:-}
 DataRoot=${DataRoot:-}
-Version=${Version:-}
-
-# The active (default) version's section provides CoreDirectory and Runtime.
-[ -n "$Version" ] && crudget "$TMP.conf" "opensim-$Version"
-CoreDirectory=${CoreDirectory:-}
 Runtime=${Runtime:-}
-log "base conf loaded (default version ${Version:-unset})"
+log "base conf loaded (profile ${active:-none}, version ${OpensimVersion:-unset})"
 
 # The etc directory is the entry point for every helper, so a missing one is
 # fatal -- except for install scripts, whose job is precisely to create it.
