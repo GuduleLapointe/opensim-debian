@@ -67,30 +67,9 @@ yesno "Update system packages?" && {
 	pkg_update || log $? "System update failed, continuing anyway"
 }
 
-# Runtime: mono for OpenSim < 0.9.3, dotnet for >= 0.9.3
-# Both can coexist; install what's missing based on the target version.
-log "Checking runtimes"
-if which mono >/dev/null 2>&1; then
-	log "mono installed $(mono --version)"
-else
-	yesno "Install Mono (required for OpenSim < 0.9.3)?" && {
-		pkg_install mono-complete || end $? "Mono installation failed"
-	}
-fi
-
-if which dotnet >/dev/null 2>&1; then
-	log "dotnet installed $(dotnet --version)"
-else
-	yesno "Install .NET runtime (required for OpenSim >= 0.9.3)?" && {
-		# Universal installer from Microsoft — works on Linux and macOS
-		curl -fsSL https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh |
-			bash -s -- --runtime dotnet --channel LTS ||
-			end $? ".NET runtime installation failed"
-		# dotnet-install.sh installs to ~/.dotnet by default; add to PATH if needed
-		export DOTNET_ROOT="$HOME/.dotnet"
-		export PATH="$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools"
-	}
-fi
+# Runtime (mono vs .NET, and the exact .NET version) depends on the OpenSim
+# version and is read from the extracted binaries, so it is installed further
+# down, once the core is unpacked.
 
 # --- OpenSim version selection (no download yet) ---
 echo ""
@@ -133,6 +112,72 @@ s | S)
 *) end 1 "Invalid choice: $_vchoice" ;;
 esac
 unset _releases _f _vchoice _vsel i
+
+# --- Runtime gate (discriminating) -------------------------------------------
+# A valid runtime for the chosen version is required to go any further, so we
+# decide it now, before planning or downloading anything. The mono/.NET split
+# is by OpenSim version; for .NET the exact version is re-verified against the
+# binaries at launch (bin/opensim). Update dnMajor if a future OpenSim targets
+# a newer .NET.
+
+# Install the .NET runtime <major> into the active dotnet root (so the existing
+# 'dotnet' finds it), or ~/.dotnet if none is installed yet.
+installDotnet() {
+	local major=$1 dir p _sudo
+	if p=$(command -v dotnet 2>/dev/null); then
+		dir=$(dirname "$(realpath "$p" 2>/dev/null || echo "$p")")
+	else
+		dir="$HOME/.dotnet"
+	fi
+	[ -w "$dir" ] && _sudo="" || _sudo="sudo"
+	log "Installing .NET $major runtime into $dir"
+	curl -fsSL https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh >"$TMP.dotnet-install.sh" ||
+		end $? "Could not fetch dotnet-install.sh"
+	$_sudo bash "$TMP.dotnet-install.sh" --runtime dotnet --channel "$major.0" --install-dir "$dir" ||
+		end $? ".NET $major runtime installation failed"
+	export DOTNET_ROOT="$dir"
+	export PATH="$dir:$PATH"
+}
+
+if [ -z "$OpensimVersion" ] || [ "$OpensimVersion" = "dev" ]; then
+	: # no specific release selected yet; the runtime is checked at launch
+elif version_ge "$OpensimVersion" 0.9.3.0; then
+	dnMajor=8 # OpenSim 0.9.3.x targets .NET 8 (net8.0)
+	installed=$(dotnet --list-runtimes 2>/dev/null |
+		grep -o 'Microsoft.NETCore.App [0-9.]*' | awk '{print $2}' || true)
+	compatible=$(echo "$installed" | awk -F. -v m=$dnMajor 'NF && $1>=m{print; exit}' || true)
+	if echo "$installed" | grep -q "^$dnMajor\."; then
+		log ".NET $dnMajor installed; OpenSim $OpensimVersion will use it"
+	elif [ -n "$compatible" ]; then
+		# A newer .NET is present: runs via roll-forward, or install native.
+		echo ""
+		echo "OpenSim $OpensimVersion targets .NET $dnMajor."
+		echo "Installed: $(echo $installed | tr '\n' ' ')"
+		echo "It can run as-is on your newer .NET via roll-forward (no install),"
+		echo "or you can install the native .NET $dnMajor (closer to the tested setup)."
+		echo "  1) Use roll-forward, no install (default)"
+		echo "  2) Install native .NET $dnMajor"
+		read -p "  Choice [1]: " _dnchoice
+		[ "${_dnchoice:-1}" = "2" ] && installDotnet "$dnMajor" ||
+			log "OpenSim will run on the installed .NET via roll-forward"
+	else
+		# No usable .NET (none, or only older than the target): hard requirement.
+		[ -n "$installed" ] &&
+			echo "Installed .NET ($(echo $installed | tr '\n' ' ')) is older than the required $dnMajor."
+		yesno -y "OpenSim $OpensimVersion needs .NET $dnMajor; install it now?" &&
+			installDotnet "$dnMajor" ||
+			end 1 "OpenSim $OpensimVersion cannot run without .NET $dnMajor"
+	fi
+else
+	# OpenSim < 0.9.3.0 runs on Mono.
+	if which mono >/dev/null 2>&1; then
+		log "mono present: $(mono --version | head -1)"
+	else
+		yesno -y "OpenSim $OpensimVersion needs Mono; install it now?" &&
+			pkg_install mono-complete ||
+			end 1 "OpenSim $OpensimVersion cannot run without Mono"
+	fi
+fi
 
 # --- Layout selection ---
 echo ""
