@@ -131,10 +131,19 @@ final class Runtime
     private function installMono(): void
     {
         $package = PHP_OS_FAMILY === 'Darwin' ? 'mono' : 'mono-complete';
-        if ((new Packages($this->ui))->install($package) !== 0) {
-            $this->ui->error('Mono installation failed.');
+        $this->ui->note("Installing $package …");
+
+        // The package manager may exit non-zero on a non-fatal post-install
+        // step (e.g. Homebrew's mono GAC setup) while mono itself is perfectly
+        // usable, so judge success by whether the binary ends up available.
+        (new Packages($this->ui))->install($package);
+        if (!System::commandExists('mono')) {
+            $this->ui->error("Mono installation failed ($package not on PATH).");
             exit(1);
         }
+
+        [, $version] = System::capture('mono --version');
+        $this->ui->note('mono ready: ' . (strtok($version, "\n") ?: 'installed'));
     }
 
     /** @return list<int> installed Microsoft.NETCore.App major versions, ascending */
