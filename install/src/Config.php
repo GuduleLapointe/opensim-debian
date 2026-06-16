@@ -29,6 +29,39 @@ final class Config
         return null;
     }
 
+    /**
+     * Names of the installed profiles (every section except [Defaults]).
+     *
+     * @return list<string>
+     */
+    public function profiles(): array
+    {
+        $path = $this->path();
+        if ($path === null) {
+            return [];
+        }
+
+        $ini = parse_ini_file($path, true, INI_SCANNER_RAW) ?: [];
+
+        return array_values(array_filter(array_keys($ini), static fn (string $s): bool => $s !== 'Defaults'));
+    }
+
+    /** Switch the default profile (updates the pointer and mirrors its values). */
+    public function setDefaultProfile(string $name): void
+    {
+        $path = $this->path();
+        if ($path === null) {
+            return;
+        }
+
+        $data = parse_ini_file($path, true, INI_SCANNER_RAW) ?: [];
+        $mirror = $data[$name] ?? ($data['Defaults'] ?? []);
+        unset($mirror['DefaultProfile']);
+        $data['Defaults'] = ['DefaultProfile' => $name] + $mirror;
+
+        $this->save($path, $data);
+    }
+
     public function defaultProfile(): ?string
     {
         $path = $this->path();
@@ -39,6 +72,29 @@ final class Config
         $ini = @parse_ini_file($path, true, INI_SCANNER_RAW);
 
         return $ini['Defaults']['DefaultProfile'] ?? null;
+    }
+
+    /**
+     * Resolved settings of an install profile: [Defaults] as the base, then the
+     * named profile (or the default one) overriding it. Empty if no config.
+     *
+     * @return array<string,string>
+     */
+    public function profile(?string $name = null): array
+    {
+        $path = $this->path();
+        if ($path === null) {
+            return [];
+        }
+
+        $ini = parse_ini_file($path, true, INI_SCANNER_RAW) ?: [];
+        $defaults = $ini['Defaults'] ?? [];
+        $name ??= $defaults['DefaultProfile'] ?? null;
+        unset($defaults['DefaultProfile']);
+
+        $section = ($name !== null && isset($ini[$name])) ? $ini[$name] : [];
+
+        return array_merge($defaults, $section);
     }
 
     /**
