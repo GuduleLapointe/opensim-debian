@@ -54,6 +54,11 @@ final class NewGrid
         $this->writeRobust($plan);
         $this->copyConfigInclude($plan);
 
+        $logConfig = (new LogConfig())->write($plan);
+        if ($logConfig !== null) {
+            $this->ui->note("Wrote $logConfig");
+        }
+
         if ($this->ui->confirm("Enable grid '{$plan->gridNick}' (link into robust.d)?", true)) {
             if (GridState::enable($etcRoot, $plan->gridNick)) {
                 $this->ui->note('Enabled: ' . GridState::link($etcRoot, $plan->gridNick));
