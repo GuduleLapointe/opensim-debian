@@ -25,3 +25,4 @@ lib/check_inventory.php
 venv/
 config/
 vendor/
+.env

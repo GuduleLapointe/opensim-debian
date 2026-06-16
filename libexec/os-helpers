@@ -15,6 +15,19 @@ if ! which realpath >/dev/null; then
 	}
 fi
 
+# Absolute path WITHOUT resolving symlinks: keeps /etc instead of macOS's
+# /private/etc (logical pwd). Use this, not realpath/readlink, for config dirs.
+abspath() {
+	[ -n "${1:-}" ] || return 1
+	if [ -d "$1" ]; then
+		(cd "$1" 2>/dev/null && pwd)
+	elif [ -e "$1" ]; then
+		(cd "$(dirname "$1")" 2>/dev/null && printf '%s/%s\n' "$(pwd)" "$(basename "$1")")
+	else
+		case "$1" in /*) printf '%s\n' "$1" ;; *) printf '%s/%s\n' "$PWD" "$1" ;; esac
+	fi
+}
+
 # echo ":$PATH:" | grep -q ":$BINDIR:" || export PATH=$PATH:$BINDIR
 # [ ! "$LIB" ] && LIB=$BASEDIR/lib
 BINDIR=$(cd $(dirname "$0") && pwd)
@@ -308,6 +321,26 @@ version_ge() {
 		[ "$((10#$x))" -lt "$((10#$y))" ] && return 1
 	done
 	return 0
+}
+
+# Single source of truth (bash side) for which executable + runtime to use for
+# an OpenSim assembly base name (Robust, OpenSim, MoneyServer, pCampBot, …),
+# given its core/bin directory. Sets: osversion, runtime (dotnet|mono),
+# runtime_opts, Executable. 0.9.3.0+ ships .NET assemblies (.dll, run with
+# dotnet + roll-forward); older releases are Mono (.exe). The PHP port shares
+# the equivalent helper, so the rule lives in exactly one place per language.
+osResolveRuntime() {
+	local base="$1" dir="$2"
+	osversion=$(echo "$dir" | grep -oE '[0-9]+(\.[0-9]+)+' | head -1)
+	if version_ge "${osversion:-0}" 0.9.3.0; then
+		runtime=dotnet
+		runtime_opts="--roll-forward Major"
+		Executable="$base.dll"
+	else
+		runtime=mono
+		runtime_opts=""
+		Executable="$base.exe"
+	fi
 }
 
 # Echo the .NET version required by an assembly, read from its

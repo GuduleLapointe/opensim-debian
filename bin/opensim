@@ -4,8 +4,6 @@
 # Released under GNU Affero GPL v3.0 license
 #    http://www.gnu.org/licenses/agpl-3.0.html
 
-DefaultLogDir=/opt/opensim/var/logs
-
 DELAY=60
 shutdownDelay=120
 shutdownWarnings=3
@@ -151,30 +149,28 @@ startSim() {
 
 		# Catch deprecated BinDir configuration
 		BinDirectory=${BinDirectory:-$BinDir}
+		BinDirectory=${BinDirectory:-$CoreDirectory/bin}
 
 		[ -z "$BinDirectory" ] && end 1 "Could not find a valid BinDirectory"
 		log "BinDirectory: $BinDirectory"
 
 		Executable=${executable:-${Executable}}
-		ExecName=$(basename "$Executable")
-		ExecName=${ExecName%.exe}
-		ExecName=${ExecName%.dll}
-
-		# Runtime by OpenSim version: 0.9.3.0+ ships .NET assemblies (Robust.dll,
-		# run with dotnet); older releases are Mono (Robust.exe). Read the version
-		# from the core path (opensim-X.Y.Z) as it reflects the installed binaries.
-		osversion=$(echo "$BinDirectory" | grep -oE '[0-9]+(\.[0-9]+)+' | head -1)
-		if version_ge "${osversion:-0}" 0.9.3.0; then
-			runtime=dotnet
-			Executable="$ExecName.dll"
-			# Let a net8.0 build run on a newer .NET (e.g. 9). Kept as a command
-			# flag (not an env var) so the command logged by -v start is complete.
-			runtime_opts="--roll-forward Major"
+		# Assembly base name: from a [Launch] Executable if provided, otherwise
+		# from the instance type (robust.d -> Robust, opensim.d -> OpenSim; other
+		# types like MoneyServer/pCampBot will map here later).
+		if [ -n "$Executable" ]; then
+			ExecName=$(basename "$Executable")
+			ExecName=${ExecName%.exe}
+			ExecName=${ExecName%.dll}
 		else
-			runtime=mono
-			Executable="$ExecName.exe"
-			runtime_opts=""
+			case "$inifile" in
+			*robust.d/* | *robust*) ExecName=Robust ;;
+			*) ExecName=OpenSim ;;
+			esac
 		fi
+
+		# Single source of truth (os-helpers) for the exe/dll + runtime decision.
+		osResolveRuntime "$ExecName" "$BinDirectory"
 		log "Executable $Executable ($runtime), OpenSim version ${osversion:-unknown}"
 
 		log "starting $instance with $inifile"
@@ -190,11 +186,8 @@ startSim() {
 		Include_Common=$(crudget $inifile Includes Include-Common 2>/dev/null)
 		# crudini --get $inifile Includes Include-Common
 		LogsRoot=$(crudget $Include_Common Const LogsRoot | sed -e "s#\${Launch|SimName}#$instance#g" -e "s#\${Launch|MachineName}#$instance#g")
-		LogsRoot=${logsdirectory:-${LogsRoot}}
 
-		[ ! "$LogsRoot" ] && LogsRoot=$DefaultLogDir
-		LogFile=${logfile:-${LogFile}}
-		[ ! "$LogFile" ] && LogFile="$LogsRoot/$instance.log"
+		LogFile=${LogFile:-$LogsRoot/$instance.log}
 
 		ConsolePrompt=${consoleprompt:-${ConsolePrompt}}
 
@@ -427,9 +420,7 @@ cleanpath() {
 	IFS=:
 	printf "" >$TMP.realpath
 	for etc in $@; do
-		real=$(realpath "$etc")
-		#	echo path $etc >&2
-		#	echo real $real >&2
+		real=$(abspath "$etc")
 		[ ! -d "$real" ] && continue
 		grep -q "^$real$" $TMP.realpath && continue
 		echo "$real" >>$TMP.realpath
@@ -464,7 +455,7 @@ status() {
 			"$etc"/opensim.d/*.ini \
 			"$etc"/simulators-enabled/*.ini; do
 			[ -f "$inifile" ] || continue
-			real=$(realpath "$inifile")
+			real=$(readlink "$inifile")
 			echo ":$seen:" | grep -qF ":$real:" && continue
 			seen="$seen:$real"
 			instance=$(basename "$inifile" .ini | tr "[:upper:] " "[:lower:]_")
@@ -524,7 +515,7 @@ log looking in $EtcRoot
 
 IFS=":"
 for etc in $EtcRoot $ETCPATH; do
-	folder=$(realpath "$etc")
+	folder=$(abspath "$etc")
 	[ "$folder" ] || continue
 	echo ":$LOOKUP:" | grep -q ":$folder:" && log "ignoring duplicate $etc" && continue
 	LOOKUP="$LOOKUP:$folder" && continue

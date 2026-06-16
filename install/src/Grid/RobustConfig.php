@@ -32,7 +32,6 @@ final class RobustConfig
                 'WebURL' => $this->q($plan->webUrl),
                 'PublicPort' => (string) $plan->publicPort,
                 'PrivatePort' => (string) $plan->privatePort,
-                'BinDirectory' => $this->q($plan->binDir),
                 'EtcDirectory' => $this->q($plan->etcDirectory),
                 'DataDirectory' => $this->q($plan->dataDirectory),
                 'CacheDirectory' => $this->q($plan->cacheDirectory),

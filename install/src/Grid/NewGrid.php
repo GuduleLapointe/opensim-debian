@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OpenSim\Installer\Grid;
 
 use OpenSim\Installer\Config;
+use OpenSim\Installer\Ports;
 use OpenSim\Installer\System;
 use OpenSim\Installer\Ui\InstallerUi;
 
@@ -36,7 +37,125 @@ final class NewGrid
         }
 
         $this->showPlan($plan);
-        $this->ui->note('Phase 2a OK — parameters gathered, nothing created yet.');
+        if (!$this->ui->confirm("Apply this configuration to grid '{$plan->gridNick}'?", true)) {
+            $this->ui->note('Aborted — nothing changed.');
+
+            return;
+        }
+
+        $this->apply($plan, $profile['EtcRoot']);
+    }
+
+    private function apply(GridPlan $plan, string $etcRoot): void
+    {
+        $this->makeDirs($plan);
+        $conf = (new GridConf())->write($plan);
+        $this->ui->note("Wrote $conf");
+        $this->writeRobust($plan);
+        $this->copyConfigInclude($plan);
+
+        if ($this->ui->confirm("Enable grid '{$plan->gridNick}' (link into robust.d)?", true)) {
+            if (GridState::enable($etcRoot, $plan->gridNick)) {
+                $this->ui->note('Enabled: ' . GridState::link($etcRoot, $plan->gridNick));
+                if ($this->ui->confirm("Start grid '{$plan->gridNick}' now?", true)) {
+                    $this->startGrid($plan);
+                }
+            } else {
+                $this->ui->warn('Could not enable the grid (Robust config missing).');
+            }
+        }
+
+        $this->ui->note("Grid '{$plan->gridName}' configured.");
+    }
+
+    /** Start the grid and report whether it actually came up (don't trust screen). */
+    private function startGrid(GridPlan $plan): void
+    {
+        $opensim = dirname(__DIR__, 3) . '/bin/opensim';
+        $nick = $plan->gridNick;
+
+        System::run(System::arg($opensim) . ' restart ' . System::arg($nick));
+
+        // A successful start leaves the instance in a live (non-dead) screen
+        // session. This is reliable cross-platform, unlike `status` which relies
+        // on `ps -C` (GNU only, broken on macOS).
+        if ($this->screenAlive($nick)) {
+            $this->ui->note("Grid '$nick' is running.");
+
+            return;
+        }
+
+        $this->ui->warn("Grid '$nick' did not start. Try: $opensim -v start $nick");
+        $log = $plan->logsDirectory . '/' . strtolower($nick) . '.log';
+        if (is_file($log)) {
+            $this->ui->note('Recent log:');
+            System::run('tail -n 30 ' . System::arg($log));
+        }
+    }
+
+    private function screenAlive(string $nick): bool
+    {
+        [, $screens] = System::capture('screen -ls');
+        foreach (explode("\n", $screens) as $line) {
+            if (preg_match('/\b\d+\.' . preg_quote(strtolower($nick), '/') . '\b/', $line) && stripos($line, 'Dead') === false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function makeDirs(GridPlan $plan): void
+    {
+        $dirs = [
+            $plan->dataDirectory, "{$plan->dataDirectory}/fsassets", "{$plan->dataDirectory}/fsassets/data",
+            "{$plan->dataDirectory}/maptiles", "{$plan->dataDirectory}/registry",
+            $plan->cacheDirectory, "{$plan->cacheDirectory}/bakes", "{$plan->cacheDirectory}/fsassets",
+            "{$plan->cacheDirectory}/fsassets/tmp", "{$plan->cacheDirectory}/maptiles",
+            $plan->etcDirectory, "{$plan->etcDirectory}/assets", "{$plan->etcDirectory}/config-include",
+            "{$plan->etcDirectory}/sims", "{$plan->etcDirectory}/inventory", "{$plan->etcDirectory}/robust-include",
+            $plan->logsDirectory,
+        ];
+        foreach ($dirs as $dir) {
+            if ($dir !== '' && !is_dir($dir)) {
+                @mkdir($dir, 0o755, true);
+            }
+        }
+    }
+
+    private function writeRobust(GridPlan $plan): void
+    {
+        $path = $plan->robustIni();
+        if (is_file($path)) {
+            @copy($path, "$path~"); // backup
+        }
+        file_put_contents($path, (new RobustConfig())->generate($plan));
+        $this->ui->note("Wrote $path");
+    }
+
+    private function copyConfigInclude(GridPlan $plan): void
+    {
+        $files = [
+            'OpenSimDefaults.ini', 'OpenSim.ini',
+            'config-include/GridHypergrid.ini', 'config-include/GridCommon.ini',
+            'config-include/FlotsamCache.ini', 'config-include/osslDefaultEnable.ini',
+            'config-include/osslEnable.ini',
+        ];
+        foreach ($files as $file) {
+            $dest = "{$plan->etcDirectory}/$file";
+            if (is_file($dest)) {
+                continue; // keep local changes
+            }
+            $src = is_file("{$plan->binDir}/{$file}.example")
+                ? "{$plan->binDir}/{$file}.example"
+                : "{$plan->binDir}/$file";
+            if (!is_file($src)) {
+                continue;
+            }
+            @mkdir(dirname($dest), 0o755, true);
+            @copy($src, $dest);
+        }
+        $this->ui->note('Copied config-include defaults.');
     }
 
     private function gather(array $profile, ?string $modifyNick): ?GridPlan
@@ -105,8 +224,8 @@ final class NewGrid
 
         $defaultHost = $current['baseHostname'] ?? (trim(System::capture('hostname -f')[1]) ?: 'localhost');
         $plan->baseHostname = $this->ui->text('Base hostname', $defaultHost, $required);
-        $plan->publicPort = (int) $this->ui->text('Public port', (string) ($current['publicPort'] ?? $this->nextPort(8002)), $numeric);
-        $plan->privatePort = (int) $this->ui->text('Private port', (string) ($current['privatePort'] ?? $this->nextPort($plan->publicPort + 1)), $numeric);
+        $plan->publicPort = (int) $this->ui->text('Public port', (string) ($current['publicPort'] ?? Ports::next(8002)), $numeric);
+        $plan->privatePort = (int) $this->ui->text('Private port', (string) ($current['privatePort'] ?? Ports::next($plan->publicPort + 1)), $numeric);
         $plan->webUrl = $this->ui->text('Web URL', $current['webUrl'] ?? "https://{$plan->baseHostname}", $required);
 
         // Database: reuse a found password, otherwise generate one (never changeme).
@@ -176,13 +295,6 @@ final class NewGrid
         }
 
         return $current;
-    }
-
-    private function nextPort(int $from): string
-    {
-        $out = trim(System::capture(dirname(__DIR__, 3) . '/bin/nextfreeports ' . $from)[1]);
-
-        return $out !== '' ? $out : (string) $from;
     }
 
     private function randomPassword(int $length = 20): string

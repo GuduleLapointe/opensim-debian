@@ -299,12 +299,11 @@ for file in \
 	fi
 done
 
-log CHECKPOINT $LINENO
-end DEBUG STOP
+# Those two merges might not be necessary in the new approach (try to stick to OpenSim.ini first approach)
+#crudmerge $EtcDirectory/OpenSim.ini $EtcDirectory/config-include/GridHypergrid.ini || end $? "error merging $_"
+#crudmerge $EtcDirectory/OpenSim.ini $EtcDirectory/config-include/GridCommon.ini || end $? "error merging $_"
 
-crudmerge $EtcDirectory/OpenSim.ini $EtcDirectory/config-include/GridHypergrid.ini || end $? "error merging $_"
-crudmerge $EtcDirectory/OpenSim.ini $EtcDirectory/config-include/GridCommon.ini || end $? "error merging $_"
-
+# Share common grid-level libraries in users inventory
 for folder in assets inventory; do
 	[ ! -d "$EtcDirectory/$folder" ] || yesno -y "Update $folder folder from distro (keep local changes)?" || continue
 	rsync -Waz --delete $BinDir/$folder/ $EtcDirectory/tmp.$$.$folder/ || end $?
@@ -312,6 +311,13 @@ for folder in assets inventory; do
 	rsync -Waz --delete $EtcDirectory/tmp.$$.$folder/ $EtcDirectory/$folder/ || end $?
 	rm -rf $EtcDirectory/tmp.$$.$folder/
 done
+
+log "Robust server should be able to start at this stage"
+end DEBUG STOP $LINENO
+
+## Following are tweaks that might or might not be necessary with 0.9.3 and/or 0.9.2
+# Some of the code below has already been included in the active code above.
+# This will require line by line verification
 
 # uncomment ConsolePrompt $EtcDirectory/OpenSim.ini
 # uncomment regionload_regionsdir $EtcDirectory/OpenSim.ini

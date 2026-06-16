@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OpenSim\Installer;
 
+use OpenSim\Installer\Grid\GridState;
 use OpenSim\Installer\Grid\NewGrid;
 use OpenSim\Installer\Ui\InstallerUi;
 
@@ -56,7 +57,7 @@ final class Hub
                     $this->coreMenu($cores);
                     break;
                 case 'grid':
-                    $cores === [] ? $this->ui->warn('Install an OpenSim core first.') : $this->gridMenu($grids);
+                    $cores === [] ? $this->ui->warn('Install an OpenSim core first.') : $this->gridMenu($grids, $etcRoot);
                     break;
                 case 'sim':
                     $grids === [] ? $this->ui->warn('Create a grid first.') : $this->simMenu($sims);
@@ -88,11 +89,11 @@ final class Hub
         (new Config())->setDefaultProfile($choice);
     }
 
-    private function gridMenu(array $grids): void
+    private function gridMenu(array $grids, string $etcRoot): void
     {
         $options = [];
         foreach ($grids as $nick) {
-            $options[$nick] = $nick;
+            $options[$nick] = $nick . (GridState::isEnabled($etcRoot, $nick) ? '' : ' (disabled)');
         }
         $options['new'] = 'Create a new grid';
         $options['back'] = 'Back';
@@ -107,7 +108,33 @@ final class Hub
             return;
         }
         $this->activeGrid = $choice;
-        (new NewGrid($this->ui))->run($choice);
+        $this->gridActions($choice, $etcRoot);
+    }
+
+    private function gridActions(string $nick, string $etcRoot): void
+    {
+        $enabled = GridState::isEnabled($etcRoot, $nick);
+        $choice = $this->ui->choose("Grid: $nick", [
+            'reconfigure' => 'Reconfigure',
+            'toggle' => $enabled ? 'Disable' : 'Enable',
+            'back' => 'Back',
+        ], 'reconfigure');
+
+        switch ($choice) {
+            case 'reconfigure':
+                (new NewGrid($this->ui))->run($nick);
+                break;
+            case 'toggle':
+                if ($enabled) {
+                    GridState::disable($etcRoot, $nick);
+                    $this->ui->note("Disabled $nick.");
+                } elseif (GridState::enable($etcRoot, $nick)) {
+                    $this->ui->note("Enabled $nick.");
+                } else {
+                    $this->ui->warn("Cannot enable $nick (no Robust config).");
+                }
+                break;
+        }
     }
 
     private function simMenu(array $sims): void
