@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# Install the .NET runtime needed by OpenSim 0.9.3 and later, when missing:
+# from the system packages when they have it, or use a runtime installed
+# elsewhere, or install it with Microsoft's install script.
+#
+# As root, the runtime is installed for all users, including the service
+# account; otherwise in ~/.dotnet.
+#
+# Usage: install-dotnet [-y] [major]
+#   -y     accept the default answers
+#   major  .NET major version (default 8); newer runtimes also fit
+
+LIBEXECDIR=$(cd "$(dirname "$(readlink -f "$0")")" && pwd)
+TMP=$(mktemp "${TMPDIR:-/tmp}/install-dotnet.XXXXXX")
+. "$LIBEXECDIR/bash-helpers/helpers" || exit 1
+
+ASSUME_YES=
+[ "${1:-}" = "-y" ] && ASSUME_YES=yes && shift
+major=${1:-8}
+
+# Echo the lowest installed Microsoft.NETCore.App major >= $major, for the
+# given dotnet (default: the one on the PATH)
+suitableRuntime() {
+	"${1:-dotnet}" --list-runtimes 2>/dev/null |
+		grep -o 'Microsoft.NETCore.App [0-9]*' | awk '{print $2}' | sort -un |
+		awk -v m="$major" '$1 >= m' | head -1
+}
+
+confirm() {
+	[ -n "$ASSUME_YES" ] && return 0
+	yesno -y "$1"
+}
+
+# Make a dotnet reachable by every user (root) or tell how (others)
+linkDotnet() {
+	if [ "$(id -u)" = 0 ]; then
+		ln -sf "$1" /usr/local/bin/dotnet || end $? "Could not link $1 into /usr/local/bin"
+		echo "Linked /usr/local/bin/dotnet -> $1"
+	else
+		echo "Add $(dirname "$1") to your PATH, e.g. in ~/.profile:"
+		echo "  export PATH=\"$(dirname "$1"):\$PATH\""
+	fi
+}
+
+found=$(suitableRuntime)
+if [ -n "$found" ]; then
+	echo ".NET $found found ($(command -v dotnet)), it can run OpenSim (.NET $major or newer)."
+	exit 0
+fi
+
+echo "OpenSim needs the .NET $major runtime (or newer), not found on the PATH."
+
+# System packages: Ubuntu, or Debian with Microsoft's repository
+package="dotnet-runtime-$major.0"
+candidate=
+command -v apt-cache >/dev/null 2>&1 &&
+	candidate=$(apt-cache policy "$package" 2>/dev/null | awk '$1 == "Candidate:" && $2 != "(none)" {print $2}')
+if [ -n "$candidate" ]; then
+	if [ "$(id -u)" != 0 ]; then
+		end 1 "Install it as root: sudo apt install $package"
+	fi
+	if confirm "Install $package from the system packages?"; then
+		apt-get install -y "$package" || end $? "Could not install $package"
+		exit 0
+	fi
+fi
+
+# A runtime installed elsewhere, not on the PATH
+if [ -z "$ASSUME_YES" ]; then
+	read -r -p "Path of an installed dotnet executable (empty to install one): " existing
+	if [ -n "$existing" ]; then
+		[ -d "$existing" ] && existing="$existing/dotnet"
+		[ -x "$existing" ] || end 1 "$existing is not an executable"
+		found=$(suitableRuntime "$existing")
+		[ -n "$found" ] || end 1 "$existing has no .NET $major runtime (or newer)"
+		linkDotnet "$(readlink -f "$existing")"
+		exit 0
+	fi
+fi
+
+# Microsoft's install script
+[ "$(id -u)" = 0 ] && dir=/usr/local/share/dotnet || dir="$HOME/.dotnet"
+if [ -z "$ASSUME_YES" ]; then
+	read -r -p "Install directory [$dir]: " answer
+	dir=${answer:-$dir}
+fi
+confirm "Install the .NET $major runtime in $dir with Microsoft's install script?" ||
+	end 1 "OpenSim cannot run without the .NET $major runtime"
+
+# The runtime needs ICU, which a minimal system may lack
+if [ "$(id -u)" = 0 ] && command -v apt-get >/dev/null 2>&1 && ! ldconfig -p | grep -q 'libicuuc\.so'; then
+	icu=$(apt-cache pkgnames libicu | grep -E '^libicu[0-9]+$' | sort -V | tail -1)
+	[ -n "$icu" ] && { apt-get install -y "$icu" || end $? "Could not install $icu"; }
+fi
+
+command -v curl >/dev/null 2>&1 || end 1 "curl is needed to download the install script"
+curl -fsSL https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh >"$TMP.dotnet-install.sh" ||
+	end $? "Could not download dotnet-install.sh"
+bash "$TMP.dotnet-install.sh" --runtime dotnet --channel "$major.0" --install-dir "$dir" ||
+	end $? ".NET $major runtime installation failed"
+linkDotnet "$dir/dotnet"

@@ -364,13 +364,13 @@ checkRuntimeAvailable() {
 		return 1
 		;;
 	dotnet)
-		if ! command -v dotnet >/dev/null 2>&1; then
-			log 1 "dotnet is not installed. Run install/install.sh to install the .NET runtime"
-			return 1
-		fi
 		local required major m use=""
 		required=$(dotnetRequiredVersion "$exe")
 		major=${required%%.*}
+		if ! command -v dotnet >/dev/null 2>&1; then
+			log 1 "dotnet is not installed. Install the .NET runtime with: sudo $LIBEXECDIR/install-dotnet $major"
+			return 1
+		fi
 		# Roll-forward: any runtime at or above the required major can run the
 		# app (the launcher sets DOTNET_ROLL_FORWARD=Major). Pick the lowest.
 		for m in $(dotnet --list-runtimes 2>/dev/null |
@@ -384,7 +384,7 @@ checkRuntimeAvailable() {
 		fi
 		log 1 "OpenSim needs Microsoft.NETCore.App $major or newer, but none is installed"
 		log 1 "Installed: $(dotnet --list-runtimes 2>/dev/null | grep -o 'Microsoft.NETCore.App [0-9.]*' | tr '\n' ' ')"
-		log 1 "Install .NET $major+ (run install/install.sh) and retry"
+		log 1 "Install .NET $major+ (sudo $LIBEXECDIR/install-dotnet $major) and retry"
 		return 1
 		;;
 	esac
