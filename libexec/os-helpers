@@ -340,7 +340,9 @@ version_ge() {
 osResolveRuntime() {
 	local base="$1" dir="$2"
 	osversion=$(echo "$dir" | grep -oE '[0-9]+(\.[0-9]+)+' | head -1)
-	if version_ge "${osversion:-0}" 0.9.3.0; then
+	# .NET builds come with a runtimeconfig.json, whatever their folder name
+	# (e.g. a development build); otherwise the version in the path decides
+	if [ -f "$dir/$base.runtimeconfig.json" ] || version_ge "${osversion:-0}" 0.9.3.0; then
 		runtime=dotnet
 		runtime_opts="--roll-forward Major"
 		Executable="$base.dll"
