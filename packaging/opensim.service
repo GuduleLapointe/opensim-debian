@@ -1,0 +1,20 @@
+[Unit]
+Description=OpenSimulator instances
+Documentation=https://github.com/GuduleLapointe/opensim-debian
+After=network-online.target mariadb.service mysql.service
+Wants=network-online.target
+
+[Service]
+# opensim start launches the enabled instances in screen sessions and returns
+Type=oneshot
+RemainAfterExit=yes
+User=opensim
+Group=opensim
+WorkingDirectory=~
+ExecStart=/usr/bin/opensim start
+ExecStop=/usr/bin/opensim stop now
+# Instances stop one after the other, each within a minute
+TimeoutStopSec=15min
+
+[Install]
+WantedBy=multi-user.target

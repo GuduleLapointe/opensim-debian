@@ -1,0 +1,11 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: OpenSimulator
+Source: http://opensimulator.org/dist/opensim-@VERSION@.tar.gz
+
+Files: *
+Copyright: Contributors, http://opensimulator.org/
+License: BSD-3-Clause
+ The full text of the license is in /usr/share/opensim/@VERSION@/LICENSE.txt,
+ its list of contributors in /usr/share/opensim/@VERSION@/CONTRIBUTORS.txt,
+ and the licenses of the bundled third-party libraries in
+ /usr/share/opensim/@VERSION@/ThirdPartyLicenses/.

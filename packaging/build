@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Prepares the files of the opensim-kit package in build/opensim-kit: the kit
+# as committed (HEAD) with its bash-helpers submodule, without what it does not
+# distribute (packaging/distignore), with its PHP dependencies. The working
+# copy is left untouched.
+# Run by apt-package from the repository root.
+
+set -e
+
+BUILD=build/opensim-kit
+
+rm -rf "$BUILD"
+mkdir -p "$BUILD"
+git archive HEAD | tar -x -C "$BUILD"
+
+# Submodules the kit needs at run time, at their committed version
+for submodule in libexec/bash-helpers; do
+    commit=$(git ls-tree HEAD "$submodule" | awk '{print $3}')
+    mkdir -p "$BUILD/$submodule"
+    git -C "$submodule" archive "$commit" | tar -x -C "$BUILD/$submodule"
+done
+
+while read -r entry; do
+    [[ -z "$entry" || "$entry" == \#* ]] || rm -rf "${BUILD:?}/${entry%/}"
+done <packaging/distignore
+
+composer install --no-dev --no-interaction --quiet --optimize-autoloader --working-dir="$BUILD"
+
+# Installed read-only for everyone but root, whatever the local umask
+chmod -R go-w "$BUILD"

@@ -1,0 +1,63 @@
+# OpenSim Kit, built by apt-package (apt-repo) from build/opensim-kit,
+# prepared by packaging/build. ${VERSION} comes from the git tag.
+# The kit in /usr/share/opensim-kit, the opensim command, the service account
+# and the system layout: config in /etc/opensim, data in /var/lib/opensim,
+# logs in /var/log/opensim, cache in /var/cache/opensim, created on install.
+# The OpenSimulator distributions come in their own packages (opensim-<version>).
+name: opensim-kit
+arch: all
+platform: linux
+version: ${VERSION}
+version_schema: semver
+section: net
+priority: optional
+maintainer: Gudule Lapointe <gudule@speculoos.world>
+description: |-
+  OpenSimulator installation and management tools
+  Installs and runs OpenSimulator grids and regions with the files at the
+  standard places: config in /etc/opensim, data in /var/lib/opensim, logs
+  and cache in /var. The opensim command starts, stops and monitors the
+  instances; a setup wizard creates grids.
+homepage: https://github.com/GuduleLapointe/opensim-debian
+license: AGPL-3.0-or-later
+
+depends:
+  - adduser
+  - bsdextrautils | bsdmainutils
+  - crudini
+  - curl
+  - php-cli (>= 2:8.1)
+  - php-mbstring
+  - procps
+  - screen
+  - sudo
+recommends:
+  - default-mysql-client | mariadb-client
+  - uuid-runtime
+suggests:
+  - opensim
+
+contents:
+  - src: build/opensim-kit
+    dst: /usr/share/opensim-kit
+    type: tree
+  - src: /usr/share/opensim-kit/bin/opensim
+    dst: /usr/bin/opensim
+    type: symlink
+  - src: packaging/opensim.service
+    dst: /usr/lib/systemd/system/opensim.service
+    file_info:
+      mode: 0644
+  - src: share/bash_completion.d/opensim
+    dst: /usr/share/bash-completion/completions/opensim
+    file_info:
+      mode: 0644
+  - src: packaging/copyright
+    dst: /usr/share/doc/opensim-kit/copyright
+    file_info:
+      mode: 0644
+
+scripts:
+  postinstall: packaging/opensim-kit.postinst
+  preremove: packaging/opensim-kit.prerm
+  postremove: packaging/opensim-kit.postrm

@@ -1,0 +1,12 @@
+#!/bin/sh
+# prerm of opensim-kit: stops the service and the instances on removal, while
+# the kit is still there to shut them down. Upgrades leave them running.
+set -e
+
+if [ "$1" = "remove" ]; then
+    if [ -d /run/systemd/system ]; then
+        deb-systemd-invoke stop opensim.service >/dev/null || true
+    fi
+    # Instances started by hand, outside the service
+    /usr/bin/opensim stop now >/dev/null 2>&1 || true
+fi

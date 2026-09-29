@@ -1,0 +1,49 @@
+#!/bin/sh
+# postinst of opensim-kit: the opensim account, the folders of the system
+# layout and their default config, left as is once created, and the service,
+# enabled on first install. The service is never restarted here: that would
+# stop the running grids.
+set -e
+
+if [ "$1" = "configure" ]; then
+    # Instances run as opensim; its shell lets admins work as it (sudo -iu opensim)
+    if ! getent passwd opensim >/dev/null; then
+        adduser --system --group --home /var/lib/opensim --shell /bin/bash opensim
+    fi
+
+    for dir in /etc/opensim /etc/opensim/grids /etc/opensim/opensim.d /etc/opensim/robust.d \
+        /var/lib/opensim /var/lib/opensim/data /var/log/opensim /var/cache/opensim; do
+        [ -d "$dir" ] || install -d -o opensim -g opensim -m 755 "$dir"
+    done
+
+    # The kit reads the locations here; each core adds its profile
+    if [ ! -e /etc/opensim/opensim.conf ]; then
+        cat >/etc/opensim/opensim.conf <<'EOF'
+[Defaults]
+DirectoryLayout = system
+CoreRoot = /usr/share/opensim
+EtcRoot = /etc/opensim
+VarRoot = /var/lib/opensim
+LogsRoot = /var/log/opensim
+CacheRoot = /var/cache/opensim
+DataRoot = /var/lib/opensim/data
+SystemUser = opensim
+EOF
+        chown opensim:opensim /etc/opensim/opensim.conf
+    fi
+fi
+
+# As dh_installsystemd: enabled on first install, the admin's choice kept after
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ]; then
+    if command -v deb-systemd-helper >/dev/null; then
+        deb-systemd-helper unmask opensim.service >/dev/null || true
+        if deb-systemd-helper --quiet was-enabled opensim.service; then
+            deb-systemd-helper enable opensim.service >/dev/null || true
+        else
+            deb-systemd-helper update-state opensim.service >/dev/null || true
+        fi
+    fi
+    if [ -d /run/systemd/system ]; then
+        systemctl --system daemon-reload >/dev/null || true
+    fi
+fi

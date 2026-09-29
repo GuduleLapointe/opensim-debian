@@ -1,0 +1,25 @@
+#!/bin/sh
+# postrm of opensim-kit: on purge, forgets the service and removes the cache.
+# Config, data, logs and the opensim account are kept.
+set -e
+
+if [ -d /run/systemd/system ]; then
+    systemctl --system daemon-reload >/dev/null || true
+fi
+
+if command -v deb-systemd-helper >/dev/null; then
+    case "$1" in
+        remove)
+            deb-systemd-helper mask opensim.service >/dev/null || true
+            ;;
+        purge)
+            deb-systemd-helper purge opensim.service >/dev/null || true
+            deb-systemd-helper unmask opensim.service >/dev/null || true
+            ;;
+    esac
+fi
+
+if [ "$1" = "purge" ]; then
+    rm -rf /var/cache/opensim
+    echo "opensim-kit: kept /etc/opensim, /var/lib/opensim, /var/log/opensim and the opensim account" >&2
+fi

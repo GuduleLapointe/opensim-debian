@@ -1,0 +1,41 @@
+# An OpenSimulator distribution, built by packaging/core/build, which fills
+# the variables.
+# Installed read-only in /usr/share/opensim/<version>, next to the other
+# versions; the kit runs it with the config, data, logs and cache elsewhere.
+name: opensim-${OPENSIM_VERSION}
+arch: ${ARCH}
+platform: linux
+version: ${OPENSIM_VERSION}
+release: ${PACKAGE_REVISION}
+version_schema: none
+section: net
+priority: optional
+maintainer: Gudule Lapointe <gudule@speculoos.world>
+description: |-
+  OpenSimulator ${OPENSIM_VERSION}, 3D virtual world server
+  The official OpenSimulator ${OPENSIM_VERSION} distribution, run by the
+  opensim command of opensim-kit. Several versions can be installed side by
+  side, each in /usr/share/opensim/<version>.
+homepage: http://opensimulator.org
+license: BSD-3-Clause
+
+depends:
+  - opensim-kit
+# Ubuntu has the runtime; Debian needs Microsoft's repository, or
+# /usr/share/opensim-kit/libexec/install-dotnet
+recommends:
+  - dotnet-runtime-8.0 | dotnet-runtime-9.0 | dotnet-runtime-10.0
+  - libgdiplus
+
+contents:
+  - src: ${BUILD}
+    dst: /usr/share/opensim/${OPENSIM_VERSION}
+    type: tree
+  - src: build/copyright-${OPENSIM_VERSION}
+    dst: /usr/share/doc/opensim-${OPENSIM_VERSION}/copyright
+    file_info:
+      mode: 0644
+
+scripts:
+  postinstall: packaging/core/postinst
+  postremove: packaging/core/postrm

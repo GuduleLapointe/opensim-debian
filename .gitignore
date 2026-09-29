@@ -26,3 +26,5 @@ venv/
 config/
 vendor/
 .env
+/build/
+/dist/
