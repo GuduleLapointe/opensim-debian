@@ -37,8 +37,48 @@ Features
 - Show active instances, per instance and global memory and cpu usage
 
 
-Installation
-------------
+Installation from packages (Debian, Ubuntu)
+-------------------------------------------
+
+The kit and the OpenSimulator distributions come from the Magiiic apt repository. Add it once:
+
+```bash
+curl -fsSL https://apt.magiiic.com/magiiic-packaging.asc | sudo gpg --dearmor -o /usr/share/keyrings/magiiic-packaging.gpg
+echo "deb [signed-by=/usr/share/keyrings/magiiic-packaging.gpg] https://apt.magiiic.com stable main" | sudo tee /etc/apt/sources.list.d/magiiic.list
+sudo apt update
+```
+
+Then install the kit with the latest OpenSimulator:
+
+```bash
+sudo apt install opensim
+```
+
+- `opensim-kit`: the tools, in `/usr/share/opensim-kit`, and the `opensim` command
+- `opensim-<version>`, e.g. `opensim-0.9.3.0`: an OpenSimulator distribution, in `/usr/share/opensim/<version>`. Several versions can be installed side by side.
+- `opensim`: the kit and the latest version
+
+The files are at the usual places: config in `/etc/opensim`, data in `/var/lib/opensim`, logs in `/var/log/opensim`, cache in `/var/cache/opensim`. The instances run as the `opensim` account: the `opensim` command switches to it, through sudo.
+
+OpenSimulator 0.9.3 needs the .NET 8 runtime. Ubuntu installs it with the package; on Debian, install it with:
+
+```bash
+sudo /usr/share/opensim-kit/libexec/install-dotnet
+```
+
+Create a grid with the setup wizard, as the `opensim` account, then start it:
+
+```bash
+sudo -u opensim -H php /usr/share/opensim-kit/install/install.php
+sudo systemctl start opensim
+```
+
+The `opensim` service starts the enabled instances at boot. Package upgrades never restart them.
+
+An existing install, e.g. in `/opt/opensim`, keeps working with the packaged kit without moving anything: its `opensim.conf` gives the locations. To run it with the service, set its account with `sudo systemctl edit opensim` (`User=` and `Group=` in a `[Service]` section).
+
+Installation from git
+---------------------
 
 ```shell
 git clone --recursive https://git.magiiic.com/opensimulator/opensim-debian.git
