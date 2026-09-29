@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 OPENSIM=${OPENSIM:-core/opensim}
 PGM=${PGM:-$(basename "$0")}
@@ -34,11 +34,18 @@ abspath() {
 BINDIR=$(cd $(dirname "$0") && pwd)
 LIBEXECDIR=$(cd $(dirname "${BASH_SOURCE}") && pwd)
 
-export PATH=$BINDIR:$LIBEXECDIR:$LIBEXECDIR/bash-helpers:$PATH
-
 BASEDIR=$(dirname "$BINDIR")
-OPTSINHELPER=${OPTSINHELPER:-yes}
-. $BASEDIR/libexec/bash-helpers/helpers || exit 1
+
+# bash-helpers of bash-tools: composer's copy in a git checkout, else the
+# bash-tools package
+export PATH=$BINDIR:$LIBEXECDIR:$BASEDIR/vendor/bin:$PATH
+_helpers=$BASEDIR/vendor/bin/bash-helpers
+[ -f "$_helpers" ] || _helpers=$(command -v bash-helpers) || {
+	echo "$PGM: bash-helpers not found, install bash-tools" >&2
+	exit 1
+}
+. "$_helpers" || exit 1
+unset _helpers
 
 ## Rest of the Business logic after functions...
 
@@ -127,7 +134,7 @@ crudget() {
 
 crudmerge() {
 	[ -f "$2" ] || return
-	log merging $2 in $1
+	debug merging $2 in $1
 	# cleanupIni $2 | sed "s/^Include-/Include_/" > $TMP.merge.ini
 	cleanupIni $2 >$TMP.merge.ini
 	crudini --merge $1 <$TMP.merge.ini || end $? $2 Merge failed
@@ -148,7 +155,7 @@ testDatabaseConnection() {
 	DatabaseName=$2
 	DatabaseUser=$3
 	DatabasePassword=$4
-	log "Testing database $DatabaseName connection"
+	debug "Testing database $DatabaseName connection"
 
 	# The account host MariaDB applies depends on how we connect: a
 	# "localhost" target goes through the unix socket (account host
@@ -161,14 +168,14 @@ testDatabaseConnection() {
 	# blindly assuming the user is missing (the old code retried CREATE USER
 	# on an already-existing account, without ever fixing anything).
 	if dberror=$(echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" $DatabaseName 2>&1); then
-		log "Database Connection OK"
+		debug "Database Connection OK"
 		return 0
 	fi
 
 	case "$dberror" in
 	*"Unknown database"*)
 		# Authentication works, only the database itself is missing.
-		log "User $DatabaseUser authenticates but database $DatabaseName is missing"
+		debug "User $DatabaseUser authenticates but database $DatabaseName is missing"
 		;;
 	*"Access denied"*)
 		# Authentication failed: account absent, wrong password, or account
@@ -185,7 +192,7 @@ testDatabaseConnection() {
 	# Unknown-database path: auth is fine, create the database and re-test.
 	createDatabase $DatabaseHost $DatabaseUser $DatabaseName "$grant_host" &&
 		echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" $DatabaseName &&
-		log "Database OK" && return 0
+		debug "Database OK" && return 0
 	return $?
 }
 
@@ -202,7 +209,7 @@ databaseAuthRepair() {
 
 	if [ -z "$existing" ]; then
 		# Account truly absent -> create it for the connecting host.
-		log "User $DatabaseUser does not exist yet on $DatabaseHost"
+		debug "User $DatabaseUser does not exist yet on $DatabaseHost"
 	elif echo "$existing" | grep -qx "$grant_host"; then
 		# Account already exists for this exact host -> the password is wrong,
 		# creating the user again would not help.
@@ -212,7 +219,7 @@ databaseAuthRepair() {
 		# Account exists, but not for the host we connect as: the real cause
 		# (e.g. opensim@'%' present, but a localhost socket connection needs
 		# opensim@'localhost'). Offer to add the missing host grant.
-		log "User '$DatabaseUser' exists for host(s): $(echo $existing) - but not for '$grant_host'"
+		debug "User '$DatabaseUser' exists for host(s): $(echo $existing) - but not for '$grant_host'"
 		yesno "Create '$DatabaseUser'@'$grant_host' and grant access to $DatabaseName?" || {
 			log 1 "Run manually: CREATE USER '$DatabaseUser'@'$grant_host' IDENTIFIED BY '<password>'; GRANT ALL ON $DatabaseName.* TO '$DatabaseUser'@'$grant_host';"
 			return 1
@@ -222,7 +229,7 @@ databaseAuthRepair() {
 	createDatabaseUser $DatabaseHost $DatabaseUser "$DatabasePassword" "$grant_host" || return $?
 	createDatabase $DatabaseHost $DatabaseUser $DatabaseName "$grant_host" &&
 		echo "" | mysql -h$DatabaseHost -u$DatabaseUser -p"$DatabasePassword" $DatabaseName &&
-		log "Database OK" && return 0
+		debug "Database OK" && return 0
 	return $?
 }
 
@@ -250,7 +257,7 @@ createDatabase() {
 			sql="set global innodb_file_format = 'Barracuda'" && echo "$sql" | sudo mysql -h$DatabaseHost &&
 				sql="set global innodb_large_prefix = 'ON'" && echo "$sql" | sudo mysql -h$DatabaseHost ||
 				log $? "$sql returned error $?. Make sure that your mysql sever accepts large prefix."
-		) && log "Database created" ||
+		) && debug "Database created" ||
 		(
 			return=$?
 			log $return "error $last"
@@ -263,10 +270,10 @@ iniExpandVariables() {
 	[ ! "$1" ] && log 1 iniExpandVariables no ini file specified && return
 	thisini="$1"
 	grep -q '${' $thisini || {
-		log "no var in $thisini, skipping"
+		debug "no var in $thisini, skipping"
 		return
 	}
-	log expanding $thisini
+	debug expanding $thisini
 	sed -E "s/($varPattern)/\n\\1\n/g" $TMP.ini |
 		grep -E --color "$varPattern" | sed -e "s/[{}$]//g" -e "s/|/ /" |
 		sort -u | while read section variable; do
@@ -288,7 +295,7 @@ iniMergeAndForget() {
 	file=$(crudget $thisini $section $variable)
 	[ ! -e "$file" ] && log 2 "file $file not found" && return 2
 
-	log mergin $common
+	debug mergin $common
 	crudmerge $thisini $file
 	crudini --del $thisini $section $variable
 	sed -i~ "s/Include_/Include-/" $thisini
@@ -379,8 +386,8 @@ checkRuntimeAvailable() {
 			[ "$m" -ge "$major" ] && use=$m && break
 		done
 		if [ -n "$use" ]; then
-			[ "$use" = "$major" ] && log "Found .NET runtime $major" ||
-				log "Using .NET $use (roll-forward from required $major)"
+			[ "$use" = "$major" ] && debug "Found .NET runtime $major" ||
+				debug "Using .NET $use (roll-forward from required $major)"
 			return 0
 		fi
 		log 1 "OpenSim needs Microsoft.NETCore.App $major or newer, but none is installed"
@@ -393,7 +400,7 @@ checkRuntimeAvailable() {
 
 # Python venv + crudini (isolated from system Python)
 . $BASEDIR/libexec/venv-setup || end $? "Could not set up Python venv"
-log "using $(which python3)"
+debug "using $(which python3)"
 
 uuidgen=$(which uuid || which uuidgen)
 
@@ -414,10 +421,10 @@ for candidate in \
 done
 
 if [ -n "$conf" ]; then
-	log "loading config $conf"
+	debug "loading config $conf"
 	cp "$conf" "$TMP.conf"
 else
-	log "no config found, using built-in defaults"
+	debug "no config found, using built-in defaults"
 	echo "[Defaults]" >"$TMP.conf"
 fi
 
@@ -440,16 +447,16 @@ CacheRoot=${CacheRoot:-}
 DataRoot=${DataRoot:-}
 Runtime=${Runtime:-}
 SystemUser=${SystemUser:-}
-log "base conf loaded (profile ${active:-none}, version ${OpensimVersion:-unset})"
+debug "base conf loaded (profile ${active:-none}, version ${OpensimVersion:-unset})"
 
 # The etc directory is the entry point for every helper, so a missing one is
 # fatal -- except for install scripts, whose job is precisely to create it.
 if [ -d "$EtcRoot" ]; then
-	log "EtcRoot=$EtcRoot"
+	debug "EtcRoot=$EtcRoot"
 else
 	case "$PGM" in
 	*install*)
-		log "EtcRoot '$EtcRoot' does not exist yet, install will create it"
+		debug "EtcRoot '$EtcRoot' does not exist yet, install will create it"
 		;;
 	*)
 		end 1 "Etc directory '$EtcRoot' not found. Run ./install/install.sh, or set EtcRoot in [Defaults] of $CONF"
@@ -465,15 +472,15 @@ BinDirectory=${BinDirectory:-$CoreDirectory/bin}
 # Find Core best candidate
 if [ -n "$CoreDirectory" -a -e "$CoreDirectory/bin/OpenSim.exe" ]; then
 	OpenSimExe="$CoreDirectory/bin/OpenSim.exe"
-	log "Found OpenSim.exe in CoreDirectory $OpenSimExe"
+	debug "Found OpenSim.exe in CoreDirectory $OpenSimExe"
 else
-	log "Looking for OpenSipm.exe"
+	debug "Looking for OpenSipm.exe"
 	OpenSimExe=$(ls \
 		$CoreRoot/*/bin/OpenSim.exe \
 		2>/dev/null | tail -1)
 	# $BinDirectory/bin/OpenSim.exe \
 	if [ -n "$OpenSimExe" -a -e "$OpenSimExe" ]; then
-		log "Found OpenSimExe $OpenSimExe"
+		debug "Found OpenSimExe $OpenSimExe"
 		BinDirectory=$(dirname "$OpenSimExe")
 		CoreDirectory=$(dirname "$BinDirectory")
 	fi

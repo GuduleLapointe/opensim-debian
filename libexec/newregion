@@ -5,9 +5,9 @@ DEBUG=no
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/libexec/os-helpers || exit 1
 
-log "EtcRoot $EtcRoot"
-log "OpenSimExe $OpenSimExe"
-log "BinDirectory $BinDirectory"
+debug "EtcRoot $EtcRoot"
+debug "OpenSimExe $OpenSimExe"
+debug "BinDirectory $BinDirectory"
 
 [ -z "$uuidgen" ] && end 1 "this script requires uuid generator, run sudo apt install uuid to install one"
 
@@ -28,7 +28,7 @@ grep -l "\[$RegionName\]" $regionload_regionsdir/*.ini 2>/dev/null && end 1 "Reg
 
 RegionIni=$(echo $RegionName.ini | sed "s/[^a-zA-Z0-9\._-]//g")
 RegionIniPath="$regionload_regionsdir/$RegionIni"
-log region ini $RegionIniPath
+debug region ini $RegionIniPath
 # log "new region $RegionName in sim $SimName ($RegionIni)"
 [ -f "$RegionIniPath" ] && cp "$RegionIniPath" $TMP.region.ini
 

@@ -19,7 +19,7 @@ _python=$(which python3 || which python 2>/dev/null) ||
 	end $? "Python not found — install python3"
 
 if [ ! -f "$_venv/bin/activate" ]; then
-	log "Creating Python venv at $_venv"
+	debug "Creating Python venv at $_venv"
 	"$_python" -m venv --prompt "$("$_python" --version 2>&1 | tr -d ' ')" "$_venv" ||
 		end $? "Could not create Python venv"
 fi
@@ -28,7 +28,7 @@ fi
 	end $? "Could not activate Python venv at $_venv"
 
 if ! which crudini >/dev/null 2>&1; then
-	log "Installing crudini in venv"
+	debug "Installing crudini in venv"
 	pip install crudini ||
 		end $? "Could not install crudini in venv"
 fi

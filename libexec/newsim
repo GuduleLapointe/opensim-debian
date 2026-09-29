@@ -8,9 +8,9 @@ BASEDIR=$(dirname $(dirname $(realpath "$0")))
 
 [ -z "$uuidgen" ] && end 1 "this script requires uuid generator, run sudo apt install uuid to install one"
 which bc >/dev/null || end $? "this script requires bc, run sudo apt install bc to install it"
-log "EtcRoot $EtcRoot"
-log "OpenSimExe $OpenSimExe"
-log "BinDirectory $BinDirectory"
+debug "EtcRoot $EtcRoot"
+debug "OpenSimExe $OpenSimExe"
+debug "BinDirectory $BinDirectory"
 
 [ "$3" ] && BinDirArg=$3
 [ "$2" ] && gridnick=$1 && shift
@@ -33,7 +33,7 @@ done
 [ -f $TMP.grids ] && defaultGrid=$(head -1 $TMP.grids | cut -d " " -f 1)
 [ -f $TMP.grids ] && echo "Known grids:"
 cat $TMP.grids | sed "s:^:  :"
-log default grid $defaultGrid
+debug default grid $defaultGrid
 [ ! "$gridnick" ] && gridnick="$defaultGrid"
 
 readvar gridnick
@@ -46,13 +46,13 @@ fi
 
 grep -q "\[GridInfoService\]" $RobustConfig
 if [ $? -eq 0 ]; then
-	log "robust type ini file"
+	debug "robust type ini file"
 	crudget $RobustConfig Const || crudget $RobustConfig const
 	crudget $RobustConfig Launch || crudget $RobustConfig launch
 	# BinDir=$bindir
 	crudget $RobustConfig GridInfoService || crudget $RobustConfig gridinfoservice
 else
-	log "simulator type ini file"
+	debug "simulator type ini file"
 	crudget $RobustConfig Const || crudget $RobustConfig const
 	# gridname=$gridname
 	curl -s $baseurl:$publicport/get_grid_info >$TMP.gridinfo
@@ -65,17 +65,17 @@ PrivatePort=${privateport:-${PrivatePort}}
 PrivatePort=${PrivatePort:-8002}
 firstport=$((($PrivatePort / 10 + 1) * 10))
 
-log grid name $gridname
-log grid nick $gridnick
-log gridslug $gridslug
+debug grid name $gridname
+debug grid nick $gridnick
+debug gridslug $gridslug
 
 readvar SimName
 
 [ ! "$SimName" ] && end 1
 simslug=$(echo "${gridnick}_$SimName" | tr [:upper:] [:lower:] | sed "s/[^[:alnum:]_]//g")
-log simslug $simslug
+debug simslug $simslug
 
-log "list of core opensim directories"
+debug "list of core opensim directories"
 # find "$CORE" -name OpenSim.exe | xargs dirname | grep "bin$" > $TMP.list
 ls $BASEDIR/lib/opensim*/bin/OpenSim.exe \
 	$BASEDIR/core/opensim*/bin/OpenSim.exe \
@@ -84,7 +84,7 @@ ls $BASEDIR/lib/opensim*/bin/OpenSim.exe \
 grep -v "/opensim-[0-9\.]*/" $TMP.list >$TMP.osdirs
 grep "/opensim-[0-9\.]*/" $TMP.list >>$TMP.osdirs
 defaultOSDir=$(tail -1 $TMP.osdirs)
-log default CoreDirectory $defaultOSDir
+debug default CoreDirectory $defaultOSDir
 echo "Found OpenSimulator distributions:"
 cat $TMP.osdirs | sed "s:^:  :"
 BinDir=${bindir:-${BinDir}}
@@ -97,10 +97,10 @@ readvar BinDir
 [ -f "$BinDir/OpenSim.exe" ] || end $? "$BinDir not an OpenSim bin directory"
 EtcRoot=${etcdirectory:-${EtcRoot}}
 [ "$EtcRoot" = "" ] && EtcRoot="$(dirname "$RobustConfig")"
-log EtcRoot $EtcRoot
+debug EtcRoot $EtcRoot
 
 [ -f "$EtcRoot/OpenSim.ini" ] &&
-	log "Using $EtcRoot/OpenSim.ini" ||
+	debug "Using $EtcRoot/OpenSim.ini" ||
 	end 1 "Configuration not found, use newgrid.sh to build $EtcRoot/ ($etcdirectory)"
 cleanupIni "$EtcRoot/OpenSim.ini" >$TMP.OpenSim.ini
 
@@ -110,13 +110,13 @@ ls $simConfig 2>/dev/null &&
 	{
 		log 1 "There is already a config for $simslug"
 		if yesno "Proceed and replace the config?"; then
-			log "using $simConfig"
+			debug "using $simConfig"
 			# cleanupIni $simConfig > $TMP.ini || end $?
 			# crudmerge $TMP.ini $simConfig || end $?
 		else
 			end 1 "current $simslug config left untouched"
 		fi
-	} || log Creating new $simConfig
+	} || debug Creating new $simConfig
 
 crudget $TMP.OpenSim.ini Const 2>/dev/null || crudget $TMP.OpenSim.ini const 2>/dev/null || end $? "could not get Const section from $EtcRoot/OpenSim.ini"
 
@@ -152,7 +152,7 @@ crudget $TMP.ini Network 2>/dev/null || crudget $TMP.ini network 2>/dev/null || 
 [ "$http_listener_port" ] || http_listener_port=$(nextfreeports $firstport)
 readvar http_listener_port
 crudini --set $TMP.ini Network http_listener_port "$http_listener_port"
-log "getting db settings"
+debug "getting db settings"
 # inigrep Include_ $TMP.ini
 
 crudget $TMP.ini DatabaseService 2>/dev/null || end $?
@@ -198,9 +198,9 @@ DataRoot=${datadirectory:-${DataRoot}}
 eval DataRoot=$(echo $DataRoot | sed "s/{[a-Z]*|\([a-z]*\)}/{\\1}/i")
 simConfigDir=${simconfigdir:-${simConfigDir}}
 eval simConfigDir=$(echo $simConfigDir | sed "s/{[a-Z]*|\([a-z]*\)}/{\\1}/i")
-log CacheRoot $CacheRoot
-log DataRoot $DataRoot
-log simConfigDir $simConfigDir
+debug CacheRoot $CacheRoot
+debug DataRoot $DataRoot
+debug simConfigDir $simConfigDir
 for folder in \
 	"$(dirname "$CacheRoot")" \
 	"$(dirname "$DataRoot")" \
@@ -210,7 +210,7 @@ for folder in \
 	"$simConfigDir" \
 	"$simConfigDir/regions"; do
 	[ -e "$folder" ] && continue
-	mkdir "$folder" && log created folder $folder || end $? could not create $folder
+	mkdir "$folder" && debug created folder $folder || end $? could not create $folder
 done
 
 cleanupIni4Prod $TMP.ini &&

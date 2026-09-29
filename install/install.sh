@@ -14,7 +14,7 @@ trap 'rm -f $TMP*' EXIT
 
 crudget $TMP.conf Defaults
 
-log "Config loaded
+debug "Config loaded
   OpenSim version:   ${OpensimVersion:-}
   Layout:            ${DirectoryLayout:-}
   Install base:      ${InstallPath:-}
@@ -77,7 +77,7 @@ _cache="${XDG_CACHE_HOME:-$HOME/.cache}/opensim/releases.list"
 mkdir -p "$(dirname "$_cache")"
 if [ -f "$_cache" ] && [ -z "$(find "$_cache" -mtime +7 2>/dev/null)" ]; then
 	_releases=$(cat "$_cache")
-	log "Using cached release list ($_cache)"
+	debug "Using cached release list ($_cache)"
 else
 	echo "Fetching OpenSimulator release list from $OSDOWNLOADPAGE ..."
 	_releases=$(curl -s "$OSDOWNLOADPAGE/" |
@@ -142,7 +142,7 @@ installDotnet() {
 		dir="$HOME/.dotnet"
 	fi
 	[ -w "$dir" ] && _sudo="" || _sudo="sudo"
-	log "Installing .NET $major runtime into $dir"
+	debug "Installing .NET $major runtime into $dir"
 	curl -fsSL https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh >"$TMP.dotnet-install.sh" ||
 		end $? "Could not fetch dotnet-install.sh"
 	$_sudo bash "$TMP.dotnet-install.sh" --runtime dotnet --channel "$major.0" --install-dir "$dir" ||
@@ -159,7 +159,7 @@ elif version_ge "$OpensimVersion" 0.9.3.0; then
 		grep -o 'Microsoft.NETCore.App [0-9.]*' | awk '{print $2}' || true)
 	compatible=$(echo "$installed" | awk -F. -v m=$dnMajor 'NF && $1>=m{print; exit}' || true)
 	if echo "$installed" | grep -q "^$dnMajor\."; then
-		log ".NET $dnMajor installed; OpenSim $OpensimVersion will use it"
+		debug ".NET $dnMajor installed; OpenSim $OpensimVersion will use it"
 	elif [ -n "$compatible" ]; then
 		# A newer .NET is present: runs via roll-forward, or install native.
 		echo ""
@@ -171,7 +171,7 @@ elif version_ge "$OpensimVersion" 0.9.3.0; then
 		echo "  2) Install native .NET $dnMajor"
 		read -p "  Choice [1]: " _dnchoice
 		[ "${_dnchoice:-1}" = "2" ] && installDotnet "$dnMajor" ||
-			log "OpenSim will run on the installed .NET via roll-forward"
+			debug "OpenSim will run on the installed .NET via roll-forward"
 	else
 		# No usable .NET (none, or only older than the target): hard requirement.
 		[ -n "$installed" ] &&
@@ -183,7 +183,7 @@ elif version_ge "$OpensimVersion" 0.9.3.0; then
 else
 	# OpenSim < 0.9.3.0 runs on Mono.
 	if which mono >/dev/null 2>&1; then
-		log "mono present: $(mono --version | head -1)"
+		debug "mono present: $(mono --version | head -1)"
 	else
 		yesno -y "OpenSim $OpensimVersion needs Mono; install it now?" &&
 			pkg_install mono-complete ||
@@ -225,7 +225,7 @@ case "${DirectoryLayout:-1}" in
 esac
 
 InstallPath=$BaseInstallPath
-log "InstallPath=$InstallPath"
+debug "InstallPath=$InstallPath"
 
 case "${DirectoryLayout:-1}" in
 system)
@@ -287,7 +287,7 @@ writeOpensimConf() {
 		_def="$_sec"
 	else
 		_def="$_cur"
-		log "Default install kept: $_cur"
+		debug "Default install kept: $_cur"
 	fi
 	crudini --set "$_conf" Defaults DefaultProfile "$_def"
 	if [ "$_def" = "$_sec" ]; then _writeProfile "$_conf" Defaults; fi
@@ -298,7 +298,7 @@ writeOpensimConf() {
 	# Predictable per-user path -> the canonical file in EtcRoot.
 	mkdir -p "$HOME/.config/opensim"
 	ln -sfn "$_conf" "$HOME/.config/opensim/$CONF"
-	log "Config written: $_conf [$_sec] (linked from ~/.config/opensim/$CONF)"
+	debug "Config written: $_conf [$_sec] (linked from ~/.config/opensim/$CONF)"
 	unset _conf _rt _sec _cur _def
 }
 
@@ -358,20 +358,20 @@ if [ -n "$OSDOWNLOAD" ]; then
 	_tar_path=$SourcesDirectory/$_tar_name
 	# if [ -n "$OSDOWNLOAD" ] && [ ! -f "${OpenSimExe:-}" ]; then
 	if [ -f "$_tar_path" ]; then
-		log "Using previous download $_tar_path"
+		debug "Using previous download $_tar_path"
 	else
-		log "Downloading $OSDOWNLOAD"
+		debug "Downloading $OSDOWNLOAD"
 		wget -nd -P "$SourcesDirectory" "$OSDOWNLOAD" ||
 			end $? "Error downloading OpenSim"
 	fi
 	[ -f "$_tar_path" ] || end $? "Unexpected: $_tar_path not found"
 
-	log "Unpacking $_tar_name to $CoreRoot"
+	debug "Unpacking $_tar_name to $CoreRoot"
 
 	pv "$_tar_path" | tar xzf - -C "$CoreRoot" ||
 		end $? "Error unpacking OpenSim"
 
-	log "OpenSim installed: $CoreDirectory"
+	debug "OpenSim installed: $CoreDirectory"
 	unset _tar_name
 	unset _tar_path
 fi

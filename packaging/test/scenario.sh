@@ -18,7 +18,8 @@ apt_q() {
 }
 deb() { ls /dist/"$1"_*.deb | grep -E "_($(dpkg --print-architecture)|all)\.deb$" | tail -1; }
 core=$(deb opensim-0.9.3.0)
-tools=$(deb opensim-tools)
+# The tools, with the bash-tools they depend on
+tools="$(deb opensim-tools) $(deb bash-tools)"
 metas="$(deb opensim) $(deb opensim-kit)"
 # The dotnet process only: the screen session running it has the same arguments
 robust_pid() { pgrep -f "^dotnet .*Robust.dll" | head -1; }
@@ -36,7 +37,7 @@ check "core installed" "[ -f /usr/share/opensim/0.9.3.0/bin/OpenSim.exe ]"
 check "no tools" "! command -v opensim >/dev/null && [ ! -e /etc/opensim ]"
 
 ts "tools, then the metapackages"
-apt_q install "$tools"
+apt_q install $tools
 check "opensim account" "getent passwd opensim >/dev/null"
 check "profile of the core" "profile"
 check "default profile" "grep -q '^DefaultProfile = opensim-0.9.3.0' /etc/opensim/opensim.conf"
@@ -66,7 +67,7 @@ check "Robust ready" "grep -q 'UserAgentServerConnector loaded' $(robust_log)"
 check "no write denied" "! grep -qiE 'denied|unauthorized' $(robust_log)"
 
 ts upgrade
-apt_q install --reinstall "$tools" "$core"
+apt_q install --reinstall $tools "$core"
 check "Robust not restarted" "[ '$(robust_pid)' = '$pid' ]"
 
 ts "remove the tools, grid started by the service"
@@ -76,7 +77,7 @@ check "Robust stopped cleanly" "[ -z '$(robust_pid)' ] && [ '$(quits)' = 1 ]"
 check "core kept" "[ -f /usr/share/opensim/0.9.3.0/bin/OpenSim.exe ]"
 
 ts "reinstall the tools"
-apt_q install "$tools"
+apt_q install $tools
 check "service enabled again" "systemctl -q is-enabled opensim"
 
 ts "remove the tools, grid started by hand"
@@ -87,7 +88,7 @@ robust_state
 check "Robust stopped cleanly" "[ -z '$(robust_pid)' ] && [ '$(quits)' = 2 ]"
 
 ts "remove the core, tools installed"
-apt_q install "$tools"
+apt_q install $tools
 apt_q remove opensim-0.9.3.0
 check "profile removed" "! profile"
 check "no default profile" "! grep -q '^DefaultProfile' /etc/opensim/opensim.conf"

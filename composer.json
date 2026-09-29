@@ -15,7 +15,8 @@
     }
   ],
   "require-dev": {
-    "deployer/deployer": "^7.3"
+    "deployer/deployer": "^7.3",
+    "magicoli/bash-tools": "dev-dev"
   },
   "config": {
     "allow-plugins": {},
@@ -31,5 +32,17 @@
     "psr-4": {
       "OpenSim\\Installer\\": "install/src/"
     }
-  }
+  },
+  "repositories": [{
+    "name": "bash-tools",
+    "type": "path",
+    "url": "../{bash-tools}",
+    "canonical": false,
+    "options": {
+      "symlink": true,
+      "versions": {
+        "magicoli/bash-tools": "dev-dev"
+      }
+    }
+  }]
 }

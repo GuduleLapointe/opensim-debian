@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b9a421a0c9d393497c71f9947e90a886",
+    "content-hash": "3fc2e1dedecc95399164a9688ad6ba1e",
     "packages": [
         {
             "name": "laravel/prompts",
@@ -853,11 +853,57 @@
                 }
             ],
             "time": "2025-02-19T16:45:27+00:00"
+        },
+        {
+            "name": "magicoli/bash-tools",
+            "version": "dev-dev",
+            "dist": {
+                "type": "path",
+                "url": "../bash-tools",
+                "reference": "72d1a97ea67d4ae0dd8e53995e9152873d3e3d67"
+            },
+            "bin": [
+                "bin/cpuinfo",
+                "bin/bash-helpers",
+                "bin/ini_parser",
+                "bin/mail-report",
+                "bin/randompassword",
+                "bin/stamp",
+                "bin/stampfile",
+                "bin/tildelete",
+                "bin/titlecase",
+                "bin/tts",
+                "bin/ucfirst",
+                "bin/webnormalize",
+                "bin/wtclient"
+            ],
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Magicoli\\BashHelpers\\": "src/"
+                }
+            },
+            "license": [
+                "AGPL-3.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Olivier van Helden",
+                    "homepage": "https://magiiic.com"
+                }
+            ],
+            "description": "Eclectic collection of bash tools and helpers.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
         }
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "magicoli/bash-tools": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {

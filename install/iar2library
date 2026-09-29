@@ -16,7 +16,7 @@ ConfigDirectory="$(realpath "$ConfigDirectory")"
 [ -e "$initsource" ] || end $? "source $initsource not found"
 if [ -f "$initsource" ]
 then
-  log assuming .iar file
+  debug assuming .iar file
   mkdir $TMP.source && cd $TMP.source \
   && tar xvfz "$initsource" >/dev/null && source=$PWD
 else
@@ -40,14 +40,14 @@ do
   assetdir="${shortname}AssetSet"
   assetxml="$assetdir/${shortname}AssetSet.xml"
   invdir="$(echo $machinename | sed "s:BodyParts/:BodyPartsLibrary/:")"
-  log assetdir $assetdir
-  log invdir $invdir
+  debug assetdir $assetdir
+  debug invdir $invdir
   cd $ConfigDirectory
-  [ -e "assets/$assetdir" ] && log "Folder $foldername exists, will merge" || log "Folder $foldername"
+  [ -e "assets/$assetdir" ] && debug "Folder $foldername exists, will merge" || debug "Folder $foldername"
   mkdir -p "assets/$assetdir" || end $?
   mkdir -p "inventory/$invdir" || end $?
   cd "$source/inventory/$folder" || end $?
-  ls *.xml 2>/dev/null > $TMP.xml || { log "Nothing to do here, skipping"; continue; }
+  ls *.xml 2>/dev/null > $TMP.xml || { debug "Nothing to do here, skipping"; continue; }
 
   echo "<Nini>" > $TMP.assetxml
   cat $TMP.xml | while read file
@@ -80,8 +80,8 @@ do
   grep -q "\"$assetxml" assets/AssetSets.xml \
   && grep -q "\"$invdir/${shortname}Folders.xml" inventory/Libraries.xml \
   && grep -q "\"$invdir/${shortname}Folders.xml" inventory/Libraries.xml \
-  && log "$foldername already registered" && break
-  log "registering $foldername"
+  && debug "$foldername already registered" && break
+  debug "registering $foldername"
   grep -v "</Nini>" assets/AssetSets.xml > $TMP.AssetSets.xml
   echo "
   <!-- imported from $initsource -->
@@ -92,7 +92,7 @@ do
 </Nini>" >> $TMP.AssetSets.xml
   diff assets/AssetSets.xml $TMP.AssetSets.xml
   cat $TMP.AssetSets.xml > assets/AssetSets.xml
-  log assets/AssetSets.xml updated
+  debug assets/AssetSets.xml updated
 
   grep -v "</Nini>" inventory/Libraries.xml > $TMP.Libraries.xml
   echo "
@@ -105,5 +105,5 @@ do
 </Nini>" >> $TMP.Libraries.xml
   diff inventory/Libraries.xml $TMP.Libraries.xml
   cat $TMP.Libraries.xml > inventory/Libraries.xml
-  log inventory/Libraries.xml updated
+  debug inventory/Libraries.xml updated
 done

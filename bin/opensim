@@ -21,6 +21,22 @@ if [ "${1:-}" = "install-dotnet" ]; then
 	exec "$BASEDIR/libexec/install-dotnet" "$@"
 fi
 
+# Before the helpers, which answer -h
+USAGE="opensim [-hvq] <command> [instance...]"
+HELP="
+opensim <start|stop [now]|restart [now]> [instance1] [instance2] [...]
+opensim status
+opensim setup           create or modify grids (setup wizard)
+opensim install-dotnet  install the .NET runtime OpenSim needs (as root)
+
+	-h display this help
+	-v verbose mode
+	-q quiet mode"
+
+# The arguments as given, for the switch below: the helpers take the options
+# they know out of them
+ARGV_GIVEN=("$@")
+
 . $BASEDIR/libexec/os-helpers || exit 1
 trap 'rm -f $TMP*' EXIT
 
@@ -30,9 +46,9 @@ trap 'rm -f $TMP*' EXIT
 if [ -n "$SystemUser" ] && [ "$(id -un)" != "$SystemUser" ]; then
 	rm -f $TMP*
 	if [ "$(id -u)" = 0 ]; then
-		exec runuser -u "$SystemUser" -- "$0" "$@"
+		exec runuser -u "$SystemUser" -- "$0" "${ARGV_GIVEN[@]}"
 	fi
-	exec sudo -H -u "$SystemUser" "$0" "$@"
+	exec sudo -H -u "$SystemUser" "$0" "${ARGV_GIVEN[@]}"
 fi
 
 # The setup wizard, as the system user too: the files of the grids belong to it
@@ -44,30 +60,20 @@ source $BASEDIR/libexec/venv-setup || end $? "Could not setup python venv"
 
 require crudini
 
-log "DirectoryLayout: $DirectoryLayout"
-log "Profile: ${DefaultProfile:-} (OpenSim $OpensimVersion)"
-log "CoreRoot: $CoreRoot"
-log "CoreDirectory: $CoreDirectory"
-log "BinDirectory: $BinDirectory"
-log "OpenSimExe: $OpenSimExe"
-log "EtcRoot: $EtcRoot"
-log "VarRoot: $VarRoot"
-log "DataRoot: $DataRoot"
-log "CacheRoot: $CacheRoot"
-log "LogsRoot: $LogsRoot"
+debug "DirectoryLayout: $DirectoryLayout"
+debug "Profile: ${DefaultProfile:-} (OpenSim $OpensimVersion)"
+debug "CoreRoot: $CoreRoot"
+debug "CoreDirectory: $CoreDirectory"
+debug "BinDirectory: $BinDirectory"
+debug "OpenSimExe: $OpenSimExe"
+debug "EtcRoot: $EtcRoot"
+debug "VarRoot: $VarRoot"
+debug "DataRoot: $DataRoot"
+debug "CacheRoot: $CacheRoot"
+debug "LogsRoot: $LogsRoot"
 
 [ -z "$EtcRoot" ] && end 1 "Etc directory not set"
 
-
-HELP="
-$PGM <start|stop [now]|restart [now]> [instance1] [instance2] [...]
-$PGM status
-$PGM setup           create or modify grids (setup wizard)
-$PGM install-dotnet  install the .NET runtime OpenSim needs (as root)
-
-	-h display this help
-	-v verbose mode
-	-q quiet mode"
 
 OPTS="shvq"
 while getopts $OPTS PARAM; do
@@ -140,16 +146,16 @@ startSim() {
 
 		instance=$(echo "$instance" | sed "s/[^a-zA-Z0-9_]*//g")
 
-		log "$instance ($ini)"
+		debug "$instance ($ini)"
 
 		# Drop leftover dead sessions so they are not mistaken for a running one.
 		screen -wipe >/dev/null 2>&1
 		if osScreenExists "$instance"; then
-			log "$instance is already running"
+			debug "$instance is already running"
 			continue
 		fi
 
-		log 1 "starting $instance"
+		log "starting $instance"
 
 		# for default in $(echo "$ETCPATH:" | sed "s|/*:|/default.ini |g")
 		# do
@@ -159,7 +165,7 @@ startSim() {
 		#     ini_section_Startup 2>/dev/null
 		#     ini_section_Launch 2>/dev/null
 		# done
-		log extracting launch info from $inifile file
+		debug extracting launch info from $inifile file
 
 		# cat "$inifile" | sed '/\[Const]/,/^\[/!d' | sed "$ d" > $TMP.ini
 		# cat "$inifile" | sed '/\[Launch]/,/^\[/!d' | sed "$ d" >> $TMP.ini
@@ -190,7 +196,7 @@ startSim() {
 		BinDirectory=${BinDirectory:-$ProfileBinDirectory}
 
 		[ -z "$BinDirectory" ] && end 1 "Could not find a valid BinDirectory"
-		log "BinDirectory: $BinDirectory"
+		debug "BinDirectory: $BinDirectory"
 
 		Executable=${executable:-${Executable}}
 		# Assembly base name: from a [Launch] Executable if provided, otherwise
@@ -209,12 +215,12 @@ startSim() {
 
 		# Single source of truth (os-helpers) for the exe/dll + runtime decision.
 		osResolveRuntime "$ExecName" "$BinDirectory"
-		log "Executable $Executable ($runtime), OpenSim version ${osversion:-unknown}"
+		debug "Executable $Executable ($runtime), OpenSim version ${osversion:-unknown}"
 
-		log "starting $instance with $inifile"
+		debug "starting $instance with $inifile"
 
 		cd $BinDirectory 2>/dev/null || end 2 $instance Cannot cd to $BinDirectory
-		log "BinDirectory $BinDirectory"
+		debug "BinDirectory $BinDirectory"
 		[ -f $Executable ] || end 3 Executable $Executable not found
 
 		# Fail early with a clear message if the runtime is missing, rather
@@ -229,7 +235,7 @@ startSim() {
 		InstanceLogsRoot=${LogsDirectory:-${CommonLogsRoot:-$LogsRoot}}
 
 		LogFile=${LogFile:-$InstanceLogsRoot/$instance.log}
-		log "LogsRoot $InstanceLogsRoot"
+		debug "LogsRoot $InstanceLogsRoot"
 
 		# Log config: from the instance config, else the one the grid wizard
 		# writes next to it, else one made from the core's model
@@ -238,14 +244,14 @@ startSim() {
 			LogConfig="$EtcDirectory/$ExecName.exe.config"
 		DataRoot=${datadirectory:-${DataRoot}}
 		[ ! "$LogConfig" ] && LogConfig="$DataRoot/$(basename "$inifile" .ini).LogConfig"
-		log "LogConfig $LogConfig"
-		log Executable $Executable
+		debug "LogConfig $LogConfig"
+		debug Executable $Executable
 		if [ ! -f "$LogConfig" ]; then
 			sed -e "s|[a-zA-Z0-9\./_-]*/*$ExecName.log|$InstanceLogsRoot/$instance.log|" \
 				-e "s|[a-zA-Z0-9\./_-]*/*${ExecName}Stats.log|$InstanceLogsRoot/${instance}.Stats.log|" \
 				$BinDirectory/$ExecName.exe.config >$TMP.logconfig &&
 				mv $TMP.logconfig "$LogConfig" &&
-				log created LogConfig file $LogConfig from core model $BinDirectory/$ExecName.exe.config ||
+				debug created LogConfig file $LogConfig from core model $BinDirectory/$ExecName.exe.config ||
 				end $?
 			# cd /opt/opensim/var/data/config
 			# ln -s $LogConfig 2>/dev/null
@@ -254,7 +260,7 @@ startSim() {
 		if [ -f "$LogConfig" ]; then
 			ConfigLogFile=$(egrep "LogFileAppender|<file" $LogConfig | grep -A1 "LogFileAppender" | head -2 | tail -1 | cut -d '"' -f 2)
 			LogFile=${ConfigLogFile:-$LogFile}
-			touch "$LogFile" && log "LogFile $LogFile touched"
+			touch "$LogFile" && debug "LogFile $LogFile touched"
 		fi
 
 		ConsolePrompt=${consoleprompt:-${ConsolePrompt}}
@@ -276,7 +282,7 @@ startSim() {
 
 		if [ "$ConsoleUser" ] && [ "$ConsolePass" ] && [ "$ConsolePort" ]; then
 			RestEnabled=true
-			log "RestEnabled: $RestEnabled"
+			debug "RestEnabled: $RestEnabled"
 			# log "console_port: $console_port"
 			cmd="$cmd -console rest"
 		else
@@ -284,9 +290,9 @@ startSim() {
 		fi
 
 		# touch $TMP.wait
-		log "Working directory: $PWD"
-		log "launching $instance "
-		log "$cmd"
+		debug "Working directory: $PWD"
+		debug "launching $instance "
+		debug "$cmd"
 
 		if [ "$RestEnabled" = "true" ]; then
 			nohup $cmd >$TMP.$instance.nohup 2>&1 &
@@ -304,7 +310,7 @@ startSim() {
 			if ! osScreenExists "$instance"; then
 				log 1 "$instance failed to start: the process exited immediately"
 				[ -s "$startlog" ] && cat "$startlog" >&2
-				log "Reproduce the command with: $PGM -v start $instance"
+				debug "Reproduce the command with: $PGM -v start $instance"
 				continue
 			fi
 
@@ -326,7 +332,7 @@ startSim() {
 			3)
 				log 1 "$instance exited while starting"
 				[ -s "$startlog" ] && tail -n 20 "$startlog" >&2
-				log "Reproduce the command with: $PGM -v start $instance"
+				debug "Reproduce the command with: $PGM -v start $instance"
 				;;
 			*) log "$instance still starting, let it run and check status later" ;;
 			esac
@@ -371,30 +377,30 @@ stopSim() {
 		fi
 
 		if [ "${Executable%.*}" = "OpenSim" ]; then
-			log notiy users in $simName
+			debug notiy users in $simName
 			[ $shutdownDelay = 0 ] && warnDelay=0 || warnDelay=$(($shutdownDelay / $shutdownWarnings))
 			warn=0
 			[ $shutdownDelay -le 10 ] && shutdownWarnings=1
 			[ $shutdownDelay -eq 0 ] && shutdownWarnings=0
 			while [ $warn -lt $shutdownWarnings ]; do
 				remaining=$(($shutdownDelay - $warn * $warnDelay))
-				log " $remaining seconds left"
+				debug " $remaining seconds left"
 				osConsole $simName "alert Attention: this simulator will be stopped in $remaining seconds. Please teleport to another region to avoid being disconnected."
 				sleep $warnDelay
 				warn=$(($warn + 1))
 			done
 			osConsole $simName "alert Shutting down now."
 		fi
-		log shutting down $simName
+		debug shutting down $simName
 		pid=$(ps -C mono -C dotnet --no-headers -o pid,args 2>/dev/null |
 			grep " -inifile=" | grep -F "$inifile" | awk '{print $1}' | head -1)
 		osConsole $simName shutdown
 		timeout=60
 		screen -x $simName 2>/dev/null
 		if [ "$pid" ]; then
-			log "Waiting for $simName (pid $pid) to exit..."
+			debug "Waiting for $simName (pid $pid) to exit..."
 			timeout $timeout tail --pid=$pid -f /dev/null 2>/dev/null
-			kill -0 $pid 2>/dev/null && log "$simName still running after ${timeout}s"
+			kill -0 $pid 2>/dev/null && debug "$simName still running after ${timeout}s"
 		fi
 	done
 }
@@ -438,7 +444,7 @@ buildIni() {
 	ini=$(
 		IFS=":"
 		for etc in $ETCPATH; do
-			log "looking in $etc"
+			debug "looking in $etc"
 			(
 				ls "$etc"/*.d/*.ini 2>/dev/null
 				ls "$etc"/*-enabled/*.ini 2>/dev/null
@@ -456,7 +462,7 @@ buildIni() {
 		log 1 "no ini file found for $sim"
 		return
 	fi
-	log "$sim ini $ini"
+	debug "$sim ini $ini"
 	echo "$ini"
 }
 
@@ -555,13 +561,13 @@ ETCPATH=$(cleanpath "$ETCPATH")
 #getRobustPath
 #end
 
-log looking in $EtcRoot
+debug looking in $EtcRoot
 
 IFS=":"
 for etc in $EtcRoot $ETCPATH; do
 	folder=$(abspath "$etc")
 	[ "$folder" ] || continue
-	echo ":$LOOKUP:" | grep -q ":$folder:" && log "ignoring duplicate $etc" && continue
+	echo ":$LOOKUP:" | grep -q ":$folder:" && debug "ignoring duplicate $etc" && continue
 	LOOKUP="$LOOKUP:$folder" && continue
 done
 unset IFS
@@ -571,7 +577,7 @@ if [ ! -n "$LOOKUP" ]; then
 	end 1 "No valid folder found in $ETCPATH"
 fi
 ETCPATH=$LOOKUP
-log "ETCPATH: $ETCPATH"
+debug "ETCPATH: $ETCPATH"
 
 case "$1" in
 "help")
@@ -608,7 +614,7 @@ start)
 	if [ -n "$1" ]; then
 		startSim "$@"
 	else
-		log Starting all
+		debug Starting all
 		IFS=:
 		for etc in $ETCPATH; do
 			unset IFS

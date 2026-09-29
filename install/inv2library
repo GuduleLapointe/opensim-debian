@@ -23,10 +23,10 @@ echo "[client]"
 echo "$ConnectionString" | tr ";" "\n" | egrep -v "Old Guid|^$" \
 | sed -e "s/Data Source=/host=/" -e "s/User ID=/user=/" -e "s/Password=\(.*\)/password=\"\\1\"/" -e "s/Database=/database=/"
 ) > $TMP.my.cnf
-sql && log Database connection OK || end $? Error connection to the database
+sql && debug Database connection OK || end $? Error connection to the database
 
 PrincipalID=$(sql "SELECT PrincipalID FROM UserAccounts WHERE FirstName='$FirstName' AND LastName='$LastName'")
-[ "$PrincipalID" ] && log $FirstName $LastName found with uuid $PrincipalID || end $? Could not find user $FirstName $LastName
+[ "$PrincipalID" ] && debug $FirstName $LastName found with uuid $PrincipalID || end $? Could not find user $FirstName $LastName
 
 # InventoryFolders  InventoryItems
 # sql describe InventoryFolders
@@ -44,7 +44,7 @@ getFolderID() {
     parent=$(basename "$construct")
     local IFS=
     uuid=$(sql "SELECT folderID FROM InventoryFolders WHERE AgentID='$PrincipalID' AND folderName='$folder' AND parentFolderID='$parent'")
-    [ ! "$uuid" ] && log folder $foundpath/$folder not found && return -1
+    [ ! "$uuid" ] && debug folder $foundpath/$folder not found && return -1
     construct=$construct/$uuid
     foundpath="$foundpath/$folder"
     # echo folder $folder
@@ -79,7 +79,7 @@ getFolderChilds() {
 
 for invFolder in "$@"
 do
-  log Processing folder $invFolder
+  debug Processing folder $invFolder
   getFolderID "$invFolder" >> $TMP.folders  || end $? "Inventory folder $invFolder not found"
   folderID=$(cat $TMP.folders | cut -d " " -f 1)
   getFolderChilds $folderID >> $TMP.folders

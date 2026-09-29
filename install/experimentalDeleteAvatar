@@ -34,10 +34,10 @@ echo "[client]"
 echo "$ConnectionString" | tr ";" "\n" | egrep -v "Old Guid|^$" \
 | sed -e "s/Data Source=/host=/" -e "s/User ID=/user=/" -e "s/Password=\(.*\)/password=\"\\1\"/" -e "s/Database=/database=/"
 ) > $TMP.my.cnf
-sql && log Database connection OK || end $? Error connection to the database
+sql && debug Database connection OK || end $? Error connection to the database
 
 PrincipalID=$(sql "SELECT PrincipalID FROM UserAccounts WHERE FirstName='$FirstName' AND LastName='$LastName'")
-[ "$PrincipalID" ] && log $FirstName $LastName found with uuid $PrincipalID || end $? "Nobody's looking like $FirstName $LastName"
+[ "$PrincipalID" ] && debug $FirstName $LastName found with uuid $PrincipalID || end $? "Nobody's looking like $FirstName $LastName"
 
 echo "Will delete $FirstName $LastName ($PrincipalID)" | grep --color "$FirstName $LastName"
 echo "  $(sql "SELECT count(*) FROM UserAccounts WHERE PrincipalID='$PrincipalID'") user account"

@@ -14,9 +14,6 @@
 [submodule "contrib/currency/Gloebit"]
 	path = contrib/Gloebit/src
 	url = https://github.com/gloebit/opensim-moneymodule-gloebit.git
-[submodule "contrib/bash-helpers"]
-	path = libexec/bash-helpers
-	url = https://github.com/magicoli/bash-helpers
 [submodule "contrib/currency/OMEconomy-Modules"]
 	path = contrib/OMEconomy-Modules
 	url = https://github.com/OpenMetaverseEconomy/OMEconomy-Modules.git

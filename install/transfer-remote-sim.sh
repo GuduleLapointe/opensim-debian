@@ -32,15 +32,15 @@ trap 'rm -f $TMP*; rm -rf $TMPDIR' EXIT
 TMPDIR=$(mktemp -d -p $BASEDIR/var || end $?)
 TMP=$TMPDIR/$PGM.$$
 
-log TMPDIR $TMPDIR
-log TMP $TMP
+debug TMPDIR $TMPDIR
+debug TMP $TMP
 
 [ "$2" ] || end 1 "usage $PGM <source host> <simulator 1> [<simulator 2] [...]"
-log BASEDIR $BASEDIR
-log EtcRoot $EtcRoot
-log BINDIR $BINDIR
-log BinDirectory $BinDirectory
-log OpenSimExe $OpenSimExe
+debug BASEDIR $BASEDIR
+debug EtcRoot $EtcRoot
+debug BINDIR $BINDIR
+debug BinDirectory $BinDirectory
+debug OpenSimExe $OpenSimExe
 lr=$(printf "\n\b")
 clr="\33[2K\r"
 source=$1
@@ -49,19 +49,19 @@ shift
 echo "$source" | egrep -q "[[:alnum:]-]\.[[:alnum:]-]" || end $? "$source: need a fully qualified host name"
 check=$(ping -c1 $source 2>&1 >/dev/null) || end $? "${check/ping: /}"
 
-log get local config from $EtcRoot
-log BinDirectory $BinDirectory
-log Include-Common ${Include_Common}
+debug get local config from $EtcRoot
+debug BinDirectory $BinDirectory
+debug Include-Common ${Include_Common}
 
 for sim in $@; do
-	log transfering simulator $sim from $source
+	debug transfering simulator $sim from $source
 	mkdir $TMPDIR/$sim && cd $TMPDIR/$sim || end $?
 
-	log get remote config file $source:$EtcRoot/opensim.d/$sim.ini
+	debug get remote config file $source:$EtcRoot/opensim.d/$sim.ini
 	scp $source:$EtcRoot/opensim.d/$sim.ini $TMP.ini || end $?
 	cleanupIni $TMP.ini >$sim.remote.ini
 
-	log get remote db config
+	debug get remote db config
 	crudget $sim.remote.ini DatabaseService ConnectionString |
 		tr ";" "\n" | grep = | grep -v "Old Guids" |
 		sed -e "s/^Data Source/REMOTEDBHOST/" -e "s/^Database/REMOTEDBNAME/" -e "s/^User ID/REMOTEDBUSER/" -e "s/^Password/REMOTEDBPASS/" |
@@ -76,7 +76,7 @@ for sim in $@; do
 	fi
 	cleanupIni $TMP.ini >$sim.ini
 
-	log get local db config
+	debug get local db config
 	crudget $sim.ini DatabaseService ConnectionString |
 		tr ";" "\n" | grep = | grep -v "Old Guids" |
 		sed -e "s/^Data Source/DBHOST/" -e "s/^Database/DBNAME/" -e "s/^User ID/DBUSER/" -e "s/^Password/DBPASS/" |
@@ -106,7 +106,7 @@ for sim in $@; do
 	crudini --set $sim.ini Launch LogConfig "$(crudget $GridCommon Const DataRoot | sed -e "s#\${Launch|SimName}#${SimName}#g" -e "s#\${Launch|MachineName}#${SimName}#g")/config/log.config"
 	# crudini --set $sim.ini Launch LogConfig "$(crudget $GridCommon Const DataRoot | sed -e "s#\${Launch|SimName}#${MachineName}#g" -e "s#\${Launch|MachineName}#${MachineName}#g")/config/log.config"
 
-	log "Creating user $DBUSER (if not exists)"
+	debug "Creating user $DBUSER (if not exists)"
 	echo "CREATE USER IF NOT EXISTS $DBUSER IDENTIFIED BY '$DBPASS'" | sudo mysql -BN
 	if [ "$(echo "SHOW DATABASES LIKE '$DBNAME'" | sudo mysql -BN)" ]; then
 		log 1 Database $DBNAME already exists
@@ -119,7 +119,7 @@ for sim in $@; do
 	fi
 	echo "CREATE DATABASE IF NOT EXISTS $DBNAME;
   GRANT ALL ON $DBNAME.* TO $DBUSER;" | sudo mysql -BN
-	[ "$(echo "SHOW DATABASES like '$DBNAME'" | sudo mysql -BN)" ] && log Database $DBNAME created || end 1 "Could not create db $DBNAME"
+	[ "$(echo "SHOW DATABASES like '$DBNAME'" | sudo mysql -BN)" ] && debug Database $DBNAME created || end 1 "Could not create db $DBNAME"
 
 	echo "CREATE TABLE test_$PGM_$$ (t integer); DROP TABLE test_$PGM_$$;" | mysql -u$DBUSER -p"$DBPASS" $DBNAME ||
 		end $? error accessing local database
@@ -135,7 +135,7 @@ for sim in $@; do
 	#   echo "$section $line"
 	# done | sort -u
 
-	log get remote live config
+	debug get remote live config
 	ssh $source "screen -x $sim -X stuff 'config save /tmp/$sim.live.$$.ini$lr'" || end $? "Is remote simulator up and running?"
 	scp $source:/tmp/$sim.live.$$.ini ./$sim.live.ini || end $? "Could not get live config. Is remote simulator up and running?"
 
@@ -143,8 +143,8 @@ for sim in $@; do
 	ssh $source "$BINDIR/opensim stop now $sim" || end $?
 	ssh -t $source "screen -x $sim"
 
-	log "dump remote db to local one"
-	log ssh $source "$BINDIR/opensim stop $sim"
+	debug "dump remote db to local one"
+	debug ssh $source "$BINDIR/opensim stop $sim"
 	DUMPSIZE=$(mysql --skip-column-names -h$source -u$REMOTEDBUSER -p"$REMOTEDBPASS" $REMOTEDBNAME <<<"
   SELECT ROUND(SUM(data_length + index_length) * 0.5, 0)
   FROM information_schema.TABLES WHERE table_schema='$REMOTEDBNAME';
@@ -154,7 +154,7 @@ for sim in $@; do
 		mysql -u$DBUSER -p"$DBPASS" $DBNAME ||
 		end $?
 
-	log calculating local config log $GridCommon to grid.ini
+	debug calculating local config log $GridCommon to grid.ini
 	cp $sim.ini $sim.local.ini
 	cleanupIni $GridCommon >$TMP.ini
 	crudini --merge $sim.local.ini <$TMP.ini
@@ -180,23 +180,23 @@ Startup regionload_regionsdir" | while read section param; do
 		[ "$src" ] || continue
 		echo $section $param $src $dst | egrep -qi "cache" && continue # exclude cache
 		echo "/$src/" | egrep -qi "/$sim/" || continue                 # exclude shared
-		log sync $source:$src/ to $dst/
+		debug sync $source:$src/ to $dst/
 		rsync --progress -Waz $source:"$src"/ "$dst"/ || end $?
 	done
 	regionload_regionsdir=$(crudget $sim.local.ini Startup regionload_regionsdir)
 	[ "$regionload_regionsdir" ] || end $? regionload_regionsdir not set
 	find $regionload_regionsdir -name "*.ini" | grep -q . || end $? "no region found in $regionload_regionsdir"
 
-	log "activate $EtcRoot/opensim.d/$sim.ini"
+	debug "activate $EtcRoot/opensim.d/$sim.ini"
 	mkdir -p $EtcRoot/opensim.d
 	cp $sim.ini $EtcRoot/opensim.d/$sim.ini
 
-	log starting local simulator $sim
+	debug starting local simulator $sim
 	opensim start $sim || end $?
 
-	log "deactivate $sim on source"
+	debug "deactivate $sim on source"
 	ssh $source "mv $EtcRoot/opensim.d/$sim.ini $EtcRoot/opensim.d/$sim.transfered" || end $?
-	log "We should be good now"
+	debug "We should be good now"
 done
 
 [ $errors ] && end errors $errors

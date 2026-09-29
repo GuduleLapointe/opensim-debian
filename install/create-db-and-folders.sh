@@ -11,7 +11,7 @@
 # Licence: AGPLv3
 # Source: https://git.magiiic.com/opensimulator/opensim-debian
 # Environment: OpenSimulator server
-# Depends: os-helpers, bash-helpers/helpers, crudini
+# Depends: os-helpers, bash-helpers (bash-tools), crudini
 
 BASEDIR=$(dirname $(dirname $(realpath "$0")))
 . $BASEDIR/lib/os-helpers || exit 1
@@ -34,7 +34,7 @@ if [ "$executable" != "Robust.exe" ]; then
 	addons=$(crudget $TMP.ini Modules Include-modules)
 	# echo addons: $addons
 	ls $addons 2>/dev/null | while read addonini; do
-		log merging addon $addonini
+		debug merging addon $addonini
 		crudmerge $thisini $addonini
 	done
 	crudini --del $TMP.ini Modules Include-modules
@@ -61,8 +61,8 @@ Startup RegistryLocation" | while read section variable; do
 	dirname "$dir"
 done | sort -u | while read dir; do
 	[ "$dir" ] || continue
-	[ -d "$dir" ] && log $dir exists && continue
-	log "$dir missing"
+	[ -d "$dir" ] && debug $dir exists && continue
+	debug "$dir missing"
 	echo $dir >>$TMP.directories
 done
 
@@ -74,7 +74,7 @@ if [ -f $TMP.directories ]; then
 		mkdir $dir && echo "$dir created" || end $? Error creating $dir
 	done
 else
-	log "no directory missing"
+	debug "no directory missing"
 fi
 
 {

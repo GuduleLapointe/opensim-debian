@@ -2,10 +2,10 @@
 # Prepares the files of the packages to build, given by name (default: all).
 # Run by apt-package from the repository root.
 #
-# opensim-tools: build/opensim-tools, the tools as committed (HEAD) with their
-#   bash-helpers submodule, without what they do not distribute
-#   (packaging/distignore), with their PHP dependencies. The working copy is
-#   left untouched.
+# opensim-tools: build/opensim-tools, the tools as committed (HEAD), without
+#   what they do not distribute (packaging/distignore), with their PHP
+#   dependencies, but not the development ones: bash-tools comes from its
+#   package. The working copy is left untouched.
 # opensim-core, opensim: the OpenSimulator release of
 #   packaging/opensim-core.versions, the last one or OPENSIM_VERSION; for
 #   opensim-core, build/opensim-core from its tarball, downloaded into src/
@@ -34,13 +34,6 @@ if wants opensim-tools; then
     rm -rf "$BUILD"
     mkdir -p "$BUILD"
     git archive HEAD | tar -x -C "$BUILD"
-
-    # Submodules the tools need at run time, at their committed version
-    for submodule in libexec/bash-helpers; do
-        commit=$(git ls-tree HEAD "$submodule" | awk '{print $3}')
-        mkdir -p "$BUILD/$submodule"
-        git -C "$submodule" archive "$commit" | tar -x -C "$BUILD/$submodule"
-    done
 
     while read -r entry; do
         [[ -z "$entry" || "$entry" == \#* ]] || rm -rf "${BUILD:?}/${entry%/}"

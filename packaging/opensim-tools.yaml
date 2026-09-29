@@ -25,6 +25,7 @@ license: AGPL-3.0-or-later
 
 depends:
   - adduser
+  - bash-tools (>= 1.1.0~)
   - bsdextrautils | bsdmainutils
   - crudini
   - curl
