@@ -1,0 +1,37 @@
+#!/bin/sh
+# prerm of the opensim-<version> and opensim-unstable packages: on removal,
+# stops the instances running from this OpenSimulator only, found by the path
+# of their assembly (the launcher gives it in full).
+# Instances of another release, or of a build installed elsewhere, are left
+# alone. OpenSim keeps nothing in memory that its database doesn't have, so
+# a plain stop is enough. Upgrades leave the instances running.
+set -e
+
+[ "$1" = "remove" ] || exit 0
+
+core=/usr/share/opensim/${DPKG_MAINTSCRIPT_PACKAGE#opensim-}
+
+# The .NET (or Mono) processes running an assembly of this core: the launcher
+# gives the full path of the assembly (the working folder of a process of
+# another user is not readable everywhere)
+running() {
+    for proc in /proc/[0-9]*; do
+        case "$(cat "$proc/comm" 2>/dev/null)" in dotnet | mono*) ;; *) continue ;; esac
+        case "$(tr '\0' ' ' <"$proc/cmdline" 2>/dev/null)" in *" $core/bin/"*) echo "${proc#/proc/}" ;; esac
+    done
+}
+
+pids=$(running)
+[ -n "$pids" ] || exit 0
+
+echo "${DPKG_MAINTSCRIPT_PACKAGE}: stopping the instances running from $core" >&2
+kill $pids 2>/dev/null || true
+
+# Up to 30 seconds, then forced
+i=0
+while [ "$i" -lt 30 ] && [ -n "$(running)" ]; do
+    sleep 1
+    i=$((i + 1))
+done
+pids=$(running)
+[ -z "$pids" ] || kill -9 $pids 2>/dev/null || true

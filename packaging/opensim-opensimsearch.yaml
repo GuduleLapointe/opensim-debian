@@ -20,10 +20,16 @@ description: |-
 homepage: https://github.com/kcozens/OpenSimSearch
 license: none stated upstream
 
-depends:
+# No dependency on the core package: a build of the same OpenSimulator
+# version made elsewhere can use the module
+suggests:
   - opensim-${MODULES_CORE}
 
 contents:
   - src: build/modules/opensimsearch
     dst: /usr/share/opensim-modules/${MODULES_CORE}/opensimsearch
     type: tree
+  - src: packaging/opensim-opensimsearch.copyright
+    dst: /usr/share/doc/opensim-${MODULES_CORE}-opensimsearch/copyright
+    file_info:
+      mode: 0644

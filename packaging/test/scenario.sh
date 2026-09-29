@@ -19,7 +19,8 @@ apt_q() {
 deb() { ls /dist/"$1"_*.deb | grep -E "_($(dpkg --print-architecture)|all)\.deb$" | tail -1; }
 core=$(deb opensim-0.9.3.0)
 tools=$(deb opensim-tools)
-metas="$(deb opensim) $(deb opensim-kit)"
+# The metapackages, with the local packages they depend on
+metas="$(deb opensim) $(deb opensim-0.9.3.0-opensimsearch) $(deb opensim-0.9.3.0-gloebit) $(deb opensim-modules) $(deb opensim-kit)"
 # The dotnet process only: the screen session running it has the same arguments
 robust_pid() { pgrep -f "^dotnet .*Robust.dll" | head -1; }
 robust_log() { ls /var/log/opensim/testgrid*.log 2>/dev/null | grep -v Stats | head -1; }
@@ -57,6 +58,10 @@ mysql -e "CREATE DATABASE testgrid_robust; CREATE USER opensim@localhost IDENTIF
     GRANT ALL ON testgrid_robust.* TO opensim@localhost;"
 (cd /var/lib/opensim && runuser -u opensim -- php /test/newgrid.php | tail -1)
 check "grid enabled" "[ -L /etc/opensim/robust.d/testgrid.ini ]"
+
+# A database that cannot be used stops the setup before anything is written
+(cd /var/lib/opensim && TEST_GRID=Badgrid TEST_DB_PASSWORD=wrong runuser -u opensim -- php /test/newgrid.php >/tmp/badgrid.out 2>&1)
+check "setup stops on a database it cannot use" "grep -q 'cannot run without its database' /tmp/badgrid.out && [ ! -e /etc/opensim/grids/badgrid ] && [ ! -e /etc/opensim/robust.d/badgrid.ini ]"
 check "setup command" "opensim help | grep -q setup"
 
 ts "service start"
@@ -73,19 +78,34 @@ apt_q install --reinstall $tools "$core"
 check "Robust not restarted" "[ '$(robust_pid)' = '$pid' ]"
 
 ts "development build and modules"
-apt_q install "$(deb opensim-unstable)" "$(deb opensim-0.9.3.0-opensimsearch)" "$(deb opensim-0.9.3.0-gloebit)"
+check "modules installed by opensim-kit" "dpkg -s opensim-modules >/dev/null 2>&1"
+unstable=$(deb opensim-unstable)
+apt_q install "$unstable"
 check "profile of the development build" "grep -q '^\[opensim-unstable\]' /etc/opensim/opensim.conf"
 check "modules in their own folders" "[ -f /usr/share/opensim-modules/0.9.3.0/opensimsearch/OpenSimSearch.Modules.dll ] &&
     [ -f /usr/share/opensim-modules/0.9.3.0/gloebit/Gloebit.dll ] &&
     [ ! -e /usr/share/opensim/0.9.3.0/bin/OpenSimSearch.Modules.dll ]"
 check "log config of the wizard" "[ -f /var/log/opensim/testgrid_robust.log ]"
-# The grid on the development build, then back on the release
-runuser -u opensim -- crudini --inplace --set /etc/opensim/grids/testgrid/testgrid.conf Grid CoreDirectory /usr/share/opensim/unstable
-opensim restart now testgrid >/dev/null 2>&1
+grid_core() {
+    runuser -u opensim -- crudini --inplace --set /etc/opensim/grids/testgrid/testgrid.conf Grid CoreDirectory "$1"
+    opensim restart now testgrid >/dev/null 2>&1
+}
+
+# The grid on the development build
+grid_core /usr/share/opensim/unstable
 check "grid on its own core" "grep 'Starting in' $(robust_log) | tail -1 | grep -q /usr/share/opensim/unstable/bin"
 check "development build ready" "[ \$(grep -c 'UserAgentServerConnector loaded' $(robust_log)) = 2 ]"
-runuser -u opensim -- crudini --inplace --set /etc/opensim/grids/testgrid/testgrid.conf Grid CoreDirectory /usr/share/opensim/0.9.3.0
-opensim restart now testgrid >/dev/null 2>&1
+
+# Removing a build stops the instances running from it only
+apt_q remove opensim-unstable
+check "instances of a removed build stopped" "[ -z '$(robust_pid)' ]"
+apt_q install "$unstable"
+grid_core /usr/share/opensim/0.9.3.0
+pid=$(robust_pid)
+check "grid back on the release" "[ -n '$pid' ]"
+apt_q remove opensim-unstable
+check "instances of another core untouched" "[ '$(robust_pid)' = '$pid' ]"
+apt_q install "$unstable"
 
 ts "remove the tools, grid started by the service"
 systemctl restart opensim
@@ -109,9 +129,16 @@ check "Robust stopped cleanly" "[ -z '$(robust_pid)' ] && [ '$(quits)' = $((befo
 
 ts "remove the core, tools installed"
 apt_q install $tools
+# A copy of the release elsewhere, running: the packaged one can go
+cp -a /usr/share/opensim/0.9.3.0 /opt/custom-core
+grid_core /opt/custom-core
+pid=$(robust_pid)
+check "grid on a core outside the packages" "[ -n '$pid' ]"
 apt_q remove opensim-0.9.3.0
 check "profile removed" "! profile"
-check "modules removed with their core" "[ ! -e /usr/share/opensim-modules/0.9.3.0 ]"
+check "instances of a custom core untouched" "[ '$(robust_pid)' = '$pid' ]"
+opensim stop now >/dev/null 2>&1
+check "modules kept without their core" "[ -f /usr/share/opensim-modules/0.9.3.0/gloebit/Gloebit.dll ]"
 check "default falls back to the remaining build" "grep -q '^DefaultProfile = opensim-unstable' /etc/opensim/opensim.conf"
 apt_q remove opensim-unstable
 check "no default profile" "! grep -q '^DefaultProfile' /etc/opensim/opensim.conf"

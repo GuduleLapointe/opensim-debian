@@ -29,13 +29,15 @@ depends:
   - bsdextrautils | bsdmainutils
   - crudini
   - curl
+  - default-mysql-client | virtual-mysql-client
   - php-cli (>= 2:8.1)
   - php-mbstring
   - procps
   - screen
   - sudo
+# OpenSim needs a MySQL or MariaDB server, on this machine or another one
 recommends:
-  - default-mysql-client | mariadb-client
+  - default-mysql-server | virtual-mysql-server
   - uuid-runtime
 suggests:
   - opensim

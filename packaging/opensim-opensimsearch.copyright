@@ -1,0 +1,11 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: OpenSimSearch
+Source: https://github.com/kcozens/OpenSimSearch
+
+Files: *
+Copyright: OpenSimSearch contributors
+License: unknown
+ The upstream project, from 2008, states no license: neither a license file
+ nor a notice in its sources. The module is redistributed as published by
+ its authors, and is not covered by the license of the opensim-kit project.
+ Contact the upstream authors for the terms of use.

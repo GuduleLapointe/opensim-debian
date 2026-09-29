@@ -19,10 +19,16 @@ description: |-
 homepage: https://github.com/gloebit/opensim-moneymodule-gloebit
 license: LGPL-3.0-or-later
 
-depends:
+# No dependency on the core package: a build of the same OpenSimulator
+# version made elsewhere can use the module
+suggests:
   - opensim-${MODULES_CORE}
 
 contents:
   - src: build/modules/gloebit
     dst: /usr/share/opensim-modules/${MODULES_CORE}/gloebit
     type: tree
+  - src: packaging/opensim-gloebit.copyright
+    dst: /usr/share/doc/opensim-${MODULES_CORE}-gloebit/copyright
+    file_info:
+      mode: 0644

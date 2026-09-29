@@ -6,7 +6,7 @@
 #   what they do not distribute (packaging/distignore), with their PHP
 #   dependencies, but not the development ones: bash-tools comes from its
 #   package. The working copy is left untouched.
-# opensim-core, opensim: the OpenSimulator release of
+# opensim-core, opensim, opensim-modules: the OpenSimulator release of
 #   packaging/opensim-core.versions, the last one or OPENSIM_VERSION; for
 #   opensim-core, build/opensim-core from its tarball, downloaded into src/
 #   and checked against its SHA256.
@@ -81,7 +81,7 @@ for module in $(awk '!/^#/ && NF {print $1}' packaging/opensim-modules.versions 
     ! wants "opensim-$module" || modules="$modules $module"
 done
 
-if wants opensim-core opensim || [[ -n "$modules" ]]; then
+if wants opensim-core opensim opensim-modules || [[ -n "$modules" ]]; then
     read -r version revision checksum < <(
         awk -v v="${OPENSIM_VERSION:-}" '!/^#/ && NF && (v == "" || $1 == v)' packaging/opensim-core.versions | tail -1
     ) || true

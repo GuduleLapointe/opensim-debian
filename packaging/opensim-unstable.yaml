@@ -37,3 +37,4 @@ contents:
 
 scripts:
   postinstall: packaging/opensim-core.postinst
+  preremove: packaging/opensim-core.prerm
