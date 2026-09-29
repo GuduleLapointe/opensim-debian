@@ -18,6 +18,17 @@ BASEDIR=$(cd $(dirname "$0")/.. && pwd)
 . $BASEDIR/libexec/os-helpers || exit 1
 trap 'rm -f $TMP*' EXIT
 
+# Instances belong to the system user of the install, when set (e.g. opensim
+# for the packages): switch to it whoever runs the command, screen sessions
+# being per user.
+if [ -n "$SystemUser" ] && [ "$(id -un)" != "$SystemUser" ]; then
+	rm -f $TMP*
+	if [ "$(id -u)" = 0 ]; then
+		exec runuser -u "$SystemUser" -- "$0" "$@"
+	fi
+	exec sudo -H -u "$SystemUser" "$0" "$@"
+fi
+
 source $BASEDIR/libexec/venv-setup || end $? "Could not setup python venv"
 
 require crudini

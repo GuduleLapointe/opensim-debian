@@ -438,6 +438,7 @@ LogsRoot=${LogsRoot:-}
 CacheRoot=${CacheRoot:-}
 DataRoot=${DataRoot:-}
 Runtime=${Runtime:-}
+SystemUser=${SystemUser:-}
 log "base conf loaded (profile ${active:-none}, version ${OpensimVersion:-unset})"
 
 # The etc directory is the entry point for every helper, so a missing one is
