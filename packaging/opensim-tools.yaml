@@ -1,10 +1,11 @@
-# OpenSim Kit, built by apt-package (apt-repo) from build/opensim-kit,
-# prepared by packaging/build. ${VERSION} comes from the git tag.
-# The kit in /usr/share/opensim-kit, the opensim command, the service account
-# and the system layout: config in /etc/opensim, data in /var/lib/opensim,
-# logs in /var/log/opensim, cache in /var/cache/opensim, created on install.
-# The OpenSimulator distributions come in their own packages (opensim-<version>).
-name: opensim-kit
+# OpenSim tools, built by apt-package from build/opensim-tools, prepared by
+# packaging/build. ${VERSION} comes from the git tag.
+# The tools in /usr/share/opensim-tools, the opensim command, the service
+# account and the system layout: config in /etc/opensim, data in
+# /var/lib/opensim, logs in /var/log/opensim, cache in /var/cache/opensim,
+# created on install. The OpenSimulator releases come in their own packages
+# (opensim-<version>), each one registered as an install profile.
+name: opensim-tools
 arch: all
 platform: linux
 version: ${VERSION}
@@ -17,7 +18,8 @@ description: |-
   Installs and runs OpenSimulator grids and regions with the files at the
   standard places: config in /etc/opensim, data in /var/lib/opensim, logs
   and cache in /var. The opensim command starts, stops and monitors the
-  instances; a setup wizard creates grids.
+  instances; opensim setup creates grids. Works with the packaged
+  OpenSimulator releases or any other one.
 homepage: https://github.com/GuduleLapointe/opensim-debian
 license: AGPL-3.0-or-later
 
@@ -38,10 +40,10 @@ suggests:
   - opensim
 
 contents:
-  - src: build/opensim-kit
-    dst: /usr/share/opensim-kit
+  - src: build/opensim-tools
+    dst: /usr/share/opensim-tools
     type: tree
-  - src: /usr/share/opensim-kit/bin/opensim
+  - src: /usr/share/opensim-tools/bin/opensim
     dst: /usr/bin/opensim
     type: symlink
   - src: packaging/opensim.service
@@ -52,12 +54,18 @@ contents:
     dst: /usr/share/bash-completion/completions/opensim
     file_info:
       mode: 0644
-  - src: packaging/copyright
-    dst: /usr/share/doc/opensim-kit/copyright
+  - src: packaging/opensim-tools.copyright
+    dst: /usr/share/doc/opensim-tools/copyright
     file_info:
       mode: 0644
 
 scripts:
-  postinstall: packaging/opensim-kit.postinst
-  preremove: packaging/opensim-kit.prerm
-  postremove: packaging/opensim-kit.postrm
+  postinstall: packaging/opensim-tools.postinst
+  preremove: packaging/opensim-tools.prerm
+  postremove: packaging/opensim-tools.postrm
+
+deb:
+  # The OpenSimulator releases installed or removed, to update their profiles
+  triggers:
+    interest_noawait:
+      - /usr/share/opensim

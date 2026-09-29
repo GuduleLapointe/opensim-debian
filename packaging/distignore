@@ -1,4 +1,4 @@
-# Paths of the repository left out of the opensim-kit package
+# Paths of the repository left out of the opensim-tools package
 .gitignore
 .gitmodules
 packaging/

@@ -1,1 +1,5 @@
-169421336640c5a10d83826443160ad177e4185c51fb69107f64b327b52287f2  opensim-0.9.3.0.tar.gz
+# OpenSimulator releases packaged as opensim-<version>, oldest first: version,
+# packaging revision (the next one for any change to a published package),
+# SHA256 of the upstream tarball. The last one is built by default, and is
+# the version of the opensim metapackage.
+0.9.3.0 1 169421336640c5a10d83826443160ad177e4185c51fb69107f64b327b52287f2

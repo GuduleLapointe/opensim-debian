@@ -1,0 +1,20 @@
+# OpenSim Kit, built by apt-package: metapackage installing the tools and the
+# latest OpenSimulator release. ${VERSION} comes from the git tag.
+name: opensim-kit
+arch: all
+platform: linux
+version: ${VERSION}
+version_schema: semver
+section: net
+priority: optional
+maintainer: Gudule Lapointe <gudule@speculoos.world>
+description: |-
+  OpenSimulator with its installation and management tools
+  Installs the OpenSim tools and the latest OpenSimulator release, ready to
+  create and run grids and regions.
+homepage: https://github.com/GuduleLapointe/opensim-debian
+license: AGPL-3.0-or-later
+
+depends:
+  - opensim
+  - opensim-tools (= ${DEB_VERSION})

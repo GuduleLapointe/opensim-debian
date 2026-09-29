@@ -1,41 +1,41 @@
-# An OpenSimulator distribution, built by packaging/core/build, which fills
-# the variables.
-# Installed read-only in /usr/share/opensim/<version>, next to the other
-# versions; the kit runs it with the config, data, logs and cache elsewhere.
+# An OpenSimulator release, built by apt-package from build/opensim-core with
+# the version packaging/build gives, for each architecture of its native
+# libraries. Installed read-only in /usr/share/opensim/<version>, next to the
+# other releases; the tools run it with the config, data, logs and cache
+# elsewhere.
 name: opensim-${OPENSIM_VERSION}
 arch: ${ARCH}
 platform: linux
 version: ${OPENSIM_VERSION}
-release: ${PACKAGE_REVISION}
+release: ${OPENSIM_REVISION}
 version_schema: none
 section: net
 priority: optional
 maintainer: Gudule Lapointe <gudule@speculoos.world>
 description: |-
   OpenSimulator ${OPENSIM_VERSION}, 3D virtual world server
-  The official OpenSimulator ${OPENSIM_VERSION} distribution, run by the
-  opensim command of opensim-kit. Several versions can be installed side by
-  side, each in /usr/share/opensim/<version>.
+  The official OpenSimulator ${OPENSIM_VERSION} release. Several releases can
+  be installed side by side, each in /usr/share/opensim/<version>. The
+  opensim-tools package runs them with the files at the standard places.
 homepage: http://opensimulator.org
 license: BSD-3-Clause
 
-depends:
-  - opensim-kit
 # Ubuntu has the runtime; Debian needs Microsoft's repository, or
-# /usr/share/opensim-kit/libexec/install-dotnet
+# opensim install-dotnet (opensim-tools)
 recommends:
   - dotnet-runtime-8.0 | dotnet-runtime-9.0 | dotnet-runtime-10.0
   - libgdiplus
+suggests:
+  - opensim-tools
 
 contents:
-  - src: ${BUILD}
+  - src: build/opensim-core
     dst: /usr/share/opensim/${OPENSIM_VERSION}
     type: tree
-  - src: build/copyright-${OPENSIM_VERSION}
+  - src: build/opensim-core.copyright
     dst: /usr/share/doc/opensim-${OPENSIM_VERSION}/copyright
     file_info:
       mode: 0644
 
 scripts:
-  postinstall: packaging/core/postinst
-  postremove: packaging/core/postrm
+  postinstall: packaging/opensim-core.postinst

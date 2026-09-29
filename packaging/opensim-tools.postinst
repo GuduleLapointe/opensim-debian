@@ -1,24 +1,69 @@
 #!/bin/sh
-# postinst of opensim-kit: the opensim account, the folders of the system
-# layout and their default config, left as is once created, and the service,
-# enabled on first install. The service is never restarted here: that would
-# stop the running grids.
+# postinst of opensim-tools: the opensim account, the folders of the system
+# layout and their default config, left as is once created, the install
+# profiles of the packaged OpenSimulator releases, and the service, enabled on
+# first install. The service is never restarted here: that would stop the
+# running grids.
 set -e
 
-if [ "$1" = "configure" ]; then
-    # Instances run as opensim; its shell lets admins work as it (sudo -iu opensim)
-    if ! getent passwd opensim >/dev/null; then
-        adduser --system --group --home /var/lib/opensim --shell /bin/bash opensim
-    fi
+conf=/etc/opensim/opensim.conf
 
-    for dir in /etc/opensim /etc/opensim/grids /etc/opensim/opensim.d /etc/opensim/robust.d \
-        /var/lib/opensim /var/lib/opensim/data /var/log/opensim /var/cache/opensim; do
-        [ -d "$dir" ] || install -d -o opensim -g opensim -m 755 "$dir"
+# One profile per release in /usr/share/opensim, added or removed with it.
+# The first one becomes the default: [Defaults] points to it and mirrors it.
+update_profiles() {
+    for core in /usr/share/opensim/*/; do
+        core=${core%/}
+        [ -f "$core/bin/OpenSim.exe" ] || continue
+        version=${core##*/}
+        profile=opensim-$version
+        crudini --get "$conf" "$profile" >/dev/null 2>&1 && continue
+        # Self-contained: the locations of [Defaults], and this release
+        for key in DirectoryLayout CoreRoot EtcRoot VarRoot LogsRoot CacheRoot DataRoot SystemUser; do
+            value=$(crudini --get "$conf" Defaults "$key" 2>/dev/null) || continue
+            crudini --inplace --set "$conf" "$profile" "$key" "$value"
+        done
+        crudini --inplace --set "$conf" "$profile" OpensimVersion "$version"
+        crudini --inplace --set "$conf" "$profile" CoreDirectory "$core"
+        crudini --inplace --set "$conf" "$profile" Runtime dotnet
     done
 
-    # The kit reads the locations here; each core adds its profile
-    if [ ! -e /etc/opensim/opensim.conf ]; then
-        cat >/etc/opensim/opensim.conf <<'EOF'
+    for profile in $(crudini --get "$conf" | grep -vx Defaults); do
+        core=$(crudini --get "$conf" "$profile" CoreDirectory 2>/dev/null) || continue
+        case "$core" in /usr/share/opensim/*) ;; *) continue ;; esac
+        [ -d "$core" ] && continue
+        crudini --inplace --del "$conf" "$profile"
+        if [ "$(crudini --get "$conf" Defaults DefaultProfile 2>/dev/null)" = "$profile" ]; then
+            crudini --inplace --del "$conf" Defaults DefaultProfile
+        fi
+    done
+
+    if ! crudini --get "$conf" Defaults DefaultProfile >/dev/null 2>&1; then
+        latest=$(ls -d /usr/share/opensim/*/bin/OpenSim.exe 2>/dev/null | sort -V | tail -1)
+        if [ -n "$latest" ]; then
+            core=${latest%/bin/OpenSim.exe}
+            crudini --inplace --set "$conf" Defaults DefaultProfile "opensim-${core##*/}"
+            crudini --inplace --set "$conf" Defaults OpensimVersion "${core##*/}"
+            crudini --inplace --set "$conf" Defaults CoreDirectory "$core"
+            crudini --inplace --set "$conf" Defaults Runtime dotnet
+        fi
+    fi
+}
+
+case "$1" in
+    configure)
+        # Instances run as opensim; its shell lets admins work as it (sudo -iu opensim)
+        if ! getent passwd opensim >/dev/null; then
+            adduser --system --group --home /var/lib/opensim --shell /bin/bash opensim
+        fi
+
+        for dir in /etc/opensim /etc/opensim/grids /etc/opensim/opensim.d /etc/opensim/robust.d \
+            /var/lib/opensim /var/lib/opensim/data /var/log/opensim /var/cache/opensim; do
+            [ -d "$dir" ] || install -d -o opensim -g opensim -m 755 "$dir"
+        done
+
+        # The tools read the locations here
+        if [ ! -e "$conf" ]; then
+            cat >"$conf" <<'EOF'
 [Defaults]
 DirectoryLayout = system
 CoreRoot = /usr/share/opensim
@@ -29,9 +74,14 @@ CacheRoot = /var/cache/opensim
 DataRoot = /var/lib/opensim/data
 SystemUser = opensim
 EOF
-        chown opensim:opensim /etc/opensim/opensim.conf
-    fi
-fi
+            chown opensim:opensim "$conf"
+        fi
+        update_profiles
+        ;;
+    triggered)
+        [ -f "$conf" ] && update_profiles
+        ;;
+esac
 
 # As dh_installsystemd: enabled on first install, the admin's choice kept after
 if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ]; then

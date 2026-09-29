@@ -1,21 +1,21 @@
-# Metapackage installing the kit and the latest OpenSimulator distribution,
-# built by packaging/core/build with it. Former versions stay installed.
+# Metapackage installing the latest OpenSimulator release, built by
+# apt-package with the version packaging/build gives (the last one of
+# packaging/opensim-core.versions). Former releases stay installed.
 name: opensim
 arch: all
 platform: linux
 version: ${OPENSIM_VERSION}
-release: ${PACKAGE_REVISION}
+release: ${OPENSIM_REVISION}
 version_schema: none
 section: net
 priority: optional
 maintainer: Gudule Lapointe <gudule@speculoos.world>
 description: |-
-  OpenSimulator 3D virtual world server (latest version)
-  Installs opensim-kit and the latest OpenSimulator distribution, currently
-  ${OPENSIM_VERSION}. Upgrades bring the new versions next to the former ones.
-homepage: https://github.com/GuduleLapointe/opensim-debian
-license: AGPL-3.0-or-later
+  OpenSimulator 3D virtual world server (latest release)
+  Installs the latest OpenSimulator release, currently ${OPENSIM_VERSION}.
+  Upgrades bring the new releases next to the former ones.
+homepage: http://opensimulator.org
+license: BSD-3-Clause
 
 depends:
-  - opensim-kit
   - opensim-${OPENSIM_VERSION}

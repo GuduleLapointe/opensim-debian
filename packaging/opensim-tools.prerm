@@ -1,6 +1,6 @@
 #!/bin/sh
-# prerm of opensim-kit: stops the service and the instances on removal, while
-# the kit is still there to shut them down. Upgrades leave them running.
+# prerm of opensim-tools: stops the service and the instances on removal, while
+# the tools are still there to shut them down. Upgrades leave them running.
 set -e
 
 if [ "$1" = "remove" ]; then

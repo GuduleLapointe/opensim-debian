@@ -1,42 +1,25 @@
 #!/bin/sh
-# postinst of the opensim-<version> packages: adds the install profile of this
-# core to /etc/opensim/opensim.conf, the default one when there is none yet,
-# and tells how to install the .NET runtime when it is missing.
+# postinst of the opensim-<version> packages: tells how to install the .NET
+# runtime when it is missing. opensim-tools, when installed, adds the install
+# profile of the release.
 set -e
 
 version=${DPKG_MAINTSCRIPT_PACKAGE#opensim-}
 core=/usr/share/opensim/$version
-conf=/etc/opensim/opensim.conf
-profile=opensim-$version
 
 if [ "$1" = "configure" ]; then
-    if [ -f "$conf" ] && ! crudini --get "$conf" "$profile" >/dev/null 2>&1; then
-        # A self-contained profile: the locations of [Defaults], and this core
-        for key in DirectoryLayout CoreRoot EtcRoot VarRoot LogsRoot CacheRoot DataRoot SystemUser; do
-            value=$(crudini --get "$conf" Defaults "$key" 2>/dev/null) || continue
-            crudini --inplace --set "$conf" "$profile" "$key" "$value"
-        done
-        crudini --inplace --set "$conf" "$profile" OpensimVersion "$version"
-        crudini --inplace --set "$conf" "$profile" CoreDirectory "$core"
-        crudini --inplace --set "$conf" "$profile" Runtime dotnet
-
-        # [Defaults] points to the default profile and mirrors it
-        if ! crudini --get "$conf" Defaults DefaultProfile >/dev/null 2>&1; then
-            crudini --inplace --set "$conf" Defaults DefaultProfile "$profile"
-            crudini --inplace --set "$conf" Defaults OpensimVersion "$version"
-            crudini --inplace --set "$conf" Defaults CoreDirectory "$core"
-            crudini --inplace --set "$conf" Defaults Runtime dotnet
-        fi
-    fi
-
-    # apt runs maintainer scripts without /usr/local/bin, where install-dotnet
-    # links the runtime
+    # apt runs maintainer scripts without /usr/local/bin, where
+    # opensim install-dotnet links the runtime
     PATH=$PATH:/usr/local/bin
     required=$(grep -o '"version": *"[0-9]*' "$core/bin/OpenSim.runtimeconfig.json" | grep -o '[0-9]*$' || true)
     required=${required:-8}
     if ! dotnet --list-runtimes 2>/dev/null |
         awk -v m="$required" '$1 == "Microsoft.NETCore.App" && $2 + 0 >= m { found = 1 } END { exit !found }'; then
-        echo "opensim-$version: OpenSim needs the .NET $required runtime (or newer). Install it with:" >&2
-        echo "  sudo /usr/share/opensim-kit/libexec/install-dotnet $required" >&2
+        echo "opensim-$version: OpenSim needs the .NET $required runtime (or newer)." >&2
+        if command -v opensim >/dev/null; then
+            echo "  Install it with: sudo opensim install-dotnet $required" >&2
+        else
+            echo "  See https://learn.microsoft.com/dotnet/core/install/linux" >&2
+        fi
     fi
 fi

@@ -3,7 +3,7 @@
 // Runs the grid wizard of the installed kit with scripted answers, for
 // packaging/test/scenario.sh.
 
-require '/usr/share/opensim-kit/vendor/autoload.php';
+require '/usr/share/opensim-tools/vendor/autoload.php';
 
 use OpenSim\Installer\Grid\NewGrid;
 use OpenSim\Installer\Ui\InstallerUi;
