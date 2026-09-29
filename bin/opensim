@@ -47,7 +47,6 @@ log "LogsRoot: $LogsRoot"
 
 [ -z "$EtcRoot" ] && end 1 "Etc directory not set"
 
-[ -z "$OpenSimExe" ] && end 2 "could not find OpenSim.exe"
 
 HELP="
 $PGM <start|stop [now]|restart [now]> [instance1] [instance2] [...]
@@ -107,6 +106,8 @@ shift $(expr $OPTIND - 1)
 # . "$(which ini_parser)" || end 2 could not launch ini parser
 
 startSim() {
+	# Only starting needs a core: stop and status work without one
+	[ -z "$OpenSimExe" ] && end 2 "could not find OpenSim.exe"
 	unset IFS
 	for arg in $@; do
 		unset ConsoleUser ConsolePass ConsolePort console_port LogsDirectory
