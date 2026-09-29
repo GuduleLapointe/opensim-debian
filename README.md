@@ -82,13 +82,11 @@ Installation from git
 ---------------------
 
 ```shell
-git clone --recursive https://git.magiiic.com/opensimulator/opensim-debian.git
-# use --recursive to download git submodules
-# if you don't use recursive, they will be downloaded during installation
-sudo mv opensim-debian /opt/
-export PATH=$PATH:/opt/opensim-debian/bin
-cd /opt/opensim-debian
-./install/install.sh
+git clone --recursive https://github.com/GuduleLapointe/opensim-debian.git opensim-kit
+cd opensim-kit
+composer install   # PHP libraries and bash-tools
+export PATH=$PATH:$PWD/bin
+opensim setup
 ```
 
 Answer the common setting questions.

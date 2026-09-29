@@ -28,12 +28,14 @@ Publishing skips the packages whose version is already in the repository, so the
 
 `packaging/build` runs first and prepares only the packages asked for:
 
-- `opensim-tools`: `build/opensim-tools` from the committed tree (`git archive HEAD`), with the `libexec/bash-helpers` submodule and the PHP dependencies (`composer install --no-dev`), without the paths listed in `packaging/distignore`. Uncommitted changes are not packaged.
+- `opensim-tools`: `build/opensim-tools` from the committed tree (`git archive HEAD`), with the PHP dependencies (`composer install --no-dev`), without the paths listed in `packaging/distignore`. Uncommitted changes are not packaged.
 - `opensim-core`, `opensim`: the release of `packaging/opensim-core.versions`, the last one or `OPENSIM_VERSION`, e.g. `OPENSIM_VERSION=0.9.3.0 /opt/apt-repo/bin/apt-package opensim-core`. Its tarball is downloaded into `src/` and checked against its SHA256.
 
 A new OpenSimulator release is added at the end of `packaging/opensim-core.versions`, with its checksum. A published package is never changed: a packaging change of a published release gets the next revision in that file.
 
 The maintainer scripts of `opensim-tools` create the `opensim` account and the folders of the system layout, write the default `/etc/opensim/opensim.conf` when missing, and handle the `opensim` service like `dh_installsystemd`: enabled on first install, stopped with the instances on removal, never restarted by upgrades.
+
+The scripts use the helpers of [bash-tools](https://github.com/magicoli/bash-tools): the `bash-tools` package, a dependency of `opensim-tools`, or composer's copy in a git checkout (`composer install`). It is a development dependency of composer, so the packages don't bundle it. During development, composer links the local `../bash-tools` checkout when there is one (path repository, `dev-dev`): switch to a released version before a release.
 
 The PHP dependencies are locked for PHP 8.1 (`config.platform.php` in `composer.json`), the oldest PHP of the supported systems (Ubuntu 22.04).
 
