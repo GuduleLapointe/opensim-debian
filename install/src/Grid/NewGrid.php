@@ -36,11 +36,21 @@ final class NewGrid
             return; // abandoned
         }
 
-        // Nothing is written before the database is known to work
-        if (!(new Database($this->ui))->ensure($plan)) {
-            $this->ui->error('Stopped, nothing was changed: OpenSim cannot run without its database.');
+        // Nothing is written before the database is known to work. On failure
+        // the error stays on screen, with one line to retry or give up.
+        $database = new Database($this->ui);
+        while (!$database->ensure($plan)) {
+            if (!$this->ui->confirm('Try again (the database settings can be changed)?', true)) {
+                $this->ui->note('Stopped, nothing was changed: OpenSim cannot run without its database.');
 
-            return;
+                return;
+            }
+            $this->askDatabase($plan, [
+                'dbHost' => $plan->dbHost,
+                'dbName' => $plan->dbName,
+                'dbUser' => $plan->dbUser,
+                'dbPass' => $plan->dbPass,
+            ]);
         }
 
         $this->showPlan($plan);
@@ -50,11 +60,12 @@ final class NewGrid
             return;
         }
 
-        $this->apply($plan, $profile['EtcRoot']);
+        $this->apply($plan, $profile);
     }
 
-    private function apply(GridPlan $plan, string $etcRoot): void
+    private function apply(GridPlan $plan, array $profile): void
     {
+        $etcRoot = $profile['EtcRoot'];
         $this->makeDirs($plan);
         $conf = (new GridConf())->write($plan);
         $this->ui->note("Wrote $conf");
@@ -66,8 +77,12 @@ final class NewGrid
             $this->ui->note("Wrote $logConfig");
         }
 
+        $systemUser = $profile['SystemUser'] ?? '';
+        $this->giveToSystemUser($systemUser, [$plan->etcDirectory, $plan->dataDirectory, $plan->cacheDirectory], true);
+
         if ($this->ui->confirm("Enable grid '{$plan->gridNick}' (link into robust.d)?", true)) {
             if (GridState::enable($etcRoot, $plan->gridNick)) {
+                $this->giveToSystemUser($systemUser, [GridState::link($etcRoot, $plan->gridNick)], false);
                 $this->ui->note('Enabled: ' . GridState::link($etcRoot, $plan->gridNick));
                 if ($this->ui->confirm("Start grid '{$plan->gridNick}' now?", true)) {
                     $this->startGrid($plan);
@@ -78,6 +93,25 @@ final class NewGrid
         }
 
         $this->ui->note("Grid '{$plan->gridName}' configured.");
+    }
+
+    /**
+     * When the setup runs as root for an install with a system user (the
+     * packages), what it creates belongs to that user, who runs the
+     * instances. Nothing to do otherwise.
+     *
+     * @param list<string> $paths
+     */
+    private function giveToSystemUser(string $user, array $paths, bool $recursive): void
+    {
+        if ($user === '' || !function_exists('posix_geteuid') || posix_geteuid() !== 0 || posix_getpwnam($user) === false) {
+            return;
+        }
+        foreach ($paths as $path) {
+            if (is_link($path) || file_exists($path)) {
+                System::run('chown -h' . ($recursive ? 'R' : '') . ' ' . System::arg($user) . ': ' . System::arg($path));
+            }
+        }
     }
 
     /** Start the grid and report whether it actually came up (don't trust screen). */
@@ -245,14 +279,29 @@ final class NewGrid
 
         // Database: reuse a found password, otherwise generate one (never changeme).
         $foundPass = $current['dbPass'] ?? '';
-        $defaultPass = ($foundPass !== '' && $foundPass !== 'changeme') ? $foundPass : $this->randomPassword();
-
-        $plan->dbHost = $this->ui->text('Database host', $current['dbHost'] ?? ($profile['DataSource'] ?? 'localhost'), $required);
-        $plan->dbName = $this->ui->text('Database name', $current['dbName'] ?? (strtolower($nick) . '_robust'), $required);
-        $plan->dbUser = $this->ui->text('Database user', $current['dbUser'] ?? 'opensim', $required);
-        $plan->dbPass = $this->ui->text('Database password', $defaultPass, $required);
+        $this->askDatabase($plan, [
+            'dbHost' => $current['dbHost'] ?? ($profile['DataSource'] ?? 'localhost'),
+            'dbName' => $current['dbName'] ?? (strtolower($nick) . '_robust'),
+            'dbUser' => $current['dbUser'] ?? 'opensim',
+            'dbPass' => ($foundPass !== '' && $foundPass !== 'changeme') ? $foundPass : $this->randomPassword(),
+        ]);
 
         return $plan;
+    }
+
+    /**
+     * The database settings, with these defaults.
+     *
+     * @param array{dbHost:string,dbName:string,dbUser:string,dbPass:string} $defaults
+     */
+    private function askDatabase(GridPlan $plan, array $defaults): void
+    {
+        $required = static fn (string $v): ?string => trim($v) === '' ? 'This field is required.' : null;
+
+        $plan->dbHost = $this->ui->text('Database host', $defaults['dbHost'], $required);
+        $plan->dbName = $this->ui->text('Database name', $defaults['dbName'], $required);
+        $plan->dbUser = $this->ui->text('Database user', $defaults['dbUser'], $required);
+        $plan->dbPass = $this->ui->text('Database password', $defaults['dbPass'], $required);
     }
 
     /** Existing Robust config for a grid (HG preferred), or null. */

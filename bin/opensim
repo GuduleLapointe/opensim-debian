@@ -40,6 +40,17 @@ ARGV_GIVEN=("$@")
 . $BASEDIR/libexec/os-helpers || exit 1
 trap 'rm -f $TMP*' EXIT
 
+# The setup wizard runs as root when the install has a system user (the
+# packages): it may need the administrator access to the database, and gives
+# what it creates to that user. As the caller otherwise.
+if [ "${1:-}" = "setup" ]; then
+	if [ -n "$SystemUser" ] && [ "$(id -u)" != 0 ]; then
+		rm -f $TMP*
+		exec sudo "$0" "${ARGV_GIVEN[@]}"
+	fi
+	exec php "$BASEDIR/install/install.php"
+fi
+
 # Instances belong to the system user of the install, when set (e.g. opensim
 # for the packages): switch to it whoever runs the command, screen sessions
 # being per user.
@@ -49,11 +60,6 @@ if [ -n "$SystemUser" ] && [ "$(id -un)" != "$SystemUser" ]; then
 		exec runuser -u "$SystemUser" -- "$0" "${ARGV_GIVEN[@]}"
 	fi
 	exec sudo -H -u "$SystemUser" "$0" "${ARGV_GIVEN[@]}"
-fi
-
-# The setup wizard, as the system user too: the files of the grids belong to it
-if [ "${1:-}" = "setup" ]; then
-	exec php "$BASEDIR/install/install.php"
 fi
 
 source $BASEDIR/libexec/venv-setup || end $? "Could not setup python venv"

@@ -60,7 +60,9 @@ final class ScriptedUi implements InstallerUi
     }
 }
 
-// The grid and the database password can be given by the environment
+// The grid and the database password can be given by the environment; the
+// retry after a database error is always declined, and the grid is not
+// enabled when TEST_NO_ENABLE is set
 $name = getenv('TEST_GRID') ?: 'Testgrid';
 
 (new NewGrid(new ScriptedUi([
@@ -68,5 +70,7 @@ $name = getenv('TEST_GRID') ?: 'Testgrid';
     'Grid nick' => strtolower($name),
     'Base hostname' => 'localhost',
     'Database password' => getenv('TEST_DB_PASSWORD') ?: 'testpass',
+    'Try again' => false,
+    'Enable grid' => getenv('TEST_NO_ENABLE') ? false : true,
     'Start grid' => false,
 ])))->run(null);

@@ -46,14 +46,18 @@ final class Database
             return true;
         }
 
-        if (stripos($err, 'Unknown database') !== false) {
-            // The account works: only the database is missing.
-            $this->ui->warn("User {$plan->dbUser} can connect, but database {$plan->dbName} does not exist.");
+        // The client prints "ERROR <number> (<state>): <message>". 1044 is what
+        // a server answers, for an account it knows, about a database the
+        // account has no rights on, existing or not; 1045 is a refused login.
+        $errno = preg_match('/ERROR (\d+)/', $err, $m) ? (int) $m[1] : 0;
+        switch ($errno) {
+            case 1049: // unknown database
+            case 1044:
+                $this->ui->warn("User {$plan->dbUser} can connect to {$plan->dbHost}, but has no access to database {$plan->dbName}: it does not exist, or the user has no rights on it.");
 
-            return $this->create($client, $plan, false);
-        }
-        if (stripos($err, 'Access denied') !== false) {
-            return $this->repairAccess($client, $plan);
+                return $this->create($client, $plan, false);
+            case 1045:
+                return $this->repairAccess($client, $plan);
         }
 
         $this->ui->error("Cannot reach the database server {$plan->dbHost}: " . trim($err));
@@ -68,8 +72,8 @@ final class Database
         $host = $this->accountHost($plan);
         [$code, $out] = $this->admin($client, $plan, "SELECT Host FROM mysql.user WHERE User=" . $this->quote($plan->dbUser));
         if ($code !== 0) {
-            $this->ui->error("Access denied for user {$plan->dbUser}, and the administrator access to the server is not available to check why.");
-            $this->showCommands($plan, $host);
+            $this->ui->error("Login refused for user {$plan->dbUser}, and the administrator access to the server is not available to check why.");
+            $this->showCommands($plan, $host, true);
 
             return false;
         }
@@ -92,7 +96,9 @@ final class Database
     private function create(string $client, GridPlan $plan, bool $withUser): bool
     {
         $host = $this->accountHost($plan);
-        $what = ($withUser ? "user '{$plan->dbUser}'@'$host' and " : '') . "database {$plan->dbName}";
+        $what = $withUser
+            ? "user '{$plan->dbUser}'@'$host' and database {$plan->dbName}"
+            : "database {$plan->dbName} if missing and give user {$plan->dbUser} access to it";
         if (!$this->ui->confirm("Create $what on {$plan->dbHost}?", true)) {
             $this->ui->error('OpenSim cannot run without its database.');
 
@@ -109,8 +115,8 @@ final class Database
 
         [$code, , $err] = $this->admin($client, $plan, implode('; ', $sql));
         if ($code !== 0) {
-            $this->ui->error('Could not create it: ' . trim($err !== '' ? $err : 'no administrator access to the server.'));
-            $this->showCommands($plan, $host);
+            $this->ui->error('Could not create it, no administrator access to the server: ' . trim(strtok($err, "\n") ?: 'not available.'));
+            $this->showCommands($plan, $host, $withUser);
 
             return false;
         }
@@ -127,13 +133,16 @@ final class Database
     }
 
     /** The commands the administrator can run by hand. */
-    private function showCommands(GridPlan $plan, string $host): void
+    private function showCommands(GridPlan $plan, string $host, bool $withUser): void
     {
-        $this->ui->note("As the database administrator, run:\n"
-            . '  CREATE USER IF NOT EXISTS ' . $this->quote($plan->dbUser) . '@' . $this->quote($host)
-            . " IDENTIFIED BY '<password>';\n"
-            . "  CREATE DATABASE IF NOT EXISTS `{$plan->dbName}` CHARACTER SET utf8;\n"
-            . "  GRANT ALL ON `{$plan->dbName}`.* TO " . $this->quote($plan->dbUser) . '@' . $this->quote($host) . ';');
+        $account = $this->quote($plan->dbUser) . '@' . $this->quote($host);
+        $lines = [];
+        if ($withUser) {
+            $lines[] = "CREATE USER IF NOT EXISTS $account IDENTIFIED BY '<password>';";
+        }
+        $lines[] = "CREATE DATABASE IF NOT EXISTS `{$plan->dbName}` CHARACTER SET utf8;";
+        $lines[] = "GRANT ALL ON `{$plan->dbName}`.* TO $account;";
+        $this->ui->note("As the database administrator, run:\n  " . implode("\n  ", $lines));
     }
 
     /** The host part of the account: the server sees local connections as coming from localhost. */

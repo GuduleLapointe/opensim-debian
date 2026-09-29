@@ -20,7 +20,7 @@ deb() { ls /dist/"$1"_*.deb | grep -E "_($(dpkg --print-architecture)|all)\.deb$
 core=$(deb opensim-0.9.3.0)
 tools=$(deb opensim-tools)
 # The metapackages, with the local packages they depend on
-metas="$(deb opensim) $(deb opensim-0.9.3.0-opensimsearch) $(deb opensim-0.9.3.0-gloebit) $(deb opensim-modules) $(deb opensim-kit)"
+metas="$(deb opensim) $(deb opensim-0.9.3.0-opensimsearch) $(deb opensim-0.9.3.0-gloebit) $(deb opensim-kit)"
 # The dotnet process only: the screen session running it has the same arguments
 robust_pid() { pgrep -f "^dotnet .*Robust.dll" | head -1; }
 robust_log() { ls /var/log/opensim/testgrid*.log 2>/dev/null | grep -v Stats | head -1; }
@@ -59,9 +59,24 @@ mysql -e "CREATE DATABASE testgrid_robust; CREATE USER opensim@localhost IDENTIF
 (cd /var/lib/opensim && runuser -u opensim -- php /test/newgrid.php | tail -1)
 check "grid enabled" "[ -L /etc/opensim/robust.d/testgrid.ini ]"
 
-# A database that cannot be used stops the setup before anything is written
-(cd /var/lib/opensim && TEST_GRID=Badgrid TEST_DB_PASSWORD=wrong runuser -u opensim -- php /test/newgrid.php >/tmp/badgrid.out 2>&1)
-check "setup stops on a database it cannot use" "grep -q 'cannot run without its database' /tmp/badgrid.out && [ ! -e /etc/opensim/grids/badgrid ] && [ ! -e /etc/opensim/robust.d/badgrid.ini ]"
+# A database that cannot be used stops the setup before anything is written:
+# as opensim, who has no administrator access to the database server
+wizard() { # grid, password, [user]
+    (cd /var/lib/opensim && TEST_GRID=$1 TEST_DB_PASSWORD=$2 TEST_NO_ENABLE=1 runuser -u "${3:-opensim}" -- php /test/newgrid.php 2>&1)
+}
+wizard Badgrid wrong >/tmp/badgrid.out
+check "wrong password: setup stops, nothing written" "grep -q 'cannot run without its database' /tmp/badgrid.out && [ ! -e /etc/opensim/grids/badgrid ]"
+wizard Missinggrid testpass >/tmp/missing.out
+check "existing account, missing database: says so, stops" "grep -q 'no access to database missinggrid_robust' /tmp/missing.out &&
+    grep -q 'CREATE DATABASE' /tmp/missing.out && [ ! -e /etc/opensim/grids/missinggrid ]"
+
+# As root, the administrator of the database: what is missing is created, and
+# what the setup writes belongs to opensim
+(cd /var/lib/opensim && TEST_GRID=Rootgrid TEST_DB_PASSWORD=testpass TEST_NO_ENABLE=1 php /test/newgrid.php >/tmp/rootgrid.out 2>&1)
+check "as root: the missing database is created" "mysql -e 'SHOW DATABASES' | grep -q '^rootgrid_robust$'"
+check "as root: the grid belongs to opensim" "[ \"\$(stat -c %U /etc/opensim/grids/rootgrid/Robust.HG.ini)\" = opensim ] &&
+    [ \"\$(stat -c %U /var/lib/opensim/data/rootgrid)\" = opensim ]"
+rm -rf /etc/opensim/grids/rootgrid /var/lib/opensim/data/rootgrid /var/cache/opensim/rootgrid
 check "setup command" "opensim help | grep -q setup"
 
 ts "service start"
@@ -78,7 +93,7 @@ apt_q install --reinstall $tools "$core"
 check "Robust not restarted" "[ '$(robust_pid)' = '$pid' ]"
 
 ts "development build and modules"
-check "modules installed by opensim-kit" "dpkg -s opensim-modules >/dev/null 2>&1"
+check "modules installed by opensim-kit" "dpkg -s opensim-0.9.3.0-gloebit opensim-0.9.3.0-opensimsearch >/dev/null 2>&1"
 unstable=$(deb opensim-unstable)
 apt_q install "$unstable"
 check "profile of the development build" "grep -q '^\[opensim-unstable\]' /etc/opensim/opensim.conf"
