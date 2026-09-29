@@ -107,6 +107,30 @@ apt_q remove opensim-unstable
 check "instances of another core untouched" "[ '$(robust_pid)' = '$pid' ]"
 apt_q install "$unstable"
 
+ts "modules enabled for a region"
+conf=/etc/opensim/opensim.conf
+check "opensim-kit enabled the safe modules" "[ \"\$(crudini --get $conf Defaults EnabledModules)\" = 'opensimsearch gloebit' ]"
+mkdir -p /etc/opensim/opensim.d /var/lib/opensim/data/testsim /var/cache/opensim/testsim
+cat >/etc/opensim/opensim.d/testsim.ini <<'EOF'
+[Const]
+    DataDirectory = "/var/lib/opensim/data/testsim"
+    LogsDirectory = "/var/log/opensim"
+    CacheDirectory = "/var/cache/opensim/testsim"
+[Startup]
+    RegistryLocation = "${Const|DataDirectory}/registry"
+EOF
+chown -R opensim:opensim /etc/opensim/opensim.d /var/lib/opensim/data/testsim /var/cache/opensim/testsim
+addins=/var/lib/opensim/data/testsim/registry/addins
+opensim start testsim >/dev/null 2>&1; opensim stop now testsim >/dev/null 2>&1
+check "modules linked for the region, from their packages" "[ \"\$(readlink $addins/Gloebit.dll)\" = /usr/share/opensim-modules/0.9.3.0/gloebit/Gloebit.dll ] &&
+    [ -L $addins/OpenSimSearch.Modules.dll ]"
+check "nothing written in the core" "[ -z \"\$(find /usr/share/opensim/0.9.3.0 -newer $conf -type f)\" ]"
+crudini --inplace --set $conf Defaults EnabledModules opensimsearch
+opensim start testsim >/dev/null 2>&1; opensim stop now testsim >/dev/null 2>&1
+check "a module no longer enabled is unlinked" "[ ! -e $addins/Gloebit.dll ] && [ -L $addins/OpenSimSearch.Modules.dll ]"
+crudini --inplace --set $conf Defaults EnabledModules "opensimsearch gloebit"
+rm -f /etc/opensim/opensim.d/testsim.ini
+
 ts "remove the tools, grid started by the service"
 systemctl restart opensim
 before=$(quits)

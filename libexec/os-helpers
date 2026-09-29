@@ -362,6 +362,57 @@ dotnetRequiredVersion() {
 	echo "${v:-8.0.0}"
 }
 
+# Expand the ${Const|Name} references of an instance config value with the
+# variables of its [Const] section (loaded by crudget).
+osExpandConst() {
+	local value=$1 name
+	while [[ "$value" =~ \$\{Const\|([A-Za-z0-9_]+)\} ]]; do
+		name=${BASH_REMATCH[1]}
+		value=${value//"\${Const|$name}"/${!name}}
+	done
+	printf '%s\n' "$value"
+}
+
+# Enable the modules of the install for an instance: their files linked in the
+# addins folder of its registry, where OpenSim loads add-ins from, so a core
+# kept read-only needs nothing written in its bin folder. The modules to
+# enable are the words of EnabledModules (opensim.conf), looked for in
+# ModulesRoot (default /usr/share/opensim-modules) under the name of the core
+# folder, or its version. What was linked for a module no longer enabled is
+# removed.
+# Args: addins folder, bin folder of the core
+osSyncModules() {
+	local addins=$1 core root module name dir file wanted=" "
+	core=$(basename "$(dirname "$2")")
+	root=${ModulesRoot:-/usr/share/opensim-modules}
+
+	for module in ${EnabledModules//,/ }; do
+		dir=
+		for name in "$core" "$(echo "$core" | grep -oE '[0-9]+(\.[0-9]+)+' | head -1)"; do
+			[ -n "$name" ] && [ -d "$root/$name/$module" ] && dir=$root/$name/$module && break
+		done
+		if [ -z "$dir" ]; then
+			debug "module $module: not installed for $core, skipped"
+			continue
+		fi
+		mkdir -p "$addins" || return $?
+		for file in "$dir"/*; do
+			[ -f "$file" ] || continue
+			ln -sfn "$file" "$addins/$(basename "$file")"
+			wanted="$wanted$addins/$(basename "$file") "
+		done
+		debug "module $module enabled from $dir"
+	done
+
+	[ -d "$addins" ] || return 0
+	for file in "$addins"/*; do
+		[ -L "$file" ] || continue
+		case "$(readlink "$file")" in
+		"$root"/*) [[ "$wanted" == *" $file "* ]] || { rm -f "$file" && debug "module file $(basename "$file") removed"; } ;;
+		esac
+	done
+}
+
 # Verify the runtime needed to launch an executable is installed.
 # Args: runtime (dotnet|mono), executable path. Returns non-zero with an
 # explicit message if the runtime, or the required .NET major, is missing.
@@ -449,6 +500,8 @@ CacheRoot=${CacheRoot:-}
 DataRoot=${DataRoot:-}
 Runtime=${Runtime:-}
 SystemUser=${SystemUser:-}
+EnabledModules=${EnabledModules:-}
+ModulesRoot=${ModulesRoot:-}
 debug "base conf loaded (profile ${active:-none}, version ${OpensimVersion:-unset})"
 
 # The etc directory is the entry point for every helper, so a missing one is

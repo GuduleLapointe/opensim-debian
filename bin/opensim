@@ -131,7 +131,7 @@ startSim() {
 	unset IFS
 	for arg in $@; do
 		unset ConsoleUser ConsolePass ConsolePort console_port LogsDirectory EtcDirectory \
-			BinDirectory BinDir LogConfig logconfig LogFile
+			BinDirectory BinDir LogConfig logconfig LogFile RegistryLocation
 		ls -d "$arg" 2>/dev/null | grep -q "\.ini$" &&
 			{
 				inifile=$arg
@@ -226,6 +226,12 @@ startSim() {
 		# Fail early with a clear message if the runtime is missing, rather
 		# than letting the instance crash on launch.
 		checkRuntimeAvailable "$runtime" "$Executable" || continue
+
+		# Regions load the modules enabled for the install from the addins
+		# folder of their registry (Robust has none of them to load)
+		if [ "$ExecName" = "OpenSim" ] && [ -n "$RegistryLocation" ]; then
+			osSyncModules "$(osExpandConst "$RegistryLocation")/addins" "$BinDirectory"
+		fi
 
 		Include_Common=$(crudget $inifile Includes Include-Common 2>/dev/null)
 		# crudini --get $inifile Includes Include-Common

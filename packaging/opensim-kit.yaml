@@ -21,3 +21,6 @@ depends:
   - opensim-tools (= ${DEB_VERSION})
   # OpenSim cannot run without a database: everything on this machine
   - default-mysql-server | virtual-mysql-server
+
+scripts:
+  postinstall: packaging/opensim-kit.postinst

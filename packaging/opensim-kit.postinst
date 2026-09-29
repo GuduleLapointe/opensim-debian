@@ -1,0 +1,14 @@
+#!/bin/sh
+# postinst of opensim-kit: on first install, enables the modules known to start
+# without being configured (they wait for their config), for the instances of
+# every core. An admin's setting is kept, even an empty one. A module package
+# alone never enables its module.
+set -e
+
+conf=/etc/opensim/opensim.conf
+
+if [ "$1" = "configure" ] && [ -f "$conf" ]; then
+    if ! crudini --get "$conf" Defaults EnabledModules >/dev/null 2>&1; then
+        crudini --inplace --set "$conf" Defaults EnabledModules "opensimsearch gloebit"
+    fi
+fi
