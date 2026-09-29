@@ -54,6 +54,21 @@ distribution() {
 mkdir -p build
 : >build/packaging.env
 
+# A build that is not on a version tag carries the version being worked on,
+# .version (a pre-release such as 3.0.0-dev), not the last tag: 3.0.0-dev.1234+g1a2b3c4
+# sorts before the 3.0.0 release, after the former dev builds
+if ! git describe --tags --exact-match --match '[0-9]*' --match 'v[0-9]*' >/dev/null 2>&1; then
+    base=$(tr -d '[:space:]' <.version)
+    [[ "$base" == *-* ]] || base=$base-dev
+    dirty=
+    git diff --quiet HEAD || dirty=.dirty
+    dev=$base.$(git rev-list --count HEAD)+g$(git rev-parse --short HEAD)$dirty
+    cat >>build/packaging.env <<EOF
+VERSION=$dev
+DEB_VERSION=${dev/-/\~}
+EOF
+fi
+
 if wants opensim-tools; then
     BUILD=build/opensim-tools
     rm -rf "$BUILD"

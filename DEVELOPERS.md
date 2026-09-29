@@ -19,7 +19,7 @@ The modules are installed in their own folders, as some fail when loaded without
 
 Removing `opensim-<version>` or `opensim-unstable` stops the instances running from that core only, found by the full path of their assembly in the process list: instances of another release or of a build installed elsewhere are left alone. Nothing in an OpenSim instance needs a clean shutdown, its state is in the database, so a plain stop is enough.
 
-The version of the tools and of the metapackages comes from the last version tag: `3.0.0-dev` until the `3.0.0` release, which sorts after it.
+The version of the tools and of the metapackages is the version tag when the build is on one, the release. Any other build carries the version being worked on, declared in `.version` (a pre-release such as `3.0.0-dev`): `3.0.0~dev.<commits>+g<sha>`, which sorts after the former dev builds and before the release. The tag goes on the release commit only, with its changelog; `.version` is bumped for the next development version after it.
 
 ## Building and publishing
 
