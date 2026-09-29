@@ -119,11 +119,6 @@ while getopts $OPTS PARAM; do
 done 2>/dev/null
 shift $(expr $OPTIND - 1)
 
-#ini_parser="$(which ini_parser)"
-#[ -n "$ini_parser" ] || end 1 no ini parser
-#log "ini_parser: $ini_parser"
-# . "$(which ini_parser)" || end 2 could not launch ini parser
-
 startSim() {
 	# Only starting needs a core: stop and status work without one
 	[ -z "$OpenSimExe" ] && end 2 "could not find OpenSim.exe"
@@ -157,24 +152,8 @@ startSim() {
 
 		log "starting $instance"
 
-		# for default in $(echo "$ETCPATH:" | sed "s|/*:|/default.ini |g")
-		# do
-		#     [ -f "$default" ] || continue
-		#     ini_parser "$default" || continue
-		#     ini_section_Const 2>/dev/null
-		#     ini_section_Startup 2>/dev/null
-		#     ini_section_Launch 2>/dev/null
-		# done
 		debug extracting launch info from $inifile file
 
-		# cat "$inifile" | sed '/\[Const]/,/^\[/!d' | sed "$ d" > $TMP.ini
-		# cat "$inifile" | sed '/\[Launch]/,/^\[/!d' | sed "$ d" >> $TMP.ini
-		# cat "$inifile" | sed '/\[Startup]/,/^\[/!d' | sed "$ d" >> $TMP.ini
-		# log reading $inifile file
-		# ini_parser "$TMP.ini" || continue
-		# # ini_parser "$inifile" || continue
-		# #2>/dev/null || continue
-		# log reading section Launch
 		crudget $inifile Const 2>/dev/null || end $? "error reading launch section"
 		crudget $inifile Launch 2>/dev/null || end $? "error $? reading section Launch"
 		crudget $inifile Startup 2>/dev/null || end $? "error $? reading section Launch"
@@ -362,12 +341,6 @@ stopSim() {
 				inifile=$(buildIni "$sim")
 			}
 
-		# cat "$inifile" | sed '/\[Const]/,/^\[/!d' | sed "$ d" > $TMP.ini
-		# cat "$inifile" | sed '/\[Launch]/,/^\[/!d' | sed "$ d" >> $TMP.ini
-		# cat "$inifile" | sed '/\[Startup]/,/^\[/!d' | sed "$ d" >> $TMP.ini
-		# ini_parser "$TMP.ini" || continue
-		# ini_section_Const 2>/dev/null
-		# ini_section_Launch 2>/dev/null
 		crudget $inifile Const || crudget $inifile const
 		crudget $inifile Launch || crudget $inifile launch
 		crudget $inifile Network 2>/dev/null

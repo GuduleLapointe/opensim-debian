@@ -860,12 +860,11 @@
             "dist": {
                 "type": "path",
                 "url": "../bash-tools",
-                "reference": "72d1a97ea67d4ae0dd8e53995e9152873d3e3d67"
+                "reference": "f523d7e37cd5ec82bb0c44d877d3cc15d4b4f40e"
             },
             "bin": [
                 "bin/cpuinfo",
                 "bin/bash-helpers",
-                "bin/ini_parser",
                 "bin/mail-report",
                 "bin/randompassword",
                 "bin/stamp",
