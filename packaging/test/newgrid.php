@@ -60,10 +60,13 @@ final class ScriptedUi implements InstallerUi
     }
 }
 
+// The grid and the database password can be given by the environment
+$name = getenv('TEST_GRID') ?: 'Testgrid';
+
 (new NewGrid(new ScriptedUi([
-    'Grid name' => 'Testgrid',
-    'Grid nick' => 'testgrid',
+    'Grid name' => $name,
+    'Grid nick' => strtolower($name),
     'Base hostname' => 'localhost',
-    'Database password' => 'testpass',
+    'Database password' => getenv('TEST_DB_PASSWORD') ?: 'testpass',
     'Start grid' => false,
 ])))->run(null);

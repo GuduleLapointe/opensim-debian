@@ -39,7 +39,7 @@ final class Installer
                 . ($release['installed'] ? '  (installed)' : '');
             $byVersion[$release['version']] = $release;
         }
-        $options['dev'] = 'Development version (build from source — not yet implemented)';
+        $options['dev'] = 'Development version (unstable, built from source — not yet implemented)';
         $options['back'] = 'Back';
 
         $choice = $ui->choose('OpenSim version to install', $options, array_key_first($options));

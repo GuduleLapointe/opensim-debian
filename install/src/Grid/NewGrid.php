@@ -36,6 +36,13 @@ final class NewGrid
             return; // abandoned
         }
 
+        // Nothing is written before the database is known to work
+        if (!(new Database($this->ui))->ensure($plan)) {
+            $this->ui->error('Stopped, nothing was changed: OpenSim cannot run without its database.');
+
+            return;
+        }
+
         $this->showPlan($plan);
         if (!$this->ui->confirm("Apply this configuration to grid '{$plan->gridNick}'?", true)) {
             $this->ui->note('Aborted — nothing changed.');
