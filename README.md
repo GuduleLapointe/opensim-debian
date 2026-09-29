@@ -48,34 +48,35 @@ echo "deb [signed-by=/usr/share/keyrings/magiiic-packaging.gpg] https://apt.magi
 sudo apt update
 ```
 
-Then install the kit with the latest OpenSimulator:
+Then install the kit, the tools with the latest OpenSimulator:
 
 ```bash
-sudo apt install opensim
+sudo apt install opensim-kit
 ```
 
-- `opensim-kit`: the tools, in `/usr/share/opensim-kit`, and the `opensim` command
-- `opensim-<version>`, e.g. `opensim-0.9.3.0`: an OpenSimulator distribution, in `/usr/share/opensim/<version>`. Several versions can be installed side by side.
-- `opensim`: the kit and the latest version
+- `opensim-tools`: the tools, in `/usr/share/opensim-tools`, and the `opensim` command. They work with the packaged OpenSimulator releases or any other one.
+- `opensim-<version>`, e.g. `opensim-0.9.3.0`: an OpenSimulator release, in `/usr/share/opensim/<version>`. Several releases can be installed side by side, with or without the tools.
+- `opensim`: the latest release
+- `opensim-kit`: the tools and the latest release
 
 The files are at the usual places: config in `/etc/opensim`, data in `/var/lib/opensim`, logs in `/var/log/opensim`, cache in `/var/cache/opensim`. The instances run as the `opensim` account: the `opensim` command switches to it, through sudo.
 
 OpenSimulator 0.9.3 needs the .NET 8 runtime. Ubuntu installs it with the package; on Debian, install it with:
 
 ```bash
-sudo /usr/share/opensim-kit/libexec/install-dotnet
+sudo opensim install-dotnet
 ```
 
-Create a grid with the setup wizard, as the `opensim` account, then start it:
+Create a grid with the setup wizard, then start it:
 
 ```bash
-sudo -u opensim -H php /usr/share/opensim-kit/install/install.php
+opensim setup
 sudo systemctl start opensim
 ```
 
 The `opensim` service starts the enabled instances at boot. Package upgrades never restart them.
 
-An existing install, e.g. in `/opt/opensim`, keeps working with the packaged kit without moving anything: its `opensim.conf` gives the locations. To run it with the service, set its account with `sudo systemctl edit opensim` (`User=` and `Group=` in a `[Service]` section).
+An existing install, e.g. in `/opt/opensim`, keeps working with the packaged tools without moving anything: its `opensim.conf` gives the locations. To run it with the service, set its account with `sudo systemctl edit opensim` (`User=` and `Group=` in a `[Service]` section).
 
 Installation from git
 ---------------------
