@@ -1,8 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2015 Olivier van Helden <olivier@van-helden.net>
 # Released under GNU Affero GPL v3.0 license
 #    http://www.gnu.org/licenses/agpl-3.0.html
+
+# Run from the real location when called through a link (e.g. /usr/bin/opensim):
+# the helpers find the rest of the kit from the script path.
+[ -L "$0" ] && exec "$(readlink -f "$0")" "$@"
 
 DELAY=60
 shutdownDelay=120

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Source this script to set up and activate the Python venv.
 # Installs crudini into the venv if not already present.
 #
@@ -8,6 +8,13 @@
 #   . $BASEDIR/libexec/venv-setup || exit 1
 
 _venv="$BASEDIR/venv"
+
+# A system crudini (e.g. the Debian package) needs no venv
+if [ ! -f "$_venv/bin/activate" ] && command -v crudini >/dev/null 2>&1; then
+	unset _venv
+	return 0
+fi
+
 _python=$(which python3 || which python 2>/dev/null) ||
 	end $? "Python not found — install python3"
 
