@@ -1,21 +1,32 @@
 {
-    "name": "gudulelapointe/opensim-debian",
-    "description": "OpenSim deployment and management tools for Debian-based systems",
-    "type": "project",
-    "license": "AGPL-3.0",
-    "require-dev": {
-        "deployer/deployer": "^7.3"
+  "name": "gudulelapointe/opensim-kit",
+  "description": "OpenSim deployment and management tools for Debian-based systems",
+  "type": "project",
+  "license": "AGPL-3.0-or-later",
+  "authors": [
+    {
+      "name": "Gudule Lapointe",
+      "email": "gudule@speculoos.world",
+      "homepage": "https://speculoos.world"
     },
-    "config": {
-        "allow-plugins": {}
-    },
-    "require": {
-        "php": ">=8.1",
-        "laravel/prompts": "^0.3.18"
-    },
-    "autoload": {
-        "psr-4": {
-            "OpenSim\\Installer\\": "install/src/"
-        }
+    {
+      "name": "Olivier van Helden",
+      "homepage": "https://magiiic.com"
     }
+  ],
+  "require-dev": {
+    "deployer/deployer": "^7.3"
+  },
+  "config": {
+    "allow-plugins": {}
+  },
+  "require": {
+    "php": ">=8.1",
+    "laravel/prompts": "^0.3.18"
+  },
+  "autoload": {
+    "psr-4": {
+      "OpenSim\\Installer\\": "install/src/"
+    }
+  }
 }
