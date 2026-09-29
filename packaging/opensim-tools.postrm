@@ -1,6 +1,7 @@
 #!/bin/sh
-# postrm of opensim-tools: on purge, forgets the service and removes the cache.
-# Config, data, logs and the opensim account are kept.
+# postrm of opensim-tools: on purge, forgets the service and the owner of the
+# folders, and removes the cache. Config, data, logs and the opensim account
+# are kept.
 set -e
 
 if [ -d /run/systemd/system ]; then
@@ -21,5 +22,12 @@ fi
 
 if [ "$1" = "purge" ]; then
     rm -rf /var/cache/opensim
-    echo "opensim-tools: kept /etc/opensim, /var/lib/opensim, /var/log/opensim and the opensim account" >&2
+    # The owner set by postinst, the folders themselves being kept by dpkg
+    # while not empty
+    for dir in /etc/opensim /etc/opensim/grids /etc/opensim/opensim.d /etc/opensim/robust.d \
+        /var/lib/opensim /var/lib/opensim/data /var/log/opensim /var/cache/opensim; do
+        if dpkg-statoverride --list "$dir" >/dev/null; then
+            dpkg-statoverride --remove "$dir"
+        fi
+    done
 fi

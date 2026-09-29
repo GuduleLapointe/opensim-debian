@@ -25,7 +25,7 @@ license: AGPL-3.0-or-later
 
 depends:
   - adduser
-  - bash-tools (>= 1.1.0~)
+  - bash-tools (>= 1.0.3)
   - bsdextrautils | bsdmainutils
   - crudini
   - curl
@@ -59,6 +59,24 @@ contents:
     dst: /usr/share/doc/opensim-tools/copyright
     file_info:
       mode: 0644
+  # The system layout, owned by opensim through dpkg-statoverride (postinst);
+  # dpkg keeps them, and says so, while they hold config, data or logs
+  - dst: /etc/opensim
+    type: dir
+  - dst: /etc/opensim/grids
+    type: dir
+  - dst: /etc/opensim/opensim.d
+    type: dir
+  - dst: /etc/opensim/robust.d
+    type: dir
+  - dst: /var/lib/opensim
+    type: dir
+  - dst: /var/lib/opensim/data
+    type: dir
+  - dst: /var/log/opensim
+    type: dir
+  - dst: /var/cache/opensim
+    type: dir
 
 scripts:
   postinstall: packaging/opensim-tools.postinst

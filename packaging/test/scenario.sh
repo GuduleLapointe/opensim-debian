@@ -18,8 +18,7 @@ apt_q() {
 }
 deb() { ls /dist/"$1"_*.deb | grep -E "_($(dpkg --print-architecture)|all)\.deb$" | tail -1; }
 core=$(deb opensim-0.9.3.0)
-# The tools, with the bash-tools they depend on
-tools="$(deb opensim-tools) $(deb bash-tools)"
+tools=$(deb opensim-tools)
 metas="$(deb opensim) $(deb opensim-kit)"
 # The dotnet process only: the screen session running it has the same arguments
 robust_pid() { pgrep -f "^dotnet .*Robust.dll" | head -1; }
@@ -29,6 +28,9 @@ robust_state() { echo "   Robust pid: $(robust_pid || true), clean shutdowns: $(
 profile() { grep -q '^\[opensim-0.9.3.0\]' /etc/opensim/opensim.conf 2>/dev/null; }
 
 rm -f /usr/sbin/policy-rc.d # container images forbid service actions
+# The Magiiic repository, for the dependencies (bash-tools), as in the README
+curl -fsSL https://apt.magiiic.com/magiiic-packaging.asc | gpg --dearmor -o /usr/share/keyrings/magiiic-packaging.gpg
+echo "deb [signed-by=/usr/share/keyrings/magiiic-packaging.gpg] https://apt.magiiic.com stable main" >/etc/apt/sources.list.d/magiiic.list
 apt-get update -qq
 
 ts "core alone"

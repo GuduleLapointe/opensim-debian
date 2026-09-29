@@ -1,12 +1,15 @@
 #!/bin/sh
-# postinst of opensim-tools: the opensim account, the folders of the system
-# layout and their default config, left as is once created, the install
+# postinst of opensim-tools: the opensim account, which owns the folders of
+# the system layout, their default config, left as is once created, the install
 # profiles of the packaged OpenSimulator releases, and the service, enabled on
 # first install. The service is never restarted here: that would stop the
 # running grids.
 set -e
 
 conf=/etc/opensim/opensim.conf
+# The folders of the system layout, shipped by the package
+layout="/etc/opensim /etc/opensim/grids /etc/opensim/opensim.d /etc/opensim/robust.d
+    /var/lib/opensim /var/lib/opensim/data /var/log/opensim /var/cache/opensim"
 
 # One profile per release in /usr/share/opensim, added or removed with it.
 # The first one becomes the default: [Defaults] points to it and mirrors it.
@@ -56,9 +59,10 @@ case "$1" in
             adduser --system --group --home /var/lib/opensim --shell /bin/bash opensim
         fi
 
-        for dir in /etc/opensim /etc/opensim/grids /etc/opensim/opensim.d /etc/opensim/robust.d \
-            /var/lib/opensim /var/lib/opensim/data /var/log/opensim /var/cache/opensim; do
-            [ -d "$dir" ] || install -d -o opensim -g opensim -m 755 "$dir"
+        # They belong to opensim, also after upgrades; an admin's override stays
+        for dir in $layout; do
+            dpkg-statoverride --list "$dir" >/dev/null ||
+                dpkg-statoverride --update --add opensim opensim 755 "$dir"
         done
 
         # The tools read the locations here
