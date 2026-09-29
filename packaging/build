@@ -10,20 +10,45 @@
 #   packaging/opensim-core.versions, the last one or OPENSIM_VERSION; for
 #   opensim-core, build/opensim-core from its tarball, downloaded into src/
 #   and checked against its SHA256.
+# opensim-<module>: build/modules/<module>, the files of a module of
+#   packaging/opensim-modules.versions, for the release of opensim-core or
+#   MODULES_CORE (a release or unstable); downloads go to src/, checked
+#   against their SHA256.
+# opensim-unstable: build/opensim-unstable, OpenSimulator built from the
+#   commit of the upstream/opensim submodule, in a .NET SDK container
+#   (podman, or CONTAINER=docker). Each commit is built once, into
+#   build/cache/.
 #
 # The variables of the definitions go to build/packaging.env.
 
 set -e
 
 URL=http://opensimulator.org/dist
+SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:8.0
 
-packages=" ${*:-opensim-tools opensim-core opensim opensim-kit} "
+packages=" ${*:-$(cd packaging && ls *.yaml | sed 's/\.yaml$//' | tr '\n' ' ')} "
 wants() {
     local name
     for name in "$@"; do
         [[ "$packages" == *" $name "* ]] && return 0
     done
     return 1
+}
+
+# What the release tarballs hold, from a distribution tree ($1) into $2, with
+# the Linux System.Drawing.Common.dll in place: OpenSim puts it there on
+# start when the one there differs, and the installed core is read-only
+distribution() {
+    local from=$1 to=$2 entry
+    rm -rf "$to"
+    mkdir -p "$to"
+    for entry in bin doc share addon-modules ThirdPartyLicenses CONTRIBUTORS.txt LICENSE.txt README.md; do
+        [[ ! -e "$from/$entry" ]] || cp -R "$from/$entry" "$to/"
+    done
+    if [[ -f "$to/bin/System.Drawing.Common.dll.linux" ]]; then
+        cp "$to/bin/System.Drawing.Common.dll.linux" "$to/bin/System.Drawing.Common.dll"
+    fi
+    chmod -R u+rwX,go+rX,go-w "$to"
 }
 
 mkdir -p build
@@ -45,7 +70,18 @@ if wants opensim-tools; then
     chmod -R go-w "$BUILD"
 fi
 
-if wants opensim-core opensim; then
+# The native libraries of the distribution are for amd64 and arm64
+if wants opensim-core opensim-unstable; then
+    echo 'ARCHITECTURES="amd64 arm64"' >>build/packaging.env
+fi
+
+# The modules asked for, from packaging/opensim-modules.versions
+modules=
+for module in $(awk '!/^#/ && NF {print $1}' packaging/opensim-modules.versions | sort -u); do
+    ! wants "opensim-$module" || modules="$modules $module"
+done
+
+if wants opensim-core opensim || [[ -n "$modules" ]]; then
     read -r version revision checksum < <(
         awk -v v="${OPENSIM_VERSION:-}" '!/^#/ && NF && (v == "" || $1 == v)' packaging/opensim-core.versions | tail -1
     ) || true
@@ -53,11 +89,9 @@ if wants opensim-core opensim; then
         echo "OpenSimulator $OPENSIM_VERSION is not in packaging/opensim-core.versions" >&2
         exit 1
     fi
-    # The native libraries of the distribution are for amd64 and arm64
     cat >>build/packaging.env <<EOF
 OPENSIM_VERSION=$version
 OPENSIM_REVISION=$revision
-ARCHITECTURES="amd64 arm64"
 EOF
 fi
 
@@ -70,15 +104,84 @@ if wants opensim-core; then
     fi
     (cd src && echo "$checksum  $tarball" | shasum -a 256 -c -)
 
-    BUILD=build/opensim-core
+    rm -rf build/tarball
+    mkdir -p build/tarball
+    tar -xzf "src/$tarball" --strip-components=1 -C build/tarball
+    distribution build/tarball build/opensim-core
+    rm -rf build/tarball
+    sed -e "s|@VERSION@|$version|g" -e "s|@SOURCE@|$URL/$tarball|" packaging/opensim-core.copyright >build/opensim-core.copyright
+fi
+
+# The modules for a release (the one of opensim-core by default) or unstable
+if [[ -n "$modules" ]]; then
+    MODULES_CORE=${MODULES_CORE:-$version}
+    echo "MODULES_CORE=$MODULES_CORE" >>build/packaging.env
+fi
+for module in $modules; do
+    BUILD=build/modules/$module
     rm -rf "$BUILD"
-    mkdir -p "$BUILD"
-    tar -xzf "src/$tarball" --strip-components=1 -C "$BUILD"
-    # On start, OpenSim puts the Linux System.Drawing.Common.dll in place when
-    # the one there differs: done here, as the installed core is read-only
-    if [[ -f "$BUILD/bin/System.Drawing.Common.dll.linux" ]]; then
-        cp "$BUILD/bin/System.Drawing.Common.dll.linux" "$BUILD/bin/System.Drawing.Common.dll"
+    mkdir -p "$BUILD" src
+    found=
+    while read -r _ _ line_version line_revision file checksum name; do
+        # Kept apart: the last read, at the end, empties its variables
+        found=yes
+        module_version=$line_version
+        module_revision=$line_revision
+        if [[ "$file" == http* ]]; then
+            cached=src/$(basename "$file")
+            if [[ ! -f "$cached" ]]; then
+                curl -fSL "$file" -o "$cached.part"
+                mv "$cached.part" "$cached"
+            fi
+            echo "$checksum  $cached" | shasum -a 256 -c -
+            cp "$cached" "$BUILD/${name:-${file##*/}}"
+        else
+            cp "$file" "$BUILD/"
+        fi
+    done < <(awk -v m="$module" -v c="$MODULES_CORE" '!/^#/ && $1 == m && $2 == c' packaging/opensim-modules.versions)
+    if [[ -z "$found" ]]; then
+        echo "No $module for OpenSimulator $MODULES_CORE in packaging/opensim-modules.versions" >&2
+        exit 1
     fi
     chmod -R u+rwX,go+rX,go-w "$BUILD"
-    sed "s/@VERSION@/$version/g" packaging/opensim-core.copyright >build/opensim-core.copyright
+    prefix=$(echo "$module" | tr '[:lower:]-' '[:upper:]_')
+    cat >>build/packaging.env <<EOF
+${prefix}_VERSION=$module_version
+${prefix}_REVISION=$module_revision
+EOF
+done
+
+if wants opensim-unstable; then
+    source=upstream/opensim
+    [[ -e "$source/.git" ]] || git submodule update --init "$source"
+    commit=$(git -C "$source" rev-parse HEAD)
+
+    # Version: the number and flavour of the source (0.9.3.1 Dev), then the
+    # date and commit, e.g. 0.9.3.1~dev.202609261530+04ca1d9
+    info=$source/OpenSim/Framework/VersionInfo.cs
+    number=$(sed -nE 's/.*const string VersionNumber = "([^"]+)".*/\1/p' "$info")
+    flavour=$(sed -nE 's/.*VERSION_FLAVOUR = Flavour\.([A-Za-z0-9_]+).*/\1/p' "$info" | tr '[:upper:]_' '[:lower:].')
+    date=$(TZ=UTC git -C "$source" log -1 --format=%cd --date=format-local:%Y%m%d%H%M "$commit")
+    cat >>build/packaging.env <<EOF
+OPENSIM_UNSTABLE_VERSION=$number~$flavour.$date+${commit:0:7}
+EOF
+
+    cache=build/cache/opensim-$commit
+    if [[ ! -f "$cache/bin/OpenSim.dll" ]]; then
+        echo "Building OpenSimulator $number $flavour ($commit), once for this commit"
+        rm -rf "$cache.tmp"
+        mkdir -p "$cache.tmp"
+        git -C "$source" archive "$commit" | tar -x -C "$cache.tmp"
+        if ! ${CONTAINER:-podman} run --rm -v "$PWD/$cache.tmp:/opensim" -w /opensim "$SDK_IMAGE" \
+            bash -c './runprebuild.sh && dotnet build --configuration Release OpenSim.sln' \
+            >"$cache.log" 2>&1; then
+            tail -20 "$cache.log" >&2
+            echo "Build failed, see $cache.log" >&2
+            exit 1
+        fi
+        mv "$cache.tmp" "$cache"
+    fi
+    distribution "$cache" build/opensim-unstable
+    sed -e "s|@VERSION@|unstable|g" -e "s|@SOURCE@|https://github.com/opensim/opensim/commit/$commit|" \
+        packaging/opensim-core.copyright >build/opensim-unstable.copyright
 fi

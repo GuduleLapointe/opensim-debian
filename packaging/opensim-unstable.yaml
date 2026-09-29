@@ -1,0 +1,39 @@
+# OpenSimulator built from the development branch, built by apt-package from
+# build/opensim-unstable with the version packaging/build gives (source
+# version, date and commit of the upstream/opensim submodule), for each
+# architecture of its native libraries. Installed read-only in
+# /usr/share/opensim/unstable, next to the releases.
+name: opensim-unstable
+arch: ${ARCH}
+platform: linux
+version: ${OPENSIM_UNSTABLE_VERSION}
+release: 1
+version_schema: none
+section: net
+priority: optional
+maintainer: Gudule Lapointe <gudule@speculoos.world>
+description: |-
+  OpenSimulator, development version
+  OpenSimulator built from its development branch, to test what comes next.
+  Installed in /usr/share/opensim/unstable, next to the releases; the
+  opensim-tools package runs it with the files at the standard places.
+homepage: https://github.com/opensim/opensim
+license: BSD-3-Clause
+
+recommends:
+  - dotnet-runtime-8.0 | dotnet-runtime-9.0 | dotnet-runtime-10.0
+  - libgdiplus
+suggests:
+  - opensim-tools
+
+contents:
+  - src: build/opensim-unstable
+    dst: /usr/share/opensim/unstable
+    type: tree
+  - src: build/opensim-unstable.copyright
+    dst: /usr/share/doc/opensim-unstable/copyright
+    file_info:
+      mode: 0644
+
+scripts:
+  postinstall: packaging/opensim-core.postinst

@@ -1,0 +1,28 @@
+# Gloebit currency module for an OpenSimulator release or unstable, built by
+# apt-package from build/modules/gloebit with the versions packaging/build
+# gives (packaging/opensim-modules.versions). Installed in its own folder:
+# not loaded until enabled, as it fails when not configured.
+name: opensim-${MODULES_CORE}-gloebit
+arch: all
+platform: linux
+version: ${GLOEBIT_VERSION}
+release: ${GLOEBIT_REVISION}
+version_schema: none
+section: net
+priority: optional
+maintainer: Gudule Lapointe <gudule@speculoos.world>
+description: |-
+  Gloebit currency module for OpenSimulator ${MODULES_CORE}
+  Money and purchases through the Gloebit service. Installed in
+  /usr/share/opensim-modules/${MODULES_CORE}/gloebit with an example config,
+  not loaded until enabled.
+homepage: https://github.com/gloebit/opensim-moneymodule-gloebit
+license: LGPL-3.0-or-later
+
+depends:
+  - opensim-${MODULES_CORE}
+
+contents:
+  - src: build/modules/gloebit
+    dst: /usr/share/opensim-modules/${MODULES_CORE}/gloebit
+    type: tree

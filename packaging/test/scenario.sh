@@ -72,10 +72,27 @@ ts upgrade
 apt_q install --reinstall $tools "$core"
 check "Robust not restarted" "[ '$(robust_pid)' = '$pid' ]"
 
+ts "development build and modules"
+apt_q install "$(deb opensim-unstable)" "$(deb opensim-0.9.3.0-opensimsearch)" "$(deb opensim-0.9.3.0-gloebit)"
+check "profile of the development build" "grep -q '^\[opensim-unstable\]' /etc/opensim/opensim.conf"
+check "modules in their own folders" "[ -f /usr/share/opensim-modules/0.9.3.0/opensimsearch/OpenSimSearch.Modules.dll ] &&
+    [ -f /usr/share/opensim-modules/0.9.3.0/gloebit/Gloebit.dll ] &&
+    [ ! -e /usr/share/opensim/0.9.3.0/bin/OpenSimSearch.Modules.dll ]"
+check "log config of the wizard" "[ -f /var/log/opensim/testgrid_robust.log ]"
+# The grid on the development build, then back on the release
+runuser -u opensim -- crudini --inplace --set /etc/opensim/grids/testgrid/testgrid.conf Grid CoreDirectory /usr/share/opensim/unstable
+opensim restart now testgrid >/dev/null 2>&1
+check "grid on its own core" "grep 'Starting in' $(robust_log) | tail -1 | grep -q /usr/share/opensim/unstable/bin"
+check "development build ready" "[ \$(grep -c 'UserAgentServerConnector loaded' $(robust_log)) = 2 ]"
+runuser -u opensim -- crudini --inplace --set /etc/opensim/grids/testgrid/testgrid.conf Grid CoreDirectory /usr/share/opensim/0.9.3.0
+opensim restart now testgrid >/dev/null 2>&1
+
 ts "remove the tools, grid started by the service"
+systemctl restart opensim
+before=$(quits)
 apt_q remove opensim-tools
 robust_state
-check "Robust stopped cleanly" "[ -z '$(robust_pid)' ] && [ '$(quits)' = 1 ]"
+check "Robust stopped cleanly" "[ -z '$(robust_pid)' ] && [ '$(quits)' = $((before + 1)) ]"
 check "core kept" "[ -f /usr/share/opensim/0.9.3.0/bin/OpenSim.exe ]"
 
 ts "reinstall the tools"
@@ -85,14 +102,18 @@ check "service enabled again" "systemctl -q is-enabled opensim"
 ts "remove the tools, grid started by hand"
 opensim start testgrid >/dev/null 2>&1
 check "Robust running" "[ -n '$(robust_pid)' ]"
+before=$(quits)
 apt_q remove opensim-tools
 robust_state
-check "Robust stopped cleanly" "[ -z '$(robust_pid)' ] && [ '$(quits)' = 2 ]"
+check "Robust stopped cleanly" "[ -z '$(robust_pid)' ] && [ '$(quits)' = $((before + 1)) ]"
 
 ts "remove the core, tools installed"
 apt_q install $tools
 apt_q remove opensim-0.9.3.0
 check "profile removed" "! profile"
+check "modules removed with their core" "[ ! -e /usr/share/opensim-modules/0.9.3.0 ]"
+check "default falls back to the remaining build" "grep -q '^DefaultProfile = opensim-unstable' /etc/opensim/opensim.conf"
+apt_q remove opensim-unstable
 check "no default profile" "! grep -q '^DefaultProfile' /etc/opensim/opensim.conf"
 check "tools work without a core" "opensim status >/dev/null"
 

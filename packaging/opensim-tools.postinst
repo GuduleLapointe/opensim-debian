@@ -16,7 +16,8 @@ layout="/etc/opensim /etc/opensim/grids /etc/opensim/opensim.d /etc/opensim/robu
 update_profiles() {
     for core in /usr/share/opensim/*/; do
         core=${core%/}
-        [ -f "$core/bin/OpenSim.exe" ] || continue
+        # OpenSim.exe in the releases, only OpenSim.dll in builds made on Linux
+        [ -f "$core/bin/OpenSim.exe" ] || [ -f "$core/bin/OpenSim.dll" ] || continue
         version=${core##*/}
         profile=opensim-$version
         crudini --get "$conf" "$profile" >/dev/null 2>&1 && continue
@@ -41,9 +42,12 @@ update_profiles() {
     done
 
     if ! crudini --get "$conf" Defaults DefaultProfile >/dev/null 2>&1; then
-        latest=$(ls -d /usr/share/opensim/*/bin/OpenSim.exe 2>/dev/null | sort -V | tail -1)
-        if [ -n "$latest" ]; then
-            core=${latest%/bin/OpenSim.exe}
+        # The latest release, or else another build (e.g. unstable)
+        cores=$(ls -d /usr/share/opensim/*/bin/OpenSim.exe /usr/share/opensim/*/bin/OpenSim.dll 2>/dev/null |
+            sed 's:/bin/OpenSim\.[a-z]*$::' | sort -uV)
+        core=$(echo "$cores" | grep -E '/[0-9]+(\.[0-9]+)+$' | tail -1)
+        [ -n "$core" ] || core=$(echo "$cores" | tail -1)
+        if [ -n "$core" ]; then
             crudini --inplace --set "$conf" Defaults DefaultProfile "opensim-${core##*/}"
             crudini --inplace --set "$conf" Defaults OpensimVersion "${core##*/}"
             crudini --inplace --set "$conf" Defaults CoreDirectory "$core"

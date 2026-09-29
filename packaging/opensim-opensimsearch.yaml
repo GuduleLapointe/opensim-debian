@@ -1,0 +1,29 @@
+# OpenSimSearch module for an OpenSimulator release or unstable, built by
+# apt-package from build/modules/opensimsearch with the versions
+# packaging/build gives (packaging/opensim-modules.versions). Installed in its
+# own folder: not loaded until enabled.
+name: opensim-${MODULES_CORE}-opensimsearch
+arch: all
+platform: linux
+version: ${OPENSIMSEARCH_VERSION}
+release: ${OPENSIMSEARCH_REVISION}
+version_schema: none
+section: net
+priority: optional
+maintainer: Gudule Lapointe <gudule@speculoos.world>
+description: |-
+  OpenSimSearch module for OpenSimulator ${MODULES_CORE}
+  In-world search of places, land for sale, events and classifieds, with a
+  web search engine. Installed in
+  /usr/share/opensim-modules/${MODULES_CORE}/opensimsearch, not loaded until
+  enabled.
+homepage: https://github.com/kcozens/OpenSimSearch
+license: none stated upstream
+
+depends:
+  - opensim-${MODULES_CORE}
+
+contents:
+  - src: build/modules/opensimsearch
+    dst: /usr/share/opensim-modules/${MODULES_CORE}/opensimsearch
+    type: tree
