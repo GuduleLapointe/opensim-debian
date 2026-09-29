@@ -23,6 +23,7 @@ final class Releases
     {
         $home = getenv('HOME') ?: '';
         $this->coreRoots = $coreRoots ?? array_filter([
+            '/usr/share/opensim',
             '/usr/local/share/opensim',
             $home !== '' ? "$home/opensim/core" : null,
             dirname(__DIR__, 2) . '/core',
@@ -52,17 +53,18 @@ final class Releases
             $releases[] = [
                 'version' => $version,
                 'tarball' => self::URL . '/' . $tarball,
-                'installed' => $this->isInstalled($name),
+                'installed' => $this->isInstalled($name, $version),
             ];
         }
 
         return $releases;
     }
 
-    private function isInstalled(string $name): bool
+    /** Cores are named opensim-<version> (bundled, flat) or <version> (system, packages). */
+    private function isInstalled(string $name, string $version): bool
     {
         foreach ($this->coreRoots as $root) {
-            if (is_file("$root/$name/bin/OpenSim.exe")) {
+            if (is_file("$root/$name/bin/OpenSim.exe") || is_file("$root/$version/bin/OpenSim.exe")) {
                 return true;
             }
         }

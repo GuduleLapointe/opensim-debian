@@ -57,7 +57,8 @@ final class Config
         $data = parse_ini_file($path, true, INI_SCANNER_RAW) ?: [];
         $mirror = $data[$name] ?? ($data['Defaults'] ?? []);
         unset($mirror['DefaultProfile']);
-        $data['Defaults'] = ['DefaultProfile' => $name] + $mirror;
+        // Settings of [Defaults] that profiles don't hold (e.g. SystemUser) are kept
+        $data['Defaults'] = ['DefaultProfile' => $name] + $mirror + ($data['Defaults'] ?? []);
 
         $this->save($path, $data);
     }
@@ -110,8 +111,9 @@ final class Config
         $current = $data['Defaults']['DefaultProfile'] ?? null;
 
         if ($plan->makeDefault || $current === null) {
-            // [Defaults] = pointer + a mirror of this profile's values.
-            $data['Defaults'] = ['DefaultProfile' => $plan->profile] + $profile;
+            // [Defaults] = pointer + a mirror of this profile's values, keeping
+            // the settings profiles don't hold (e.g. SystemUser).
+            $data['Defaults'] = ['DefaultProfile' => $plan->profile] + $profile + ($data['Defaults'] ?? []);
         } else {
             // Keep the existing default; just ensure the pointer stays first.
             $data['Defaults'] = ['DefaultProfile' => $current] + ($data['Defaults'] ?? []);

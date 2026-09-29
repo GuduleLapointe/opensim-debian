@@ -76,7 +76,9 @@ final class Installer
         $plan->logsRoot = $ui->text('Logs directory', $plan->logsRoot, $absolute);
         $plan->cacheRoot = $ui->text('Cache directory', $plan->cacheRoot, $absolute);
         $plan->dataRoot = $ui->text('Data directory', $plan->dataRoot, $absolute);
-        $plan->sourcesDirectory = $ui->text('Sources directory', "$root/src", $absolute);
+        // Downloads go next to a git checkout, in the cache for a packaged kit
+        $sources = file_exists("$root/.git") ? "$root/src" : "{$plan->cacheRoot}/src";
+        $plan->sourcesDirectory = $ui->text('Sources directory', $sources, $absolute);
 
         // --- Profile name + default ---
         $plan->profile = $ui->text(
@@ -105,8 +107,11 @@ final class Installer
 
         (new Packages($ui))->ensure('screen', 'screen'); // needed to run instances later
 
-        $ui->note('Updating git submodules…');
-        System::run('git -C ' . System::arg($root) . ' submodule update --init');
+        // A packaged kit ships its submodules
+        if (file_exists("$root/.git")) {
+            $ui->note('Updating git submodules…');
+            System::run('git -C ' . System::arg($root) . ' submodule update --init');
+        }
 
         $user = getenv('USER') ?: get_current_user();
         $dirs = [

@@ -40,8 +40,9 @@ final class Layout
 
         switch ($plan->layout) {
             case 'system':
+                // Named like the packaged cores (/usr/share/opensim/<version>)
                 $plan->coreRoot = '/usr/local/share/opensim';
-                $plan->coreDirectory = "{$plan->coreRoot}/opensim-$v";
+                $plan->coreDirectory = "{$plan->coreRoot}/$v";
                 $plan->etcRoot = '/etc/opensim';
                 $plan->varRoot = '/var/lib/opensim';
                 $plan->logsRoot = '/var/log/opensim';

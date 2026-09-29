@@ -215,7 +215,7 @@ final class NewGrid
         // Core selection (multi-version aware).
         $coreRoot = $profile['CoreRoot'] ?? '';
         $cores = [];
-        foreach (glob("$coreRoot/opensim-*/bin/OpenSim.exe") ?: [] as $exe) {
+        foreach (glob("$coreRoot/*/bin/OpenSim.exe") ?: [] as $exe) {
             $dir = dirname($exe, 2);
             $cores[$dir] = basename($dir);
         }

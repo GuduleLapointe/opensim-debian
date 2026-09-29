@@ -32,15 +32,26 @@ final class Distribution
             }
         }
 
+        // The tarball holds a single opensim-<version> folder: its content goes
+        // straight into the chosen core directory, whatever its name. As root,
+        // tar would keep the numeric owners of the tarball.
         $code = $this->ui->spin(
             static fn (): int => System::run(
-                'tar xzf ' . System::arg($tarball) . ' -C ' . System::arg($plan->coreRoot)
+                'tar xzf ' . System::arg($tarball) . ' --no-same-owner --strip-components=1 -C ' . System::arg($plan->coreDirectory)
             ),
             'Extracting ' . basename($tarball) . ' …'
         );
         if ($code !== 0) {
             $this->ui->error('Extraction failed.');
             exit(1);
+        }
+
+        // On start, OpenSim puts its System.Drawing.Common.dll for Linux and
+        // macOS in place when the one there differs: done now, so that a core
+        // the instances cannot write to (e.g. owned by root) still starts.
+        $dll = "{$plan->coreDirectory}/bin/System.Drawing.Common.dll";
+        if (is_file("$dll.linux")) {
+            copy("$dll.linux", $dll);
         }
     }
 }
