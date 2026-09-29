@@ -19,8 +19,11 @@ description: |-
 homepage: https://github.com/gloebit/opensim-moneymodule-gloebit
 license: LGPL-3.0-or-later
 
-# No dependency on the core package: a build of the same OpenSimulator
-# version made elsewhere can use the module
+# Its data is kept in the database of the region: MySQL/MariaDB or PostgreSQL,
+# not SQLite. No dependency on the core package: a build of the same
+# OpenSimulator version made elsewhere can use the module
+depends:
+  - default-mysql-server | virtual-mysql-server | postgresql
 suggests:
   - opensim-${MODULES_CORE}
 

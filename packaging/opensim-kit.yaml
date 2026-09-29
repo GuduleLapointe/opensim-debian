@@ -10,14 +10,18 @@ priority: optional
 maintainer: Gudule Lapointe <gudule@speculoos.world>
 description: |-
   OpenSimulator with its installation and management tools
-  Installs the OpenSim tools, the latest OpenSimulator release, its modules
-  and a database server, ready to create and run grids and regions.
+  Installs the OpenSim tools, the latest OpenSimulator release, its
+  essential modules and a database server, ready to create and run grids
+  and regions.
 homepage: https://github.com/GuduleLapointe/opensim-debian
 license: AGPL-3.0-or-later
 
 depends:
   - opensim
-  - opensim-modules
+  # The handful of essential modules, for the latest release; the others are
+  # in the repository, not installed automatically
+  - opensim-${OPENSIM_VERSION}-opensimsearch
+  - opensim-${OPENSIM_VERSION}-gloebit
   - opensim-tools (= ${DEB_VERSION})
   # OpenSim cannot run without a database: everything on this machine
   - default-mysql-server | virtual-mysql-server

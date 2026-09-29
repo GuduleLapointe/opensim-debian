@@ -20,8 +20,9 @@ description: |-
 homepage: https://github.com/kcozens/OpenSimSearch
 license: none stated upstream
 
-# No dependency on the core package: a build of the same OpenSimulator
-# version made elsewhere can use the module
+# The module keeps nothing in a database: it queries a search web service
+# (its web part is another package). No dependency on the core package: a
+# build of the same OpenSimulator version made elsewhere can use the module
 suggests:
   - opensim-${MODULES_CORE}
 
