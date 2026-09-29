@@ -5,7 +5,8 @@ PGM=${PGM:-$(basename "$0")}
 PGM=$(echo "$PGM" | sed -E "s/\.[a-z]+$//")
 PKG="opensim-helpers"
 CONF="${CONF:-opensim.conf}"
-TMP=${TMP:-$(mktemp -t $PGM || echo /tmp/$PGM.$$)}
+# A template with X's works with both GNU and BSD mktemp
+TMP=${TMP:-$(mktemp "${TMPDIR:-/tmp}/$PGM.XXXXXX" 2>/dev/null || echo /tmp/$PGM.$$)}
 DEBUG=${DEBUG:-}
 
 if ! which realpath >/dev/null; then
