@@ -109,7 +109,7 @@ shift $(expr $OPTIND - 1)
 startSim() {
 	unset IFS
 	for arg in $@; do
-		unset ConsoleUser ConsolePass ConsolePort console_port
+		unset ConsoleUser ConsolePass ConsolePort console_port LogsDirectory
 		ls -d "$arg" 2>/dev/null | grep -q "\.ini$" &&
 			{
 				inifile=$arg
@@ -200,9 +200,12 @@ startSim() {
 
 		Include_Common=$(crudget $inifile Includes Include-Common 2>/dev/null)
 		# crudini --get $inifile Includes Include-Common
-		LogsRoot=$(crudget $Include_Common Const LogsRoot | sed -e "s#\${Launch|SimName}#$instance#g" -e "s#\${Launch|MachineName}#$instance#g")
+		CommonLogsRoot=$(crudget $Include_Common Const LogsRoot | sed -e "s#\${Launch|SimName}#$instance#g" -e "s#\${Launch|MachineName}#$instance#g")
+		# Logs: LogsDirectory of the instance ([Const], from the grid wizard),
+		# else LogsRoot of its common include, else the install's
+		InstanceLogsRoot=${LogsDirectory:-${CommonLogsRoot:-$LogsRoot}}
 
-		LogFile=${LogFile:-$LogsRoot/$instance.log}
+		LogFile=${LogFile:-$InstanceLogsRoot/$instance.log}
 
 		ConsolePrompt=${consoleprompt:-${ConsolePrompt}}
 
@@ -215,7 +218,7 @@ startSim() {
 		fi
 		#		LogConfig=${inifile/.ini/.LogConfig}
 
-		log "LogsRoot $LogsRoot"
+		log "LogsRoot $InstanceLogsRoot"
 
 		LogConfig=${logconfig:-${LogConfig}}
 		DataRoot=${datadirectory:-${DataRoot}}
@@ -223,8 +226,8 @@ startSim() {
 		log "LogConfig $LogConfig"
 		log Executable $Executable
 		if [ ! -f "$LogConfig" ]; then
-			sed -e "s|[a-zA-Z0-9\./_-]*/*$ExecName.log|$LogsRoot/$instance.log|" \
-				-e "s|[a-zA-Z0-9\./_-]*/*${ExecName}Stats.log|$LogsRoot/${instance}.Stats.log|" \
+			sed -e "s|[a-zA-Z0-9\./_-]*/*$ExecName.log|$InstanceLogsRoot/$instance.log|" \
+				-e "s|[a-zA-Z0-9\./_-]*/*${ExecName}Stats.log|$InstanceLogsRoot/${instance}.Stats.log|" \
 				$BinDirectory/$ExecName.exe.config >$TMP.logconfig &&
 				mv $TMP.logconfig "$LogConfig" &&
 				log created LogConfig file $LogConfig from core model $BinDirectory/$ExecName.exe.config ||
