@@ -215,10 +215,13 @@ final class NewGrid
         // Core selection (multi-version aware).
         $coreRoot = $profile['CoreRoot'] ?? '';
         $cores = [];
-        foreach (glob("$coreRoot/*/bin/OpenSim.exe") ?: [] as $exe) {
-            $dir = dirname($exe, 2);
+        // OpenSim.exe in the releases, only OpenSim.dll in builds made on Linux
+        $assemblies = array_merge(glob("$coreRoot/*/bin/OpenSim.exe") ?: [], glob("$coreRoot/*/bin/OpenSim.dll") ?: []);
+        foreach ($assemblies as $assembly) {
+            $dir = dirname($assembly, 2);
             $cores[$dir] = basename($dir);
         }
+        ksort($cores, SORT_NATURAL);
         if ($cores === []) {
             $this->ui->error("No OpenSim core found under $coreRoot.");
 

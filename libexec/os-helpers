@@ -471,16 +471,29 @@ fi
 # Deprecated, use CoreDirectory/bin instead
 BinDirectory=${BinDirectory:-$CoreDirectory/bin}
 
+# The main assembly of a core folder: OpenSim.exe (Mono, release tarballs) or
+# OpenSim.dll (.NET builds made on Linux have no .exe)
+osMainAssembly() {
+	ls "$1"/bin/OpenSim.exe "$1"/bin/OpenSim.dll 2>/dev/null | head -1
+}
+
+# Core folders under $1, releases by version first, then the others (e.g.
+# unstable)
+osCores() {
+	ls -d "$1"/*/bin/OpenSim.exe "$1"/*/bin/OpenSim.dll 2>/dev/null |
+		sed 's:/bin/OpenSim\.[a-z]*$::' | sort -uV |
+		awk '/[0-9]+(\.[0-9]+)+$/ { print; next } { others = others $0 "\n" } END { printf "%s", others }'
+}
+
 # Find Core best candidate
-if [ -n "$CoreDirectory" -a -e "$CoreDirectory/bin/OpenSim.exe" ]; then
-	OpenSimExe="$CoreDirectory/bin/OpenSim.exe"
-	debug "Found OpenSim.exe in CoreDirectory $OpenSimExe"
+if [ -n "$CoreDirectory" ] && [ -n "$(osMainAssembly "$CoreDirectory")" ]; then
+	OpenSimExe=$(osMainAssembly "$CoreDirectory")
+	debug "Found $OpenSimExe in CoreDirectory"
 else
-	debug "Looking for OpenSipm.exe"
-	OpenSimExe=$(ls \
-		$CoreRoot/*/bin/OpenSim.exe \
-		2>/dev/null | tail -1)
-	# $BinDirectory/bin/OpenSim.exe \
+	debug "Looking for the latest core"
+	latestCore=$(osCores "$CoreRoot" | grep -E '[0-9]+(\.[0-9]+)+$' | tail -1)
+	latestCore=${latestCore:-$(osCores "$CoreRoot" | tail -1)}
+	OpenSimExe=$([ -n "$latestCore" ] && osMainAssembly "$latestCore")
 	if [ -n "$OpenSimExe" -a -e "$OpenSimExe" ]; then
 		debug "Found OpenSimExe $OpenSimExe"
 		BinDirectory=$(dirname "$OpenSimExe")

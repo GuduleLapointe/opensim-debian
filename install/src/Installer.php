@@ -128,8 +128,8 @@ final class Installer
         (new Distribution($ui))->fetchAndExtract($plan);
         (new Runtime($ui))->install($plan);
 
-        if (!is_file("{$plan->coreDirectory}/bin/OpenSim.exe")) {
-            $ui->error("Core not found after install: {$plan->coreDirectory}/bin/OpenSim.exe");
+        if (!is_file("{$plan->coreDirectory}/bin/OpenSim.exe") && !is_file("{$plan->coreDirectory}/bin/OpenSim.dll")) {
+            $ui->error("Core not found after install: {$plan->coreDirectory}/bin/OpenSim.dll");
 
             return;
         }
