@@ -23,3 +23,8 @@
 [submodule "contrib/OpenSimSearch"]
 	path = contrib/OpenSimSearch/src
 	url = https://github.com/kcozens/OpenSimSearch
+[submodule "upstream/opensim"]
+	path = upstream/opensim
+	url = https://github.com/opensim/opensim.git
+	branch = master
+	shallow = true
