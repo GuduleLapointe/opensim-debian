@@ -15,7 +15,11 @@ The packages are built with [nfpm](https://nfpm.goreleaser.com) and published to
 
 The tools and the releases install without each other. `opensim-tools` adds an install profile for each release in `/usr/share/opensim`, and removes it with the release, through a dpkg trigger.
 
-The modules are installed in their own folders, as some fail when loaded without their config: enabling them is up to the admin.
+The modules are installed in their own folders, as some fail when loaded without their config: installing one does not enable it. They only suggest their core, so a build made elsewhere can use them and removing a core keeps them. The `opensim-modules` metapackage installs the modules of the latest release, and `opensim-kit` installs it. Third-party terms are in `contrib/README.md` and in the `copyright` file of each module package (OpenSimSearch states no license, and is not covered by the license of this project).
+
+Removing `opensim-<version>` or `opensim-unstable` stops the instances running from that core only, found by the full path of their assembly in the process list: instances of another release or of a build installed elsewhere are left alone. Nothing in an OpenSim instance needs a clean shutdown, its state is in the database, so a plain stop is enough.
+
+The version of the tools and of the metapackages comes from the last version tag: `3.0.0-dev` until the `3.0.0` release, which sorts after it.
 
 ## Building and publishing
 

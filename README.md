@@ -57,7 +57,12 @@ sudo apt install opensim-kit
 - `opensim-tools`: the tools, in `/usr/share/opensim-tools`, and the `opensim` command. They work with the packaged OpenSimulator releases or any other one.
 - `opensim-<version>`, e.g. `opensim-0.9.3.0`: an OpenSimulator release, in `/usr/share/opensim/<version>`. Several releases can be installed side by side, with or without the tools.
 - `opensim`: the latest release
-- `opensim-kit`: the tools and the latest release
+- `opensim-<version>-<module>`, e.g. `opensim-0.9.3.0-gloebit`, `opensim-0.9.3.0-opensimsearch`: a module for a release. Installing it does not enable it. It works with any build of the same version.
+- `opensim-modules`: the modules of the latest release
+- `opensim-unstable`: OpenSimulator built from the development branch, in `/usr/share/opensim/unstable`
+- `opensim-kit`: the tools, the latest release, its modules and a database server
+
+OpenSimulator cannot run without a database: MySQL or MariaDB, on this machine (`opensim-kit` installs the server) or another one. The setup checks it can connect before writing anything, and stops when it cannot.
 
 The files are at the usual places: config in `/etc/opensim`, data in `/var/lib/opensim`, logs in `/var/log/opensim`, cache in `/var/cache/opensim`. The instances run as the `opensim` account: the `opensim` command switches to it, through sudo.
 
