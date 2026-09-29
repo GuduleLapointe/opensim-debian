@@ -121,9 +121,11 @@ shift $(expr $OPTIND - 1)
 startSim() {
 	# Only starting needs a core: stop and status work without one
 	[ -z "$OpenSimExe" ] && end 2 "could not find OpenSim.exe"
+	ProfileBinDirectory=$BinDirectory
 	unset IFS
 	for arg in $@; do
-		unset ConsoleUser ConsolePass ConsolePort console_port LogsDirectory
+		unset ConsoleUser ConsolePass ConsolePort console_port LogsDirectory EtcDirectory \
+			BinDirectory BinDir LogConfig logconfig LogFile
 		ls -d "$arg" 2>/dev/null | grep -q "\.ini$" &&
 			{
 				inifile=$arg
@@ -168,7 +170,6 @@ startSim() {
 		# #2>/dev/null || continue
 		# log reading section Launch
 		crudget $inifile Const 2>/dev/null || end $? "error reading launch section"
-		crudini --get $TMP.get Const BinDirectory
 		crudget $inifile Launch 2>/dev/null || end $? "error $? reading section Launch"
 		crudget $inifile Startup 2>/dev/null || end $? "error $? reading section Launch"
 
@@ -176,9 +177,17 @@ startSim() {
 		[ "$ConsolePort" = "0" ] && ConsolePort=""
 		[ "$console_port" = "0" ] && console_port=""
 
-		# Catch deprecated BinDir configuration
+		# Core: BinDirectory of the instance config (BinDir, deprecated), else
+		# the core chosen for its grid (<nick>.conf of the grid folder, where
+		# the enabled config links to), else the one of the install profile
 		BinDirectory=${BinDirectory:-$BinDir}
-		BinDirectory=${BinDirectory:-$CoreDirectory/bin}
+		if [ -z "$BinDirectory" ]; then
+			griddir=$(dirname "$(readlink -f "$inifile")")
+			gridconf="$griddir/$(basename "$griddir").conf"
+			[ -f "$gridconf" ] && GridCore=$(crudget "$gridconf" Grid CoreDirectory) || GridCore=
+			BinDirectory=${GridCore:+$GridCore/bin}
+		fi
+		BinDirectory=${BinDirectory:-$ProfileBinDirectory}
 
 		[ -z "$BinDirectory" ] && end 1 "Could not find a valid BinDirectory"
 		log "BinDirectory: $BinDirectory"
@@ -220,21 +229,13 @@ startSim() {
 		InstanceLogsRoot=${LogsDirectory:-${CommonLogsRoot:-$LogsRoot}}
 
 		LogFile=${LogFile:-$InstanceLogsRoot/$instance.log}
-
-		ConsolePrompt=${consoleprompt:-${ConsolePrompt}}
-
-		cmd="$runtime${runtime_opts:+ $runtime_opts} $Executable -inifile='$inifile'"
-		if [ "${Executable%.*}" = "Robust" ]; then
-			[ ! "$ConsolePrompt" ] && ConsolePrompt="Robust ($instance) "
-			cmd="$cmd -logfile='$LogFile' -prompt '$ConsolePrompt'"
-		else
-			[ ! "$ConsolePrompt" ] && ConsolePrompt="$instance (\R) "
-		fi
-		#		LogConfig=${inifile/.ini/.LogConfig}
-
 		log "LogsRoot $InstanceLogsRoot"
 
+		# Log config: from the instance config, else the one the grid wizard
+		# writes next to it, else one made from the core's model
 		LogConfig=${logconfig:-${LogConfig}}
+		[ -z "$LogConfig" ] && [ -f "$EtcDirectory/$ExecName.exe.config" ] &&
+			LogConfig="$EtcDirectory/$ExecName.exe.config"
 		DataRoot=${datadirectory:-${DataRoot}}
 		[ ! "$LogConfig" ] && LogConfig="$DataRoot/$(basename "$inifile" .ini).LogConfig"
 		log "LogConfig $LogConfig"
@@ -249,12 +250,23 @@ startSim() {
 			# cd /opt/opensim/var/data/config
 			# ln -s $LogConfig 2>/dev/null
 		fi
-
+		# The log file is the one of the log config
 		if [ -f "$LogConfig" ]; then
-			cmd="$cmd -logconfig='$LogConfig'"
-			LogFile=$(egrep "LogFileAppender|<file" $LogConfig | grep -A1 "LogFileAppender" | head -2 | tail -1 | cut -d '"' -f 2)
+			ConfigLogFile=$(egrep "LogFileAppender|<file" $LogConfig | grep -A1 "LogFileAppender" | head -2 | tail -1 | cut -d '"' -f 2)
+			LogFile=${ConfigLogFile:-$LogFile}
 			touch "$LogFile" && log "LogFile $LogFile touched"
 		fi
+
+		ConsolePrompt=${consoleprompt:-${ConsolePrompt}}
+
+		cmd="$runtime${runtime_opts:+ $runtime_opts} $Executable -inifile='$inifile'"
+		if [ "${Executable%.*}" = "Robust" ]; then
+			[ ! "$ConsolePrompt" ] && ConsolePrompt="Robust ($instance) "
+			cmd="$cmd -logfile='$LogFile' -prompt '$ConsolePrompt'"
+		else
+			[ ! "$ConsolePrompt" ] && ConsolePrompt="$instance (\R) "
+		fi
+		[ -f "$LogConfig" ] && cmd="$cmd -logconfig='$LogConfig'"
 
 		ConsoleUser=${ConsoleUser:-${consoleuser}}
 		ConsolePass=${ConsolePass:-${consolepass}}
