@@ -62,13 +62,18 @@ check "grid enabled" "[ -L /etc/opensim/robust.d/testgrid.ini ]"
 # A database that cannot be used stops the setup before anything is written:
 # as opensim, who has no administrator access to the database server
 wizard() { # grid, password, [user]
-    (cd /var/lib/opensim && TEST_GRID=$1 TEST_DB_PASSWORD=$2 TEST_NO_ENABLE=1 runuser -u "${3:-opensim}" -- php /test/newgrid.php 2>&1)
+    (cd /var/lib/opensim && TEST_GRID=$1 TEST_DB_PASSWORD=$2 TEST_NO_ENABLE=1 TEST_REPEAT=${TEST_REPEAT:-1} runuser -u "${3:-opensim}" -- php /test/newgrid.php 2>&1)
 }
 wizard Badgrid wrong >/tmp/badgrid.out
 check "wrong password: setup stops, nothing written" "grep -q 'cannot run without its database' /tmp/badgrid.out && [ ! -e /etc/opensim/grids/badgrid ]"
 wizard Missinggrid testpass >/tmp/missing.out
 check "existing account, missing database: says so, stops" "grep -q 'no access to database missinggrid_robust' /tmp/missing.out &&
     grep -q 'CREATE DATABASE' /tmp/missing.out && [ ! -e /etc/opensim/grids/missinggrid ]"
+
+# The password of an account, generated once, is proposed again in the same session
+TEST_REPEAT=2 wizard Repeatgrid "" >/tmp/repeat.out
+check "the generated password is kept for the session" "[ \"\$(grep -a 'Database password ->' /tmp/repeat.out | sort -u | wc -l)\" = 1 ] &&
+    [ \"\$(grep -ac 'Database password ->' /tmp/repeat.out)\" = 2 ]"
 
 # As root, the administrator of the database: what is missing is created, and
 # what the setup writes belongs to opensim

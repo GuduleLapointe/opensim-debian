@@ -301,7 +301,11 @@ final class NewGrid
         $plan->dbHost = $this->ui->text('Database host', $defaults['dbHost'], $required);
         $plan->dbName = $this->ui->text('Database name', $defaults['dbName'], $required);
         $plan->dbUser = $this->ui->text('Database user', $defaults['dbUser'], $required);
-        $plan->dbPass = $this->ui->text('Database password', $defaults['dbPass'], $required);
+        // An account keeps its password for the whole session, entered or
+        // generated once: an attempt started again proposes the same one
+        $password = Database::recall($plan->dbHost, $plan->dbUser) ?? $defaults['dbPass'];
+        $plan->dbPass = $this->ui->text('Database password', $password, $required);
+        Database::remember($plan->dbHost, $plan->dbUser, $plan->dbPass);
     }
 
     /** Existing Robust config for a grid (HG preferred), or null. */

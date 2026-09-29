@@ -20,8 +20,23 @@ use OpenSim\Installer\Ui\InstallerUi;
  */
 final class Database
 {
+    /** @var array<string,string> passwords entered or generated during this session, by account */
+    private static array $passwords = [];
+
     public function __construct(private InstallerUi $ui)
     {
+    }
+
+    /** Keep the password of an account for the rest of the session. */
+    public static function remember(string $host, string $user, string $password): void
+    {
+        self::$passwords["$user@$host"] = $password;
+    }
+
+    /** The password entered or generated earlier in this session for this account, if any. */
+    public static function recall(string $host, string $user): ?string
+    {
+        return self::$passwords["$user@$host"] ?? null;
     }
 
     /** True when the database can be used, false (with the reason shown) when the setup must stop. */
