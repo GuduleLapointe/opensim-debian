@@ -265,7 +265,8 @@ startSim() {
 
 		ConsolePrompt=${consoleprompt:-${ConsolePrompt}}
 
-		cmd="$runtime${runtime_opts:+ $runtime_opts} $Executable -inifile='$inifile'"
+		# The assembly by its full path: the packages find the instances of a core by it
+		cmd="$runtime${runtime_opts:+ $runtime_opts} $PWD/$Executable -inifile='$inifile'"
 		if [ "${Executable%.*}" = "Robust" ]; then
 			[ ! "$ConsolePrompt" ] && ConsolePrompt="Robust ($instance) "
 			cmd="$cmd -logfile='$LogFile' -prompt '$ConsolePrompt'"
