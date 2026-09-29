@@ -15,6 +15,12 @@ DEBUG=${DEBUG:-}
 
 BASEDIR=$(cd $(dirname "$0")/.. && pwd)
 
+# Run as the caller, root for the whole system
+if [ "${1:-}" = "install-dotnet" ]; then
+	shift
+	exec "$BASEDIR/libexec/install-dotnet" "$@"
+fi
+
 . $BASEDIR/libexec/os-helpers || exit 1
 trap 'rm -f $TMP*' EXIT
 
@@ -27,6 +33,11 @@ if [ -n "$SystemUser" ] && [ "$(id -un)" != "$SystemUser" ]; then
 		exec runuser -u "$SystemUser" -- "$0" "$@"
 	fi
 	exec sudo -H -u "$SystemUser" "$0" "$@"
+fi
+
+# The setup wizard, as the system user too: the files of the grids belong to it
+if [ "${1:-}" = "setup" ]; then
+	exec php "$BASEDIR/install/install.php"
 fi
 
 source $BASEDIR/libexec/venv-setup || end $? "Could not setup python venv"
@@ -51,6 +62,8 @@ log "LogsRoot: $LogsRoot"
 HELP="
 $PGM <start|stop [now]|restart [now]> [instance1] [instance2] [...]
 $PGM status
+$PGM setup           create or modify grids (setup wizard)
+$PGM install-dotnet  install the .NET runtime OpenSim needs (as root)
 
 	-h display this help
 	-v verbose mode
