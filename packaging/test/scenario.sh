@@ -218,6 +218,14 @@ sim=$(sim_pid)
     echo "exit code: $?" >>/tmp/region2.out)
 check "a region is added to the running simulator, and online" "grep -q 'exit code: 0' /tmp/region2.out && grep -q 'Region Sim1North is online' /tmp/region2.out &&
     [ \"\$(mysql -BN -e \"SELECT CONCAT(locX DIV 256, ',', locY DIV 256) FROM testgrid_robust.regions WHERE regionName='Sim1North'\")\" = 1001,1000 ] && [ '$(sim_pid)' = '$sim' ]"
+# The ports of an instance are a block of ten, the same on any machine: Robust
+# 8002 public and 8003 private; the first simulator 8012 public, 8014 for its
+# console (kept, not enabled), its regions from 8015, in UDP
+opensim ports >/tmp/ports.out 2>&1
+check "opensim ports tells what to open, by block of ten, the regions in UDP" "grep -qE '8002 +tcp +public' /tmp/ports.out && grep -qE '8003 +tcp +private' /tmp/ports.out &&
+    grep -qE '8012 +tcp +public' /tmp/ports.out && grep -qE '8014 +tcp +off' /tmp/ports.out &&
+    grep -qE '8015 +udp +public' /tmp/ports.out && grep -qE '8016 +udp +public' /tmp/ports.out"
+check "the private port is published to the local machine only" "opensim ports --publish | grep -q -- '-p 127.0.0.1:8003:8003' && opensim ports --publish | grep -q -- '-p 8015:8015/udp'"
 check "a command reaches the console of a running instance" "opensim command testgrid_sim1 'show info' && sleep 1 &&
     runuser -u opensim -- screen -S testgrid_sim1 -X hardcopy /tmp/console.txt && grep -aq 'Version: OpenSim' /tmp/console.txt"
 check "a command to an instance that does not run fails" "! opensim command nosuchinstance 'show info' >/dev/null 2>&1"

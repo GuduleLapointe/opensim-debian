@@ -297,8 +297,11 @@ final class NewGrid
 
         $defaultHost = $current['baseHostname'] ?? (trim(System::capture('hostname -f')[1]) ?: 'localhost');
         $plan->baseHostname = $this->ui->text('Base hostname', $defaultHost, $required);
-        $plan->publicPort = (int) $this->ui->text('Public port', (string) ($current['publicPort'] ?? Ports::next(8002)), $numeric);
-        $plan->privatePort = (int) $this->ui->text('Private port', (string) ($current['privatePort'] ?? Ports::next($plan->publicPort + 1)), $numeric);
+        // The ports of an instance are a block of ten, the first free one (see Ports):
+        // public ends with 2, private with 3, the console with 4
+        $block = Ports::nextBlock(8000);
+        $plan->publicPort = (int) $this->ui->text('Public port', (string) ($current['publicPort'] ?? $block + 2), $numeric);
+        $plan->privatePort = (int) $this->ui->text('Private port', (string) ($current['privatePort'] ?? ($plan->publicPort % 10 === 2 ? $plan->publicPort + 1 : Ports::next($plan->publicPort + 1))), $numeric);
         $plan->webUrl = $this->ui->text('Web URL', $current['webUrl'] ?? "https://{$plan->baseHostname}", $required);
 
         // Database: reuse a found password, otherwise generate one (never changeme).

@@ -386,11 +386,14 @@ final class NewSim
         }
         $plan->coreDirectory = $this->ui->choose('OpenSim core to run this simulator', $cores, $grid->coreDirectory !== '' ? $grid->coreDirectory : null);
 
-        $plan->httpPort = (int) $this->ui->text(
-            'Simulator HTTP port',
-            (string) ($current['httpPort'] ?? Ports::next(intdiv($grid->privatePort, 10) * 10 + 10)),
-            $numeric,
-        );
+        // The ports of a simulator are a block of ten, the first free one, on this
+        // machine and among the regions the grid knows on the others: the public
+        // port ends with 2, the console with 4, the regions come after
+        $foreign = (new GridRegistry($database))->ports($grid) ?? [];
+        $block = Ports::nextBlock(intdiv($grid->privatePort, 10) * 10 + 10, $foreign);
+        $plan->httpPort = (int) $this->ui->text('Simulator HTTP port', (string) ($current['httpPort'] ?? $block + 2), $numeric);
+        $base = $plan->httpPort % 10 === 2 ? intdiv($plan->httpPort, 10) * 10 : 0;
+        $plan->consolePort = $base > 0 ? $base + 4 : 0;
 
         // Its own database: the account of the grid, a database of its own
         $this->askDatabase($plan, $grid, [
@@ -486,31 +489,23 @@ final class NewSim
 
         $plan->regionName = trim($this->ui->text('Region name', $plan->simName, $name));
         $plan->regionUuid = self::uuid();
-        $plan->regionLocation = str_replace(' ', '', $this->ui->text('Region location (x,y)', $this->nextLocation($grid, $database), $location));
-        $plan->regionPort = (int) $this->ui->text('Region port', (string) Ports::next($plan->httpPort + 1, [$plan->httpPort]), $numeric);
+        $plan->regionLocation = str_replace(' ', '', $this->ui->text('Region location (x,y)', (new GridRegistry($database))->nextLocation($grid), $location));
+        $plan->regionPort = (int) $this->ui->text('Region port', (string) $this->nextRegionPort($plan, $grid, $database), $numeric);
     }
 
-    /** The first location, from 1000,1000, that no region of the grid holds. */
-    private function nextLocation(GridInfo $grid, Database $database): string
+    /** The port of a region: the next one of the block of its simulator (x5 to x9, then x3), else the next free one. */
+    private function nextRegionPort(SimPlan $plan, GridInfo $grid, Database $database): int
     {
-        $used = [];
-        $rows = $database->select($grid->databasePlan(), "SELECT CONCAT(locX DIV 256, ',', locY DIV 256) FROM regions");
-        foreach ($rows ?? [] as $row) {
-            $used[trim($row)] = true;
-        }
-        foreach (glob("{$grid->dir}/sims/*/regions/*.ini") ?: [] as $file) {
-            if (preg_match_all('/^\s*Location\s*=\s*(\d+)\s*,\s*(\d+)/m', (string) file_get_contents($file), $m, PREG_SET_ORDER)) {
-                foreach ($m as $match) {
-                    $used["{$match[1]},{$match[2]}"] = true;
-                }
-            }
+        $taken = array_merge((new GridRegistry($database))->ports($grid) ?? [], [$plan->httpPort]);
+        $base = $plan->httpPort % 10 === 2 ? intdiv($plan->httpPort, 10) * 10 : 0;
+
+        // x5 to x9, then the spare x3 (a simulator has no private port of its own)
+        $port = $base > 0 ? Ports::inBlock($base, 5, $taken) : null;
+        if ($port === null && $base > 0 && Ports::isFree($base + 3, $taken)) {
+            $port = $base + 3;
         }
 
-        for ($x = 1000; ; $x++) {
-            if (!isset($used["$x,1000"])) {
-                return "$x,1000";
-            }
-        }
+        return $port ?? Ports::next($plan->httpPort + 1, $taken);
     }
 
     /** A random UUID (version 4). */

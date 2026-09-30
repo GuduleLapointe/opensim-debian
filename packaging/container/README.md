@@ -23,9 +23,18 @@ podman run -d --name db --network opensim -e MARIADB_ROOT_PASSWORD=<root passwor
 
 podman run -d --name opensim --network opensim --stop-timeout 120 \
     -v opensim-etc:/etc/opensim -v opensim-data:/var/lib/opensim -v opensim-logs:/var/log/opensim \
-    -p 8002:8002 -p 9000-9099:9000-9099 -p 9000-9099:9000-9099/udp \
+    $(opensim ports --publish) \
     opensim-kit:dev
 ```
+
+`opensim ports --publish`, run on the machine that holds the config, gives the
+`-p` options for exactly the ports the instances use: the public ports, the
+regions in UDP (the viewers send to them, and the number is the one they are
+given, so it is the same outside), and the private and console ports only to the
+local machine (`--private-address=` to change it). From inside the container:
+`podman exec opensim opensim ports --publish`. A simulator of this container can
+reach a Robust elsewhere, and a Robust here serves simulators elsewhere, only when
+their ports are published to them.
 
 The container starts the enabled instances, shows their logs (`podman logs -f
 opensim`, each line with the name of its instance) and stops them cleanly when it

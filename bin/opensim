@@ -21,12 +21,22 @@ if [ "${1:-}" = "install-dotnet" ]; then
 	exec "$BASEDIR/libexec/install-dotnet" "$@"
 fi
 
+# The ports of the instances: read from their config, as the caller
+if [ "${1:-}" = "ports" ]; then
+	shift
+	exec php "$BASEDIR/libexec/ports.php" "$@"
+fi
+
 # Before the helpers, which answer -h
 USAGE="opensim [-hvq] <command> [instance...]"
 HELP="
 opensim <start|stop [now]|restart [now]> [instance1] [instance2] [...]
 opensim status
 opensim setup           create or modify grids and simulators (setup wizard)
+opensim ports [--publish|--ufw] [instance...]
+                        the ports the instances listen on, and who has to reach
+                        them; --publish gives the -p options of a container,
+                        --ufw the rules of the firewall
 opensim console|screen <instance>
                         attach to the console of a running instance (Ctrl-A D
                         leaves it running)
