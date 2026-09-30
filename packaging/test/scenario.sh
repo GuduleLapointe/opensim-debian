@@ -99,8 +99,19 @@ check "existing account, wrong password: not recreated, can be tried again" "gre
 useradd -m -s /bin/bash dbhelper
 mysql -e "CREATE USER dbhelper@localhost IDENTIFIED VIA unix_socket; GRANT SELECT ON mysql.* TO dbhelper@localhost"
 TEST_DB_USER=deniedgrid_user wizard Deniedgrid "" dbhelper >/tmp/denied.out
-check "a creation that fails ends the setup, with the commands" "grep -q 'Could not create the user' /tmp/denied.out &&
-    grep -q 'CREATE USER' /tmp/denied.out && ! grep -q 'Try again' /tmp/denied.out && [ ! -e /etc/opensim/grids/deniedgrid ]"
+check "a creation that fails ends the setup, with the commands and an error code" "grep -q 'Could not create the user' /tmp/denied.out &&
+    grep -q 'CREATE USER' /tmp/denied.out && ! grep -q 'Try again' /tmp/denied.out && grep -q 'setup failed' /tmp/denied.out &&
+    [ ! -e /etc/opensim/grids/deniedgrid ]"
+
+# The setup started as root, as on the packaged install, starts the grid and
+# sees it run (a screen session is per user, the setup is not the one running it)
+(cd /var/lib/opensim && TEST_GRID=Startgrid TEST_DB_PASSWORD= TEST_START=1 TEST_DB_USER=startuser php /test/newgrid.php >/tmp/startgrid.out 2>&1
+    echo "exit code: $?" >>/tmp/startgrid.out)
+check "the setup reports the grid it started as running, exit code 0" "grep -q \"Grid 'startgrid' is running\" /tmp/startgrid.out &&
+    grep -q 'exit code: 0' /tmp/startgrid.out && [ -n \"\$(robust_pid)\" ]"
+opensim stop now startgrid >/dev/null 2>&1
+check "the launcher fails for an instance that does not exist" "! opensim start nosuchinstance >/dev/null 2>&1"
+rm -rf /etc/opensim/grids/startgrid /etc/opensim/robust.d/startgrid.ini /var/lib/opensim/data/startgrid /var/cache/opensim/startgrid
 rm -rf /etc/opensim/grids/rootgrid /var/lib/opensim/data/rootgrid /var/cache/opensim/rootgrid \
     /etc/opensim/grids/grid2 /var/lib/opensim/data/grid2 /var/cache/opensim/grid2
 check "setup command" "opensim help | grep -q setup"

@@ -6,6 +6,7 @@ namespace OpenSim\Installer\Grid;
 
 use OpenSim\Installer\Config;
 use OpenSim\Installer\Ports;
+use OpenSim\Installer\SetupFailed;
 use OpenSim\Installer\System;
 use OpenSim\Installer\Ui\InstallerUi;
 
@@ -42,9 +43,9 @@ final class NewGrid
         $database = new Database($this->ui);
         while (($result = $database->ensure($plan)) !== Database::OK) {
             if ($result === Database::ABORT) {
-                $this->ui->note('Stopped, nothing was changed: OpenSim cannot run without its database.');
+                $this->ui->error('Stopped, nothing was changed: OpenSim cannot run without its database.');
 
-                return;
+                throw new SetupFailed('database');
             }
             if (!$this->ui->confirm('Try again (the database settings can be changed)?', true)) {
                 $this->ui->note('Stopped, nothing was changed: OpenSim cannot run without its database.');
@@ -120,41 +121,37 @@ final class NewGrid
         }
     }
 
-    /** Start the grid and report whether it actually came up (don't trust screen). */
+    /**
+     * Start the grid and report whether it came up, by the result of the
+     * launcher (a screen session is per user: the setup may not be the one
+     * running the instances). A grid that does not start ends the setup.
+     */
     private function startGrid(GridPlan $plan): void
     {
         $opensim = dirname(__DIR__, 3) . '/bin/opensim';
         $nick = $plan->gridNick;
 
-        System::run(System::arg($opensim) . ' restart ' . System::arg($nick));
-
-        // A successful start leaves the instance in a live (non-dead) screen
-        // session. This is reliable cross-platform, unlike `status` which relies
-        // on `ps -C` (GNU only, broken on macOS).
-        if ($this->screenAlive($nick)) {
+        [$code, $said] = System::runShown(System::arg($opensim) . ' restart ' . System::arg($nick));
+        // The launcher waits for the ready signal in the console. After its
+        // delay it says the instance is still starting, and succeeds: a
+        // healthy Robust is ready within a minute, so that is a failure too.
+        $pending = $code === 0 && str_contains($said, 'still starting');
+        if ($code === 0 && !$pending) {
             $this->ui->note("Grid '$nick' is running.");
 
             return;
         }
 
-        $this->ui->warn("Grid '$nick' did not start. Try: $opensim -v start $nick");
-        $log = $plan->logsDirectory . '/' . strtolower($nick) . '.log';
+        $this->ui->error($pending
+            ? "Grid '$nick' is configured but was not ready after two minutes. Try: $opensim -v start $nick"
+            : "Grid '$nick' is configured but did not start. Try: $opensim -v start $nick");
+        $log = $plan->logsDirectory . '/' . $plan->gridSlug . '_robust.log';
         if (is_file($log)) {
             $this->ui->note('Recent log:');
             System::run('tail -n 30 ' . System::arg($log));
         }
-    }
 
-    private function screenAlive(string $nick): bool
-    {
-        [, $screens] = System::capture('screen -ls');
-        foreach (explode("\n", $screens) as $line) {
-            if (preg_match('/\b\d+\.' . preg_quote(strtolower($nick), '/') . '\b/', $line) && stripos($line, 'Dead') === false) {
-                return true;
-            }
-        }
-
-        return false;
+        throw new SetupFailed("Grid '$nick' did not start.");
     }
 
     private function makeDirs(GridPlan $plan): void

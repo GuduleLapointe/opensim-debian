@@ -140,7 +140,7 @@ startSim() {
 				inifile=$(buildIni "$instance")
 			}
 
-		[ ! -e "$inifile" ] && continue
+		[ ! -e "$inifile" ] && { STARTFAILED=1; continue; }
 
 		instance=$(echo "$instance" | sed "s/[^a-zA-Z0-9_]*//g")
 
@@ -207,7 +207,7 @@ startSim() {
 
 		# Fail early with a clear message if the runtime is missing, rather
 		# than letting the instance crash on launch.
-		checkRuntimeAvailable "$runtime" "$Executable" || continue
+		checkRuntimeAvailable "$runtime" "$Executable" || { STARTFAILED=1; continue; }
 
 		# Regions load the modules enabled for the install from the addins
 		# folder of their registry (Robust has none of them to load)
@@ -300,11 +300,12 @@ startSim() {
 				log 1 "$instance failed to start: the process exited immediately"
 				[ -s "$startlog" ] && cat "$startlog" >&2
 				debug "Reproduce the command with: $PGM -v start $instance"
+				STARTFAILED=1
 				continue
 			fi
 
 			if [ "${Executable%.*}" = "Robust" ]; then
-				osConsoleWait $instance "UserAgentServerConnector loaded successfully"
+				osConsoleWait 120 $instance "UserAgentServerConnector loaded successfully"
 			else
 				osConsoleWait 5 $instance "RegionUUID" && osConsole $instance "\n"
 				osConsoleWait 1 $instance "Internal IP address" && osConsole $instance "\n"
@@ -322,6 +323,7 @@ startSim() {
 				log 1 "$instance exited while starting"
 				[ -s "$startlog" ] && tail -n 20 "$startlog" >&2
 				debug "Reproduce the command with: $PGM -v start $instance"
+				STARTFAILED=1
 				;;
 			*) log "$instance still starting, let it run and check status later" ;;
 			esac
@@ -344,8 +346,8 @@ stopSim() {
 				inifile=$(buildIni "$sim")
 			}
 
-		crudget $inifile Const || crudget $inifile const
-		crudget $inifile Launch || crudget $inifile launch
+		crudget $inifile Const 2>/dev/null || crudget $inifile const 2>/dev/null
+		crudget $inifile Launch 2>/dev/null || crudget $inifile launch 2>/dev/null
 		crudget $inifile Network 2>/dev/null
 		ConsoleUser=${ConsoleUser:-${consoleuser}}
 		ConsolePass=${ConsolePass:-${consolepass}}
@@ -379,7 +381,7 @@ stopSim() {
 			grep " -inifile=" | grep -F "$inifile" | awk '{print $1}' | head -1)
 		osConsole $simName shutdown
 		timeout=60
-		screen -x $simName 2>/dev/null
+		screen -x $simName >/dev/null 2>&1
 		if [ "$pid" ]; then
 			debug "Waiting for $simName (pid $pid) to exit..."
 			timeout $timeout tail --pid=$pid -f /dev/null 2>/dev/null
@@ -618,3 +620,7 @@ start)
 connections)
 	;;
 esac
+
+# Non-zero when an instance failed to start (missing config or runtime, crashed
+# at once or while starting); one still starting is not a failure
+[ -z "${STARTFAILED:-}" ]

@@ -14,6 +14,13 @@ declare(strict_types=1);
 require __DIR__ . '/../vendor/autoload.php';
 
 use OpenSim\Installer\Hub;
+use OpenSim\Installer\SetupFailed;
 use OpenSim\Installer\Ui\PromptsUi;
 
-(new Hub(new PromptsUi()))->run();
+// A failure is already explained on screen: end with an error code, rather
+// than going back to the menu
+try {
+    (new Hub(new PromptsUi()))->run();
+} catch (SetupFailed) {
+    exit(1);
+}

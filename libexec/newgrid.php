@@ -12,6 +12,11 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 use OpenSim\Installer\Grid\NewGrid;
+use OpenSim\Installer\SetupFailed;
 use OpenSim\Installer\Ui\PromptsUi;
 
-(new NewGrid(new PromptsUi()))->run();
+try {
+    (new NewGrid(new PromptsUi()))->run();
+} catch (SetupFailed) {
+    exit(1);
+}

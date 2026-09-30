@@ -61,7 +61,7 @@ osConsole() {
 	[ "$osCommand" = "\n" ] && unset osCommand
 	lr=$(printf "\n\b")
 	# pre=$(printf "\n\b")
-	screen -x $osInstance -X stuff "$(echo "$pre$osCommand$lr")"
+	screen -x $osInstance -X stuff "$(echo "$pre$osCommand$lr")" >/dev/null 2>&1
 }
 # True if a live (non-dead) screen session exists for the given instance.
 osScreenExists() {
@@ -84,15 +84,26 @@ osConsoleRead() {
 		cat $TMP.console | sed "s/^/cat /"
 	fi
 }
+# Wait for a pattern in the console of an instance: 0 when it shows, 3 when
+# the instance exited meanwhile, 1 at the end of the delay.
+# Usage: osConsoleWait [seconds] instance pattern
+# The delay is at least 30 seconds: a shorter one, as the launcher asks for the
+# questions of a first start, has always waited that long, and a longer one
+# (Robust, regions) is now honoured.
 osConsoleWait() {
 	[ "$2" ] || return $?
-	[ "$3" ] && timeout=$1 && shift || timeOut=60
+	local seconds=30
+	if [ "$3" ]; then
+		seconds=$1
+		shift
+	fi
+	[ "$seconds" -ge 30 ] || seconds=30
 	osInstance=$1
 	shift
 	pattern="$@"
 	[ "$pattern" = "" ] && return 2
-	t=0
-	while [ $t -lt 60 ]; do
+	local t=0 ticks=$((seconds * 2))
+	while [ $t -lt $ticks ]; do
 		osConsoleRead $osInstance "$pattern" && return
 		# Stop waiting if the session is gone: the instance has exited.
 		osScreenExists "$osInstance" || return 3

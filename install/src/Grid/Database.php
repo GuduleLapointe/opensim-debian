@@ -122,7 +122,7 @@ final class Database
 
         if ($hosts === null) {
             $this->ui->error("Login refused for user {$plan->dbUser}: the password is wrong, or the account does not exist for '$host'. "
-                . "The administrator access to the server, to check, is not available ({$this->adminReason}).");
+                . "The administrator access to the server, to check, is not available ({$this->adminReason}).{$this->adminHint()}");
             $this->showCommands($plan, $host, true, true);
 
             return self::RETRY;
@@ -163,7 +163,7 @@ final class Database
 
         $exists = $this->databaseExists($client, $plan);
         if ($exists === null) {
-            $this->ui->error("The administrator access to the server, to check or create it, is not available ({$this->adminReason}).");
+            $this->ui->error("The administrator access to the server, to check or create it, is not available ({$this->adminReason}).{$this->adminHint()}");
             $this->showCommands($plan, $host, false, true);
 
             return self::RETRY;
@@ -245,6 +245,14 @@ final class Database
         [$code, $out] = $this->admin($client, $plan, 'SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=' . $this->quote($plan->dbName));
 
         return $code === 0 ? trim($out) !== '' : null;
+    }
+
+    /** How to get the administrator access, for a user who is not root. */
+    private function adminHint(): string
+    {
+        return function_exists('posix_geteuid') && posix_geteuid() !== 0 && System::commandExists('sudo')
+            ? ' Run as root (e.g. sudo opensim setup), the setup has that access.'
+            : '';
     }
 
     /** The host part of the account: the server sees local connections as coming from localhost. */

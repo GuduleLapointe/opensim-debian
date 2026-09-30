@@ -6,6 +6,7 @@
 require '/usr/share/opensim-tools/vendor/autoload.php';
 
 use OpenSim\Installer\Grid\NewGrid;
+use OpenSim\Installer\SetupFailed;
 use OpenSim\Installer\Ui\InstallerUi;
 
 final class ScriptedUi implements InstallerUi
@@ -83,6 +84,17 @@ if (getenv('TEST_DB_USER')) {
     $answers['Database user'] = getenv('TEST_DB_USER');
 }
 
-for ($i = 0; $i < (int) (getenv('TEST_REPEAT') ?: 1); $i++) {
-    (new NewGrid(new ScriptedUi($answers)))->run(null);
+// Start the grid when TEST_START is set (the setup started as root, as
+// in the packaged install)
+if (getenv('TEST_START')) {
+    $answers['Start grid'] = true;
+}
+
+try {
+    for ($i = 0; $i < (int) (getenv('TEST_REPEAT') ?: 1); $i++) {
+        (new NewGrid(new ScriptedUi($answers)))->run(null);
+    }
+} catch (SetupFailed) {
+    echo "setup failed\n";
+    exit(1);
 }

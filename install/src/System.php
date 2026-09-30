@@ -42,6 +42,28 @@ final class System
         return $code;
     }
 
+    /**
+     * Run a command with live output (stdout + stderr) that is also kept, to
+     * read what the command said about itself.
+     *
+     * @return array{0:int,1:string} [exit code, output]
+     */
+    public static function runShown(string $cmd): array
+    {
+        $process = proc_open($cmd . ' 2>&1', [0 => STDIN, 1 => ['pipe', 'w']], $pipes);
+        if (!is_resource($process)) {
+            return [1, ''];
+        }
+        $output = '';
+        while (($chunk = fread($pipes[1], 8192)) !== false && $chunk !== '') {
+            echo $chunk;
+            $output .= $chunk;
+        }
+        fclose($pipes[1]);
+
+        return [proc_close($process), $output];
+    }
+
     /** Quote a value for safe use in a shell command. */
     public static function arg(string $value): string
     {
