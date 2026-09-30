@@ -27,6 +27,9 @@ HELP="
 opensim <start|stop [now]|restart [now]> [instance1] [instance2] [...]
 opensim status
 opensim setup           create or modify grids and simulators (setup wizard)
+opensim console|screen <instance>
+                        attach to the console of a running instance (Ctrl-A D
+                        leaves it running)
 opensim command <instance> <text>|-
                         send a command to the console of an instance, or the
                         lines read from the standard input (-)
@@ -131,7 +134,8 @@ startSim() {
 	unset IFS
 	for arg in $@; do
 		unset ConsoleUser ConsolePass ConsolePort console_port LogsDirectory EtcDirectory \
-			BinDirectory BinDir LogConfig logconfig LogFile RegistryLocation
+			BinDirectory BinDir LogConfig logconfig LogFile RegistryLocation Executable executable \
+			ConsolePrompt consoleprompt
 		ls -d "$arg" 2>/dev/null | grep -q "\.ini$" &&
 			{
 				inifile=$arg
@@ -331,14 +335,31 @@ startSim() {
 					startResult=$?
 				fi
 			else
-				osConsoleWait 5 $instance "RegionUUID" && osConsole $instance "\n"
-				osConsoleWait 1 $instance "Internal IP address" && osConsole $instance "\n"
-				osConsoleWait 1 $instance "External host name" && osConsole $instance "\n"
-				osConsoleWait 1 $instance "Do you wish to join region .* to an existing estate" && osConsole $instance "\n" &&
-					osConsoleWait 1 $instance "Name of estate to join." && osConsole $instance "\n"
-
-				osConsoleWait 120 $instance "RegionReady|neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done"
-				startResult=$?
+				# The questions of a first start (region, estate) are answered with
+				# their default, each once, as they come: a region fully described
+				# asks none. A question blocks the loading, so the region is ready
+				# only after them.
+				prompts=("RegionUUID" "Internal IP address" "External host name" "Do you wish to join region .* to an existing estate" "Name of estate to join")
+				answered=()
+				while :; do
+					pattern="RegionReady|neighbours.*region.*is up|LOAD REGIONS PLUGIN]: Done"
+					for i in "${!prompts[@]}"; do
+						[ -n "${answered[$i]:-}" ] || pattern="$pattern|${prompts[$i]}"
+					done
+					seen=$(osConsoleWait 120 "$instance" "$pattern")
+					startResult=$?
+					[ $startResult -eq 0 ] || break
+					asked=
+					for i in "${!prompts[@]}"; do
+						if [ -z "${answered[$i]:-}" ] && grep -qE "${prompts[$i]}" <<<"$seen"; then
+							osConsole "$instance" "\n"
+							answered[$i]=1
+							asked=1
+							break
+						fi
+					done
+					[ -n "$asked" ] || break
+				done
 				# The regions are loaded before the physics and the scripts start: a
 				# region that cannot run them ends within seconds
 				if [ $startResult -eq 0 ]; then
@@ -454,6 +475,47 @@ commandSim() {
 		osConsole "$instance" "$*"
 	fi
 	end 0
+}
+
+# Attach to the console of a running instance: its screen session, or, for an
+# instance with a remote console, a prompt sending each line to it.
+consoleSim() {
+	local arg=$1 instance inifile line port
+	[ -n "$arg" ] || end 1 "usage: $PGM console <instance>"
+	if ls -d "$arg" 2>/dev/null | grep -q "\.ini$"; then
+		inifile=$arg
+		instance=$(basename "$arg" .ini | tr "[:upper:]" "[:lower:]")
+	else
+		instance=$(echo "$arg" | tr "[:upper:]" "[:lower:]")
+		inifile=$(buildIni "$instance")
+	fi
+	instance=$(echo "$instance" | sed "s/[^a-z0-9_]*//g")
+
+	if osScreenExists "$instance"; then
+		log "console of $instance, Ctrl-A D to leave it running"
+		exec screen -x "$instance"
+	fi
+
+	if [ -n "$inifile" ] && [ -e "$inifile" ]; then
+		unset ConsoleUser ConsolePass ConsolePort console_port
+		crudget "$inifile" Network 2>/dev/null
+		ConsoleUser=${ConsoleUser:-${consoleuser}}
+		ConsolePass=${ConsolePass:-${consolepass}}
+		case "$inifile" in
+		*robust*) port=${ConsolePort:-${consoleport}} ;;
+		*) port=${console_port:-${consoleport}} ;;
+		esac
+		if [ -n "$ConsoleUser" ] && [ -n "$ConsolePass" ] && [ -n "$port" ] && [ "$port" != 0 ]; then
+			log "remote console of $instance, Ctrl-D to leave it running"
+			while IFS= read -e -r -p "$instance> " line; do
+				[ -n "$line" ] || continue
+				history -s "$line"
+				"$BASEDIR/libexec/rest-cli" "$inifile" $line
+			done
+			end 0
+		fi
+	fi
+	end 1 "$instance is not running"
 }
 
 restartSim() {
@@ -658,6 +720,10 @@ case "$1" in
 "command")
 	shift
 	commandSim "$@"
+	;;
+"console" | "screen")
+	shift
+	consoleSim "$@"
 	;;
 esac
 

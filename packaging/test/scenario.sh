@@ -203,6 +203,18 @@ check "nothing written in the read-only core" "! grep -iE 'unauthorized|denied' 
 check "the native libraries are found" "[ -L /var/lib/opensim/native/0.9.3.0/libBulletSim.so ] && ! grep -q 'DllNotFound' /var/log/opensim/testgrid_sim1.log"
 sim=$(sim_pid)
 
+# More regions are added to the running simulator without restarting it, and
+# the console of an instance can be reached
+(cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=Sim1 TEST_ADD_REGION=Sim1North runuser -u opensim -- php /test/newsim.php >/tmp/region2.out 2>&1
+    echo "exit code: $?" >>/tmp/region2.out)
+check "a region is added to the running simulator, and online" "grep -q 'exit code: 0' /tmp/region2.out && grep -q 'Region Sim1North is online' /tmp/region2.out &&
+    [ \"\$(mysql -BN -e \"SELECT CONCAT(locX DIV 256, ',', locY DIV 256) FROM testgrid_robust.regions WHERE regionName='Sim1North'\")\" = 1001,1000 ] && [ '$(sim_pid)' = '$sim' ]"
+check "a command reaches the console of a running instance" "opensim command testgrid_sim1 'show info' && sleep 1 &&
+    runuser -u opensim -- screen -S testgrid_sim1 -X hardcopy /tmp/console.txt && grep -aq 'Version: OpenSim' /tmp/console.txt"
+check "a command to an instance that does not run fails" "! opensim command nosuchinstance 'show info' >/dev/null 2>&1"
+(sleep 2; printf '\001d') | script -qec "TERM=xterm opensim console testgrid_sim1" /dev/null >/tmp/attach.out 2>&1
+check "the console attaches, and leaves the instance running" "grep -aq 'detached from' /tmp/attach.out && [ '$(sim_pid)' = '$sim' ]"
+
 ts upgrade
 apt_q install --reinstall $tools "$core"
 check "Robust not restarted" "[ '$(robust_pid)' = '$pid' ]"
@@ -235,6 +247,7 @@ grid_core /usr/share/opensim/0.9.3.0
 pid=$(robust_pid)
 check "grid back on the release" "[ -n '$pid' ]"
 apt_q remove opensim-unstable
+echo "   Robust $(robust_pid) (was $pid), simulator $(sim_pid) (was $sim)"
 check "instances of another core untouched" "[ '$(robust_pid)' = '$pid' ] && [ '$(sim_pid)' = '$sim' ]"
 apt_q install "$unstable"
 

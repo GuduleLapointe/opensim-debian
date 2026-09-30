@@ -42,8 +42,14 @@ if (getenv('TEST_DB_PASSWORD')) {
     $answers['Database password'] = getenv('TEST_DB_PASSWORD');
 }
 
+// TEST_ADD_REGION: add a region of that name to the simulator TEST_SIM instead
+if (getenv('TEST_ADD_REGION')) {
+    $answers['Region name'] = getenv('TEST_ADD_REGION');
+}
+
 try {
-    (new NewSim(new ScriptedUi($answers)))->run(getenv('TEST_GRID') ?: null);
+    $wizard = new NewSim(new ScriptedUi($answers));
+    getenv('TEST_ADD_REGION') ? $wizard->addRegion(getenv('TEST_GRID'), $sim) : $wizard->run(getenv('TEST_GRID') ?: null);
 } catch (SetupFailed) {
     echo "setup failed\n";
     exit(1);

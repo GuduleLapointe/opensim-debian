@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OpenSim\Installer\Grid;
 
 use OpenSim\Installer\Config;
+use OpenSim\Installer\Console;
 use OpenSim\Installer\Elevated;
 use OpenSim\Installer\Ports;
 use OpenSim\Installer\SetupFailed;
@@ -89,6 +90,57 @@ final class NewSim
     }
 
     /**
+     * Add a region to a simulator already configured: loaded at once when the
+     * simulator runs, else the simulator is started.
+     */
+    public function addRegion(string $gridNick, string $simName): void
+    {
+        $profile = (new Config())->profile();
+        $grid = $this->grid($profile, $gridNick);
+        if ($grid === null) {
+            return;
+        }
+
+        $plan = new SimPlan();
+        $plan->gridNick = $grid->nick;
+        $plan->gridName = $grid->name;
+        $plan->gridDir = $grid->dir;
+        $plan->hypergrid = $grid->hypergrid;
+        $plan->logsDirectory = $grid->logsDirectory;
+        $plan->simName = $simName;
+        $plan->slug = GridInfo::instanceName($grid->nick . '_' . $simName);
+        $plan->regionOnly = true;
+        $plan->createRegion = true;
+        if (!is_file($plan->iniPath())) {
+            $this->ui->error("Simulator '$simName' is not configured.");
+
+            return;
+        }
+        $plan->httpPort = (int) (GridInfo::parse($plan->iniPath())['httpPort'] ?? 0);
+
+        $this->askRegion($plan, $grid, new Database($this->ui));
+        if (is_file($plan->regionIni())) {
+            $this->ui->error("A region is already described in {$plan->regionIni()}.");
+
+            return;
+        }
+        $this->ui->note("Region {$plan->regionName} at {$plan->regionLocation}, port {$plan->regionPort}, for simulator '$simName'.");
+        if (!$this->ui->confirm("Add region '{$plan->regionName}'?", true)) {
+            $this->ui->note('Aborted — nothing changed.');
+
+            return;
+        }
+        $plan->start = $this->ui->confirm('Load it now (starting the simulator when it is not running)?', true);
+
+        if (!Elevated::needed($profile)) {
+            $this->apply($plan, $profile);
+
+            return;
+        }
+        Elevated::run($this->ui, '--apply-sim', ['plan' => $plan->toArray(), 'profile' => $profile], $profile['SystemUser']);
+    }
+
+    /**
      * The writing itself: run as the system user of the install, root, or the
      * user of an install without one.
      *
@@ -102,6 +154,12 @@ final class NewSim
             $this->ui->error("Grid '{$plan->gridNick}' not found.");
 
             throw new SetupFailed('grid');
+        }
+
+        if ($plan->regionOnly) {
+            $this->applyRegion($plan, $profile, $grid);
+
+            return;
         }
 
         // First, while nothing is written: the account the estate needs
@@ -148,6 +206,29 @@ final class NewSim
         }
 
         $this->ui->note("Simulator '{$plan->simName}' configured.");
+    }
+
+    /** Write the region, and load it in the simulator (started when it is not running). */
+    private function applyRegion(SimPlan $plan, array $profile, GridInfo $grid): void
+    {
+        @mkdir($plan->regionsDir(), 0o755, true);
+        $region = (new SimConfig())->writeRegion($plan);
+        $this->ui->note($region !== null ? "Wrote $region" : "Region {$plan->regionName} already described, left as it is.");
+        $this->giveToSystemUser($profile['SystemUser'] ?? '', [$plan->regionsDir()], true);
+        if (!$plan->start) {
+            return;
+        }
+
+        $file = basename($plan->regionIni());
+        if (Console::send($plan->slug, "create region \"{$plan->regionName}\" $file\n")) {
+            if (!$this->registered($plan, $grid)) {
+                $this->failed($plan, "Region {$plan->regionName} did not register in the grid '{$grid->nick}'.");
+            }
+            $this->ui->note("Region {$plan->regionName} is online.");
+
+            return;
+        }
+        $this->startSim($plan, $grid);
     }
 
     /**

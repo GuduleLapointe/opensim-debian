@@ -165,12 +165,16 @@ final class Hub
     {
         $enabled = SimState::isEnabled($etcRoot, $slug);
         $choice = $this->ui->choose("Simulator: $slug", [
+            'region' => 'Add a region',
             'reconfigure' => 'Reconfigure',
             'toggle' => $enabled ? 'Disable' : 'Enable',
             'back' => 'Back',
         ], 'back');
 
         switch ($choice) {
+            case 'region':
+                (new NewSim($this->ui))->addRegion($this->activeGrid, $this->simName($slug));
+                break;
             case 'reconfigure':
                 // The name typed at creation is not kept: the slug names it
                 (new NewSim($this->ui))->run($this->activeGrid, $this->simName($slug));

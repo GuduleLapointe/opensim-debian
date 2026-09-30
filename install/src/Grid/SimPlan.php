@@ -54,6 +54,9 @@ final class SimPlan
     public int $regionPort = 8011;
     public int $regionSize = 256;
 
+    /** Only a region is added to a simulator already configured. */
+    public bool $regionOnly = false;
+
     // What to do once written, asked before anything is written.
     public bool $enable = true;
     public bool $start = true;

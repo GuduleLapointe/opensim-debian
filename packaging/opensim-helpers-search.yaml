@@ -1,0 +1,70 @@
+# Web part of the OpenSimSearch module: the search service the viewers and the
+# simulators query, and the pages of events and classifieds. Built by
+# apt-package from build/helpers-search (packaging/build), the webroot of the
+# OpenSimSearch source in contrib/OpenSimSearch/src. Served by the web server
+# of the machine, or any other: nothing is enabled by installing it.
+name: opensim-helpers-search
+arch: all
+platform: linux
+version: ${HELPERS_SEARCH_VERSION}
+release: ${HELPERS_SEARCH_REVISION}
+version_schema: none
+section: web
+priority: optional
+maintainer: Gudule Lapointe <gudule@speculoos.world>
+description: |-
+  Search service for OpenSimulator (web helpers of OpenSimSearch)
+  PHP scripts answering the search of the viewers (places, land for sale,
+  events, classifieds) and collecting the data of the regions, with the pages
+  to manage events and classifieds. Installed in
+  /usr/share/opensim-helpers/search, to be served by a web server; its
+  database settings are in /etc/opensim/helpers/search/databaseinfo.php.
+  See /usr/share/doc/opensim-helpers-search/README.Debian.
+homepage: https://github.com/ManfredAabye/OpenSimSearch
+license: none stated upstream
+
+depends:
+  - php-curl
+  - php-mysql
+  - php-xml
+  - php-xmlrpc
+recommends:
+  - default-mysql-server | virtual-mysql-server
+suggests:
+  - nginx | apache2
+  - php-fpm | libapache2-mod-php
+  - opensim-tools
+
+contents:
+  - src: build/helpers-search
+    dst: /usr/share/opensim-helpers/search
+    type: tree
+  # The settings are the administrator's: the script reads them from its own
+  # folder, where they are linked from /etc
+  - src: /etc/opensim/helpers/search/databaseinfo.php
+    dst: /usr/share/opensim-helpers/search/databaseinfo.php
+    type: symlink
+  - src: packaging/opensim-helpers-search.databaseinfo.php
+    dst: /etc/opensim/helpers/search/databaseinfo.php
+    type: config|noreplace
+    file_info:
+      mode: 0644
+  - src: packaging/opensim-helpers-search.README.Debian
+    dst: /usr/share/doc/opensim-helpers-search/README.Debian
+    file_info:
+      mode: 0644
+  - src: packaging/opensim-helpers-search.nginx
+    dst: /usr/share/doc/opensim-helpers-search/examples/nginx.conf
+    file_info:
+      mode: 0644
+  - src: packaging/opensim-helpers-search.apache
+    dst: /usr/share/doc/opensim-helpers-search/examples/apache.conf
+    file_info:
+      mode: 0644
+  - src: packaging/opensim-helpers-search.copyright
+    dst: /usr/share/doc/opensim-helpers-search/copyright
+    file_info:
+      mode: 0644
+
+scripts:
+  postinstall: packaging/opensim-helpers-search.postinst

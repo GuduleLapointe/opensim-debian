@@ -65,6 +65,7 @@ sudo apt install opensim-kit
 - `opensim`: the latest release
 - `opensim-<version>-<module>`, e.g. `opensim-0.9.3.0-gloebit`, `opensim-0.9.3.0-opensimsearch`: a module for a release. Installing it does not enable it. It works with any build of the same version.
 - `opensim-unstable`: OpenSimulator built from the development branch, in `/usr/share/opensim/unstable`
+- `opensim-helpers-search`: the web part of the OpenSimSearch module (the search service the viewers query), in `/usr/share/opensim-helpers/search`, to be served by a web server. Nothing is enabled by installing it, see its `README.Debian`.
 - `opensim-kit`: the tools, the latest release, its essential modules and a database server. The other modules are in the repository, not installed automatically.
 
 OpenSim and Robust cannot run without a database. The packages of OpenSimulator accept MySQL/MariaDB or PostgreSQL (and SQLite for regions), on this machine or another one; the setup of this kit works with MySQL/MariaDB (`opensim-kit` installs the server). The setup runs as the user who starts it, with that user's own rights on the database (or as root, `sudo opensim setup`): only the writing of the files and the start of the instances are done as the system user of the install, through `sudo -u`, as every other command. Before writing anything, it checks the account can log in, then that it can use the database. The account of the grid is always tried with its own credentials only, as OpenSimulator will, whatever is in the `~/.my.cnf` of the user. Only what is missing is created, one statement at a time, with an administrator account of the database server: the setup uses the access the user already has (root, or a database account of their own that may create accounts and databases, e.g. in their `~/.my.cnf`, or sudo without a password), and otherwise asks for the credentials of an administrator account, on this machine or another one, kept in memory for the session only. A problem of access can be tried again; a creation that fails ends the setup with the commands to run from an administrator account. A database prepared by someone else, with the credentials, needs none of it.
@@ -83,6 +84,10 @@ Create a grid with the setup wizard, then start it:
 opensim setup
 sudo systemctl start opensim
 ```
+
+Then add a simulator to the grid, from the same wizard (`Sim`, `Create a new simulator`): it has its own database and its first region, and the owner of its estate is an account of the grid, chosen or created on the way (in the console of Robust, which is started for that if needed). The wizard writes the config of the simulator in `/etc/opensim/grids/<grid>/sims/`, links it into `/etc/opensim/opensim.d`, starts it and checks that its region is online in the grid. More regions are added to a simulator from the same menu, loaded at once when it runs.
+
+The console of an instance is reached with `opensim console <instance>` (`screen` works too): the screen session of the instance, or a prompt sending the commands to its remote console. `Ctrl-A D` leaves the session, the instance keeps running. `opensim command <instance> <text>` sends a single command, from a script.
 
 The `opensim` service starts the enabled instances at boot. Package upgrades never restart them.
 

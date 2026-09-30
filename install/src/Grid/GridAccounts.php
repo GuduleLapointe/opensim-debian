@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OpenSim\Installer\Grid;
 
+use OpenSim\Installer\Console;
 use OpenSim\Installer\System;
 use OpenSim\Installer\Ui\InstallerUi;
 
@@ -64,10 +65,10 @@ final class GridAccounts
         // The answers of the prompts that follow: a random ID, the default model
         $lines = "create user $name $password $email\n\n\n";
 
-        if (!$this->send($opensim, $instance, $lines)) {
+        if (!Console::send($instance, $lines)) {
             $this->ui->note("Starting the grid '{$grid->nick}' to create the account.");
             [$code] = System::runShown(System::arg($opensim) . ' start ' . System::arg($grid->nick));
-            if ($code !== 0 || !$this->send($opensim, $instance, $lines)) {
+            if ($code !== 0 || !Console::send($instance, $lines)) {
                 $this->ui->error("Could not reach the console of the grid '{$grid->nick}' to create the account.");
 
                 return false;
@@ -84,20 +85,5 @@ final class GridAccounts
         $this->ui->error("The account $name was not created: see the console of the grid.");
 
         return false;
-    }
-
-    /** Send lines to the console of an instance. */
-    private function send(string $opensim, string $instance, string $lines): bool
-    {
-        $process = proc_open([$opensim, 'command', $instance, '-'], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
-        if (!is_resource($process)) {
-            return false;
-        }
-        fwrite($pipes[0], $lines);
-        fclose($pipes[0]);
-        stream_get_contents($pipes[1]);
-        stream_get_contents($pipes[2]);
-
-        return proc_close($process) === 0;
     }
 }
