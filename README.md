@@ -1,20 +1,28 @@
-OpenSim Debian Distribution
-===========================
-![Version 3.0.0-dev](https://badgen.net/badge/Version/3.0.0-dev/FFaa00)
-![Stable 2.0.0](https://badgen.net/badge/2.0.0/Stable/00aa00)
-![License AGPLv3](https://badgen.net/badge/License/AGPLv3/552b55)
+# OpenSim Kit
+
+![Stable](https://img.shields.io/github/release/GuduleLapointe/opensim-debian?label=stable&color=green&include_prerelease)
+![GitHub Tag](https://img.shields.io/github/tag/GuduleLapointe/opensim-debian?label=latest&include_prereleases)
+![GitHub commits since latest release](https://img.shields.io/github/commits-since/GuduleLapointe/opensim-debian/latest?label=dev)
+![PHP](https://img.shields.io/badge/PHP-8.1+-7884bf)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-552b55)](LICENSE)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/GuduleLapointe/opensim-debian/total)
+[![Donate](https://img.shields.io/badge/-Donate-yellow)](https://magiiic.org/donate/)
 
 This is an framework to facilitate installation and use of OpenSim with Debian or other *nix flavors.
 
 https://www.speculoos.world/opensim-debian-installation-framework/
 
-Features
---------
+## Installation
 
-`./install/install.sh`
+```bash
+./install/install.sh
+opensim setup
+```
 
 - create basic directory structure, download OpenSim and other needed libraries
 - read Robust default configuration, ask a few questions and build a working configuration in etc/robust-d
+
+## Features
 
 `opensim start`
 
@@ -36,9 +44,7 @@ Features
 
 - Show active instances, per instance and global memory and cpu usage
 
-
-Installation from packages (Debian, Ubuntu)
--------------------------------------------
+## Installation from packages (Debian, Ubuntu)
 
 The kit and the OpenSimulator distributions come from the Magiiic apt repository. Add it once:
 
@@ -82,8 +88,7 @@ The `opensim` service starts the enabled instances at boot. Package upgrades nev
 
 An existing install, e.g. in `/opt/opensim`, keeps working with the packaged tools without moving anything: its `opensim.conf` gives the locations. To run it with the service, set its account with `sudo systemctl edit opensim` (`User=` and `Group=` in a `[Service]` section).
 
-Installation from git
----------------------
+## Installation from git
 
 ```shell
 git clone --recursive https://github.com/GuduleLapointe/opensim-debian.git opensim-kit
@@ -96,25 +101,25 @@ opensim setup
 Answer the common setting questions.
 
 Configuration should be working as is, but you will probably want to adjust
-  - ./etc/opensim/opensim.conf
-  (main database configuration)
-  - ./etc/opensim/robust.d/*.ini (robust settings)
-  - ./etc/opensim/opensim.d/*.ini (simulators settings)
 
+- ./etc/opensim/opensim.conf
+  (main database configuration)
+- ./etc/opensim/robust.d/*.ini (robust settings)
+- ./etc/opensim/opensim.d/*.ini (simulators settings)
 
 ```shell
 opensim start
 ```
 
 To enable bash completion:
+
 ```shell
 sudo apt update
 sudo apt install bash-completion
 sudo ln -s /opt/opensim-debian/lib/bash_completion.d/opensim /etc/bash_completion.d/
 ```
 
-Main motivation
----------------
+## Main motivation
 
 In a software application, particularly a complicate one like OpenSim, some
 thing should never be stored at the same place. Essentially, there is a place
@@ -122,27 +127,30 @@ for static files (executables, libraries), a place for preferences, and a place
 for data created by the application (permanent or temporary).
 
 This way, you can
-  - easily update the software without touching preferences and data
-  - backup the data without duplicating the software
-  - avoid duplicating the application if you need to run several instances...
+
+- easily update the software without touching preferences and data
+- backup the data without duplicating the software
+- avoid duplicating the application if you need to run several instances...
 
 So, we reorganised the files and folders, matching the general Linux standards.
-  - The whole thing is stored in /opt/opensim-debian (could become
+
+- The whole thing is stored in /opt/opensim-debian (could become
   /usr/share/opensim if we make a package), refferred as OSDDIR below
-  - Scripts and utilities are in /OSDDIR/bin/
-  - The main code (latest stable OpenSim release) is located in /OSDDIR/core/opensim (no, not in bin, because they are not directly executable on all OSes, and they rely on lot of other files around them)
-  - Preferences are read from /OSDDIR/etc/ /etc/ and ~/etc/, each one overriding the precedent
-  - Cache is stored in /OSDDIR/var/cache
-  - Logs in /OSDDIR/var/logs
-  - Databases (if using sqlite) should be store in var/db (but we don't use
+- Scripts and utilities are in /OSDDIR/bin/
+- The main code (latest stable OpenSim release) is located in /OSDDIR/core/opensim (no, not in bin, because they are not directly executable on all OSes, and they rely on lot of other files around them)
+- Preferences are read from /OSDDIR/etc/ /etc/ and ~/etc/, each one overriding the precedent
+- Cache is stored in /OSDDIR/var/cache
+- Logs in /OSDDIR/var/logs
+- Databases (if using sqlite) should be store in var/db (but we don't use
   sqlite, so this could be added or not later)
-  - Git clone and other works in progress should go in dev/
+- Git clone and other works in progress should go in dev/
 
 It was important to achieve this without altering the main OpenSim code.
 So we created some scripts which:
-  - read the preferences in etc/
-  - looks for instances to start in etc/robust.d and etc/opensim.d
-  - tells OpenSim where to save data, cache and logs
+
+- read the preferences in etc/
+- looks for instances to start in etc/robust.d and etc/opensim.d
+- tells OpenSim where to save data, cache and logs
 
 We have developed and used this setup for several years in Speculoos Grid
 and wanted to share. Although this was working for us, we don't push the whole
