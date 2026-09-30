@@ -36,10 +36,16 @@ final class NewGrid
             return; // abandoned
         }
 
-        // Nothing is written before the database is known to work. On failure
-        // the error stays on screen, with one line to retry or give up.
+        // Nothing is written before the database is known to work. A problem of
+        // access leaves the error on screen with one line to try again (the
+        // settings can be changed); a creation that failed ends the setup.
         $database = new Database($this->ui);
-        while (!$database->ensure($plan)) {
+        while (($result = $database->ensure($plan)) !== Database::OK) {
+            if ($result === Database::ABORT) {
+                $this->ui->note('Stopped, nothing was changed: OpenSim cannot run without its database.');
+
+                return;
+            }
             if (!$this->ui->confirm('Try again (the database settings can be changed)?', true)) {
                 $this->ui->note('Stopped, nothing was changed: OpenSim cannot run without its database.');
 

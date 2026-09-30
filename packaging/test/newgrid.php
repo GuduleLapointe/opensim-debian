@@ -65,7 +65,7 @@ final class ScriptedUi implements InstallerUi
 // enabled when TEST_NO_ENABLE is set
 $name = getenv('TEST_GRID') ?: 'Testgrid';
 
-// TEST_DB_PASSWORD empty: the password proposed is kept. TEST_REPEAT runs the
+// TEST_DB_PASSWORD empty: the password proposed is kept; TEST_DB_USER: the account. TEST_REPEAT runs the
 // setup several times in the same process, as the setup hub does.
 $answers = [
     'Grid name' => $name,
@@ -78,6 +78,9 @@ $answers = [
 $password = getenv('TEST_DB_PASSWORD');
 if ($password !== '') {
     $answers['Database password'] = $password ?: 'testpass';
+}
+if (getenv('TEST_DB_USER')) {
+    $answers['Database user'] = getenv('TEST_DB_USER');
 }
 
 for ($i = 0; $i < (int) (getenv('TEST_REPEAT') ?: 1); $i++) {

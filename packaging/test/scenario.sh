@@ -59,29 +59,50 @@ mysql -e "CREATE DATABASE testgrid_robust; CREATE USER opensim@localhost IDENTIF
 (cd /var/lib/opensim && runuser -u opensim -- php /test/newgrid.php | tail -1)
 check "grid enabled" "[ -L /etc/opensim/robust.d/testgrid.ini ]"
 
-# A database that cannot be used stops the setup before anything is written:
-# as opensim, who has no administrator access to the database server
+# The database, as the setup checks it (see Grid/Database.php). As opensim,
+# who has no administrator access to the database server: what cannot be
+# checked or fixed can be tried again, and nothing is written
 wizard() { # grid, password, [user]
-    (cd /var/lib/opensim && TEST_GRID=$1 TEST_DB_PASSWORD=$2 TEST_NO_ENABLE=1 TEST_REPEAT=${TEST_REPEAT:-1} runuser -u "${3:-opensim}" -- php /test/newgrid.php 2>&1)
+    (cd /var/lib/opensim && TEST_GRID=$1 TEST_DB_PASSWORD=$2 TEST_NO_ENABLE=1 TEST_REPEAT=${TEST_REPEAT:-1} \
+        TEST_DB_USER=${TEST_DB_USER:-} runuser -u "${3:-opensim}" -- php /test/newgrid.php 2>&1)
+}
+as_root() { # grid, password
+    (cd /var/lib/opensim && TEST_GRID=$1 TEST_DB_PASSWORD=$2 TEST_NO_ENABLE=1 TEST_DB_USER=${TEST_DB_USER:-} php /test/newgrid.php 2>&1)
 }
 wizard Badgrid wrong >/tmp/badgrid.out
-check "wrong password: setup stops, nothing written" "grep -q 'cannot run without its database' /tmp/badgrid.out && [ ! -e /etc/opensim/grids/badgrid ]"
+check "no administrator access, wrong password: can be tried again, nothing written" "grep -q 'Try again' /tmp/badgrid.out &&
+    grep -q 'cannot run without its database' /tmp/badgrid.out && [ ! -e /etc/opensim/grids/badgrid ]"
 wizard Missinggrid testpass >/tmp/missing.out
-check "existing account, missing database: says so, stops" "grep -q 'no access to database missinggrid_robust' /tmp/missing.out &&
-    grep -q 'CREATE DATABASE' /tmp/missing.out && [ ! -e /etc/opensim/grids/missinggrid ]"
+check "no administrator access, missing database: says so, gives the commands" "grep -q 'no access to database missinggrid_robust' /tmp/missing.out &&
+    grep -q 'CREATE DATABASE' /tmp/missing.out && grep -q 'Try again' /tmp/missing.out && [ ! -e /etc/opensim/grids/missinggrid ]"
 
 # The password of an account, generated once, is proposed again in the same session
 TEST_REPEAT=2 wizard Repeatgrid "" >/tmp/repeat.out
 check "the generated password is kept for the session" "[ \"\$(grep -a 'Database password ->' /tmp/repeat.out | sort -u | wc -l)\" = 1 ] &&
     [ \"\$(grep -ac 'Database password ->' /tmp/repeat.out)\" = 2 ]"
 
-# As root, the administrator of the database: what is missing is created, and
-# what the setup writes belongs to opensim
-(cd /var/lib/opensim && TEST_GRID=Rootgrid TEST_DB_PASSWORD=testpass TEST_NO_ENABLE=1 php /test/newgrid.php >/tmp/rootgrid.out 2>&1)
-check "as root: the missing database is created" "mysql -e 'SHOW DATABASES' | grep -q '^rootgrid_robust$'"
-check "as root: the grid belongs to opensim" "[ \"\$(stat -c %U /etc/opensim/grids/rootgrid/Robust.HG.ini)\" = opensim ] &&
+# As root, with the administrator access: only what is missing is created,
+# one statement at a time
+as_root Rootgrid testpass >/tmp/rootgrid.out
+check "valid account, missing database: the database is created, not the account" "mysql -e 'SHOW DATABASES' | grep -q '^rootgrid_robust\$' &&
+    ! grep -qi 'create user' /tmp/rootgrid.out"
+check "what the setup writes belongs to opensim" "[ \"\$(stat -c %U /etc/opensim/grids/rootgrid/Robust.HG.ini)\" = opensim ] &&
     [ \"\$(stat -c %U /var/lib/opensim/data/rootgrid)\" = opensim ]"
-rm -rf /etc/opensim/grids/rootgrid /var/lib/opensim/data/rootgrid /var/cache/opensim/rootgrid
+TEST_DB_USER=grid2user as_root Grid2 "" >/tmp/grid2.out
+pass=$(grep -a 'Database password ->' /tmp/grid2.out | head -1 | sed 's/.*-> //')
+check "missing account and database: both created, the account logs in" "MYSQL_PWD='$pass' mysql -u grid2user -e 'SELECT 1' grid2_robust >/dev/null 2>&1"
+as_root Rootgrid wrong >/tmp/rootwrong.out
+check "existing account, wrong password: not recreated, can be tried again" "grep -q 'password is rejected' /tmp/rootwrong.out &&
+    ! grep -qi 'create user' /tmp/rootwrong.out && grep -q 'Try again' /tmp/rootwrong.out"
+# An account of the caller's own that can read the server's accounts but not
+# create them: the administrator access is found, the creation fails
+useradd -m -s /bin/bash dbhelper
+mysql -e "CREATE USER dbhelper@localhost IDENTIFIED VIA unix_socket; GRANT SELECT ON mysql.* TO dbhelper@localhost"
+TEST_DB_USER=deniedgrid_user wizard Deniedgrid "" dbhelper >/tmp/denied.out
+check "a creation that fails ends the setup, with the commands" "grep -q 'Could not create the user' /tmp/denied.out &&
+    grep -q 'CREATE USER' /tmp/denied.out && ! grep -q 'Try again' /tmp/denied.out && [ ! -e /etc/opensim/grids/deniedgrid ]"
+rm -rf /etc/opensim/grids/rootgrid /var/lib/opensim/data/rootgrid /var/cache/opensim/rootgrid \
+    /etc/opensim/grids/grid2 /var/lib/opensim/data/grid2 /var/cache/opensim/grid2
 check "setup command" "opensim help | grep -q setup"
 
 ts "service start"
