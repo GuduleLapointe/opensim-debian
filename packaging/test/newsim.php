@@ -45,13 +45,21 @@ if (getenv('TEST_DB_PASSWORD')) {
 }
 
 // TEST_ADD_REGION: add a region of that name to the simulator TEST_SIM instead
+// TEST_REMOTE_GRID=<nick>: the simulator joins a grid by its address, as if its Robust were on
+// another machine (TEST_REMOTE_ADDRESS, default localhost:8002), kept under that nick
+if (getenv('TEST_REMOTE_GRID')) {
+    $answers['Grid of the simulator'] = '+';
+    $answers['Address of the grid'] = getenv('TEST_REMOTE_ADDRESS') ?: 'localhost:8002';
+    $answers['Grid nick'] = getenv('TEST_REMOTE_GRID');
+    $answers['Public address of this machine'] = getenv('TEST_EXTERNAL_HOST') ?: 'SYSTEMIP';
+}
 if (getenv('TEST_ADD_REGION')) {
     $answers['Region name'] = getenv('TEST_ADD_REGION');
 }
 
 try {
     $wizard = new NewSim(new ScriptedUi($answers));
-    getenv('TEST_ADD_REGION') ? $wizard->addRegion(getenv('TEST_GRID'), $sim) : $wizard->run(getenv('TEST_GRID') ?: null);
+    getenv('TEST_ADD_REGION') ? $wizard->addRegion(getenv('TEST_GRID'), $sim) : $wizard->run(getenv('TEST_REMOTE_GRID') ? null : (getenv('TEST_GRID') ?: null));
 } catch (SetupFailed) {
     echo "setup failed\n";
     exit(1);

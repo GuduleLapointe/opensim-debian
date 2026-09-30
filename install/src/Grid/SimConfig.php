@@ -111,7 +111,7 @@ final class SimConfig
             'InternalAddress = 0.0.0.0',
             "InternalPort = {$plan->regionPort}",
             'ResolveAddress = False',
-            'ExternalHostName = SYSTEMIP',
+            "ExternalHostName = {$plan->externalHost}",
             'MaptileStaticUUID = 00000000-0000-0000-0000-000000000000',
             '',
         ]);

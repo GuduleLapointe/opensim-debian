@@ -18,6 +18,10 @@ final class SimPlan
     public string $baseHostname = 'localhost';
     public int $publicPort = 8002;
     public int $privatePort = 8003;
+    /** The description of the grid when it is a remote one not kept yet (GridInfo::describe()). */
+    public ?array $remoteGrid = null;
+    /** What the regions announce as their address: a name or an address, or SYSTEMIP (the one of the machine). */
+    public string $externalHost = 'SYSTEMIP';
     /** The core it runs from. */
     public string $coreDirectory = '';
 

@@ -117,6 +117,13 @@ final class NewSim
             return;
         }
         $plan->httpPort = (int) (GridInfo::parse($plan->iniPath())['httpPort'] ?? 0);
+        // The address the regions of this simulator already announce
+        foreach (glob("{$plan->regionsDir()}/*.ini") ?: [] as $file) {
+            if (preg_match('/^\s*ExternalHostName\s*=\s*(\S+)/m', (string) file_get_contents($file), $m)) {
+                $plan->externalHost = $m[1];
+                break;
+            }
+        }
 
         $this->askRegion($plan, $grid, new Database($this->ui));
         if (is_file($plan->regionIni())) {
@@ -149,6 +156,9 @@ final class NewSim
     public function apply(SimPlan $plan, array $profile): void
     {
         $etcRoot = $profile['EtcRoot'];
+        if ($plan->remoteGrid !== null) {
+            $this->ui->note('Wrote ' . (new GridConf())->writeRemote($plan->remoteGrid));
+        }
         $grid = GridInfo::load($profile, $plan->gridNick);
         if ($grid === null) {
             $this->ui->error("Grid '{$plan->gridNick}' not found.");
@@ -239,19 +249,24 @@ final class NewSim
     {
         $opensim = dirname(__DIR__, 3) . '/bin/opensim';
 
-        // A region registers with the grid when it starts: the grid has to run
-        [$code] = System::runShown(System::arg($opensim) . ' start ' . System::arg($grid->nick));
-        if ($code !== 0) {
-            $this->failed($plan, "The grid '{$grid->nick}' is not running, and a simulator cannot start without it. Enable and start it first: $opensim -v start {$grid->nick}");
+        // A region registers with the grid when it starts: the grid has to run (when
+        // it is ours: a Robust on another machine is its administrator's)
+        if (!$grid->remote) {
+            [$code] = System::runShown(System::arg($opensim) . ' start ' . System::arg($grid->nick));
+            if ($code !== 0) {
+                $this->failed($plan, "The grid '{$grid->nick}' is not running, and a simulator cannot start without it. Enable and start it first: $opensim -v start {$grid->nick}");
+            }
         }
 
         [$code, $said] = System::runShown(System::arg($opensim) . ' restart ' . System::arg($plan->slug));
         $pending = $code === 0 && str_contains($said, 'still starting');
         if ($code === 0 && !$pending) {
-            if ($plan->createRegion && !$this->registered($plan, $grid)) {
+            if ($plan->createRegion && !$grid->remote && !$this->registered($plan, $grid)) {
                 $this->failed($plan, "Simulator '{$plan->simName}' runs, but the region {$plan->regionName} did not register in the grid '{$grid->nick}'.");
             }
-            $this->ui->note("Simulator '{$plan->simName}' is running" . ($plan->createRegion ? ", region {$plan->regionName} is online." : '.'));
+            $this->ui->note("Simulator '{$plan->simName}' is running" . ($plan->createRegion ? ($grid->remote
+                ? ", region {$plan->regionName} started: see the grid, on its map, for its registration."
+                : ", region {$plan->regionName} is online.") : '.'));
 
             return;
         }
@@ -312,33 +327,118 @@ final class NewSim
         }
     }
 
-    /** The grid the simulator joins: the given one, the only one, or a choice. */
+    /**
+     * The grid the simulator joins: the given one, the only one, or a choice among
+     * the known ones and "another grid", whose Robust is on another machine. With
+     * no grid at all, the question is the address of that Robust.
+     */
     private function grid(array $profile, ?string $nick): ?GridInfo
     {
         $etcRoot = $profile['EtcRoot'];
         if ($nick === null) {
-            $nicks = [];
+            $known = [];
             foreach (glob("$etcRoot/grids/*", GLOB_ONLYDIR) ?: [] as $dir) {
-                if (GridState::robustIni($etcRoot, basename($dir)) !== null) {
-                    $nicks[] = basename($dir);
+                $name = basename($dir);
+                if (GridState::robustIni($etcRoot, $name) !== null) {
+                    $known[$name] = $name;
+                } elseif (GridInfo::isRemote($etcRoot, $name)) {
+                    $known[$name] = "$name (Robust on another machine)";
                 }
             }
-            if ($nicks === []) {
-                $this->ui->error('Create a grid first.');
-
-                return null;
+            if ($known === []) {
+                return $this->remoteGrid($profile);
             }
-            $nick = count($nicks) === 1
-                ? $nicks[0]
-                : $this->ui->choose('Grid of the simulator', array_combine($nicks, $nicks), $nicks[0]);
+            $known['+'] = 'Another grid, whose Robust is on another machine';
+            $nick = $this->ui->choose('Grid of the simulator', $known, (string) array_key_first($known));
+            if ($nick === '+') {
+                return $this->remoteGrid($profile);
+            }
         }
 
         $grid = GridInfo::load($profile, $nick);
         if ($grid === null) {
-            $this->ui->error("Grid '$nick' has no Robust config.");
+            $this->ui->error("Grid '$nick' is not known here.");
         }
 
         return $grid;
+    }
+
+    /**
+     * A grid whose Robust runs elsewhere (another machine, another container): only
+     * what a simulator needs to join it is asked, and kept for the next ones. The
+     * grid tells its name and nick itself.
+     */
+    private function remoteGrid(array $profile): ?GridInfo
+    {
+        $required = static fn (string $v): ?string => trim($v) === '' ? 'This field is required.' : null;
+        $numeric = static fn (string $v): ?string => ctype_digit(trim($v)) ? null : 'Enter a port number.';
+        $etcRoot = $profile['EtcRoot'];
+
+        $this->ui->note('The simulator joins a grid whose Robust server runs on another machine (or in another container): it needs its address and its ports.');
+        $address = trim($this->ui->text('Address of the grid (its Robust server: grid.example.org, or grid.example.org:8002)', '', $required));
+        $parts = parse_url(preg_match('#^https?://#', $address) ? $address : "http://$address") ?: [];
+        $host = (string) ($parts['host'] ?? $address);
+        $public = (int) $this->ui->text('Public port of the grid', (string) ($parts['port'] ?? 8002), $numeric);
+
+        $said = $this->gridSays($host, $public);
+        if ($said === []) {
+            $this->ui->warn("The grid did not answer at http://$host:$public/get_grid_info: check its address and its public port, or go on with what you know of it.");
+        }
+        $name = trim($this->ui->text('Grid name', $said['gridname'] ?? ucfirst(explode('.', $host)[0]), $required));
+        // Letters and digits only, as typed (nick() would lower what is already a nick)
+        $nick = (string) preg_replace('/[^A-Za-z0-9]/', '', $this->ui->text('Grid nick (alphanumeric)', $said['gridnick'] ?? Slug::nick($name), $required));
+        if ($nick === '') {
+            $nick = Slug::nick($name);
+        }
+
+        if (GridState::robustIni($etcRoot, $nick) !== null) {
+            $this->ui->error("A grid of this machine already has the nick '$nick': it is its own Robust, not another one.");
+
+            return null;
+        }
+        if (GridInfo::isRemote($etcRoot, $nick)) {
+            $this->ui->note("Grid '$nick' is already known here, its description is kept.");
+
+            return GridInfo::load($profile, $nick);
+        }
+
+        $private = (int) $this->ui->text('Private port of the grid (only for its simulators, and this machine is one)', (string) ($public + 1), $numeric);
+        $hypergrid = $this->ui->confirm('Does the grid use Hypergrid?', true);
+
+        $grid = new GridInfo();
+        $grid->remote = true;
+        $grid->nick = $nick;
+        $grid->name = $name;
+        $grid->slug = Slug::slug($name);
+        $grid->dir = "$etcRoot/grids/$nick";
+        $grid->hypergrid = $hypergrid;
+        $grid->baseHostname = $host;
+        $grid->publicPort = $public;
+        $grid->privatePort = $private;
+        $grid->coreDirectory = $profile['CoreDirectory'] ?? '';
+        $grid->dataDirectory = ($profile['DataRoot'] ?? '') . "/$nick";
+        $grid->cacheDirectory = ($profile['CacheRoot'] ?? '') . "/$nick";
+        $grid->logsDirectory = $profile['LogsRoot'] ?? '';
+
+        return $grid;
+    }
+
+    /**
+     * What a grid says of itself at its public port (get_grid_info).
+     *
+     * @return array<string,string> gridname, gridnick..., empty when it does not answer
+     */
+    private function gridSays(string $host, int $port): array
+    {
+        $body = @file_get_contents("http://$host:$port/get_grid_info", false, stream_context_create(['http' => ['timeout' => 5]]));
+        $said = [];
+        foreach (['gridname', 'gridnick'] as $key) {
+            if ($body !== false && preg_match("#<$key>([^<]+)</$key>#", $body, $m)) {
+                $said[$key] = trim(html_entity_decode($m[1], ENT_QUOTES | ENT_XML1));
+            }
+        }
+
+        return $said;
     }
 
     private function gather(GridInfo $grid, array $profile, Database $database, ?string $simName): ?SimPlan
@@ -355,6 +455,8 @@ final class NewSim
         $plan->publicPort = $grid->publicPort;
         $plan->privatePort = $grid->privatePort;
         $plan->logsDirectory = $grid->logsDirectory;
+        // A remote grid not kept yet is written with the simulator
+        $plan->remoteGrid = $grid->remote && !is_file("{$grid->dir}/{$grid->nick}.conf") ? $grid->describe() : null;
 
         $plan->simName = $simName ?? trim($this->ui->text('Simulator name', '', static fn (string $v): ?string => preg_match('/^[A-Za-z0-9][A-Za-z0-9 _-]*$/', trim($v)) ? null : 'Letters, digits, spaces, _ and - only.'));
         $plan->slug = GridInfo::instanceName($grid->nick . '_' . $plan->simName);
@@ -397,12 +499,21 @@ final class NewSim
 
         $this->askConsole($plan, $current);
 
+        // What the regions announce as their address, the viewers connect to it: the
+        // public name of this machine. SYSTEMIP is the address of its first interface,
+        // which is not the one of the world behind a NAT or in a container.
+        $plan->externalHost = trim($this->ui->text(
+            'Public address of this machine, for the regions (SYSTEMIP: its first interface)',
+            $current['externalHost'] ?? 'SYSTEMIP',
+            static fn (string $v): ?string => trim($v) === '' ? 'This field is required.' : null,
+        ));
+
         // Its own database: the account of the grid, a database of its own
         $this->askDatabase($plan, $grid, [
             'dbHost' => $current['dbHost'] ?? $grid->dbHost,
             'dbName' => $current['dbName'] ?? $plan->slug,
             'dbUser' => $current['dbUser'] ?? $grid->dbUser,
-            'dbPass' => $current['dbPass'] ?? $grid->dbPass,
+            'dbPass' => $current['dbPass'] ?? ($grid->dbPass !== '' ? $grid->dbPass : self::password(20)),
         ]);
 
         $plan->estateName = trim($this->ui->text('Estate name', $current['estateName'] ?? "{$grid->name} Estate", $required));
@@ -487,8 +598,14 @@ final class NewSim
     private function askOwner(SimPlan $plan, GridInfo $grid, Database $database, ?string $current): bool
     {
         $name = static fn (string $v): ?string => GridAccounts::validName(trim($v)) ? null : 'First and last name, e.g. Jane Doe.';
-        $accounts = (new GridAccounts($database, $this->ui))->names($grid);
+        $accounts = $grid->remote ? null : (new GridAccounts($database, $this->ui))->names($grid);
 
+        if ($accounts === null && $grid->remote) {
+            $this->ui->note("The estate is owned by an account of the grid '{$grid->nick}', which has to exist already (its administrator makes it on its Robust).");
+            $plan->estateOwner = trim($this->ui->text('Estate owner (an account of the grid)', $current ?? '', $name));
+
+            return true;
+        }
         if ($accounts === null) {
             // The database of the grid cannot be read: its account is taken on trust
             $this->ui->warn("The accounts of the grid '{$grid->nick}' cannot be read: the owner must be an existing account.");

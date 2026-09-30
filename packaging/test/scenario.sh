@@ -337,6 +337,20 @@ check "it starts again, without screen, and is ready by its log" "grep -aq 'test
 opensim stop now testgrid_rest >/dev/null 2>&1
 rm -f /etc/opensim/opensim.d/testgrid_rest.ini
 
+# A simulator on a machine that has no Robust of its own: it joins the grid by its
+# address (here the one of this machine, taken for another one), which is kept
+# under its own nick, and owns an estate of an account that has to exist already
+ts "simulator of a grid elsewhere"
+(cd /var/lib/opensim && TEST_REMOTE_GRID=Elsewhere TEST_REMOTE_ADDRESS=localhost:8002 TEST_SIM=Far TEST_START=1 TEST_OWNER="Test Owner" \
+    TEST_DB_PASSWORD=testpass TEST_ADMIN_USER=dbroot TEST_ADMIN_PASSWORD=adminpw runuser -u opensim -- php /test/newsim.php >/tmp/far.out 2>&1
+    echo "exit code: $?" >>/tmp/far.out)
+check "the simulator wizard joins a grid by its address and ends well" "grep -q 'exit code: 0' /tmp/far.out && grep -q 'Wrote /etc/opensim/grids/Elsewhere/Elsewhere.conf' /tmp/far.out && grep -q \"Simulator 'Far' is running\" /tmp/far.out"
+check "the grid is kept as a remote one, with its address and its ports" "grep -q '^Remote = true' /etc/opensim/grids/Elsewhere/Elsewhere.conf && grep -q '^BaseHostname = localhost' /etc/opensim/grids/Elsewhere/Elsewhere.conf &&
+    grep -q '^PublicPort = 8002' /etc/opensim/grids/Elsewhere/Elsewhere.conf && grep -q '^PrivatePort = 8003' /etc/opensim/grids/Elsewhere/Elsewhere.conf"
+check "its region registered in the grid, from its own block of ports" "[ \"\$(mysql -BN -e \"SELECT COUNT(*) FROM testgrid_robust.regions WHERE regionName='Far'\")\" = 1 ] && grep -q '^ExternalHostName = SYSTEMIP' /etc/opensim/grids/Elsewhere/sims/elsewhere_far/regions/Far.ini"
+opensim stop now elsewhere_far >/dev/null 2>&1
+rm -f /etc/opensim/opensim.d/elsewhere_far.ini
+
 ts "modules enabled for a region"
 conf=/etc/opensim/opensim.conf
 check "opensim-kit enabled the safe modules" "[ \"\$(crudini --get $conf Defaults EnabledModules)\" = 'opensimsearch gloebit' ]"

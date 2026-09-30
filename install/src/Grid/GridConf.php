@@ -17,6 +17,36 @@ final class GridConf
         return "{$plan->gridDir}/{$plan->gridNick}.conf";
     }
 
+    /**
+     * The description of a grid whose Robust is on another machine, what a
+     * simulator needs to join it.
+     *
+     * @param array<string,mixed> $grid GridInfo::describe()
+     */
+    public function writeRemote(array $grid): string
+    {
+        $lines = [
+            '[Grid]',
+            'Remote = true',
+            "GridName = {$grid['name']}",
+            "GridNick = {$grid['nick']}",
+            "slug = {$grid['slug']}",
+            "BaseHostname = {$grid['baseHostname']}",
+            "PublicPort = {$grid['publicPort']}",
+            "PrivatePort = {$grid['privatePort']}",
+            'Hypergrid = ' . ($grid['hypergrid'] ? 'true' : 'false'),
+            'DataDirectory = "' . $grid['dataDirectory'] . '"',
+            'CacheDirectory = "' . $grid['cacheDirectory'] . '"',
+            'LogsDirectory = "' . $grid['logsDirectory'] . '"',
+            '',
+        ];
+        $path = "{$grid['dir']}/{$grid['nick']}.conf";
+        @mkdir(dirname($path), 0o755, true);
+        file_put_contents($path, implode("\n", $lines));
+
+        return $path;
+    }
+
     public function write(GridPlan $plan): string
     {
         $version = preg_replace('/^opensim-/', '', basename($plan->coreDirectory)) ?? '';

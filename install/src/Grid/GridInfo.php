@@ -27,6 +27,8 @@ final class GridInfo
     public string $dataDirectory = '';
     public string $cacheDirectory = '';
     public string $logsDirectory = '';
+    /** A grid whose Robust is on another machine: only described here, to join it. */
+    public bool $remote = false;
 
     /**
      * @param array<string,mixed> $profile the install profile (Config::profile())
@@ -36,7 +38,7 @@ final class GridInfo
         $etcRoot = $profile['EtcRoot'] ?? '';
         $robustIni = GridState::robustIni($etcRoot, $nick);
         if ($robustIni === null) {
-            return null;
+            return self::loadRemote($profile, $nick);
         }
 
         $current = self::parse($robustIni);
@@ -63,6 +65,64 @@ final class GridInfo
         $grid->logsDirectory = $conf['LogsDirectory'] ?? ($profile['LogsRoot'] ?? '');
 
         return $grid;
+    }
+
+    /** Whether the grid is only described here, its Robust being on another machine. */
+    public static function isRemote(string $etcRoot, string $nick): bool
+    {
+        return GridState::robustIni($etcRoot, $nick) === null && self::remoteValues("$etcRoot/grids/$nick/$nick.conf") !== null;
+    }
+
+    /** @return array<string,string>|null the [Grid] of a description of a remote grid */
+    private static function remoteValues(string $conf): ?array
+    {
+        $grid = @parse_ini_file($conf, true, INI_SCANNER_RAW)['Grid'] ?? null;
+        if (!is_array($grid) || !in_array(strtolower(trim((string) ($grid['Remote'] ?? ''))), ['true', '1', 'yes'], true)) {
+            return null;
+        }
+
+        return array_map(static fn ($value): string => trim((string) $value, " \t\""), $grid);
+    }
+
+    /** A remote grid, from its description. */
+    private static function loadRemote(array $profile, string $nick): ?self
+    {
+        $etcRoot = $profile['EtcRoot'] ?? '';
+        $conf = self::remoteValues("$etcRoot/grids/$nick/$nick.conf");
+        if ($conf === null) {
+            return null;
+        }
+
+        $grid = new self();
+        $grid->remote = true;
+        $grid->nick = $nick;
+        $grid->dir = "$etcRoot/grids/$nick";
+        $grid->name = $conf['GridName'] ?? ucfirst($nick);
+        $grid->slug = $conf['slug'] ?? Slug::slug($grid->name);
+        $grid->hypergrid = !in_array(strtolower($conf['Hypergrid'] ?? 'true'), ['false', '0', 'no'], true);
+        $grid->baseHostname = $conf['BaseHostname'] ?? 'localhost';
+        $grid->publicPort = (int) ($conf['PublicPort'] ?? 8002);
+        $grid->privatePort = (int) ($conf['PrivatePort'] ?? 8003);
+        $grid->coreDirectory = $conf['CoreDirectory'] ?? ($profile['CoreDirectory'] ?? '');
+        $grid->dbHost = 'localhost';
+        $grid->dbName = '';
+        $grid->dbPass = '';
+        $grid->dataDirectory = $conf['DataDirectory'] ?? (($profile['DataRoot'] ?? '') . "/$nick");
+        $grid->cacheDirectory = $conf['CacheDirectory'] ?? (($profile['CacheRoot'] ?? '') . "/$nick");
+        $grid->logsDirectory = $conf['LogsDirectory'] ?? ($profile['LogsRoot'] ?? '');
+
+        return $grid;
+    }
+
+    /** The description of a remote grid, to keep it: what a simulator needs to join it. */
+    public function describe(): array
+    {
+        return [
+            'nick' => $this->nick, 'name' => $this->name, 'slug' => $this->slug, 'baseHostname' => $this->baseHostname,
+            'publicPort' => $this->publicPort, 'privatePort' => $this->privatePort, 'hypergrid' => $this->hypergrid,
+            'dataDirectory' => $this->dataDirectory, 'cacheDirectory' => $this->cacheDirectory, 'logsDirectory' => $this->logsDirectory,
+            'dir' => $this->dir,
+        ];
     }
 
     /** The name of the instance running its Robust: what the launcher makes of the config file name. */
