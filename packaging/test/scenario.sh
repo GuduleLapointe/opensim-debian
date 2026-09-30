@@ -23,8 +23,11 @@ tools=$(deb opensim-tools)
 metas="$(deb opensim) $(deb opensim-0.9.3.0-opensimsearch) $(deb opensim-0.9.3.0-gloebit) $(deb opensim-kit)"
 # The dotnet process only: the screen session running it has the same arguments
 robust_pid() { pgrep -f "^dotnet .*Robust.dll" | head -1; }
-robust_log() { ls /var/log/opensim/testgrid*.log 2>/dev/null | grep -v Stats | head -1; }
-quits() { cat /var/log/opensim/testgrid*.log 2>/dev/null | grep -c '\[CONSOLE\] Quitting'; }
+robust_log() { ls /var/log/opensim/testgrid_robust*.log 2>/dev/null | grep -v Stats | head -1; }
+quits() { cat /var/log/opensim/testgrid_robust*.log 2>/dev/null | grep -c '\[CONSOLE\] Quitting'; }
+# The simulator of the grid made by the wizard, and its region
+sim_pid() { pgrep -f "^dotnet .*OpenSim.dll -inifile=/etc/opensim/opensim.d/testgrid_sim1.ini" | head -1; }
+sim_registered() { grep -c 'Region Sim1 .* registered at 1000,1000' /var/log/opensim/testgrid_sim1.log 2>/dev/null; }
 robust_state() { echo "   Robust pid: $(robust_pid || true), clean shutdowns: $(quits)"; }
 profile() { grep -q '^\[opensim-0.9.3.0\]' /etc/opensim/opensim.conf 2>/dev/null; }
 
@@ -181,9 +184,29 @@ check "grid core" "grep -q 'Starting in /usr/share/opensim/0.9.3.0/bin' $(robust
 check "Robust ready" "grep -q 'UserAgentServerConnector loaded' $(robust_log)"
 check "no write denied" "! grep -qiE 'denied|unauthorized' $(robust_log)"
 
+# A simulator joins the grid, with a new account of the grid as owner of its
+# estate (made through the console of Robust), a database of its own (the
+# administrator account is asked), and starts with its region
+ts "simulator in the grid"
+(cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=Sim1 TEST_START=1 TEST_NEW_OWNER="Test Owner" \
+    TEST_ADMIN_USER=dbroot TEST_ADMIN_PASSWORD=adminpw runuser -u opensim -- php /test/newsim.php >/tmp/sim1.out 2>&1
+    echo "exit code: $?" >>/tmp/sim1.out)
+check "the simulator wizard ends well, the region is online" "grep -q 'exit code: 0' /tmp/sim1.out &&
+    grep -q 'region Sim1 is online' /tmp/sim1.out && [ -n '$(sim_pid)' ]"
+check "the region is registered in the grid" "[ \"\$(mysql -BN -e \"SELECT CONCAT(locX DIV 256, ',', locY DIV 256) FROM testgrid_robust.regions WHERE regionName='Sim1'\")\" = 1000,1000 ]"
+check "the simulator has its own database, its config is enabled" "mysql -e 'SELECT 1' testgrid_sim1 >/dev/null 2>&1 &&
+    [ -L /etc/opensim/opensim.d/testgrid_sim1.ini ] && [ -f /etc/opensim/grids/testgrid/sims/testgrid_sim1/regions/Sim1.ini ]"
+check "the estate belongs to the account made in the grid" "[ -n \"\$(mysql -BN -e \"SELECT PrincipalID FROM testgrid_robust.UserAccounts WHERE FirstName='Test' AND LastName='Owner'\")\" ] &&
+    [ \"\$(mysql -BN -e 'SELECT EstateOwner FROM testgrid_sim1.estate_settings LIMIT 1')\" = \"\$(mysql -BN -e \"SELECT PrincipalID FROM testgrid_robust.UserAccounts WHERE FirstName='Test' AND LastName='Owner'\")\" ]"
+check "the region loads the enabled modules" "grep -q 'Plugin Loaded: OpenSimSearch' /var/log/opensim/testgrid_sim1.log"
+check "nothing written in the read-only core" "! grep -iE 'unauthorized|denied' /var/log/opensim/testgrid_sim1.log | grep -viE 'gloebit'"
+check "the native libraries are found" "[ -L /var/lib/opensim/native/0.9.3.0/libBulletSim.so ] && ! grep -q 'DllNotFound' /var/log/opensim/testgrid_sim1.log"
+sim=$(sim_pid)
+
 ts upgrade
 apt_q install --reinstall $tools "$core"
 check "Robust not restarted" "[ '$(robust_pid)' = '$pid' ]"
+check "the simulator not restarted" "[ '$(sim_pid)' = '$sim' ]"
 
 ts "development build and modules"
 check "modules installed by opensim-kit" "dpkg -s opensim-0.9.3.0-gloebit opensim-0.9.3.0-opensimsearch >/dev/null 2>&1"
@@ -212,7 +235,7 @@ grid_core /usr/share/opensim/0.9.3.0
 pid=$(robust_pid)
 check "grid back on the release" "[ -n '$pid' ]"
 apt_q remove opensim-unstable
-check "instances of another core untouched" "[ '$(robust_pid)' = '$pid' ]"
+check "instances of another core untouched" "[ '$(robust_pid)' = '$pid' ] && [ '$(sim_pid)' = '$sim' ]"
 apt_q install "$unstable"
 
 ts "modules enabled for a region"
@@ -240,11 +263,15 @@ crudini --inplace --set $conf Defaults EnabledModules "opensimsearch gloebit"
 rm -f /etc/opensim/opensim.d/testsim.ini
 
 ts "remove the tools, grid started by the service"
+registered=$(sim_registered)
 systemctl restart opensim
+robust_state
+check "the service starts the grid, then its simulator" "[ -n '$(robust_pid)' ] && [ -n '$(sim_pid)' ] && [ '$(sim_registered)' -gt '$registered' ]"
 before=$(quits)
 apt_q remove opensim-tools
 robust_state
 check "Robust stopped cleanly" "[ -z '$(robust_pid)' ] && [ '$(quits)' = $((before + 1)) ]"
+check "the simulator stopped too" "[ -z '$(sim_pid)' ]"
 check "core kept" "[ -f /usr/share/opensim/0.9.3.0/bin/OpenSim.exe ]"
 
 ts "reinstall the tools"

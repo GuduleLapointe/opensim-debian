@@ -123,6 +123,23 @@ final class Database
         return $this->database($client, $plan);
     }
 
+    /**
+     * The lines a query gives on the database of the settings, with its own
+     * account.
+     *
+     * @return list<string>|null null when the query cannot be run
+     */
+    public function select(GridPlan $plan, string $sql): ?array
+    {
+        $client = $this->client();
+        if ($client === null) {
+            return null;
+        }
+        [$code, $out] = $this->run($client, $plan, $plan->dbName, $sql);
+
+        return $code === 0 ? array_values(array_filter(explode("\n", $out), static fn (string $line): bool => $line !== '')) : null;
+    }
+
     /** Login refused: wrong password, or no such account for this host. */
     private function account(string $client, GridPlan $plan): int
     {

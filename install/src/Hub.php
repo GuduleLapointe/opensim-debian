@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace OpenSim\Installer;
 
+use OpenSim\Installer\Grid\GridInfo;
 use OpenSim\Installer\Grid\GridState;
 use OpenSim\Installer\Grid\NewGrid;
+use OpenSim\Installer\Grid\NewSim;
+use OpenSim\Installer\Grid\SimState;
 use OpenSim\Installer\Ui\InstallerUi;
 
 /**
@@ -60,7 +63,7 @@ final class Hub
                     $cores === [] ? $this->ui->warn('Install an OpenSim core first.') : $this->gridMenu($grids, $etcRoot);
                     break;
                 case 'sim':
-                    $grids === [] ? $this->ui->warn('Create a grid first.') : $this->simMenu($sims);
+                    $grids === [] ? $this->ui->warn('Create a grid first.') : $this->simMenu($sims, $etcRoot);
                     break;
                 case 'quit':
                     return;
@@ -137,10 +140,60 @@ final class Hub
         }
     }
 
-    private function simMenu(array $sims): void
+    private function simMenu(array $sims, string $etcRoot): void
     {
-        // Sim configuration is not ported yet.
-        $this->ui->warn('Sim configuration is coming in a later phase.');
+        $options = [];
+        foreach ($sims as $slug) {
+            $options[$slug] = $slug . (SimState::isEnabled($etcRoot, $slug) ? '' : ' (disabled)');
+        }
+        $options['new'] = 'Create a new simulator';
+        $options['back'] = 'Back';
+
+        $choice = $this->ui->choose("Simulators of {$this->activeGrid}", $options, $sims === [] ? 'new' : 'back');
+        if ($choice === 'back') {
+            return;
+        }
+        if ($choice === 'new') {
+            (new NewSim($this->ui))->run($this->activeGrid);
+
+            return;
+        }
+        $this->simActions($choice, $etcRoot);
+    }
+
+    private function simActions(string $slug, string $etcRoot): void
+    {
+        $enabled = SimState::isEnabled($etcRoot, $slug);
+        $choice = $this->ui->choose("Simulator: $slug", [
+            'reconfigure' => 'Reconfigure',
+            'toggle' => $enabled ? 'Disable' : 'Enable',
+            'back' => 'Back',
+        ], 'back');
+
+        switch ($choice) {
+            case 'reconfigure':
+                // The name typed at creation is not kept: the slug names it
+                (new NewSim($this->ui))->run($this->activeGrid, $this->simName($slug));
+                break;
+            case 'toggle':
+                if ($enabled) {
+                    SimState::disable($etcRoot, $slug);
+                    $this->ui->note("Disabled $slug.");
+                } elseif (SimState::enable($etcRoot, $slug, "$etcRoot/grids/{$this->activeGrid}/sims/$slug.ini")) {
+                    $this->ui->note("Enabled $slug.");
+                } else {
+                    $this->ui->warn("Cannot enable $slug (no config).");
+                }
+                break;
+        }
+    }
+
+    /** The name of a simulator from the name of its instance: what follows the grid nick. */
+    private function simName(string $slug): string
+    {
+        $prefix = GridInfo::instanceName((string) $this->activeGrid) . '_';
+
+        return str_starts_with($slug, $prefix) ? substr($slug, strlen($prefix)) : $slug;
     }
 
     private function simState(array $sims): string
@@ -158,10 +211,10 @@ final class Hub
         return $this->dirNames($etcRoot === '' ? '' : "$etcRoot/grids");
     }
 
-    /** @return list<string> sim names under EtcRoot/grids/<grid>/sims */
+    /** @return list<string> instance names of the simulators of a grid */
     private function sims(string $etcRoot, string $grid): array
     {
-        return $this->dirNames($etcRoot === '' ? '' : "$etcRoot/grids/$grid/sims");
+        return $etcRoot === '' ? [] : SimState::names("$etcRoot/grids/$grid");
     }
 
     /** @return list<string> */

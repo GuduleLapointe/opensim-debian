@@ -15,6 +15,8 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use OpenSim\Installer\Grid\GridPlan;
 use OpenSim\Installer\Grid\NewGrid;
+use OpenSim\Installer\Grid\NewSim;
+use OpenSim\Installer\Grid\SimPlan;
 use OpenSim\Installer\Hub;
 use OpenSim\Installer\SetupFailed;
 use OpenSim\Installer\Ui\PromptsUi;
@@ -27,6 +29,10 @@ try {
         // another user, which sends the plan on the standard input
         $data = json_decode((string) stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
         (new NewGrid(new PromptsUi()))->apply(GridPlan::fromArray($data['plan']), $data['profile']);
+    } elseif (($argv[1] ?? '') === '--apply-sim') {
+        // The same for a simulator
+        $data = json_decode((string) stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
+        (new NewSim(new PromptsUi()))->apply(SimPlan::fromArray($data['plan']), $data['profile']);
     } else {
         (new Hub(new PromptsUi()))->run();
     }

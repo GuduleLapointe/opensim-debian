@@ -26,7 +26,10 @@ USAGE="opensim [-hvq] <command> [instance...]"
 HELP="
 opensim <start|stop [now]|restart [now]> [instance1] [instance2] [...]
 opensim status
-opensim setup           create or modify grids (setup wizard)
+opensim setup           create or modify grids and simulators (setup wizard)
+opensim command <instance> <text>|-
+                        send a command to the console of an instance, or the
+                        lines read from the standard input (-)
 opensim install-dotnet  install the .NET runtime OpenSim needs (as root)
 
 	-h display this help
@@ -379,12 +382,22 @@ stopSim() {
 				inifile=$(buildIni "$sim")
 			}
 
+		unset Executable
 		crudget $inifile Const 2>/dev/null || crudget $inifile const 2>/dev/null
 		crudget $inifile Launch 2>/dev/null || crudget $inifile launch 2>/dev/null
 		crudget $inifile Network 2>/dev/null
+		# Robust or region: from its [Launch] Executable when given, else from where the config is
+		if [ -n "${Executable:-}" ]; then
+			stopType=$(basename "${Executable%.*}")
+		else
+			case "$inifile" in
+			*robust.d/* | *robust*) stopType=Robust ;;
+			*) stopType=OpenSim ;;
+			esac
+		fi
 		ConsoleUser=${ConsoleUser:-${consoleuser}}
 		ConsolePass=${ConsolePass:-${consolepass}}
-		[ "${Executable%.*}" = "Robust" ] &&
+		[ "$stopType" = "Robust" ] &&
 			ConsolePort=${ConsolePort:-${consoleport}} ||
 			ConsolePort=${console_port:-${consoleport}}
 		[ "$ConsolePort" = "0" ] && ConsolePort=""
@@ -394,7 +407,8 @@ stopSim() {
 			unset OSIM_REST_INI
 		fi
 
-		if [ "${Executable%.*}" = "OpenSim" ]; then
+		# Only a running region has users to warn
+		if [ "$stopType" = "OpenSim" ] && osScreenExists "$simName"; then
 			debug notiy users in $simName
 			[ $shutdownDelay = 0 ] && warnDelay=0 || warnDelay=$(($shutdownDelay / $shutdownWarnings))
 			warn=0
@@ -421,6 +435,25 @@ stopSim() {
 			kill -0 $pid 2>/dev/null && debug "$simName still running after ${timeout}s"
 		fi
 	done
+}
+
+# Send commands to the console of a running instance: the given text, or each
+# line of the standard input (an empty line answers a prompt with its default).
+commandSim() {
+	local instance line
+	instance=$(echo "$1" | tr "[:upper:]" "[:lower:]" | sed "s/[^a-z0-9_]*//g")
+	shift
+	[ -n "$instance" ] || end 1 "usage: $PGM command <instance> <text>|-"
+	osScreenExists "$instance" || end 1 "$instance is not running"
+	if [ "$1" = "-" ]; then
+		while IFS= read -r line; do
+			osConsole "$instance" "${line:-\\n}"
+			sleep 1
+		done
+	else
+		osConsole "$instance" "$*"
+	fi
+	end 0
 }
 
 restartSim() {
@@ -621,6 +654,10 @@ case "$1" in
 "status")
 	action=$1
 	shift
+	;;
+"command")
+	shift
+	commandSim "$@"
 	;;
 esac
 

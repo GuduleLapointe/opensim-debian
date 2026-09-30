@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OpenSim\Installer\Grid;
 
 use OpenSim\Installer\Config;
+use OpenSim\Installer\Elevated;
 use OpenSim\Installer\Ports;
 use OpenSim\Installer\SetupFailed;
 use OpenSim\Installer\System;
@@ -85,31 +86,13 @@ final class NewGrid
      */
     private function write(GridPlan $plan, array $profile): void
     {
-        $user = $profile['SystemUser'] ?? '';
-        $me = function_exists('posix_geteuid') ? (posix_getpwuid(posix_geteuid())['name'] ?? '') : '';
-        if ($user === '' || $me === $user || (function_exists('posix_geteuid') && posix_geteuid() === 0)) {
+        if (!Elevated::needed($profile)) {
             $this->apply($plan, $profile);
 
             return;
         }
 
-        // The plan goes through the standard input of the process, not its
-        // arguments: it holds the database password
-        $process = proc_open(
-            ['sudo', '-H', '-u', $user, PHP_BINARY, dirname(__DIR__, 2) . '/install.php', '--apply-grid'],
-            [0 => ['pipe', 'r'], 1 => STDOUT, 2 => STDERR],
-            $pipes,
-        );
-        if (!is_resource($process)) {
-            $this->ui->error("Could not run the writing as $user.");
-
-            throw new SetupFailed('write');
-        }
-        fwrite($pipes[0], json_encode(['plan' => $plan->toArray(), 'profile' => $profile], JSON_THROW_ON_ERROR));
-        fclose($pipes[0]);
-        if (proc_close($process) !== 0) {
-            throw new SetupFailed('write');
-        }
+        Elevated::run($this->ui, '--apply-grid', ['plan' => $plan->toArray(), 'profile' => $profile], $profile['SystemUser']);
     }
 
     /** The writing itself: run as the system user of the install, root, or the user of an install without one. */
@@ -247,6 +230,8 @@ final class NewGrid
             @mkdir(dirname($dest), 0o755, true);
             @copy($src, $dest);
         }
+        // Ready for the simulators that will join the grid
+        (new GridShared())->prepare($plan->etcDirectory, $plan->binDir, $plan->enableHypergrid);
         $this->ui->note('Copied config-include defaults.');
     }
 
@@ -301,14 +286,7 @@ final class NewGrid
 
         // Core selection (multi-version aware).
         $coreRoot = $profile['CoreRoot'] ?? '';
-        $cores = [];
-        // OpenSim.exe in the releases, only OpenSim.dll in builds made on Linux
-        $assemblies = array_merge(glob("$coreRoot/*/bin/OpenSim.exe") ?: [], glob("$coreRoot/*/bin/OpenSim.dll") ?: []);
-        foreach ($assemblies as $assembly) {
-            $dir = dirname($assembly, 2);
-            $cores[$dir] = basename($dir);
-        }
-        ksort($cores, SORT_NATURAL);
+        $cores = Cores::list($coreRoot);
         if ($cores === []) {
             $this->ui->error("No OpenSim core found under $coreRoot.");
 
@@ -379,36 +357,10 @@ final class NewGrid
         return ucfirst($short);
     }
 
-    /** Extract current settings from an existing Robust config (tolerant regex). */
+    /** Extract current settings from an existing Robust config. */
     private function parseExisting(string $path): array
     {
-        $text = (string) file_get_contents($path);
-        $current = [];
-
-        $grab = static function (string $key, string $text): ?string {
-            return preg_match('/^\s*' . $key . '\s*=\s*"?([^"\n]+?)"?\s*$/im', $text, $m) ? trim($m[1]) : null;
-        };
-
-        foreach (['gridName' => 'gridname', 'baseHostname' => 'BaseHostname', 'webUrl' => 'WebURL'] as $field => $key) {
-            $value = $grab($key, $text);
-            if ($value !== null) {
-                $current[$field] = $value;
-            }
-        }
-        if (($p = $grab('PublicPort', $text)) !== null && ctype_digit($p)) {
-            $current['publicPort'] = (int) $p;
-        }
-        if (($p = $grab('PrivatePort', $text)) !== null && ctype_digit($p)) {
-            $current['privatePort'] = (int) $p;
-        }
-        if (preg_match('/Data Source=([^;"\s]*);Database=([^;"\s]*);User ID=([^;"\s]*);Password=([^;"]*?);/i', $text, $m)) {
-            $current['dbHost'] = $m[1];
-            $current['dbName'] = $m[2];
-            $current['dbUser'] = $m[3];
-            $current['dbPass'] = $m[4];
-        }
-
-        return $current;
+        return GridInfo::parse($path);
     }
 
     private function randomPassword(int $length = 20): string

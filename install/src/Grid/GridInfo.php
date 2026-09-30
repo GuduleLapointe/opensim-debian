@@ -1,0 +1,133 @@
+<?php
+
+declare(strict_types=1);
+
+namespace OpenSim\Installer\Grid;
+
+/**
+ * A grid already configured, as its files tell it: what a simulator needs to
+ * join it (hostname, ports, core, database of the grid, folders).
+ */
+final class GridInfo
+{
+    public string $nick = '';
+    public string $name = '';
+    public string $slug = '';
+    public bool $hypergrid = true;
+    public string $dir = '';
+    public string $robustIni = '';
+    public string $coreDirectory = '';
+    public string $baseHostname = '';
+    public int $publicPort = 8002;
+    public int $privatePort = 8003;
+    public string $dbHost = 'localhost';
+    public string $dbName = '';
+    public string $dbUser = 'opensim';
+    public string $dbPass = '';
+    public string $dataDirectory = '';
+    public string $cacheDirectory = '';
+    public string $logsDirectory = '';
+
+    /**
+     * @param array<string,mixed> $profile the install profile (Config::profile())
+     */
+    public static function load(array $profile, string $nick): ?self
+    {
+        $etcRoot = $profile['EtcRoot'] ?? '';
+        $robustIni = GridState::robustIni($etcRoot, $nick);
+        if ($robustIni === null) {
+            return null;
+        }
+
+        $current = self::parse($robustIni);
+        $conf = @parse_ini_file("$etcRoot/grids/$nick/$nick.conf", true, INI_SCANNER_RAW)['Grid'] ?? [];
+        $conf = array_map(static fn ($value): string => trim((string) $value, " \t\""), $conf);
+
+        $grid = new self();
+        $grid->nick = $nick;
+        $grid->dir = "$etcRoot/grids/$nick";
+        $grid->robustIni = $robustIni;
+        $grid->hypergrid = str_contains(basename($robustIni), '.HG.');
+        $grid->name = $current['gridName'] ?? ($conf['GridName'] ?? ucfirst($nick));
+        $grid->slug = $conf['slug'] ?? Slug::slug($grid->name);
+        $grid->coreDirectory = $conf['CoreDirectory'] ?? ($profile['CoreDirectory'] ?? '');
+        $grid->baseHostname = $current['baseHostname'] ?? 'localhost';
+        $grid->publicPort = $current['publicPort'] ?? 8002;
+        $grid->privatePort = $current['privatePort'] ?? 8003;
+        $grid->dbHost = $current['dbHost'] ?? 'localhost';
+        $grid->dbName = $current['dbName'] ?? '';
+        $grid->dbUser = $current['dbUser'] ?? 'opensim';
+        $grid->dbPass = $current['dbPass'] ?? '';
+        $grid->dataDirectory = $conf['DataDirectory'] ?? (($profile['DataRoot'] ?? '') . "/$nick");
+        $grid->cacheDirectory = $conf['CacheDirectory'] ?? (($profile['CacheRoot'] ?? '') . "/$nick");
+        $grid->logsDirectory = $conf['LogsDirectory'] ?? ($profile['LogsRoot'] ?? '');
+
+        return $grid;
+    }
+
+    /** The name of the instance running its Robust: what the launcher makes of the config file name. */
+    public function robustInstance(): string
+    {
+        return self::instanceName($this->nick);
+    }
+
+    /** The name the launcher gives an instance, from its config file name. */
+    public static function instanceName(string $name): string
+    {
+        return (string) preg_replace('/[^a-z0-9_]/', '', strtolower($name));
+    }
+
+    /** The grid's own database settings, to ask questions of it. */
+    public function databasePlan(): GridPlan
+    {
+        $plan = new GridPlan();
+        $plan->dbHost = $this->dbHost;
+        $plan->dbName = $this->dbName;
+        $plan->dbUser = $this->dbUser;
+        $plan->dbPass = $this->dbPass;
+
+        return $plan;
+    }
+
+    /**
+     * Current settings of an existing Robust or simulator config (tolerant
+     * regex, comments and quotes ignored).
+     *
+     * @return array<string,string|int>
+     */
+    public static function parse(string $path): array
+    {
+        $text = (string) file_get_contents($path);
+        $current = [];
+
+        $grab = static function (string $key) use ($text): ?string {
+            return preg_match('/^\s*' . $key . '\s*=\s*"?([^"\n]+?)"?\s*$/im', $text, $m) ? trim($m[1]) : null;
+        };
+
+        foreach (['gridName' => 'gridname', 'baseHostname' => 'BaseHostname', 'webUrl' => 'WebURL'] as $field => $key) {
+            $value = $grab($key);
+            if ($value !== null) {
+                $current[$field] = $value;
+            }
+        }
+        foreach (['publicPort' => 'PublicPort', 'privatePort' => 'PrivatePort', 'httpPort' => 'http_listener_port'] as $field => $key) {
+            if (($port = $grab($key)) !== null && ctype_digit($port)) {
+                $current[$field] = (int) $port;
+            }
+        }
+        if (preg_match('/Data Source=([^;"\s]*);Database=([^;"\s]*);User ID=([^;"\s]*);Password=([^;"]*?);/i', $text, $m)) {
+            $current['dbHost'] = $m[1];
+            $current['dbName'] = $m[2];
+            $current['dbUser'] = $m[3];
+            $current['dbPass'] = $m[4];
+        }
+        foreach (['estateName' => 'DefaultEstateName', 'estateOwner' => 'DefaultEstateOwnerName'] as $field => $key) {
+            $value = $grab($key);
+            if ($value !== null) {
+                $current[$field] = $value;
+            }
+        }
+
+        return $current;
+    }
+}
