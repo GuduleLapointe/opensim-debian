@@ -55,7 +55,9 @@ osConsole() {
 	shift
 	osCommand="$@"
 	if [ "$OSIM_REST_INI" ]; then
-		"$BASEDIR/libexec/rest-cli" "$OSIM_REST_INI" $osCommand
+		# The remote console: an empty line answers a question with its default
+		[ "$osCommand" = "\n" ] && osCommand=""
+		printf '%s\n' "$osCommand" | php "$BASEDIR/libexec/rest.php" --ini "$OSIM_REST_INI" - >/dev/null 2>&1
 		return
 	fi
 	[ "$osCommand" = "\n" ] && unset osCommand
@@ -90,10 +92,40 @@ osScreenExists() {
 	screen -ls 2>/dev/null | grep -E "[0-9]+\.$1[[:space:]]" | grep -qv "Dead"
 }
 
-# Whether an instance is still running. By its screen session for now; the
-# console mode (screen or remote console) will be a choice.
+# Whether an instance is running: its screen session, or, for an instance with
+# a remote console (no session), its process, found by its config. Args: the
+# instance, its config (default: the one being started, OS_CURRENT_INI)
 osInstanceRunning() {
-	osScreenExists "$1"
+	osScreenExists "$1" && return 0
+	local ini=${2:-${OS_CURRENT_INI:-}}
+	[ -n "$ini" ] && pgrep -f -- "-inifile=$ini( |\$)" >/dev/null 2>&1
+}
+
+# Whether the config of an instance gives it a remote console (a port, a user
+# and a password in [Network]). If so, OSIM_REST_INI is set: the commands
+# sent with osConsole go to it, else to the screen session of the instance.
+osUseRest() {
+	unset OSIM_REST_INI
+	[ -f "${1:-}" ] || return 1
+	grep -qiE '^[[:blank:]]*(ConsolePort|console_port)[[:blank:]]*=[[:blank:]]*"?[1-9]' "$1" &&
+		grep -qiE '^[[:blank:]]*ConsoleUser[[:blank:]]*=[[:blank:]]*"?[^"[:blank:]]' "$1" &&
+		grep -qiE '^[[:blank:]]*ConsolePass[[:blank:]]*=[[:blank:]]*"?[^"[:blank:]]' "$1" || return 1
+	export OSIM_REST_INI="$1"
+}
+
+# Wait for a pattern in the log of an instance, in what it wrote after the mark
+# (a byte offset taken before the start): 0 when it shows, 3 when the instance
+# exited meanwhile, 1 at the end of the delay.
+# Args: log file, mark, instance, seconds, pattern
+osLogWait() {
+	local logfile=$1 mark=$2 instance=$3 seconds=$4 pattern=$5 t=0
+	while [ $t -lt $((seconds * 2)) ]; do
+		tail -c +$((mark + 1)) "$logfile" 2>/dev/null | grep -aqE "$pattern" && return 0
+		osInstanceRunning "$instance" || return 3
+		sleep 0.5
+		t=$((t + 1))
+	done
+	return 1
 }
 
 # The connectors a Robust loads, as their class names, one per line: what its

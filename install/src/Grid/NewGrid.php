@@ -304,6 +304,8 @@ final class NewGrid
         $plan->privatePort = (int) $this->ui->text('Private port', (string) ($current['privatePort'] ?? ($plan->publicPort % 10 === 2 ? $plan->publicPort + 1 : Ports::next($plan->publicPort + 1))), $numeric);
         $plan->webUrl = $this->ui->text('Web URL', $current['webUrl'] ?? "https://{$plan->baseHostname}", $required);
 
+        $this->askConsole($plan, $current, $numeric);
+
         // Database: reuse a found password, otherwise generate one (never changeme).
         $foundPass = $current['dbPass'] ?? '';
         $this->askDatabase($plan, [
@@ -314,6 +316,29 @@ final class NewGrid
         ]);
 
         return $plan;
+    }
+
+    /**
+     * The console of the grid: remote (REST, through its port x4: reachable from
+     * another machine or a container) or a screen session to attach here. What an
+     * existing config has is kept, password included.
+     *
+     * @param array<string,string|int> $current
+     */
+    private function askConsole(GridPlan $plan, array $current, \Closure $numeric): void
+    {
+        $plan->consoleMode = $this->ui->choose('Console of the grid', [
+            'rest' => 'Remote console (REST): through its port, from another machine or a container',
+            'screen' => 'Screen session: attached on this machine',
+        ], isset($current['consoleUser']) || $current === [] ? 'rest' : 'screen');
+        if ($plan->consoleMode !== 'rest') {
+            return;
+        }
+
+        $base = $plan->publicPort % 10 === 2 ? $plan->publicPort - 2 : 0;
+        $plan->consolePort = (int) $this->ui->text('Console port', (string) ($current['consolePort'] ?? ($base > 0 ? $base + 4 : Ports::next($plan->privatePort + 1))), $numeric);
+        $plan->consoleUser = (string) ($current['consoleUser'] ?? 'admin');
+        $plan->consolePass = (string) ($current['consolePass'] ?? $this->randomPassword(24));
     }
 
     /**
@@ -385,6 +410,7 @@ final class NewGrid
             "  Core:        {$plan->coreDirectory}",
             "  Hostname:    {$plan->baseHostname}",
             "  Ports:       public {$plan->publicPort} / private {$plan->privatePort}",
+            '  Console:     ' . ($plan->consoleMode === 'rest' ? "remote, port {$plan->consolePort}, user {$plan->consoleUser}" : 'screen session'),
             "  Web URL:     {$plan->webUrl}",
             "  Database:    {$plan->dbName} @ {$plan->dbHost} (user {$plan->dbUser})",
             "  Robust ini:  {$plan->robustIni()}",

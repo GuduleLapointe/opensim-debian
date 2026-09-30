@@ -23,6 +23,13 @@ final class GridPlan
     public int $privatePort = 8003;
     public string $webUrl = '';
 
+    // The console: 'rest' (remote, through its port: from another machine or a
+    // container) or 'screen' (a session to attach on this machine).
+    public string $consoleMode = 'rest';
+    public int $consolePort = 0;
+    public string $consoleUser = '';
+    public string $consolePass = '';
+
     // Database.
     public string $dbHost = 'localhost';
     public string $dbName = '';

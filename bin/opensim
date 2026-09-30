@@ -21,6 +21,13 @@ if [ "${1:-}" = "install-dotnet" ]; then
 	exec "$BASEDIR/libexec/install-dotnet" "$@"
 fi
 
+# The remote console of an instance of another machine or a container, by its
+# address: as the caller, no config needed
+if [ "${1:-}" = "rest" ]; then
+	shift
+	exec php "$BASEDIR/libexec/rest.php" "$@"
+fi
+
 # The ports of the instances: read from their config, as the caller
 if [ "${1:-}" = "ports" ]; then
 	shift
@@ -33,6 +40,9 @@ HELP="
 opensim <start|stop [now]|restart [now]> [instance1] [instance2] [...]
 opensim status
 opensim setup           create or modify grids and simulators (setup wizard)
+opensim rest --url http://HOST:PORT --user USER (-- <command> | - | --repl)
+                        the remote console of an instance of another machine or
+                        a container (password in OPENSIM_REST_PASSWORD)
 opensim ports [--publish|--ufw] [instance...]
                         the ports the instances listen on, and who has to reach
                         them; --publish gives the -p options of a container,
@@ -164,7 +174,7 @@ startSim() {
 
 		# Drop leftover dead sessions so they are not mistaken for a running one.
 		screen -wipe >/dev/null 2>&1
-		if osScreenExists "$instance"; then
+		if osInstanceRunning "$instance" "$inifile"; then
 			debug "$instance is already running"
 			continue
 		fi
@@ -317,13 +327,24 @@ startSim() {
 		stack=$(ulimit -s)
 		[ "$ExecName" = OpenSim ] && ulimit -s 1048576 2>/dev/null
 
+		# What the log of the instance will say from here
+		OS_CURRENT_INI=$inifile
+		startlog="$TMP.$instance.startup.log"
 		if [ "$RestEnabled" = "true" ]; then
-			nohup $cmd >$TMP.$instance.nohup 2>&1 &
+			# No terminal session: the output goes to a file, the console is the
+			# remote one (opensim console|command reach it through its port)
+			eval "nohup $cmd >'$startlog' 2>&1 &"
 			ulimit -s "$stack" 2>/dev/null
-			timeout 60 tail -Fn0 $TMP.$instance.nohup 2>/dev/null | egrep -am 1 "Error|UserAgentServerConnector loaded successfully|RegionReady|neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done|\[CONSOLE\] Quitting"
+			sleep 1
+			if ! osInstanceRunning "$instance" "$inifile"; then
+				log 1 "$instance failed to start: the process exited immediately"
+				[ -s "$startlog" ] && cat "$startlog" >&2
+				debug "Reproduce the command with: $PGM -v start $instance"
+				STARTFAILED=1
+				continue
+			fi
 		else
 			# Capture the session output so an early crash can be reported.
-			startlog="$TMP.$instance.startup.log"
 			eval "screen -L -Logfile '$startlog' -S $instance -d -m $cmd"
 			screen -S $instance -X logfile flush 1 2>/dev/null
 			ulimit -s "$stack" 2>/dev/null
@@ -339,69 +360,78 @@ startSim() {
 				STARTFAILED=1
 				continue
 			fi
-
-			if [ "${Executable%.*}" = "Robust" ]; then
-				# Every service its config lists must report it loaded, in the log
-				services=$(osRobustServices "$inifile")
-				if [ -z "$services" ]; then
-					debug "no service listed in $inifile, only checking the instance stays up"
-					sleep 3
-					if osInstanceRunning "$instance"; then startResult=0; else startResult=3; fi
-				else
-					osWatchServices "$LogFile" "${logMark:-0}" "$instance" 120 $services
-					startResult=$?
-				fi
-			else
-				# The questions of a first start (region, estate) are answered with
-				# their default, each once, as they come: a region fully described
-				# asks none. A question blocks the loading, so the region is ready
-				# only after them.
-				prompts=("RegionUUID" "Internal IP address" "External host name" "Do you wish to join region .* to an existing estate" "Name of estate to join")
-				answered=()
-				while :; do
-					pattern="RegionReady|neighbours.*region.*is up|LOAD REGIONS PLUGIN]: Done"
-					for i in "${!prompts[@]}"; do
-						[ -n "${answered[$i]:-}" ] || pattern="$pattern|${prompts[$i]}"
-					done
-					seen=$(osConsoleWait 120 "$instance" "$pattern")
-					startResult=$?
-					[ $startResult -eq 0 ] || break
-					asked=
-					for i in "${!prompts[@]}"; do
-						if [ -z "${answered[$i]:-}" ] && grep -qE "${prompts[$i]}" <<<"$seen"; then
-							osConsole "$instance" "\n"
-							answered[$i]=1
-							asked=1
-							break
-						fi
-					done
-					[ -n "$asked" ] || break
-				done
-				# The regions are loaded before the physics and the scripts start: a
-				# region that cannot run them ends within seconds
-				if [ $startResult -eq 0 ]; then
-					sleep 5
-					osInstanceRunning "$instance" || startResult=3
-				fi
-			fi
-
-			# Interpret the final wait result the same way for both server types.
-			case $startResult in
-			0) log "$instance started" ;;
-			4)
-				log 1 "$instance is up but these services failed to load: $OS_FAILED_SERVICES"
-				debug "Its log: $LogFile"
-				STARTFAILED=1
-				;;
-			3)
-				log 1 "$instance exited while starting"
-				[ -s "$startlog" ] && tail -n 20 "$startlog" >&2
-				debug "Reproduce the command with: $PGM -v start $instance"
-				STARTFAILED=1
-				;;
-			*) log "$instance still starting, let it run and check status later" ;;
-			esac
 		fi
+
+		if [ "${Executable%.*}" = "Robust" ]; then
+			# Every service its config lists must report it loaded, in the log
+			services=$(osRobustServices "$inifile")
+			if [ -z "$services" ]; then
+				debug "no service listed in $inifile, only checking the instance stays up"
+				sleep 3
+				if osInstanceRunning "$instance"; then startResult=0; else startResult=3; fi
+			else
+				osWatchServices "$LogFile" "${logMark:-0}" "$instance" 120 $services
+				startResult=$?
+			fi
+		elif [ "$RestEnabled" = "true" ]; then
+			# No console to answer the questions of a first start: a region is
+			# fully described, and ready when its log says so
+			osLogWait "$LogFile" "${logMark:-0}" "$instance" 120 "RegionReady|LOAD REGIONS PLUGIN\]: Done"
+			startResult=$?
+			if [ $startResult -eq 0 ]; then
+				sleep 5
+				osInstanceRunning "$instance" || startResult=3
+			fi
+		else
+			# The questions of a first start (region, estate) are answered with
+			# their default, each once, as they come: a region fully described
+			# asks none. A question blocks the loading, so the region is ready
+			# only after them.
+			prompts=("RegionUUID" "Internal IP address" "External host name" "Do you wish to join region .* to an existing estate" "Name of estate to join")
+			answered=()
+			while :; do
+				pattern="RegionReady|neighbours.*region.*is up|LOAD REGIONS PLUGIN]: Done"
+				for i in "${!prompts[@]}"; do
+					[ -n "${answered[$i]:-}" ] || pattern="$pattern|${prompts[$i]}"
+				done
+				seen=$(osConsoleWait 120 "$instance" "$pattern")
+				startResult=$?
+				[ $startResult -eq 0 ] || break
+				asked=
+				for i in "${!prompts[@]}"; do
+					if [ -z "${answered[$i]:-}" ] && grep -qE "${prompts[$i]}" <<<"$seen"; then
+						osConsole "$instance" "\n"
+						answered[$i]=1
+						asked=1
+						break
+					fi
+				done
+				[ -n "$asked" ] || break
+			done
+			# The regions are loaded before the physics and the scripts start: a
+			# region that cannot run them ends within seconds
+			if [ $startResult -eq 0 ]; then
+				sleep 5
+				osInstanceRunning "$instance" || startResult=3
+			fi
+		fi
+
+		# Interpret the final wait result the same way for both server types.
+		case $startResult in
+		0) log "$instance started" ;;
+		4)
+			log 1 "$instance is up but these services failed to load: $OS_FAILED_SERVICES"
+			debug "Its log: $LogFile"
+			STARTFAILED=1
+			;;
+		3)
+			log 1 "$instance exited while starting"
+			[ -s "$startlog" ] && tail -n 20 "$startlog" >&2
+			debug "Reproduce the command with: $PGM -v start $instance"
+			STARTFAILED=1
+			;;
+		*) log "$instance still starting, let it run and check status later" ;;
+		esac
 
 	done
 }
@@ -433,20 +463,11 @@ stopSim() {
 			*) stopType=OpenSim ;;
 			esac
 		fi
-		ConsoleUser=${ConsoleUser:-${consoleuser}}
-		ConsolePass=${ConsolePass:-${consolepass}}
-		[ "$stopType" = "Robust" ] &&
-			ConsolePort=${ConsolePort:-${consoleport}} ||
-			ConsolePort=${console_port:-${consoleport}}
-		[ "$ConsolePort" = "0" ] && ConsolePort=""
-		if [ "$ConsoleUser" ] && [ "$ConsolePass" ] && [ "$ConsolePort" ]; then
-			export OSIM_REST_INI="$inifile"
-		else
-			unset OSIM_REST_INI
-		fi
+		# Its remote console when it has one, else its screen session
+		osUseRest "$inifile"
 
 		# Only a running region has users to warn
-		if [ "$stopType" = "OpenSim" ] && osScreenExists "$simName"; then
+		if [ "$stopType" = "OpenSim" ] && { [ -n "${OSIM_REST_INI:-}" ] && osInstanceRunning "$simName" "$inifile" || osScreenExists "$simName"; }; then
 			debug notiy users in $simName
 			[ $shutdownDelay = 0 ] && warnDelay=0 || warnDelay=$(($shutdownDelay / $shutdownWarnings))
 			warn=0
@@ -466,7 +487,7 @@ stopSim() {
 			grep " -inifile=" | grep -F "$inifile" | awk '{print $1}' | head -1)
 		osConsole $simName shutdown
 		timeout=60
-		osScreenExists "$simName" && screen -x $simName >/dev/null 2>&1
+		[ -z "${OSIM_REST_INI:-}" ] && osScreenExists "$simName" && screen -x $simName >/dev/null 2>&1
 		if [ "$pid" ]; then
 			debug "Waiting for $simName (pid $pid) to exit..."
 			timeout $timeout tail --pid=$pid -f /dev/null 2>/dev/null
@@ -477,11 +498,19 @@ stopSim() {
 
 # Send commands to the console of a running instance: the given text, or each
 # line of the standard input (an empty line answers a prompt with its default).
+# Through its remote console when it has one, else its screen session.
 commandSim() {
-	local instance line
+	local instance inifile line
 	instance=$(echo "$1" | tr "[:upper:]" "[:lower:]" | sed "s/[^a-z0-9_]*//g")
 	shift
 	[ -n "$instance" ] || end 1 "usage: $PGM command <instance> <text>|-"
+	inifile=$(buildIni "$instance" 2>/dev/null)
+	if osUseRest "$inifile"; then
+		if [ "$1" = "-" ]; then
+			exec php "$BASEDIR/libexec/rest.php" --ini "$inifile" -
+		fi
+		exec php "$BASEDIR/libexec/rest.php" --ini "$inifile" -- "$*"
+	fi
 	osScreenExists "$instance" || end 1 "$instance is not running"
 	if [ "$1" = "-" ]; then
 		while IFS= read -r line; do
@@ -513,24 +542,10 @@ consoleSim() {
 		exec screen -x "$instance"
 	fi
 
-	if [ -n "$inifile" ] && [ -e "$inifile" ]; then
-		unset ConsoleUser ConsolePass ConsolePort console_port
-		crudget "$inifile" Network 2>/dev/null
-		ConsoleUser=${ConsoleUser:-${consoleuser}}
-		ConsolePass=${ConsolePass:-${consolepass}}
-		case "$inifile" in
-		*robust*) port=${ConsolePort:-${consoleport}} ;;
-		*) port=${console_port:-${consoleport}} ;;
-		esac
-		if [ -n "$ConsoleUser" ] && [ -n "$ConsolePass" ] && [ -n "$port" ] && [ "$port" != 0 ]; then
-			log "remote console of $instance, Ctrl-D to leave it running"
-			while IFS= read -e -r -p "$instance> " line; do
-				[ -n "$line" ] || continue
-				history -s "$line"
-				"$BASEDIR/libexec/rest-cli" "$inifile" $line
-			done
-			end 0
-		fi
+	# The remote console: a prompt, every line typed goes to it
+	if osUseRest "$inifile"; then
+		log "remote console of $instance, Ctrl-D to leave it running"
+		exec php "$BASEDIR/libexec/rest.php" --ini "$inifile" --repl
 	fi
 	end 1 "$instance is not running"
 }

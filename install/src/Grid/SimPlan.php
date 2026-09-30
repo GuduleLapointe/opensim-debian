@@ -26,8 +26,12 @@ final class SimPlan
     /** Name of the instance, of its config file and of its database. */
     public string $slug = '';
     public int $httpPort = 8012;
-    /** The REST console, kept in the block of the simulator (x4), not enabled. 0: no block. */
+    /** 'rest' (remote console through its port) or 'screen' (a session to attach on this machine). */
+    public string $consoleMode = 'rest';
+    /** Its port, in the block of the simulator (x4); kept even when the console is a screen one. 0: no block. */
     public int $consolePort = 0;
+    public string $consoleUser = '';
+    public string $consolePass = '';
 
     // Its own database.
     public string $dbHost = 'localhost';

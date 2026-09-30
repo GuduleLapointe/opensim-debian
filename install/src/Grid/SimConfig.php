@@ -46,11 +46,17 @@ final class SimConfig
             '',
             '[Network]',
             'http_listener_port = ' . $plan->httpPort,
-            ...($plan->consolePort > 0 ? [
-                ';; Remote (REST) console of the simulator: its port is kept here, in the',
-                ';; block of ten ports of the simulator; set ConsoleUser and ConsolePass to enable it',
+            ...($plan->consolePort > 0 && $plan->consoleMode === 'rest' ? [
+                ';; Remote (REST) console of the simulator: every right on it, from the',
+                ';; machine that has the port, in the block of ten ports of the simulator',
+                'ConsoleUser = "' . $plan->consoleUser . '"',
+                'ConsolePass = "' . $plan->consolePass . '"',
+                'console_port = ' . $plan->consolePort,
+            ] : ($plan->consolePort > 0 ? [
+                ';; Remote (REST) console of the simulator: not enabled, its port is kept here,',
+                ';; in the block of ten ports of the simulator (ConsoleUser, ConsolePass, console_port)',
                 ';console_port = ' . $plan->consolePort,
-            ] : []),
+            ] : [])),
             'ExternalHostNameForLSL = "${Const|BaseHostname}"',
             '',
             '[DatabaseService]',

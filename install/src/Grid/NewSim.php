@@ -395,6 +395,8 @@ final class NewSim
         $base = $plan->httpPort % 10 === 2 ? intdiv($plan->httpPort, 10) * 10 : 0;
         $plan->consolePort = $base > 0 ? $base + 4 : 0;
 
+        $this->askConsole($plan, $current);
+
         // Its own database: the account of the grid, a database of its own
         $this->askDatabase($plan, $grid, [
             'dbHost' => $current['dbHost'] ?? $grid->dbHost,
@@ -415,6 +417,46 @@ final class NewSim
         }
 
         return $plan;
+    }
+
+    /**
+     * The console of the simulator: remote (REST, through its port x4) or a screen
+     * session. What an existing config has is kept, password included.
+     *
+     * @param array<string,string|int> $current
+     */
+    private function askConsole(SimPlan $plan, array $current): void
+    {
+        $plan->consoleMode = $this->ui->choose('Console of the simulator', [
+            'rest' => 'Remote console (REST): through its port, from another machine or a container',
+            'screen' => 'Screen session: attached on this machine',
+        ], isset($current['consoleUser']) || $current === [] ? 'rest' : 'screen');
+        if ($plan->consoleMode !== 'rest') {
+            return;
+        }
+
+        if ($plan->consolePort === 0) {
+            $plan->consolePort = (int) $this->ui->text(
+                'Console port',
+                (string) ($current['consolePort'] ?? Ports::next($plan->httpPort + 1)),
+                static fn (string $v): ?string => ctype_digit(trim($v)) ? null : 'Enter a port number.',
+            );
+        } else {
+            $plan->consolePort = (int) ($current['consolePort'] ?? $plan->consolePort);
+        }
+        $plan->consoleUser = (string) ($current['consoleUser'] ?? 'admin');
+        $plan->consolePass = (string) ($current['consolePass'] ?? self::password());
+    }
+
+    private static function password(int $length = 24): string
+    {
+        $alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        $password = '';
+        for ($i = 0; $i < $length; $i++) {
+            $password .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+        }
+
+        return $password;
     }
 
     /**
@@ -525,6 +567,7 @@ final class NewSim
             "  Grid:        {$plan->gridName}  ({$plan->gridNick})",
             "  Core:        {$plan->coreDirectory}",
             "  HTTP port:   {$plan->httpPort}",
+            '  Console:     ' . ($plan->consoleMode === 'rest' ? "remote, port {$plan->consolePort}, user {$plan->consoleUser}" : 'screen session'),
             "  Database:    {$plan->dbName} @ {$plan->dbHost} (user {$plan->dbUser})",
             "  Estate:      {$plan->estateName}, owner {$plan->estateOwner}" . ($plan->createOwner ? ' (account to create)' : ''),
         ];

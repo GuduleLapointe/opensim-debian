@@ -81,7 +81,10 @@ scripts away from your internal network.
 
 ## Not done yet
 
-- Driving the server of a container from the tools installed on the host.
+- Starting, stopping and restarting one instance of a container that holds several: for now
+  one service by container, restarted with its container. The instances are reached through
+  their remote console (`opensim rest`, see the README of the kit), which can stop them but
+  not start them.
 - The public address of the regions: their external host name is the one the
   container sees, not the one of the host.
 - A compose file, and publication of the image.

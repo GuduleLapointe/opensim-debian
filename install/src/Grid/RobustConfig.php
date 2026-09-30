@@ -84,6 +84,15 @@ final class RobustConfig
             ]);
         }
 
+        // The remote console, every right on Robust through its port
+        if ($plan->consoleMode === 'rest' && $plan->consolePort > 0) {
+            $ini->merge(['Network' => [
+                'ConsoleUser' => $this->q($plan->consoleUser),
+                'ConsolePass' => $this->q($plan->consolePass),
+                'ConsolePort' => (string) $plan->consolePort,
+            ]]);
+        }
+
         // Enable user profiles (connector + service).
         $ini->uncomment('UserProfilesServiceConnector');
         $ini->set('UserProfilesService', 'Enabled', 'true');

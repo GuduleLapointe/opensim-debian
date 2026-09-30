@@ -316,6 +316,27 @@ check "its region is indexed" "[ \"\$(mysql -BN -e \"SELECT COUNT(*) FROM ossear
 pkill -f 'php -S 127.0.0.1:8088'
 check "no error in the search scripts" "! grep -E 'Fatal|Parse error' /tmp/php-search.log"
 
+# A simulator with a remote (REST) console: no screen session, everything through
+# its port (x4 of its block), the ports of the next block (8020)
+ts "remote console"
+(cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=Rest TEST_START=1 TEST_CONSOLE=rest TEST_OWNER="Test Owner" \
+    TEST_ADMIN_USER=dbroot TEST_ADMIN_PASSWORD=adminpw runuser -u opensim -- php /test/newsim.php >/tmp/rest.out 2>&1
+    echo "exit code: $?" >>/tmp/rest.out)
+check "a simulator with a remote console is set up and started" "grep -q 'exit code: 0' /tmp/rest.out && grep -q 'region Rest is online' /tmp/rest.out"
+check "its console is in its config, on the port x4 of its block" "grep -q '^console_port = 8024' /etc/opensim/grids/testgrid/sims/testgrid_rest.ini &&
+    grep -q '^ConsoleUser = \"admin\"' /etc/opensim/grids/testgrid/sims/testgrid_rest.ini && grep -qE '^ConsolePass = \"[A-Za-z0-9]{24}\"' /etc/opensim/grids/testgrid/sims/testgrid_rest.ini"
+check "it has no screen session, and it runs" "! runuser -u opensim -- screen -ls | grep -q testgrid_rest && pgrep -f 'OpenSim.dll -inifile=/etc/opensim/opensim.d/testgrid_rest.ini' >/dev/null"
+opensim ports >/tmp/ports-rest.out 2>&1
+check "opensim ports lists its console, and its block" "grep -qE '8022 +tcp +public' /tmp/ports-rest.out && grep -qE '8024 +tcp +console' /tmp/ports-rest.out && grep -qE '8025 +udp +public' /tmp/ports-rest.out"
+check "a command reaches its console through the port" "opensim command testgrid_rest 'show info' | grep -q 'Version: OpenSim'"
+check "a wrong password is refused" "! OPENSIM_REST_PASSWORD=wrong php /usr/share/opensim-tools/libexec/rest.php --url http://127.0.0.1:8024 --user admin -- 'show info' >/dev/null 2>&1"
+opensim stop now testgrid_rest >/tmp/rest-stop.out 2>&1
+check "it stops through its console" "! pgrep -f 'OpenSim.dll -inifile=/etc/opensim/opensim.d/testgrid_rest.ini' >/dev/null"
+opensim start testgrid_rest >/tmp/rest-start.out 2>&1
+check "it starts again, without screen, and is ready by its log" "grep -aq 'testgrid_rest started' /tmp/rest-start.out && pgrep -f 'OpenSim.dll -inifile=/etc/opensim/opensim.d/testgrid_rest.ini' >/dev/null"
+opensim stop now testgrid_rest >/dev/null 2>&1
+rm -f /etc/opensim/opensim.d/testgrid_rest.ini
+
 ts "modules enabled for a region"
 conf=/etc/opensim/opensim.conf
 check "opensim-kit enabled the safe modules" "[ \"\$(crudini --get $conf Defaults EnabledModules)\" = 'opensimsearch gloebit' ]"
