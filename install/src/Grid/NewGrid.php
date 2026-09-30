@@ -67,10 +67,53 @@ final class NewGrid
             return;
         }
 
-        $this->apply($plan, $profile);
+        // What to do once written is asked here, while the user is at the
+        // keyboard: writing may be done by another process
+        $plan->enable = $this->ui->confirm("Enable grid '{$plan->gridNick}' (link into robust.d)?", true);
+        $plan->start = $plan->enable && $this->ui->confirm("Start grid '{$plan->gridNick}' now?", true);
+
+        $this->write($plan, $profile);
     }
 
-    private function apply(GridPlan $plan, array $profile): void
+    /**
+     * Write the grid as the user who owns the install. The questions, and the
+     * database (with the rights of the user who started the setup, whatever
+     * they are), are handled by this process; only the files and the
+     * instances belong to the system user of the install (the packages). A
+     * process of that user does the writing, unless this one already is that
+     * user, or root, or the install has none.
+     */
+    private function write(GridPlan $plan, array $profile): void
+    {
+        $user = $profile['SystemUser'] ?? '';
+        $me = function_exists('posix_geteuid') ? (posix_getpwuid(posix_geteuid())['name'] ?? '') : '';
+        if ($user === '' || $me === $user || (function_exists('posix_geteuid') && posix_geteuid() === 0)) {
+            $this->apply($plan, $profile);
+
+            return;
+        }
+
+        // The plan goes through the standard input of the process, not its
+        // arguments: it holds the database password
+        $process = proc_open(
+            ['sudo', '-H', '-u', $user, PHP_BINARY, dirname(__DIR__, 2) . '/install.php', '--apply-grid'],
+            [0 => ['pipe', 'r'], 1 => STDOUT, 2 => STDERR],
+            $pipes,
+        );
+        if (!is_resource($process)) {
+            $this->ui->error("Could not run the writing as $user.");
+
+            throw new SetupFailed('write');
+        }
+        fwrite($pipes[0], json_encode(['plan' => $plan->toArray(), 'profile' => $profile], JSON_THROW_ON_ERROR));
+        fclose($pipes[0]);
+        if (proc_close($process) !== 0) {
+            throw new SetupFailed('write');
+        }
+    }
+
+    /** The writing itself: run as the system user of the install, root, or the user of an install without one. */
+    public function apply(GridPlan $plan, array $profile): void
     {
         $etcRoot = $profile['EtcRoot'];
         $this->makeDirs($plan);
@@ -87,11 +130,11 @@ final class NewGrid
         $systemUser = $profile['SystemUser'] ?? '';
         $this->giveToSystemUser($systemUser, [$plan->etcDirectory, $plan->dataDirectory, $plan->cacheDirectory], true);
 
-        if ($this->ui->confirm("Enable grid '{$plan->gridNick}' (link into robust.d)?", true)) {
+        if ($plan->enable) {
             if (GridState::enable($etcRoot, $plan->gridNick)) {
                 $this->giveToSystemUser($systemUser, [GridState::link($etcRoot, $plan->gridNick)], false);
                 $this->ui->note('Enabled: ' . GridState::link($etcRoot, $plan->gridNick));
-                if ($this->ui->confirm("Start grid '{$plan->gridNick}' now?", true)) {
+                if ($plan->start) {
                     $this->startGrid($plan);
                 }
             } else {

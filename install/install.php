@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use OpenSim\Installer\Grid\GridPlan;
+use OpenSim\Installer\Grid\NewGrid;
 use OpenSim\Installer\Hub;
 use OpenSim\Installer\SetupFailed;
 use OpenSim\Installer\Ui\PromptsUi;
@@ -20,7 +22,14 @@ use OpenSim\Installer\Ui\PromptsUi;
 // A failure is already explained on screen: end with an error code, rather
 // than going back to the menu
 try {
-    (new Hub(new PromptsUi()))->run();
+    if (($argv[1] ?? '') === '--apply-grid') {
+        // The writing of a grid, run as the system user by the setup of
+        // another user, which sends the plan on the standard input
+        $data = json_decode((string) stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
+        (new NewGrid(new PromptsUi()))->apply(GridPlan::fromArray($data['plan']), $data['profile']);
+    } else {
+        (new Hub(new PromptsUi()))->run();
+    }
 } catch (SetupFailed) {
     exit(1);
 }

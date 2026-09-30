@@ -103,6 +103,22 @@ check "a creation that fails ends the setup, with the commands and an error code
     grep -q 'CREATE USER' /tmp/denied.out && ! grep -q 'Try again' /tmp/denied.out && grep -q 'setup failed' /tmp/denied.out &&
     [ ! -e /etc/opensim/grids/deniedgrid ]"
 
+# A user who is neither root nor the system user, with a database account of
+# their own that may create accounts and databases, and the right to run
+# things as opensim (what `opensim start` needs anyway). The database is
+# handled with their own rights, no sudo to root; only the writing of the
+# files goes to opensim.
+useradd -m -s /bin/bash dbadmin
+echo 'dbadmin ALL=(opensim) NOPASSWD: ALL' >/etc/sudoers.d/dbadmin && chmod 440 /etc/sudoers.d/dbadmin
+mysql -e "CREATE USER dbadmin@localhost IDENTIFIED VIA unix_socket; GRANT ALL ON *.* TO dbadmin@localhost WITH GRANT OPTION"
+(cd /var/lib/opensim && TEST_GRID=Adminsgrid TEST_DB_PASSWORD= TEST_NO_ENABLE=1 TEST_DB_USER=adminsuser runuser -u dbadmin -- php /test/newgrid.php >/tmp/adminsgrid.out 2>&1
+    echo "exit code: $?" >>/tmp/adminsgrid.out)
+pass=$(grep -a 'Database password ->' /tmp/adminsgrid.out | head -1 | sed 's/.*-> //')
+check "own database account, no sudo to root: account and database created" "MYSQL_PWD='$pass' mysql -u adminsuser -e 'SELECT 1' adminsgrid_robust >/dev/null 2>&1"
+check "the files are written by the system user, the setup ends well" "grep -q 'exit code: 0' /tmp/adminsgrid.out &&
+    [ \"\$(stat -c %U /etc/opensim/grids/adminsgrid/Robust.HG.ini)\" = opensim ] && [ \"\$(stat -c %U /var/lib/opensim/data/adminsgrid)\" = opensim ]"
+rm -rf /etc/opensim/grids/adminsgrid /var/lib/opensim/data/adminsgrid /var/cache/opensim/adminsgrid
+
 # The setup started as root, as on the packaged install, starts the grid and
 # sees it run (a screen session is per user, the setup is not the one running it)
 (cd /var/lib/opensim && TEST_GRID=Startgrid TEST_DB_PASSWORD= TEST_START=1 TEST_DB_USER=startuser php /test/newgrid.php >/tmp/startgrid.out 2>&1

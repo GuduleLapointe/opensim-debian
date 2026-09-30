@@ -42,11 +42,10 @@ trap 'rm -f $TMP*' EXIT
 
 # Instances belong to the system user of the install, when set (e.g. opensim
 # for the packages): switch to it whoever runs the command, screen sessions
-# being per user. Except the setup started as root (sudo opensim setup): it
-# keeps the administrator access to the database, and gives what it creates
-# to that user. Nothing here adds an elevation of its own.
-if [ -n "$SystemUser" ] && [ "$(id -un)" != "$SystemUser" ] &&
-	! { [ "${1:-}" = "setup" ] && [ "$(id -u)" = 0 ]; }; then
+# being per user. Except the setup, which runs as the user who started it, with
+# their own rights on the database: it hands the writing of the files to the
+# system user itself.
+if [ -n "$SystemUser" ] && [ "$(id -un)" != "$SystemUser" ] && [ "${1:-}" != "setup" ]; then
 	rm -f $TMP*
 	if [ "$(id -u)" = 0 ]; then
 		exec runuser -u "$SystemUser" -- "$0" "${ARGV_GIVEN[@]}"

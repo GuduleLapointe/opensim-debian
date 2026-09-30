@@ -36,6 +36,29 @@ final class GridPlan
     public string $cacheDirectory = '';
     public string $logsDirectory = '';
 
+    // What to do once written, asked before anything is written.
+    public bool $enable = true;
+    public bool $start = true;
+
+    /** The plan as plain values, to hand it to the process that writes it. */
+    public function toArray(): array
+    {
+        return get_object_vars($this);
+    }
+
+    /** @param array<string,mixed> $values */
+    public static function fromArray(array $values): self
+    {
+        $plan = new self();
+        foreach ($values as $name => $value) {
+            if (property_exists($plan, $name)) {
+                $plan->$name = $value;
+            }
+        }
+
+        return $plan;
+    }
+
     public function robustIni(): string
     {
         return $this->gridDir . '/' . ($this->enableHypergrid ? 'Robust.HG.ini' : 'Robust.ini');
