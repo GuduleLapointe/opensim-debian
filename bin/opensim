@@ -449,7 +449,7 @@ stopSim() {
 			grep " -inifile=" | grep -F "$inifile" | awk '{print $1}' | head -1)
 		osConsole $simName shutdown
 		timeout=60
-		screen -x $simName >/dev/null 2>&1
+		osScreenExists "$simName" && screen -x $simName >/dev/null 2>&1
 		if [ "$pid" ]; then
 			debug "Waiting for $simName (pid $pid) to exit..."
 			timeout $timeout tail --pid=$pid -f /dev/null 2>/dev/null

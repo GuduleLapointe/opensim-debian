@@ -59,6 +59,10 @@ osConsole() {
 		return
 	fi
 	[ "$osCommand" = "\n" ] && unset osCommand
+	# screen takes a name for the start of one: without this, the console of
+	# an instance that does not run would be the one of another, whose name
+	# begins the same (testgrid, testgrid_sim1)
+	osScreenExists "$osInstance" || return 1
 	lr=$(printf "\n\b")
 	# pre=$(printf "\n\b")
 	screen -x $osInstance -X stuff "$(echo "$pre$osCommand$lr")" >/dev/null 2>&1
@@ -145,6 +149,7 @@ osConsoleRead() {
 	osInstance=$1
 	shift
 	pattern="$@"
+	osScreenExists "$osInstance" || return 1
 	screen -x $osInstance -X hardcopy -h $TMP.console >/dev/null 2>&1
 	if [ "$pattern" ]; then
 		egrep "$pattern" $TMP.console && return

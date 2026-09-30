@@ -217,6 +217,14 @@ check "a command to an instance that does not run fails" "! opensim command nosu
 (sleep 2; printf '\001d') | script -qec "TERM=xterm opensim console testgrid_sim1" /dev/null >/tmp/attach.out 2>&1
 check "the console attaches, and leaves the instance running" "grep -aq 'detached from' /tmp/attach.out && [ '$(sim_pid)' = '$sim' ]"
 
+# screen takes a name for the start of one: stopping a grid that does not run
+# must not stop the simulator whose name begins the same
+opensim stop now testgrid >/dev/null 2>&1
+opensim stop now testgrid >/dev/null 2>&1
+check "stopping a grid that is not running leaves its simulator alone" "[ -n '$(sim_pid)' ] && [ '$(sim_pid)' = '$sim' ]"
+opensim start testgrid >/dev/null 2>&1
+pid=$(robust_pid)
+
 ts upgrade
 apt_q install --reinstall $tools "$core"
 check "Robust not restarted" "[ '$(robust_pid)' = '$pid' ]"
