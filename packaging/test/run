@@ -16,6 +16,13 @@ name=opensim-kit-test-$(basename "$BASE" | tr ':.' '--')
 
 cd "$(git rev-parse --show-toplevel)"
 podman build -q -t "$name" --build-arg BASE="$BASE" "$TEST_DIR" >/dev/null
+# The machine of podman is shared with every other container: say so when it
+# lacks the memory the test may use, before it stops a container of another project
+available=$(podman run --rm --pull=never --entrypoint awk "$name" '/MemAvailable/ {print int($2 / 1024)}' /proc/meminfo 2>/dev/null || true)
+if [[ "${available:-0}" -gt 0 && "${available:-0}" -lt 800 ]]; then
+    echo "Only ${available} MB of memory are available in the machine of podman: stop the containers you do not need first," >&2
+    echo "or the test may make it stop one of them (see DEVELOPERS.md)." >&2
+fi
 podman rm -f "$name" >/dev/null 2>&1 || true
 # The memory is capped: a machine that lacks memory stops the biggest process
 # of any container, so the test must not reach that limit outside its own

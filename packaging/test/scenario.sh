@@ -190,7 +190,8 @@ check "no write denied" "! grep -qiE 'denied|unauthorized' $(robust_log)"
 # estate (made through the console of Robust), a database of its own (the
 # administrator account is asked), and starts with its region
 ts "simulator in the grid"
-(cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=Sim1 TEST_START=1 TEST_NEW_OWNER="Test Owner" \
+owner_password='Pa ss^w0rd\z'
+(cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=Sim1 TEST_START=1 TEST_NEW_OWNER="Test Owner" TEST_NEW_OWNER_PASSWORD="$owner_password" \
     TEST_ADMIN_USER=dbroot TEST_ADMIN_PASSWORD=adminpw runuser -u opensim -- php /test/newsim.php >/tmp/sim1.out 2>&1
     echo "exit code: $?" >>/tmp/sim1.out)
 check "the simulator wizard ends well, the region is online" "grep -q 'exit code: 0' /tmp/sim1.out &&
@@ -200,6 +201,12 @@ check "the simulator has its own database, its config is enabled" "mysql -e 'SEL
     [ -L /etc/opensim/opensim.d/testgrid_sim1.ini ] && [ -f /etc/opensim/grids/testgrid/sims/testgrid_sim1/regions/Sim1.ini ]"
 check "the estate belongs to the account made in the grid" "[ -n \"\$(mysql -BN -e \"SELECT PrincipalID FROM testgrid_robust.UserAccounts WHERE FirstName='Test' AND LastName='Owner'\")\" ] &&
     [ \"\$(mysql -BN -e 'SELECT EstateOwner FROM testgrid_sim1.estate_settings LIMIT 1')\" = \"\$(mysql -BN -e \"SELECT PrincipalID FROM testgrid_robust.UserAccounts WHERE FirstName='Test' AND LastName='Owner'\")\" ]"
+# OpenSimulator keeps MD5(MD5(password):salt): the password typed in the
+# console of Robust, with its space, caret and backslash, is the one given
+owner_salt=$(mysql -BN -e "SELECT a.passwordSalt FROM testgrid_robust.auth a JOIN testgrid_robust.UserAccounts u ON u.PrincipalID = a.UUID WHERE u.FirstName='Test' AND u.LastName='Owner'")
+owner_hash=$(mysql -BN -e "SELECT a.passwordHash FROM testgrid_robust.auth a JOIN testgrid_robust.UserAccounts u ON u.PrincipalID = a.UUID WHERE u.FirstName='Test' AND u.LastName='Owner'")
+check "the password of the account, with a space, a caret and a backslash, is kept as typed" "[ -n '$owner_hash' ] &&
+    [ '$owner_hash' = \"\$(printf '%s:%s' \"\$(printf %s \"\$owner_password\" | md5sum | cut -d' ' -f1)\" '$owner_salt' | md5sum | cut -d' ' -f1)\" ]"
 check "the region loads the enabled modules" "grep -q 'Plugin Loaded: OpenSimSearch' /var/log/opensim/testgrid_sim1.log"
 check "nothing written in the read-only core" "! grep -iE 'unauthorized|denied' /var/log/opensim/testgrid_sim1.log | grep -viE 'gloebit'"
 check "the native libraries are found" "[ -L /var/lib/opensim/native/0.9.3.0/libBulletSim.so ] && ! grep -q 'DllNotFound' /var/log/opensim/testgrid_sim1.log"
@@ -319,6 +326,13 @@ opensim start testsim >/dev/null 2>&1; opensim stop now testsim >/dev/null 2>&1
 check "modules linked for the region, from their packages" "[ \"\$(readlink $addins/Gloebit.dll)\" = /usr/share/opensim-modules/0.9.3.0/gloebit/Gloebit.dll ] &&
     [ -L $addins/OpenSimSearch.Modules.dll ]"
 check "nothing written in the core" "[ -z \"\$(find /usr/share/opensim/0.9.3.0 -newer $conf -type f)\" ]"
+# A region cannot run without libgdiplus: it is said, not left to crash
+gdiplus=$(ldconfig -p | awk '/libgdiplus\.so/ {print $NF; exit}')
+mv "$(readlink -f "$gdiplus")" /tmp/libgdiplus.off && ldconfig
+opensim start testsim >/tmp/nogdiplus.out 2>&1; nogdiplus=$?
+mv /tmp/libgdiplus.off "$(readlink -f "$gdiplus")" && ldconfig
+check "a region without libgdiplus is refused with the way out" "[ $nogdiplus != 0 ] && grep -aq 'libgdiplus is missing' /tmp/nogdiplus.out && grep -aq 'apt install libgdiplus' /tmp/nogdiplus.out"
+check "the core packages depend on libgdiplus" "dpkg -s opensim-0.9.3.0 | grep '^Depends:' | grep -q libgdiplus"
 crudini --inplace --set $conf Defaults EnabledModules opensimsearch
 opensim start testsim >/dev/null 2>&1; opensim stop now testsim >/dev/null 2>&1
 check "a module no longer enabled is unlinked" "[ ! -e $addins/Gloebit.dll ] && [ -L $addins/OpenSimSearch.Modules.dll ]"

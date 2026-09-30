@@ -61,7 +61,7 @@ packaging/test/run                                   # Debian 12
 packaging/test/run docker.io/library/ubuntu:24.04    # Ubuntu 24.04
 ```
 
-`scenario.sh` runs in the container, its scripted answers to the wizards are in `newgrid.php` and `newsim.php` (`ScriptedUi.php`). The container is capped to 700 MB (`MEMORY=1g packaging/test/run` to change it): the machine of podman is shared with every other container, and one that lacks memory stops the biggest process of any of them, not the one that asked for it. Give that machine at least 3 GB (`podman machine set --memory 4096`) when other projects run on it. `KEEP=1` keeps the container for inspection.
+`scenario.sh` runs in the container, its scripted answers to the wizards are in `newgrid.php` and `newsim.php` (`ScriptedUi.php`). The container is capped to 700 MB (`MEMORY=1g packaging/test/run` to change it): the machine of podman is shared with every other container, and one that lacks memory stops the biggest process of any of them, not the one that asked for it. With the cap, the test does not reach the containers of the other projects as long as about 800 MB are free in that machine (the script says when they are not): stop the containers you do not need first, rather than giving the machine more memory. `KEEP=1` keeps the container for inspection.
 
 ## References
 

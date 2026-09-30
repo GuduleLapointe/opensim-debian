@@ -72,7 +72,7 @@ OpenSim and Robust cannot run without a database. The packages of OpenSimulator 
 
 The files are at the usual places: config in `/etc/opensim`, data in `/var/lib/opensim`, logs in `/var/log/opensim`, cache in `/var/cache/opensim`. The instances run as the `opensim` account: the `opensim` command switches to it, through sudo.
 
-OpenSimulator 0.9.3 needs the .NET 8 runtime. Ubuntu installs it with the package; on Debian, install it with:
+OpenSimulator 0.9.3 needs the .NET 8 runtime and the native library `libgdiplus`, which the packages install (a region stops at once without it, the launcher says so). Ubuntu installs the runtime with the package; on Debian, install it (and `libgdiplus`, for an install that did not come from the packages) with:
 
 ```bash
 sudo opensim install-dotnet

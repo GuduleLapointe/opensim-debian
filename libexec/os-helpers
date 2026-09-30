@@ -67,6 +67,24 @@ osConsole() {
 	# pre=$(printf "\n\b")
 	screen -x $osInstance -X stuff "$(echo "$pre$osCommand$lr")" >/dev/null 2>&1
 }
+# Type a line in the console of an instance exactly as given: through a
+# register of screen, read from a file, so that nothing in it is taken for an
+# escape (^ and \ are in the strings of "stuff"), and it does not show in the
+# arguments of a process. An empty line is a bare Enter.
+# Args: instance, line
+osConsoleLine() {
+	local file rc
+	osScreenExists "$1" || return 1
+	file=$(mktemp "${TMPDIR:-/tmp}/osconsole.XXXXXX") || return 1
+	printf '%s\n' "$2" >"$file"
+	screen -S "$1" -X readreg p "$file" >/dev/null 2>&1 && screen -S "$1" -X paste p >/dev/null 2>&1
+	rc=$?
+	# screen reads the file when it gets the command, not when we return
+	sleep 0.5
+	rm -f "$file"
+	return $rc
+}
+
 # True if a live (non-dead) screen session exists for the given instance.
 osScreenExists() {
 	screen -ls 2>/dev/null | grep -E "[0-9]+\.$1[[:space:]]" | grep -qv "Dead"
@@ -526,6 +544,17 @@ osSyncModules() {
 # Verify the runtime needed to launch an executable is installed.
 # Args: runtime (dotnet|mono), executable path. Returns non-zero with an
 # explicit message if the runtime, or the required .NET major, is missing.
+# Whether a native library is installed (Linux): known to the loader, or in
+# the usual folders. Args: name without lib and .so, e.g. gdiplus
+osHasLibrary() {
+	local file
+	{ ldconfig -p || /sbin/ldconfig -p; } 2>/dev/null | grep -q "lib$1\.so" && return 0
+	for file in /usr/lib/lib$1.so* /usr/lib*/lib$1.so* /usr/lib/*/lib$1.so* /usr/local/lib/lib$1.so*; do
+		[ -e "$file" ] && return 0
+	done
+	return 1
+}
+
 checkRuntimeAvailable() {
 	local runtime="$1" exe="$2"
 	case "$runtime" in

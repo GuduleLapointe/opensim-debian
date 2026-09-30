@@ -215,6 +215,13 @@ startSim() {
 		# than letting the instance crash on launch.
 		checkRuntimeAvailable "$runtime" "$Executable" || { STARTFAILED=1; continue; }
 
+		# A region stops at once without libgdiplus (dynamic textures)
+		if [ "$ExecName" = "OpenSim" ] && [ "$runtime" = "dotnet" ] && [ "$(uname -s)" = "Linux" ] && ! osHasLibrary gdiplus; then
+			log 1 "$instance cannot start: the native library libgdiplus is missing. Install it with: sudo apt install libgdiplus (or sudo opensim install-dotnet)"
+			STARTFAILED=1
+			continue
+		fi
+
 		# Regions load the modules enabled for the install from the addins
 		# folder of their registry (Robust has none of them to load)
 		if [ "$ExecName" = "OpenSim" ] && [ -n "$RegistryLocation" ]; then
@@ -468,11 +475,11 @@ commandSim() {
 	osScreenExists "$instance" || end 1 "$instance is not running"
 	if [ "$1" = "-" ]; then
 		while IFS= read -r line; do
-			osConsole "$instance" "${line:-\\n}"
+			osConsoleLine "$instance" "$line"
 			sleep 1
 		done
 	else
-		osConsole "$instance" "$*"
+		osConsoleLine "$instance" "$*"
 	fi
 	end 0
 }

@@ -7,6 +7,8 @@
 - new package `opensim-helpers-search`, the web part of the OpenSimSearch module (the search service the viewers query), from the sources of the `manfredaabye` fork; its settings are in `/etc/opensim/helpers/search`
 - update starting a region no longer waits two minutes for questions it does not ask: a region fully described is up in seconds, and a region that dies right after loading is reported as a failed start
 - update regions run from a read-only core on .NET: their native libraries (physics, OpenJPEG) are found, and their stack is the one of `opensim.sh`
+- update the packages of the OpenSimulator cores depend on `libgdiplus`, without which a region stops at once; the launcher says when it is missing, and `opensim install-dotnet` installs it
+- update the password of the account made in the grid can hold spaces, and is typed in the console as it is given (no escape of screen is read in it, nor is it in the arguments of a process)
 - fix `opensim start` launched the simulators with the assembly of the previous instance, i.e. as Robust, when it started several instances
 - fix stopping or restarting a grid that was not running shut down a simulator whose name begins the same (`testgrid`, `testgrid_sim1`): a console is now reached only by the exact name of an instance
 - fix stopping a simulator warns its users again, and only when it runs

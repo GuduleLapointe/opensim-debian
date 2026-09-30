@@ -472,7 +472,7 @@ final class NewSim
             return false;
         }
         $plan->createOwner = true;
-        $plan->ownerPassword = $this->ui->secret('Password of the new account', static fn (string $v): ?string => preg_match('/^[^\s"\'\\\\]{6,}$/', $v) ? null : 'At least 6 characters, no space, quote or backslash.');
+        $plan->ownerPassword = $this->ui->secret('Password of the new account', static fn (string $v): ?string => preg_match('/^[^"\r\n]{6,}$/', $v) ? null : 'At least 6 characters, without double quote.');
         $plan->ownerEmail = trim($this->ui->text('Email of the new account', '', static fn (string $v): ?string => preg_match('/^[^\s"\'\\\\]+@[^\s"\'\\\\]+$/', trim($v)) ? null : 'An email address.'));
 
         return true;

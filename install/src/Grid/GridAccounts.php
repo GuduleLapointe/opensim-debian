@@ -63,7 +63,9 @@ final class GridAccounts
         $opensim = dirname(__DIR__, 3) . '/bin/opensim';
         $instance = $grid->robustInstance();
         // The answers of the prompts that follow: a random ID, the default model
-        $lines = "create user $name $password $email\n\n\n";
+        // The console cuts a line at the spaces, except between double quotes
+        $typed = preg_match('/\s/', $password) ? '"' . $password . '"' : $password;
+        $lines = "create user $name $typed $email\n\n\n";
 
         if (!Console::send($instance, $lines)) {
             $this->ui->note("Starting the grid '{$grid->nick}' to create the account.");

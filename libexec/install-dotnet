@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Install the .NET runtime needed by OpenSim 0.9.3 and later, when missing:
-# from the system packages when they have it, or use a runtime installed
-# elsewhere, or install it with Microsoft's install script.
+# Install what OpenSim 0.9.3 and later needs to run, when missing: libgdiplus,
+# and the .NET runtime
+# the runtime from the system packages when they have it, or use a runtime
+# installed elsewhere, or install it with Microsoft's install script.
 #
 # As root, the runtime is installed for all users, including the service
 # account; otherwise in ~/.dotnet.
@@ -48,6 +49,22 @@ linkDotnet() {
 		echo "  export PATH=\"$(dirname "$1"):\$PATH\""
 	fi
 }
+
+# The regions draw their dynamic textures with the native libgdiplus and stop
+# at once without it: the .NET runtime is not the only thing they need
+hasGdiplus() {
+	{ ldconfig -p || /sbin/ldconfig -p; } 2>/dev/null | grep -q 'libgdiplus\.so'
+}
+if [ "$(uname -s)" = Linux ] && ! hasGdiplus; then
+	if [ "$(id -u)" = 0 ] && command -v apt-get >/dev/null 2>&1 &&
+		apt-cache policy libgdiplus 2>/dev/null | awk '$1 == "Candidate:" && $2 != "(none)" {found = 1} END {exit !found}'; then
+		if confirm "Install libgdiplus, needed by the regions?"; then
+			apt-get install -y libgdiplus || end $? "Could not install libgdiplus"
+		fi
+	else
+		echo "OpenSim regions also need libgdiplus: install it with your package manager (e.g. sudo apt install libgdiplus)."
+	fi
+fi
 
 found=$(suitableRuntime)
 if [ -n "$found" ]; then

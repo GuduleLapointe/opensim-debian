@@ -28,10 +28,11 @@ license: BSD-3-Clause
 # architectures the distribution has no native one for)
 depends:
   - default-mysql-server | virtual-mysql-server | postgresql | libsqlite3-0
+  # Drawing of the dynamic textures: a region stops at once without it
+  - libgdiplus
 
 recommends:
   - dotnet-runtime-8.0 | dotnet-runtime-9.0 | dotnet-runtime-10.0
-  - libgdiplus
 suggests:
   - opensim-tools
 
