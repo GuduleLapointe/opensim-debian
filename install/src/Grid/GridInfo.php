@@ -182,7 +182,7 @@ final class GridInfo
             $current['dbPass'] = $m[4];
         }
         // The remote console, when the config has one (its port is ConsolePort in Robust, console_port in a simulator)
-        foreach (['consoleUser' => 'ConsoleUser', 'consolePass' => 'ConsolePass'] as $field => $key) {
+        foreach (['consoleHost' => 'ConsoleHost', 'consoleUser' => 'ConsoleUser', 'consolePass' => 'ConsolePass'] as $field => $key) {
             $value = $grab($key);
             if ($value !== null && $value !== '') {
                 $current[$field] = $value;

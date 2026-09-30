@@ -34,6 +34,8 @@ final class SimPlan
     public string $consoleMode = 'rest';
     /** Its port, in the block of the simulator (x4); kept even when the console is a screen one. 0: no block. */
     public int $consolePort = 0;
+    /** The name clients use to reach the console (ConsoleHost, read by the helpers); empty when it is not known (SYSTEMIP). */
+    public string $consoleHost = '';
     public string $consoleUser = '';
     public string $consolePass = '';
 

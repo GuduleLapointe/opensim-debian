@@ -87,6 +87,7 @@ final class RobustConfig
         // The remote console, every right on Robust through its port
         if ($plan->consoleMode === 'rest' && $plan->consolePort > 0) {
             $ini->merge(['Network' => [
+                'ConsoleHost' => $this->q($plan->consoleHost),
                 'ConsoleUser' => $this->q($plan->consoleUser),
                 'ConsolePass' => $this->q($plan->consolePass),
                 'ConsolePort' => (string) $plan->consolePort,

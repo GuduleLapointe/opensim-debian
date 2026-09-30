@@ -497,8 +497,6 @@ final class NewSim
         $base = $plan->httpPort % 10 === 2 ? intdiv($plan->httpPort, 10) * 10 : 0;
         $plan->consolePort = $base > 0 ? $base + 4 : 0;
 
-        $this->askConsole($plan, $current);
-
         // What the regions announce as their address, the viewers connect to it: the
         // public name of this machine. SYSTEMIP is the address of its first interface,
         // which is not the one of the world behind a NAT or in a container.
@@ -507,6 +505,8 @@ final class NewSim
             $current['externalHost'] ?? 'SYSTEMIP',
             static fn (string $v): ?string => trim($v) === '' ? 'This field is required.' : null,
         ));
+
+        $this->askConsole($plan, $current);
 
         // Its own database: the account of the grid, a database of its own
         $this->askDatabase($plan, $grid, [
@@ -555,8 +555,21 @@ final class NewSim
         } else {
             $plan->consolePort = (int) ($current['consolePort'] ?? $plan->consolePort);
         }
-        $plan->consoleUser = (string) ($current['consoleUser'] ?? 'admin');
-        $plan->consolePass = (string) ($current['consolePass'] ?? self::password());
+        // As the helpers make theirs: 12 lower case letters, 32 letters and digits; the host
+        // clients reach it by is the public address of the machine, when it is known
+        $plan->consoleHost = (string) ($current['consoleHost'] ?? ($plan->externalHost !== 'SYSTEMIP' ? $plan->externalHost : ''));
+        $plan->consoleUser = (string) ($current['consoleUser'] ?? self::letters(12));
+        $plan->consolePass = (string) ($current['consolePass'] ?? self::password(32));
+    }
+
+    private static function letters(int $length): string
+    {
+        $letters = '';
+        for ($i = 0; $i < $length; $i++) {
+            $letters .= chr(random_int(97, 122));
+        }
+
+        return $letters;
     }
 
     private static function password(int $length = 24): string

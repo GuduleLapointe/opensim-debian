@@ -324,12 +324,13 @@ ts "remote console"
     echo "exit code: $?" >>/tmp/rest.out)
 check "a simulator with a remote console is set up and started" "grep -q 'exit code: 0' /tmp/rest.out && grep -q 'region Rest is online' /tmp/rest.out"
 check "its console is in its config, on the port x4 of its block" "grep -q '^console_port = 8024' /etc/opensim/grids/testgrid/sims/testgrid_rest.ini &&
-    grep -q '^ConsoleUser = \"admin\"' /etc/opensim/grids/testgrid/sims/testgrid_rest.ini && grep -qE '^ConsolePass = \"[A-Za-z0-9]{24}\"' /etc/opensim/grids/testgrid/sims/testgrid_rest.ini"
+    grep -qE '^ConsoleUser = \"[a-z]{12}\"' /etc/opensim/grids/testgrid/sims/testgrid_rest.ini && grep -qE '^ConsolePass = \"[A-Za-z0-9]{32}\"' /etc/opensim/grids/testgrid/sims/testgrid_rest.ini"
 check "it has no screen session, and it runs" "! runuser -u opensim -- screen -ls | grep -q testgrid_rest && pgrep -f 'OpenSim.dll -inifile=/etc/opensim/opensim.d/testgrid_rest.ini' >/dev/null"
 opensim ports >/tmp/ports-rest.out 2>&1
 check "opensim ports lists its console, and its block" "grep -qE '8022 +tcp +public' /tmp/ports-rest.out && grep -qE '8024 +tcp +console' /tmp/ports-rest.out && grep -qE '8025 +udp +public' /tmp/ports-rest.out"
 check "a command reaches its console through the port" "opensim command testgrid_rest 'show info' | grep -q 'Version: OpenSim'"
-check "a wrong password is refused" "! OPENSIM_REST_PASSWORD=wrong php /usr/share/opensim-tools/libexec/rest.php --url http://127.0.0.1:8024 --user admin -- 'show info' >/dev/null 2>&1"
+rest_user=$(sed -nE 's/^ConsoleUser = "([a-z]+)"/\1/p' /etc/opensim/grids/testgrid/sims/testgrid_rest.ini)
+check "a wrong password is refused" "! OPENSIM_REST_PASSWORD=wrong php /usr/share/opensim-tools/libexec/rest.php --url http://127.0.0.1:8024 --user $rest_user -- 'show info' >/dev/null 2>&1"
 opensim stop now testgrid_rest >/tmp/rest-stop.out 2>&1
 check "it stops through its console" "! pgrep -f 'OpenSim.dll -inifile=/etc/opensim/opensim.d/testgrid_rest.ini' >/dev/null"
 opensim start testgrid_rest >/tmp/rest-start.out 2>&1

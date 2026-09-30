@@ -337,8 +337,10 @@ final class NewGrid
 
         $base = $plan->publicPort % 10 === 2 ? $plan->publicPort - 2 : 0;
         $plan->consolePort = (int) $this->ui->text('Console port', (string) ($current['consolePort'] ?? ($base > 0 ? $base + 4 : Ports::next($plan->privatePort + 1))), $numeric);
-        $plan->consoleUser = (string) ($current['consoleUser'] ?? 'admin');
-        $plan->consolePass = (string) ($current['consolePass'] ?? $this->randomPassword(24));
+        // As the helpers make theirs: 12 lower case letters, 32 letters and digits
+        $plan->consoleHost = (string) ($current['consoleHost'] ?? $plan->baseHostname);
+        $plan->consoleUser = (string) ($current['consoleUser'] ?? $this->randomLetters(12));
+        $plan->consolePass = (string) ($current['consolePass'] ?? $this->randomPassword(32));
     }
 
     /**
@@ -389,6 +391,16 @@ final class NewGrid
     private function parseExisting(string $path): array
     {
         return GridInfo::parse($path);
+    }
+
+    private function randomLetters(int $length): string
+    {
+        $letters = '';
+        for ($i = 0; $i < $length; $i++) {
+            $letters .= chr(random_int(97, 122));
+        }
+
+        return $letters;
     }
 
     private function randomPassword(int $length = 20): string

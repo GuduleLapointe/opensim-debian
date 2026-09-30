@@ -27,6 +27,8 @@ final class GridPlan
     // container) or 'screen' (a session to attach on this machine).
     public string $consoleMode = 'rest';
     public int $consolePort = 0;
+    /** The name clients use to reach the console (ConsoleHost, read by the helpers): the address of the machine. */
+    public string $consoleHost = '';
     public string $consoleUser = '';
     public string $consolePass = '';
 
