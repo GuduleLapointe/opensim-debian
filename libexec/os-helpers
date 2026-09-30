@@ -435,6 +435,29 @@ osResolveRuntime() {
 	fi
 }
 
+# .NET does not read the dllmap files of a core: the native libraries it needs
+# (physics, OpenJPEG) are looked for by their plain name (libBulletSim.so). The
+# core being read-only, echo a folder of links with those names for this
+# architecture, made in the given base folder for the core of the given bin
+# folder; nothing when it cannot be made.
+# Args: bin folder of the core, base folder
+osNativeLibs() {
+	local bin=$1 dest="$2/$(basename "$(dirname "$1")")" arch base lib
+	case $(uname -m) in
+	aarch64 | arm64) arch=arm64 ;;
+	*) arch=x86_64 ;;
+	esac
+	[ -d "$bin/lib64" ] || return 0
+	mkdir -p "$dest" 2>/dev/null || return 0
+	for base in BulletSim openjpeg-dotnet ubode; do
+		# The build of this architecture, else the plain one (x86_64 only)
+		lib="$bin/lib64/lib$base-$arch.so"
+		[ -f "$lib" ] || { [ "$arch" = x86_64 ] && lib="$bin/lib64/lib$base.so"; }
+		[ -f "$lib" ] && ln -sfn "$lib" "$dest/lib$base.so" 2>/dev/null
+	done
+	echo "$dest"
+}
+
 # Echo the .NET version required by an assembly, read from its
 # <name>.runtimeconfig.json (falls back to 8.0.0 if not found).
 dotnetRequiredVersion() {

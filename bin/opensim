@@ -254,8 +254,12 @@ startSim() {
 
 		ConsolePrompt=${consoleprompt:-${ConsolePrompt}}
 
+		# The native libraries of the core (physics, OpenJPEG), by the names .NET looks for
+		native=
+		[ "$runtime" = dotnet ] && native=$(osNativeLibs "$BinDirectory" "${VarRoot:-$DataRoot}/native")
+
 		# The assembly by its full path: the packages find the instances of a core by it
-		cmd="$runtime${runtime_opts:+ $runtime_opts} $PWD/$Executable -inifile='$inifile'"
+		cmd="${native:+env LD_LIBRARY_PATH='$native${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}' }$runtime${runtime_opts:+ $runtime_opts} $PWD/$Executable -inifile='$inifile'"
 		if [ "${Executable%.*}" = "Robust" ]; then
 			[ ! "$ConsolePrompt" ] && ConsolePrompt="Robust ($instance) "
 			cmd="$cmd -logfile='$LogFile' -prompt '$ConsolePrompt'"
@@ -284,14 +288,21 @@ startSim() {
 		debug "launching $instance "
 		debug "$cmd"
 
+		# A region runs with a big stack, as the opensim.sh of the distribution does,
+		# for this launch only
+		stack=$(ulimit -s)
+		[ "$ExecName" = OpenSim ] && ulimit -s 1048576 2>/dev/null
+
 		if [ "$RestEnabled" = "true" ]; then
 			nohup $cmd >$TMP.$instance.nohup 2>&1 &
+			ulimit -s "$stack" 2>/dev/null
 			timeout 60 tail -Fn0 $TMP.$instance.nohup 2>/dev/null | egrep -am 1 "Error|UserAgentServerConnector loaded successfully|RegionReady|neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done|\[CONSOLE\] Quitting"
 		else
 			# Capture the session output so an early crash can be reported.
 			startlog="$TMP.$instance.startup.log"
 			eval "screen -L -Logfile '$startlog' -S $instance -d -m $cmd"
 			screen -S $instance -X logfile flush 1 2>/dev/null
+			ulimit -s "$stack" 2>/dev/null
 
 			# Confirm the session actually came up. An immediate exit (e.g. a
 			# missing or incompatible runtime) would otherwise leave us polling
@@ -325,6 +336,12 @@ startSim() {
 
 				osConsoleWait 120 $instance "RegionReady|neighbours.*region.*is up|loaded successfully|LOAD REGIONS PLUGIN]: Done"
 				startResult=$?
+				# The regions are loaded before the physics and the scripts start: a
+				# region that cannot run them ends within seconds
+				if [ $startResult -eq 0 ]; then
+					sleep 5
+					osInstanceRunning "$instance" || startResult=3
+				fi
 			fi
 
 			# Interpret the final wait result the same way for both server types.
