@@ -36,6 +36,10 @@ if ($password !== '') {
 if (getenv('TEST_DB_USER')) {
     $answers['Database user'] = getenv('TEST_DB_USER');
 }
+// TEST_DB_HOST: the database server, when it is not on this machine
+if (getenv('TEST_DB_HOST')) {
+    $answers['Database host'] = getenv('TEST_DB_HOST');
+}
 
 // Start the grid when TEST_START is set (the setup started as root, as
 // in the packaged install)

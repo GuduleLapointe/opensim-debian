@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# Tests the container image of the kit (packaging/container/build): a grid and
+# a simulator set up from inside the container against a database in another
+# one, the logs on the console of the container, a clean stop, the instances
+# back after a restart, and the same under a locked-down run.
+#
+# Usage, from the repository root: packaging/container/test
+# KEEP=1 keeps the containers; ENGINE=docker; IMAGE=<image>
+# The memory of each container is capped: the machine of podman is shared.
+
+ENGINE=${ENGINE:-podman}
+IMAGE=${IMAGE:-opensim-kit:dev}
+p=opensim-kit-ctest
+app=$p-app
+db=$p-db
+FAILED=0
+
+ts() { echo "[$(date +%T)] == $*"; }
+check() {
+    if eval "$2"; then
+        echo "   ok: $1"
+    else
+        echo "   FAILED: $1"
+        FAILED=1
+    fi
+}
+cleanup() {
+    "$ENGINE" rm -f "$app" "$db" >/dev/null 2>&1
+    "$ENGINE" network rm "$p-net" >/dev/null 2>&1
+    "$ENGINE" volume rm "$p-etc" "$p-lib" "$p-log" >/dev/null 2>&1
+}
+cd "$(git rev-parse --show-toplevel)" || exit 1
+cleanup
+[[ -n "${KEEP:-}" ]] || trap cleanup EXIT
+
+# The container of the instances, on the volumes of the test
+run_app() {
+    "$ENGINE" run -d --name "$app" --network "$p-net" --memory 450m --stop-timeout 120 \
+        -v "$p-etc:/etc/opensim" -v "$p-lib:/var/lib/opensim" -v "$p-log:/var/log/opensim" \
+        -v "$PWD/packaging/test:/test:ro" "$@" "$IMAGE" >/dev/null
+}
+inapp() { "$ENGINE" exec "$app" "$@"; }
+# Wait for instances, up to $1 seconds
+up() {
+    local i
+    for ((i = 0; i < $1; i++)); do
+        # The grid and its simulator
+        inapp opensim status 2>/dev/null | grep -qE '^2 up, 0 down' && return 0
+        sleep 2
+    done
+    return 1
+}
+registered() { "$ENGINE" exec "$db" mariadb -uroot -prootpw -BN -e "SELECT COUNT(*) FROM testgrid_robust.regions WHERE regionName='Sim1'"; }
+
+ts "database"
+"$ENGINE" network create "$p-net" >/dev/null
+# Small, for the machine it runs on
+"$ENGINE" run -d --name "$db" --network "$p-net" --network-alias db --memory 250m \
+    -e MARIADB_ROOT_PASSWORD=rootpw -e MARIADB_DATABASE=testgrid_robust -e MARIADB_USER=opensim -e MARIADB_PASSWORD=testpass \
+    docker.io/library/mariadb:11 --innodb-buffer-pool-size=16M --performance-schema=OFF --max-connections=30 >/dev/null
+for ((i = 0; i < 60; i++)); do
+    "$ENGINE" exec "$db" mariadb -uroot -prootpw -e 'SELECT 1' >/dev/null 2>&1 && break
+    sleep 2
+done
+
+ts "the container, before any grid"
+run_app
+sleep 6
+check "it stays up with nothing to start" "[ \"\$($ENGINE inspect -f '{{.State.Running}}' $app)\" = true ]"
+check "it runs as the opensim account, not as root" "[ \"\$(inapp id -u)\" = 10001 ]"
+check "no database server in the image" "! inapp sh -c 'command -v mariadbd || command -v mysqld' >/dev/null 2>&1"
+check "OpenSimulator and its tools are there" "inapp sh -c 'opensim --help >/dev/null && [ -f /usr/share/opensim/*/bin/OpenSim.dll ] && dotnet --list-runtimes | grep -q NETCore.App'"
+
+ts "a grid, set up from inside"
+"$ENGINE" exec -e TEST_GRID=Testgrid -e TEST_DB_HOST=db -e TEST_DB_PASSWORD=testpass -e TEST_START=1 "$app" php /test/newgrid.php >/tmp/ctest-grid.out 2>&1
+echo "exit code: $?" >>/tmp/ctest-grid.out
+check "the grid wizard ends well, Robust runs" "grep -q 'exit code: 0' /tmp/ctest-grid.out && grep -q \"Grid 'testgrid' is running\" /tmp/ctest-grid.out"
+
+ts "a simulator, from inside, its database and its account made on the way"
+"$ENGINE" exec -e TEST_GRID=testgrid -e TEST_SIM=Sim1 -e TEST_START=1 -e TEST_NEW_OWNER="Test Owner" \
+    -e TEST_ADMIN_USER=root -e TEST_ADMIN_PASSWORD=rootpw "$app" php /test/newsim.php >/tmp/ctest-sim.out 2>&1
+echo "exit code: $?" >>/tmp/ctest-sim.out
+check "the simulator wizard ends well, the region is online" "grep -q 'exit code: 0' /tmp/ctest-sim.out && grep -q 'region Sim1 is online' /tmp/ctest-sim.out"
+check "the region is registered in the grid database" "[ \"\$(registered)\" = 1 ]"
+check "the logs of the instances are the ones of the container" "$ENGINE logs $app 2>&1 | grep -q '^\[testgrid_robust\]' && $ENGINE logs $app 2>&1 | grep -q '^\[testgrid_sim1\]'"
+check "the console of an instance is reachable" "inapp opensim command testgrid_sim1 'show info' && sleep 1 && $ENGINE exec $app sh -c 'screen -S testgrid_sim1 -X hardcopy /tmp/c.txt && grep -aq \"Version: OpenSim\" /tmp/c.txt'"
+
+ts "stop, then start again"
+start=$SECONDS
+"$ENGINE" stop "$app" >/dev/null
+check "it stops cleanly, and within its time" "[ \"\$($ENGINE inspect -f '{{.State.ExitCode}}' $app)\" = 0 ] && [ $((SECONDS - start)) -lt 100 ]"
+"$ENGINE" start "$app" >/dev/null
+check "the instances are back by themselves, from the volumes" "up 90 && [ \"\$(inapp sh -c 'grep -c \"\\[CONSOLE\\] Quitting\" /var/log/opensim/testgrid_robust.log')\" -ge 1 ]"
+
+ts "locked down: read-only system, no capability, no new privilege"
+"$ENGINE" stop "$app" >/dev/null
+"$ENGINE" rm "$app" >/dev/null
+run_app --read-only --tmpfs /tmp --tmpfs /var/cache/opensim:rw,mode=1777 --cap-drop ALL \
+    --security-opt no-new-privileges --pids-limit 600
+check "the instances run" "up 120"
+check "nothing can be written in the system" "! inapp sh -c 'touch /usr/share/opensim/x 2>/dev/null || touch /usr/bin/x 2>/dev/null'"
+check "the region is online again" "[ \"\$(registered)\" = 1 ] && inapp sh -c 'grep -a \"registered at 1000,1000\" /var/log/opensim/testgrid_sim1.log | tail -1' | grep -q ."
+
+ts "done: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"
+exit $FAILED

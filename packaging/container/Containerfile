@@ -1,0 +1,47 @@
+# OpenSimulator in a container: the tools, a release of the core and its
+# modules, from the packages of the kit, on an Ubuntu LTS (which has the .NET
+# runtime and libgdiplus in its own repositories). No database server: the
+# database is another container, or the host's (see packaging/container/README.md).
+# Built by packaging/container/build, which gives it the packages (pkgs/).
+ARG BASE=docker.io/library/ubuntu:24.04
+FROM ${BASE}
+
+ENV DEBIAN_FRONTEND=noninteractive
+# A mirror that does not answer once is asked again
+RUN echo 'Acquire::Retries "5";' >/etc/apt/apt.conf.d/80retries
+
+# The account of the instances, with a fixed ID: a folder of the host shared
+# with the container can be given to it (chown 10001:10001)
+RUN groupadd --system --gid 10001 opensim \
+ && useradd --system --uid 10001 --gid opensim --home-dir /var/lib/opensim --no-create-home --shell /bin/bash opensim
+
+# The packages depend on "a database server, or PostgreSQL, or SQLite" and on
+# "a MySQL client": what is installed first satisfies them, so no server is added
+# (the database is another container, or another machine).
+# The Magiiic repository gives bash-tools.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates curl gpg libsqlite3-0 default-mysql-client dotnet-runtime-8.0 \
+ && curl -fsSL https://apt.magiiic.com/magiiic-packaging.asc | gpg --dearmor -o /usr/share/keyrings/magiiic-packaging.gpg \
+ && echo "deb [signed-by=/usr/share/keyrings/magiiic-packaging.gpg] https://apt.magiiic.com stable main" >/etc/apt/sources.list.d/magiiic.list \
+ && apt-get update
+
+COPY pkgs/ /pkgs/
+RUN apt-get install -y --no-install-recommends /pkgs/*.deb \
+ && crudini --inplace --set /etc/opensim/opensim.conf Defaults EnabledModules "opensimsearch gloebit" \
+ && chown opensim:opensim /etc/opensim/opensim.conf \
+ && rm -rf /pkgs /var/lib/apt/lists/*
+
+COPY opensim-container /usr/local/bin/opensim-container
+
+# The console sessions of the instances (screen) live where the account can
+# write, whatever the rest of the file system allows
+ENV SCREENDIR=/var/cache/opensim/screen
+
+USER opensim
+WORKDIR /var/lib/opensim
+
+# Config, data and logs belong to the volumes; the cache can be a tmpfs
+VOLUME ["/etc/opensim", "/var/lib/opensim", "/var/log/opensim"]
+
+STOPSIGNAL SIGTERM
+ENTRYPOINT ["/usr/local/bin/opensim-container"]

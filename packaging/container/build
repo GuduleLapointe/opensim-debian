@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Builds the container image of the kit from the packages of dist/ (tools, the
+# latest release of the core, its modules), for the architecture of the
+# machine. Not published anywhere: the image stays on this machine.
+#
+# Usage, from the repository root, after building the packages:
+#   packaging/container/build [tag]      default tag: opensim-kit:dev
+# ENGINE=docker to use docker, BASE=<image> for another base (an Ubuntu or
+# Debian one, with the .NET runtime in its repositories).
+
+set -e
+
+ENGINE=${ENGINE:-podman}
+BASE=${BASE:-docker.io/library/ubuntu:24.04}
+tag=${1:-opensim-kit:dev}
+
+cd "$(git rev-parse --show-toplevel)"
+case "${ARCH:-$(uname -m)}" in
+x86_64 | amd64) arch=amd64 ;;
+aarch64 | arm64) arch=arm64 ;;
+*) echo "Unknown architecture ${ARCH:-$(uname -m)}" >&2; exit 1 ;;
+esac
+
+# The newest of a package, by its version
+newest() { ls dist/"$1"_*_"$2".deb 2>/dev/null | sort -V | tail -1; }
+
+tools=$(newest opensim-tools all)
+core=$(ls dist/opensim-[0-9]*_*_"$arch".deb 2>/dev/null | sort -V | tail -1)
+[[ -n "$tools" && -n "$core" ]] || { echo "Build the packages first: apt-package opensim-tools opensim-core" >&2; exit 1; }
+version=$(basename "$core" | sed -E 's/^opensim-([0-9.]+)_.*/\1/')
+
+context=$(mktemp -d)
+trap 'rm -rf "$context"' EXIT
+mkdir "$context/pkgs"
+cp "$tools" "$core" "$context/pkgs/"
+for module in opensimsearch gloebit; do
+    deb=$(newest "opensim-$version-$module" all)
+    [[ -z "$deb" ]] || cp "$deb" "$context/pkgs/"
+done
+cp packaging/container/Containerfile packaging/container/opensim-container "$context/"
+
+"$ENGINE" build --memory "${MEMORY:-700m}" --build-arg BASE="$BASE" -t "$tag" "$context"
+echo "Image $tag: OpenSimulator $version, $(basename "$tools")"

@@ -22,8 +22,10 @@ license: LGPL-3.0-or-later
 # Its data is kept in the database of the region: MySQL/MariaDB or PostgreSQL,
 # not SQLite. No dependency on the core package: a build of the same
 # OpenSimulator version made elsewhere can use the module
+# A MySQL/MariaDB or PostgreSQL database: its server or its client is enough
+# here, the server can be on another machine (or in another container)
 depends:
-  - default-mysql-server | virtual-mysql-server | postgresql
+  - default-mysql-client | virtual-mysql-client | postgresql-client | default-mysql-server | virtual-mysql-server | postgresql
 suggests:
   - opensim-${MODULES_CORE}
 

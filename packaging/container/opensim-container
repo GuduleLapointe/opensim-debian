@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Entry point of the container: starts the enabled instances (grids and
+# simulators), stays in the foreground showing their logs, and stops them
+# cleanly when the container is stopped. Without any instance yet, it waits:
+# set one up with `opensim setup` in the container.
+#
+# Stopping a region takes a while: give the container time (--stop-timeout 120).
+
+mkdir -p -m 700 "${SCREENDIR:-/tmp/screen}"
+
+stop() {
+	echo "opensim-container: stopping the instances"
+	opensim stop now
+	kill $(jobs -p) 2>/dev/null
+	exit 0
+}
+trap stop TERM INT
+
+opensim start || echo "opensim-container: some instances did not start, see their logs" >&2
+
+# The logs of the instances, each line with the name of its instance, and the
+# ones that appear later too
+declare -A followed
+while :; do
+	for log in /var/log/opensim/*.log; do
+		[ -f "$log" ] || continue
+		# The statistics are not for the console
+		[[ "$log" != *Stats* ]] || continue
+		[ -z "${followed[$log]:-}" ] || continue
+		followed[$log]=1
+		name=$(basename "$log" .log)
+		tail -n 20 -F "$log" 2>/dev/null | sed -u "s/^/[$name] /" &
+	done
+	# So that a signal is handled at once
+	sleep 5 &
+	wait $!
+done
