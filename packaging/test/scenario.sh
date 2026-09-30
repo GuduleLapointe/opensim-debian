@@ -257,6 +257,34 @@ echo "   Robust $(robust_pid) (was $pid), simulator $(sim_pid) (was $sim)"
 check "instances of another core untouched" "[ '$(robust_pid)' = '$pid' ] && [ '$(sim_pid)' = '$sim' ]"
 apt_q install "$unstable"
 
+# The search service (the web part of the OpenSimSearch module), served by PHP:
+# a simulator registers with it, its data is indexed, and it answers a search
+ts "search service"
+helpers=$(deb opensim-helpers-search)
+apt_q install "$helpers"
+check "search helpers installed, their settings in /etc" "[ -f /usr/share/opensim-helpers/search/query.php ] &&
+    [ \"\$(readlink /usr/share/opensim-helpers/search/databaseinfo.php)\" = /etc/opensim/helpers/search/databaseinfo.php ] &&
+    [ \"\$(stat -c %a /etc/opensim/helpers/search/databaseinfo.php)\" = 640 ]"
+check "the errors of the scripts go to the error log" "! grep -rq PDOErrors /usr/share/opensim-helpers/search"
+mysql -e "CREATE DATABASE ossearch CHARACTER SET utf8; CREATE USER ossearch@localhost IDENTIFIED BY 'searchpw'; GRANT ALL ON ossearch.* TO ossearch@localhost"
+mysql ossearch </usr/share/opensim-helpers/search/sql/ossearch.sql
+sed -i 's/\$DB_PASSWORD = ""/$DB_PASSWORD = "searchpw"/' /etc/opensim/helpers/search/databaseinfo.php
+(cd /usr/share/opensim-helpers/search && nohup php -S 127.0.0.1:8088 >/tmp/php-search.log 2>&1 &)
+sleep 2
+search() { curl -s -m 10 -X POST -H 'Content-Type: text/xml' -d "<?xml version=\"1.0\"?><methodCall><methodName>dir_places_query</methodName><params><param><value><struct><member><name>flags</name><value><int>0</int></value></member><member><name>text</name><value><string>$1</string></value></member><member><name>category</name><value><int>-1</int></value></member><member><name>query_start</name><value><int>0</int></value></member></struct></value></param></params></methodCall>" http://127.0.0.1:8088/query.php; }
+check "the search service answers a query" "search sim | grep -q '<name>success</name>' && search sim | grep -q '<boolean>1</boolean>'"
+for setting in "Search Module \"OpenSimSearch\"" "Search SearchURL \"http://127.0.0.1:8088/query.php\"" "DataSnapshot index_sims true" \
+    "DataSnapshot data_services \"http://127.0.0.1:8088/register.php\""; do
+    eval "runuser -u opensim -- crudini --inplace --set /etc/opensim/grids/testgrid/sims/testgrid_sim1.ini $setting"
+done
+opensim restart now testgrid_sim1 >/dev/null 2>&1
+sim=$(sim_pid)
+check "the simulator registers with the search service" "[ -n '$sim' ] && [ \"\$(mysql -BN -e 'SELECT COUNT(*) FROM ossearch.hostsregister')\" -ge 1 ]"
+curl -s -m 60 http://127.0.0.1:8088/parser.php >/dev/null
+check "its region is indexed" "[ \"\$(mysql -BN -e \"SELECT COUNT(*) FROM ossearch.regions WHERE regionname='Sim1'\")\" = 1 ]"
+pkill -f 'php -S 127.0.0.1:8088'
+check "no error in the search scripts" "! grep -E 'Fatal|Parse error' /tmp/php-search.log"
+
 ts "modules enabled for a region"
 conf=/etc/opensim/opensim.conf
 check "opensim-kit enabled the safe modules" "[ \"\$(crudini --get $conf Defaults EnabledModules)\" = 'opensimsearch gloebit' ]"
