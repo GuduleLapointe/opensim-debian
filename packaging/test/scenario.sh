@@ -246,10 +246,11 @@ grid_core() {
 }
 
 # The grid on the development build
+ready=$(grep -c 'UserAgentServerConnector loaded' $(robust_log))
 grid_core /usr/share/opensim/unstable
 state after moving the grid to the development build
 check "grid on its own core" "grep 'Starting in' $(robust_log) | tail -1 | grep -q /usr/share/opensim/unstable/bin"
-check "development build ready" "[ \$(grep -c 'UserAgentServerConnector loaded' $(robust_log)) = 2 ]"
+check "development build ready" "[ \$(grep -c 'UserAgentServerConnector loaded' $(robust_log)) = $((ready + 1)) ]"
 
 # Removing a build stops the instances running from it only
 apt_q remove opensim-unstable
