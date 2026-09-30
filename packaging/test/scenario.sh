@@ -25,6 +25,8 @@ metas="$(deb opensim) $(deb opensim-0.9.3.0-opensimsearch) $(deb opensim-0.9.3.0
 robust_pid() { pgrep -f "^dotnet .*Robust.dll" | head -1; }
 robust_log() { ls /var/log/opensim/testgrid_robust*.log 2>/dev/null | grep -v Stats | head -1; }
 quits() { cat /var/log/opensim/testgrid_robust*.log 2>/dev/null | grep -c '\[CONSOLE\] Quitting'; }
+# What runs, to find out when an instance goes
+state() { echo "   [Robust: $(robust_pid), simulator: $(sim_pid)] $*"; }
 # The simulator of the grid made by the wizard, and its region
 sim_pid() { pgrep -f "^dotnet .*OpenSim.dll -inifile=/etc/opensim/opensim.d/testgrid_sim1.ini" | head -1; }
 sim_registered() { grep -c 'Region Sim1 .* registered at 1000,1000' /var/log/opensim/testgrid_sim1.log 2>/dev/null; }
@@ -224,6 +226,7 @@ ts "development build and modules"
 check "modules installed by opensim-kit" "dpkg -s opensim-0.9.3.0-gloebit opensim-0.9.3.0-opensimsearch >/dev/null 2>&1"
 unstable=$(deb opensim-unstable)
 apt_q install "$unstable"
+state after installing the development build
 check "profile of the development build" "grep -q '^\[opensim-unstable\]' /etc/opensim/opensim.conf"
 check "modules in their own folders" "[ -f /usr/share/opensim-modules/0.9.3.0/opensimsearch/OpenSimSearch.Modules.dll ] &&
     [ -f /usr/share/opensim-modules/0.9.3.0/gloebit/Gloebit.dll ] &&
@@ -236,14 +239,17 @@ grid_core() {
 
 # The grid on the development build
 grid_core /usr/share/opensim/unstable
+state after moving the grid to the development build
 check "grid on its own core" "grep 'Starting in' $(robust_log) | tail -1 | grep -q /usr/share/opensim/unstable/bin"
 check "development build ready" "[ \$(grep -c 'UserAgentServerConnector loaded' $(robust_log)) = 2 ]"
 
 # Removing a build stops the instances running from it only
 apt_q remove opensim-unstable
+state after removing the development build
 check "instances of a removed build stopped" "[ -z '$(robust_pid)' ]"
 apt_q install "$unstable"
 grid_core /usr/share/opensim/0.9.3.0
+state after moving the grid back
 pid=$(robust_pid)
 check "grid back on the release" "[ -n '$pid' ]"
 apt_q remove opensim-unstable

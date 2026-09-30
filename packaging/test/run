@@ -17,7 +17,9 @@ name=opensim-kit-test-$(basename "$BASE" | tr ':.' '--')
 cd "$(git rev-parse --show-toplevel)"
 podman build -q -t "$name" --build-arg BASE="$BASE" "$TEST_DIR" >/dev/null
 podman rm -f "$name" >/dev/null 2>&1 || true
-podman run -d --name "$name" --systemd=always \
+# The memory is capped: a machine that lacks memory stops the biggest process
+# of any container, so the test must not reach that limit outside its own
+podman run -d --name "$name" --systemd=always --memory="${MEMORY:-700m}" \
     -v "$PWD/dist:/dist:ro" -v "$PWD/$TEST_DIR:/test:ro" "$name" >/dev/null
 [[ -n "${KEEP:-}" ]] || trap 'podman rm -f "$name" >/dev/null' EXIT
 sleep 3
