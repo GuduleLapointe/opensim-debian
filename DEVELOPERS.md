@@ -54,12 +54,14 @@ The releases are installed read-only, so nothing may be written in their `bin/` 
 
 ## Tests
 
-`packaging/test/run` installs the packages of `dist/` in a container with systemd (podman): a release alone then the tools, a grid made by the wizard and run by the service, then upgrade, removal of the tools and of the release, and purge:
+`packaging/test/run` installs the packages of `dist/` in a container with systemd (podman): a release alone then the tools, a grid made by the wizard and run by the service, a simulator with its region joining that grid (its estate owner made through the console of Robust, a second region added while it runs), the console commands, the search service from its package to an indexed region, then upgrade, the other builds, removal of the tools and of the release, and purge:
 
 ```bash
 packaging/test/run                                   # Debian 12
 packaging/test/run docker.io/library/ubuntu:24.04    # Ubuntu 24.04
 ```
+
+`scenario.sh` runs in the container, its scripted answers to the wizards are in `newgrid.php` and `newsim.php` (`ScriptedUi.php`). The container is capped to 700 MB (`MEMORY=1g packaging/test/run` to change it): the machine of podman is shared with every other container, and one that lacks memory stops the biggest process of any of them, not the one that asked for it. Give that machine at least 3 GB (`podman machine set --memory 4096`) when other projects run on it. `KEEP=1` keeps the container for inspection.
 
 ## References
 

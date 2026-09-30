@@ -254,6 +254,13 @@ pid=$(robust_pid)
 check "grid back on the release" "[ -n '$pid' ]"
 apt_q remove opensim-unstable
 echo "   Robust $(robust_pid) (was $pid), simulator $(sim_pid) (was $sim)"
+if [ -z "$(sim_pid)" ]; then
+    echo "   The simulator is gone, its log:"
+    tail -25 /var/log/opensim/testgrid_sim1.log | cut -c1-200
+    echo "   its screen, and what is running:"
+    runuser -u opensim -- screen -ls | head -5
+    ps -eo pid,etime,args | grep -E "dotnet|screen" | grep -v grep | cut -c1-150
+fi
 check "instances of another core untouched" "[ '$(robust_pid)' = '$pid' ] && [ '$(sim_pid)' = '$sim' ]"
 apt_q install "$unstable"
 

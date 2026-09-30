@@ -239,6 +239,12 @@ final class NewSim
     {
         $opensim = dirname(__DIR__, 3) . '/bin/opensim';
 
+        // A region registers with the grid when it starts: the grid has to run
+        [$code] = System::runShown(System::arg($opensim) . ' start ' . System::arg($grid->nick));
+        if ($code !== 0) {
+            $this->failed($plan, "The grid '{$grid->nick}' is not running, and a simulator cannot start without it. Enable and start it first: $opensim -v start {$grid->nick}");
+        }
+
         [$code, $said] = System::runShown(System::arg($opensim) . ' restart ' . System::arg($plan->slug));
         $pending = $code === 0 && str_contains($said, 'still starting');
         if ($code === 0 && !$pending) {
