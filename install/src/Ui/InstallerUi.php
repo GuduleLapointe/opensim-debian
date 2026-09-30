@@ -38,6 +38,13 @@ interface InstallerUi
      */
     public function text(string $label, string $default = '', ?\Closure $validate = null, ?string $hint = null): string;
 
+    /**
+     * Secret input (a password): not shown while typed, never proposed.
+     *
+     * @param ?\Closure(string):?string $validate  returns an error message, or null if valid
+     */
+    public function secret(string $label, ?\Closure $validate = null, ?string $hint = null): string;
+
     public function confirm(string $label, bool $default = true): bool;
 
     /**

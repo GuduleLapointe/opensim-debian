@@ -9,6 +9,7 @@ use function Laravel\Prompts\error;
 use function Laravel\Prompts\intro;
 use function Laravel\Prompts\note;
 use function Laravel\Prompts\outro;
+use function Laravel\Prompts\password;
 use function Laravel\Prompts\select;
 use function Laravel\Prompts\spin;
 use function Laravel\Prompts\text;
@@ -60,6 +61,15 @@ final class PromptsUi implements InstallerUi
         return text(
             label: $label,
             default: $default,
+            validate: $validate,
+            hint: $hint ?? '',
+        );
+    }
+
+    public function secret(string $label, ?\Closure $validate = null, ?string $hint = null): string
+    {
+        return password(
+            label: $label,
             validate: $validate,
             hint: $hint ?? '',
         );

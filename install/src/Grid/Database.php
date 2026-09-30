@@ -23,9 +23,14 @@ use OpenSim\Installer\Ui\InstallerUi;
  * access to check or fix) can be tried again. A creation that fails ends the
  * setup, with the commands to run from an administrator account.
  *
- * The administrator access is what the running user already has: root, or
- * their own database account, or sudo without a password. Nothing asks for
- * more, so someone with only a database they may use gets there without it.
+ * The administrator access is needed only for that. It is found silently when
+ * the running user already has it (root, their own database account, e.g. in
+ * their ~/.my.cnf, or sudo without a password); otherwise its credentials are
+ * asked, once per session. They work for any server, on this machine or
+ * another one. Someone with only a database they may use never needs it.
+ *
+ * The grid's account is always tried with its own credentials, and nothing
+ * else, as OpenSim will: no option file of the running user is read for it.
  *
  * MySQL and MariaDB only: Robust, and many modules, do not support others.
  */
@@ -41,8 +46,11 @@ final class Database
     /** @var array<string,string> passwords entered or generated during this session, by account */
     private static array $passwords = [];
 
-    /** @var list<string>|false|null the command giving administrator access: null until searched, false when none */
-    private array|false|null $adminCommand = null;
+    /** @var array<string,array{0:string,1:string}> administrator accounts entered during this session, [user, password] by server */
+    private static array $admins = [];
+
+    /** @var array{command:list<string>,env:array<string,string>}|false|null how the administrator's statements run: null until searched, false when there is no way */
+    private array|false|null $adminAccess = null;
 
     /** @var string why there is no administrator access */
     private string $adminReason = '';
@@ -66,6 +74,7 @@ final class Database
     /** @return int self::OK, self::RETRY or self::ABORT (with the reason and the way out shown) */
     public function ensure(GridPlan $plan): int
     {
+        $this->adminAccess = null;
         $client = $this->client();
         if ($client === null) {
             $this->ui->error('The MySQL client is missing: install default-mysql-client (or mariadb-client).');
@@ -202,10 +211,7 @@ final class Database
     /** A creation failed: the setup ends here, with what to run from an administrator account. */
     private function failed(string $what, string $err, GridPlan $plan, string $host, bool $withUser, bool $withDatabase): int
     {
-        // The client prints the failed statement, password included, before
-        // its "ERROR <number>" line: only that line is shown
-        $reason = preg_match('/^ERROR .*$/m', $err, $m) ? $m[0] : (trim($err) !== '' && !str_contains($err, 'IDENTIFIED') ? trim($err) : 'failed.');
-        $this->ui->error("Could not $what: $reason");
+        $this->ui->error("Could not $what: " . $this->errorLine($err));
         $this->showCommands($plan, $host, $withUser, $withDatabase);
 
         return self::ABORT;
@@ -283,20 +289,35 @@ final class Database
         return preg_match('/ERROR (\d+)/', $err, $m) ? (int) $m[1] : 0;
     }
 
+    /**
+     * What went wrong, from the client's output: it prints the failed
+     * statement, password included, before its "ERROR <number>" line, so only
+     * that line is shown.
+     */
+    private function errorLine(string $err): string
+    {
+        if (preg_match('/^ERROR .*$/m', $err, $m)) {
+            return $m[0];
+        }
+
+        return trim($err) !== '' && !str_contains($err, 'IDENTIFIED') ? trim($err) : 'failed.';
+    }
+
     private function quote(string $value): string
     {
         return "'" . strtr($value, ['\\' => '\\\\', "'" => "\\'"]) . "'";
     }
 
     /**
-     * A statement as the grid's account, with or without a database (the
-     * password goes through the environment, not the command line).
+     * A statement as the grid's account, with or without a database: its
+     * credentials only (the password goes through the environment, not the
+     * command line), no option file.
      *
      * @return array{0:int,1:string,2:string} [exit code, stdout, stderr]
      */
     private function run(string $client, GridPlan $plan, ?string $database, string $sql = 'SELECT 1'): array
     {
-        $command = [$client, '-h', $plan->dbHost, '-u', $plan->dbUser, '--connect-timeout=5', '-BN', '-e', $sql];
+        $command = [$client, '--no-defaults', '-h', $plan->dbHost, '-u', $plan->dbUser, '--connect-timeout=5', '-BN', '-e', $sql];
         if ($database !== null) {
             $command[] = $database;
         }
@@ -305,40 +326,103 @@ final class Database
     }
 
     /**
-     * A statement as the administrator of a local server, with what the
-     * running user already has, in this order: root through the socket, their
-     * own database account, sudo without a password. Never a prompt.
+     * A statement as the administrator of the server.
      *
      * @return array{0:int,1:string,2:string}
      */
     private function admin(string $client, GridPlan $plan, string $sql): array
     {
-        if (!$this->isLocal($plan->dbHost)) {
-            $this->adminReason = 'the server is not on this machine';
-
+        $access = $this->adminAccess($client, $plan);
+        if ($access === false) {
             return [1, '', $this->adminReason];
         }
 
-        if ($this->adminCommand === null) {
-            $this->adminCommand = false;
-            $this->adminReason = 'not root, no database account of your own with administrator rights, no sudo without a password';
+        return $this->exec(array_merge($access['command'], ['-BN', '-e', $sql]), $access['env']);
+    }
+
+    /**
+     * How to run statements as an administrator, found once per check, in
+     * this order: the account entered earlier in the session; on a local
+     * server, what the running user already has (root through the socket,
+     * their own database account, sudo without a password), tried silently;
+     * an account asked to the user.
+     *
+     * @return array{command:list<string>,env:array<string,string>}|false
+     */
+    private function adminAccess(string $client, GridPlan $plan): array|false
+    {
+        if ($this->adminAccess !== null) {
+            return $this->adminAccess;
+        }
+        $this->adminReason = 'no administrator account was given';
+
+        if (isset(self::$admins[$plan->dbHost])) {
+            $access = $this->explicitAccess($client, $plan->dbHost, ...self::$admins[$plan->dbHost]);
+            if ($this->works($access, 'SELECT 1')) {
+                return $this->adminAccess = $access;
+            }
+        }
+
+        if ($this->isLocal($plan->dbHost)) {
             $candidates = [[$client]];
             if (System::commandExists('sudo')) {
                 $candidates[] = ['sudo', '-n', $client];
             }
             foreach ($candidates as $candidate) {
-                [$code] = $this->exec(array_merge($candidate, ['-BN', '-e', 'SELECT COUNT(*) FROM mysql.user']), []);
-                if ($code === 0) {
-                    $this->adminCommand = $candidate;
-                    break;
+                $access = ['command' => $candidate, 'env' => []];
+                // Reading the accounts tells an administrator from a user
+                // who has only a database of their own
+                if ($this->works($access, 'SELECT COUNT(*) FROM mysql.user')) {
+                    return $this->adminAccess = $access;
                 }
             }
         }
-        if ($this->adminCommand === false) {
-            return [1, '', $this->adminReason];
+
+        return $this->adminAccess = $this->askAdmin($client, $plan);
+    }
+
+    /** Ask for an administrator account until one logs in, or the user gives up. */
+    private function askAdmin(string $client, GridPlan $plan): array|false
+    {
+        $this->ui->note("Creating what is missing needs an administrator account of the database server {$plan->dbHost}, one that may create users and databases. "
+            . 'Its password is used for this setup only, kept in memory, never written.');
+        if (!$this->ui->confirm("Enter the credentials of an administrator account of {$plan->dbHost}?", true)) {
+            return false;
         }
 
-        return $this->exec(array_merge($this->adminCommand, ['-BN', '-e', $sql]), []);
+        do {
+            $user = $this->ui->text('Administrator user', 'root', fn (string $value) => trim($value) === '' ? 'Required.' : null);
+            $access = $this->explicitAccess($client, $plan->dbHost, $user, $this->ui->secret("Password of $user"));
+            [$code, , $err] = $this->exec(array_merge($access['command'], ['-BN', '-e', 'SELECT 1']), $access['env']);
+            if ($code === 0) {
+                self::$admins[$plan->dbHost] = [$user, $access['env']['MYSQL_PWD']];
+
+                return $access;
+            }
+            $this->ui->error("Login refused for $user on {$plan->dbHost}: " . $this->errorLine($err));
+        } while ($this->ui->confirm('Try again with other credentials?', false));
+
+        return false;
+    }
+
+    /**
+     * The client's arguments for an account given explicitly: no option file
+     * of the running user, the password through the environment.
+     *
+     * @return array{command:list<string>,env:array<string,string>}
+     */
+    private function explicitAccess(string $client, string $host, string $user, string $password): array
+    {
+        return [
+            'command' => [$client, '--no-defaults', '-h', $host, '-u', $user, '--connect-timeout=5'],
+            'env' => ['MYSQL_PWD' => $password],
+        ];
+    }
+
+    /** @param array{command:list<string>,env:array<string,string>} $access */
+    private function works(array $access, string $sql): bool
+    {
+        return $this->exec(array_merge($access['command'], ['-BN', '-e', $sql]), $access['env'])[0] === 0;
     }
 
     /** @return array{0:int,1:string,2:string} */

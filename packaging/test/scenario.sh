@@ -119,6 +119,29 @@ check "the files are written by the system user, the setup ends well" "grep -q '
     [ \"\$(stat -c %U /etc/opensim/grids/adminsgrid/Robust.HG.ini)\" = opensim ] && [ \"\$(stat -c %U /var/lib/opensim/data/adminsgrid)\" = opensim ]"
 rm -rf /etc/opensim/grids/adminsgrid /var/lib/opensim/data/adminsgrid /var/cache/opensim/adminsgrid
 
+# A user with no administrator access of their own, and a ~/.my.cnf with an
+# outdated password. The grid's account is checked with its own credentials
+# only, not the ones of the file; the administrator account is asked, its
+# password is not shown, and it works from another machine's point of view
+# (credentials given, nothing implicit)
+useradd -m -s /bin/bash plainuser
+echo 'plainuser ALL=(opensim) NOPASSWD: ALL' >/etc/sudoers.d/plainuser && chmod 440 /etc/sudoers.d/plainuser
+printf '[client]\nuser=plainuser\npassword=outdated\n' >/home/plainuser/.my.cnf
+chown plainuser: /home/plainuser/.my.cnf && chmod 600 /home/plainuser/.my.cnf
+mysql -e "CREATE USER dbroot@localhost IDENTIFIED BY 'adminpw'; GRANT ALL ON *.* TO dbroot@localhost WITH GRANT OPTION"
+mysql -e "CREATE USER cnfuser@localhost IDENTIFIED BY 'cnfpass'; CREATE DATABASE cnfgrid_robust; GRANT ALL ON cnfgrid_robust.* TO cnfuser@localhost"
+TEST_DB_USER=cnfuser wizard Cnfgrid cnfpass plainuser >/tmp/cnfgrid.out
+check "an outdated ~/.my.cnf does not disturb the account of the grid" "grep -q 'cnfgrid_robust on localhost: connection OK' /tmp/cnfgrid.out"
+rm -rf /etc/opensim/grids/cnfgrid /var/lib/opensim/data/cnfgrid /var/cache/opensim/cnfgrid
+TEST_ADMIN_USER=dbroot TEST_ADMIN_PASSWORD=wrongpw TEST_DB_USER=askedwrong_user wizard Askedwrong "" plainuser >/tmp/askedwrong.out
+check "a wrong administrator password: refused, nothing created, the commands are shown" "grep -q 'Login refused for dbroot' /tmp/askedwrong.out &&
+    grep -q 'CREATE USER' /tmp/askedwrong.out && [ -z \"\$(mysql -BN -e \"SELECT 1 FROM mysql.user WHERE User='askedwrong_user'\")\" ]"
+TEST_ADMIN_USER=dbroot TEST_ADMIN_PASSWORD=adminpw TEST_DB_USER=asked_user wizard Asked "" plainuser >/tmp/asked.out
+pass=$(grep -a 'Database password ->' /tmp/asked.out | head -1 | sed 's/.*-> //')
+check "no administrator access: the credentials are asked, account and database created" "MYSQL_PWD='$pass' mysql -u asked_user -e 'SELECT 1' asked_robust >/dev/null 2>&1"
+check "the administrator password is neither shown nor written" "! grep -rqa adminpw /tmp/asked.out /etc/opensim/grids/asked"
+rm -rf /etc/opensim/grids/asked /var/lib/opensim/data/asked /var/cache/opensim/asked
+
 # The setup started as root, as on the packaged install, starts the grid and
 # sees it run (a screen session is per user, the setup is not the one running it)
 (cd /var/lib/opensim && TEST_GRID=Startgrid TEST_DB_PASSWORD= TEST_START=1 TEST_DB_USER=startuser php /test/newgrid.php >/tmp/startgrid.out 2>&1
