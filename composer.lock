@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3fc2e1dedecc95399164a9688ad6ba1e",
+    "content-hash": "ca501a71434d79ebd6d0025ba528c51c",
     "packages": [
         {
             "name": "laravel/prompts",
@@ -856,11 +856,17 @@
         },
         {
             "name": "magicoli/bash-tools",
-            "version": "dev-dev",
+            "version": "1.0.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/magicoli/bash-tools.git",
+                "reference": "1e55f10704070f6e445f42ea0644f1e2121466d4"
+            },
             "dist": {
-                "type": "path",
-                "url": "../bash-tools",
-                "reference": "f523d7e37cd5ec82bb0c44d877d3cc15d4b4f40e"
+                "type": "zip",
+                "url": "https://api.github.com/repos/magicoli/bash-tools/zipball/1e55f10704070f6e445f42ea0644f1e2121466d4",
+                "reference": "1e55f10704070f6e445f42ea0644f1e2121466d4",
+                "shasum": ""
             },
             "bin": [
                 "bin/cpuinfo",
@@ -882,6 +888,7 @@
                     "Magicoli\\BashHelpers\\": "src/"
                 }
             },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "AGPL-3.0-or-later"
             ],
@@ -892,17 +899,16 @@
                 }
             ],
             "description": "Eclectic collection of bash tools and helpers.",
-            "transport-options": {
-                "symlink": true,
-                "relative": true
-            }
+            "support": {
+                "issues": "https://github.com/magicoli/bash-tools/issues",
+                "source": "https://github.com/magicoli/bash-tools/tree/1.0.4"
+            },
+            "time": "2026-09-30T12:31:49+00:00"
         }
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "magicoli/bash-tools": 20
-    },
+    "stability-flags": {},
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
