@@ -68,6 +68,77 @@ osScreenExists() {
 	screen -ls 2>/dev/null | grep -E "[0-9]+\.$1[[:space:]]" | grep -qv "Dead"
 }
 
+# Whether an instance is still running. By its screen session for now; the
+# console mode (screen or remote console) will be a choice.
+osInstanceRunning() {
+	osScreenExists "$1"
+}
+
+# The connectors a Robust loads, as their class names, one per line: what its
+# ServerMain reads, the non-empty values of [ServiceList] and of [Startup]
+# ServiceConnectors, written "[config@]port/assembly:class" or
+# "assembly:class". ${Const|Name} references are expanded from the variables
+# the caller loaded from [Const] (some configs write the values themselves).
+# Every service the config lists is one the instance must load.
+osRobustServices() {
+	local tmp="$TMP.services.ini" value conn
+	cleanupIni "$1" >"$tmp" || return 1
+	{
+		crudini --get --format=lines "$tmp" ServiceList 2>/dev/null | sed -E 's/^\[ *ServiceList *\] *[^=]*= *//'
+		crudini --get "$tmp" Startup ServiceConnectors 2>/dev/null | tr ', ' '\n\n'
+	} | while IFS= read -r value; do
+		value=${value#\"}
+		value=${value%\"}
+		value=$(osExpandConst "$value")
+		[ -n "$value" ] || continue
+		case $value in
+		*/*) conn=${value#*/} ;;
+		*) conn=$value ;;
+		esac
+		echo "${conn##*:}"
+	done | awk '!seen[$0]++'
+	rm -f "$tmp"
+}
+
+# Follow the log of a Robust while it loads its connectors, showing each one
+# as it is reported: 0 when all are loaded, 4 when some failed to load (named
+# in OS_FAILED_SERVICES, once the others have reported), 3 when the instance
+# exited, 1 when the delay is over. The log, not the console: a detached
+# screen cuts the lines at 80 columns.
+# Args: log file, byte of the log where this start begins, instance, seconds,
+# then the class names.
+osWatchServices() {
+	local logfile=$1 mark=$2 instance=$3 seconds=$4 content class failed="" ticks=0
+	shift 4
+	local pending=" $* "
+	local max=$((seconds * 2))
+	OS_FAILED_SERVICES=
+	while :; do
+		content=$(tail -c +$((mark + 1)) "$logfile" 2>/dev/null)
+		for class in $*; do
+			[[ "$pending" == *" $class "* ]] || continue
+			if grep -aqE "\[SERVER\]: $class loaded successfully" <<<"$content"; then
+				printf '  %s\n' "$class"
+				pending=${pending/ $class / }
+			elif grep -aqE "Failed to load .*:$class([^A-Za-z0-9]|$)" <<<"$content"; then
+				printf '  %s: failed to load\n' "$class" >&2
+				failed="$failed $class"
+				pending=${pending/ $class / }
+			fi
+		done
+		[ -n "${pending// /}" ] || break
+		osInstanceRunning "$instance" || return 3
+		ticks=$((ticks + 1))
+		[ $ticks -lt $max ] || return 1
+		sleep 0.5
+	done
+	[ -z "$failed" ] || {
+		OS_FAILED_SERVICES=${failed# }
+		return 4
+	}
+	return 0
+}
+
 osConsoleRead() {
 	[ ! "$1" ] && return
 	[ ! "$COLUMNS" ] && COLUMNS=75

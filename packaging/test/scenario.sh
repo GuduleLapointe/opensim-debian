@@ -111,6 +111,23 @@ check "the setup reports the grid it started as running, exit code 0" "grep -q \
     grep -q 'exit code: 0' /tmp/startgrid.out && [ -n \"\$(robust_pid)\" ]"
 opensim stop now startgrid >/dev/null 2>&1
 check "the launcher fails for an instance that does not exist" "! opensim start nosuchinstance >/dev/null 2>&1"
+
+# Robust is ready when every service its config lists has reported it loaded,
+# whatever options it runs with (here without Hypergrid: none of its
+# connectors listed), and the ones that failed to load are named
+ini=/etc/opensim/grids/startgrid/Robust.HG.ini
+cp $ini /tmp/Robust.startgrid.good
+sed -i '/UserAgentServerConnector/d;/GatekeeperServiceInConnector/d' $ini
+opensim start startgrid >/tmp/nohg.out 2>&1; nohg=$?
+check "a grid without Hypergrid is ready, not waited for" "[ $nohg = 0 ] && grep -aq 'startgrid started' /tmp/nohg.out"
+opensim stop now startgrid >/dev/null 2>&1
+cp /tmp/Robust.startgrid.good $ini
+sed -i 's/Password=[^;"]*;/Password=wrongpass;/' $ini
+opensim start startgrid >/tmp/baddb.out 2>&1; baddb=$?
+check "a grid whose database cannot be used is reported, with the failed services" "[ $baddb != 0 ] &&
+    grep -aq 'services failed to load' /tmp/baddb.out && grep -aq 'AssetServiceConnector: failed to load' /tmp/baddb.out"
+opensim stop now startgrid >/dev/null 2>&1
+cp /tmp/Robust.startgrid.good $ini
 rm -rf /etc/opensim/grids/startgrid /etc/opensim/robust.d/startgrid.ini /var/lib/opensim/data/startgrid /var/cache/opensim/startgrid
 rm -rf /etc/opensim/grids/rootgrid /var/lib/opensim/data/rootgrid /var/cache/opensim/rootgrid \
     /etc/opensim/grids/grid2 /var/lib/opensim/data/grid2 /var/cache/opensim/grid2
