@@ -331,8 +331,8 @@ final class NewGrid
     private function askConsole(GridPlan $plan, array $current, \Closure $numeric): void
     {
         $plan->consoleMode = $this->ui->choose('Console of the grid', [
-            'rest' => 'Remote console (REST): through its port, from another machine or a container',
-            'screen' => 'Screen session: attached on this machine',
+            'rest' => 'Remote REST console (recommended)',
+            'screen' => 'Screen session (on this machine)',
         ], isset($current['consoleUser']) || $current === [] ? 'rest' : 'screen');
         if ($plan->consoleMode !== 'rest') {
             return;

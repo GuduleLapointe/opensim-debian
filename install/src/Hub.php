@@ -158,7 +158,7 @@ final class Hub
 
         $options = [];
         foreach ($sims as $slug) {
-            $options[$slug] = $slug . (SimState::isEnabled($etcRoot, $slug) ? '' : ' (disabled)');
+            $options[$slug] = $slug . (SimState::isEnabled($etcRoot, $slug) ? '' : ' [disabled]') . ' (enable, disable, reconfigure, manage regions)';
         }
         $options['new'] = 'Create a new simulator';
         $options['other'] = 'Create a simulator in another grid';
@@ -180,7 +180,7 @@ final class Hub
     {
         $enabled = SimState::isEnabled($etcRoot, $slug);
         $choice = $this->ui->choose("Simulator: $slug", [
-            'region' => 'Add a region',
+            'region' => 'Manage regions (add one)',
             'reconfigure' => 'Reconfigure',
             'toggle' => $enabled ? 'Disable' : 'Enable',
             'back' => 'Back',

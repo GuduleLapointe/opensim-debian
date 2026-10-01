@@ -539,8 +539,8 @@ final class NewSim
     private function askConsole(SimPlan $plan, array $current): void
     {
         $plan->consoleMode = $this->ui->choose('Console of the simulator', [
-            'rest' => 'Remote console (REST): through its port, from another machine or a container',
-            'screen' => 'Screen session: attached on this machine',
+            'rest' => 'Remote REST console (recommended)',
+            'screen' => 'Screen session (on this machine)',
         ], isset($current['consoleUser']) || $current === [] ? 'rest' : 'screen');
         if ($plan->consoleMode !== 'rest') {
             return;
