@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Scan databasse to find users matchin a name, generate SQL commands to ban user
 # and delete their objects.

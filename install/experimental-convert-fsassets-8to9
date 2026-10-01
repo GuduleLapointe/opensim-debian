@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 PGM=$(basename $0)
 [ ! "$1" ] && echo "usage: $PGM <fsassets directory>" >&2 && exit 1

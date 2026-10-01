@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 min=9010
 max=9999

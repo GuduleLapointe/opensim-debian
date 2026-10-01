@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Usage:     create-db-and-folders.sh [-v] file.ini
 

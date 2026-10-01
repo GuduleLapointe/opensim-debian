@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 project=$(basename $PWD)
 branch=$(git rev-parse --abbrev-ref HEAD)

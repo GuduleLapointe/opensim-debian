@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 PGM=$(realpath $0)
 BASEDIR=$(dirname $PGM | sed "s:/lib/.*::")

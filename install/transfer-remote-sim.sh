@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Utility to move an existing OpenSimulator instance from a remote server
 # - run the script from the new host
