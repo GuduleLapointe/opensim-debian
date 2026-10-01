@@ -101,6 +101,10 @@ An existing install, e.g. in `/opt/opensim`, keeps working with the packaged too
 
 ## Installation from git
 
+Requires PHP 8.2 or newer, with the `ctype`, `iconv`, `json` and `mbstring` extensions, and those of the engine: `curl`, `filter`, `gettext`, `intl`, `mysqli`, `pdo`, `session` and `simplexml`. `posix` is used when available. The packages install what they need.
+
+On Debian and Ubuntu: `sudo apt install php-cli php-curl php-intl php-mbstring php-mysql php-xml`.
+
 ```shell
 git clone --recursive https://github.com/GuduleLapointe/opensim-debian.git opensim-kit
 cd opensim-kit

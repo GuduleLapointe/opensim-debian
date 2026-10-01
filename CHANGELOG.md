@@ -8,6 +8,7 @@
 - new a simulator joins a grid whose Robust is on another machine or in another container from the same `Sim` menu, with no grid created first: its address and ports are asked (its name and nick are read from `get_grid_info`) and kept for the next simulators; the address the regions announce is asked too
 - new `opensim console <instance>` (or `screen`) attaches to the console of an instance, screen or remote console; `opensim command <instance> <text>` sends a command from a script
 - new package `opensim-helpers-search`, the web part of the OpenSimSearch module (the search service the viewers query), from the sources of the `manfredaabye` fork; its settings are in `/etc/opensim/helpers/search`
+- update the PHP libraries (engine, helpers, REST client) are composer packages, loaded from the start; PHP 8.2 is the minimum (Debian 12 and Ubuntu 24.04 have it), the packages depend on the PHP extensions the tools use, and the requirements are in the README
 - update starting a region no longer waits two minutes for questions it does not ask: a region fully described is up in seconds, and a region that dies right after loading is reported as a failed start
 - update regions run from a read-only core on .NET: their native libraries (physics, OpenJPEG) are found, and their stack is the one of `opensim.sh`
 - update the packages of the OpenSimulator cores depend on `libgdiplus`, without which a region stops at once; the launcher says when it is missing, and `opensim install-dotnet` installs it

@@ -15,16 +15,25 @@
     }
   ],
   "require": {
-    "php": ">=8.1",
+    "php": ">=8.2",
+    "ext-ctype": "*",
     "ext-gettext": "*",
+    "ext-iconv": "*",
+    "ext-json": "*",
+    "ext-mbstring": "*",
     "laravel/prompts": "^0.3.18",
     "magicoli/opensim-engine": "dev-dev",
     "magicoli/opensim-helpers": "dev-dev",
     "magicoli/opensim-rest-php": "dev-dev"
   },
   "require-dev": {
+    "dealerdirect/phpcodesniffer-composer-installer": "^1.2",
     "deployer/deployer": "^7.3",
-    "magicoli/bash-tools": "^1.0.4"
+    "magicoli/bash-tools": "^1.0.4",
+    "magicoli/pest-failure-summary": "^1.0",
+    "pestphp/pest": "^3.0",
+    "phpcompatibility/php-compatibility": "dev-develop",
+    "squizlabs/php_codesniffer": "^4.0"
   },
   "repositories": [
     {
@@ -63,9 +72,12 @@
   ],
   "minimum-stability": "dev",
   "config": {
-    "allow-plugins": {},
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true,
+      "pestphp/pest-plugin": true
+    },
     "platform": {
-      "php": "8.1.0"
+      "php": "8.2.0"
     }
   },
   "autoload": {
@@ -76,5 +88,12 @@
       "install/engine.php"
     ]
   },
-  "prefer-stable": true
+  "prefer-stable": true,
+  "suggest": {
+    "ext-intl": "better transliteration of the grid names",
+    "ext-posix": "detect the user the setup runs as"
+  },
+  "scripts": {
+    "test": "pest"
+  }
 }
