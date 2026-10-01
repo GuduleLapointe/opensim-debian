@@ -68,6 +68,8 @@ final class SimPlan
 
     /** Only a region is added to a simulator already configured. */
     public bool $regionOnly = false;
+    /** Write the region file again, to change a region that exists (its UUID is kept). */
+    public bool $overwriteRegion = false;
 
     // What to do once written, asked before anything is written.
     public bool $enable = true;

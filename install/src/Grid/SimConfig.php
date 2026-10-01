@@ -118,11 +118,11 @@ final class SimConfig
         ]);
     }
 
-    /** Write the region, unless a file of that name is there already. */
+    /** Write the region, unless a file of that name is there already (and it is not a region being changed). */
     public function writeRegion(SimPlan $plan): ?string
     {
         $path = $plan->regionIni();
-        if (is_file($path)) {
+        if (is_file($path) && !$plan->overwriteRegion) {
             return null;
         }
         @mkdir(dirname($path), 0o755, true);

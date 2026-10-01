@@ -8,23 +8,26 @@ use OpenSim\Installer\Grid\GridInfo;
 use OpenSim\Installer\Grid\GridState;
 use OpenSim\Installer\Grid\NewGrid;
 use OpenSim\Installer\Grid\NewSim;
+use OpenSim\Installer\Grid\RegionState;
 use OpenSim\Installer\Grid\SimState;
 use OpenSim\Installer\Ui\InstallerUi;
 
 /**
- * Setup hub: a fixed dashboard of layers — core, grid, sim — each showing its
- * current state and drilling down to "select another / add new" when chosen.
- * Rows keep stable positions; a layer without its prerequisite is shown but
- * not actionable (no grid without a core, no sim without a grid). The cursor
- * lands on the most relevant (deepest incomplete) layer.
+ * Setup hub: screens one level deeper each time, from the home to a region:
+ *
+ *   home          the core, the grids, add a grid
+ *   grid          configure, its simulators, add a simulator, enable or disable
+ *   simulator     reconfigure, enable or disable, its regions, add a region
+ *   region        reconfigure, enable or disable
+ *
+ * Back goes up one level. A grid whose Robust is on another machine is only a
+ * list of simulators here.
  *
  * The flow talks only to an InstallerUi, so a web frontend can render the same
- * dashboard later.
+ * screens later.
  */
 final class Hub
 {
-    private ?string $activeGrid = null;
-
     public function __construct(private InstallerUi $ui)
     {
     }
@@ -38,35 +41,29 @@ final class Hub
             $etcRoot = $config->profile()['EtcRoot'] ?? '';
             $grids = $this->grids($etcRoot);
 
-            $this->activeGrid ??= $grids[0] ?? null;
-            if ($this->activeGrid !== null && !in_array($this->activeGrid, $grids, true)) {
-                $this->activeGrid = $grids[0] ?? null;
+            $options = ['core' => 'OpenSim core ' . ($cores !== [] ? "[$activeCore]" : '(install)')];
+            foreach ($grids as $nick) {
+                $options["grid:$nick"] = GridInfo::isRemote($etcRoot, $nick)
+                    ? "$nick (Robust on another machine)"
+                    : $nick . (GridState::isEnabled($etcRoot, $nick) ? '' : ' [disabled]');
             }
-            $sims = $this->activeGrid !== null ? $this->sims($etcRoot, $this->activeGrid) : [];
+            $options['add'] = 'Add grid';
+            $options['quit'] = 'Quit';
 
-            $options = [
-                'core' => 'OpenSim core ' . ($cores !== [] ? "[$activeCore]" : '(install)'),
-                'grid' => 'Grid ' . ($cores === [] ? '(needs a core)' : ($grids !== [] ? "[{$this->activeGrid}]" : '(create new)')),
-                'sim' => 'Sim ' . ($cores === [] ? '(needs a core)' : '(' . $this->simState($sims) . ')'),
-                'quit' => 'Quit',
-            ];
-
-            $default = $cores === [] ? 'core' : ($grids === [] ? 'grid' : 'sim');
-
+            $default = $cores === [] ? 'core' : ($grids === [] ? 'add' : "grid:{$grids[0]}");
             $choice = $this->ui->choose('OpenSim — setup', $options, $default);
 
-            switch ($choice) {
-                case 'core':
-                    $this->coreMenu($cores);
-                    break;
-                case 'grid':
-                    $cores === [] ? $this->ui->warn('Install an OpenSim core first.') : $this->gridMenu($grids, $etcRoot);
-                    break;
-                case 'sim':
-                    $cores === [] ? $this->ui->warn('Install an OpenSim core first.') : $this->simMenu($sims, $etcRoot);
-                    break;
-                case 'quit':
-                    return;
+            if ($choice === 'quit') {
+                return;
+            }
+            if ($choice === 'core') {
+                $this->coreMenu($cores);
+            } elseif ($cores === []) {
+                $this->ui->warn('Install an OpenSim core first.');
+            } elseif ($choice === 'add') {
+                $this->addGrid();
+            } else {
+                $this->gridScreen(substr($choice, strlen('grid:')));
             }
         }
     }
@@ -92,136 +89,151 @@ final class Hub
         (new Config())->setDefaultProfile($choice);
     }
 
-    private function gridMenu(array $grids, string $etcRoot): void
+    /** A grid run from this machine, or one run elsewhere, of which only its simulators are set up here. */
+    private function addGrid(): void
     {
-        $options = [];
-        foreach ($grids as $nick) {
-            $options[$nick] = GridInfo::isRemote($etcRoot, $nick)
-                ? "$nick (Robust on another machine)"
-                : $nick . (GridState::isEnabled($etcRoot, $nick) ? '' : ' (disabled)');
-        }
-        $options['new'] = 'Create a new grid';
-        $options['back'] = 'Back';
-
-        $choice = $this->ui->choose('Grid', $options, $grids === [] ? 'new' : ($this->activeGrid ?? 'new'));
-        if ($choice === 'back') {
-            return;
-        }
-        if ($choice === 'new') {
-            (new NewGrid($this->ui))->run(null);
-
-            return;
-        }
-        $this->activeGrid = $choice;
-        if (GridInfo::isRemote($etcRoot, $choice)) {
-            $this->ui->note("Grid '$choice' runs on another machine: only its simulators are set up here (Sim).");
-
-            return;
-        }
-        $this->gridActions($choice, $etcRoot);
-    }
-
-    private function gridActions(string $nick, string $etcRoot): void
-    {
-        $enabled = GridState::isEnabled($etcRoot, $nick);
-        $choice = $this->ui->choose("Grid: $nick", [
-            'reconfigure' => 'Reconfigure',
-            'toggle' => $enabled ? 'Disable' : 'Enable',
+        $choice = $this->ui->choose('Add a grid', [
+            'new' => 'A new grid, run from this machine',
+            'external' => 'A grid run elsewhere (its Robust is on another machine)',
             'back' => 'Back',
-        ], 'reconfigure');
+        ], 'new');
 
-        switch ($choice) {
-            case 'reconfigure':
-                (new NewGrid($this->ui))->run($nick);
-                break;
-            case 'toggle':
-                if ($enabled) {
-                    GridState::disable($etcRoot, $nick);
-                    $this->ui->note("Disabled $nick.");
-                } elseif (GridState::enable($etcRoot, $nick)) {
-                    $this->ui->note("Enabled $nick.");
-                } else {
-                    $this->ui->warn("Cannot enable $nick (no Robust config).");
-                }
-                break;
+        match ($choice) {
+            'new' => (new NewGrid($this->ui))->run(null),
+            'external' => (new NewSim($this->ui))->run(null),
+            default => null,
+        };
+    }
+
+    private function gridScreen(string $nick): void
+    {
+        while (true) {
+            $etcRoot = (new Config())->profile()['EtcRoot'] ?? '';
+            $remote = GridInfo::isRemote($etcRoot, $nick);
+            $enabled = GridState::isEnabled($etcRoot, $nick);
+            $sims = $this->sims($etcRoot, $nick);
+
+            $options = [];
+            if (!$remote) {
+                $options['configure'] = 'Configure';
+            }
+            foreach ($sims as $slug) {
+                $options["sim:$slug"] = $slug . (SimState::isEnabled($etcRoot, $slug) ? '' : ' [disabled]');
+            }
+            $options['addsim'] = 'Add simulator';
+            if (!$remote) {
+                $options['toggle'] = $enabled ? 'Disable' : 'Enable';
+            }
+            $options['back'] = 'Back';
+
+            $choice = $this->ui->choose("Grid: $nick" . ($remote ? ' (Robust on another machine)' : ''), $options, $sims !== [] ? "sim:{$sims[0]}" : 'addsim');
+            if ($choice === 'back') {
+                return;
+            }
+            switch (true) {
+                case $choice === 'configure':
+                    (new NewGrid($this->ui))->run($nick);
+                    break;
+                case $choice === 'addsim':
+                    (new NewSim($this->ui))->run($nick);
+                    break;
+                case $choice === 'toggle':
+                    if ($enabled) {
+                        GridState::disable($etcRoot, $nick);
+                        $this->ui->note("Disabled $nick.");
+                    } elseif (GridState::enable($etcRoot, $nick)) {
+                        $this->ui->note("Enabled $nick.");
+                    } else {
+                        $this->ui->warn("Cannot enable $nick (no Robust config).");
+                    }
+                    break;
+                default:
+                    $this->simScreen($nick, substr($choice, strlen('sim:')));
+            }
         }
     }
 
-    private function simMenu(array $sims, string $etcRoot): void
+    private function simScreen(string $nick, string $slug): void
     {
-        // No grid here: the simulator joins one whose Robust is elsewhere (asked by the wizard)
-        if ($this->activeGrid === null) {
-            (new NewSim($this->ui))->run(null);
+        while (true) {
+            $etcRoot = (new Config())->profile()['EtcRoot'] ?? '';
+            $enabled = SimState::isEnabled($etcRoot, $slug);
+            $regions = RegionState::list("$etcRoot/grids/$nick/sims/$slug/regions");
 
-            return;
-        }
+            $options = ['reconfigure' => 'Reconfigure', 'toggle' => $enabled ? 'Disable' : 'Enable'];
+            foreach ($regions as $name => $region) {
+                $options["region:$name"] = $name . ($region['enabled'] ? '' : ' [disabled]');
+            }
+            $options['addregion'] = 'Add region';
+            $options['back'] = 'Back';
 
-        $options = [];
-        foreach ($sims as $slug) {
-            $options[$slug] = $slug . (SimState::isEnabled($etcRoot, $slug) ? '' : ' [disabled]') . ' (enable, disable, reconfigure, manage regions)';
+            $choice = $this->ui->choose("Simulator: $slug", $options, 'back');
+            if ($choice === 'back') {
+                return;
+            }
+            switch (true) {
+                case $choice === 'reconfigure':
+                    // The name typed at creation is not kept: the slug names it
+                    (new NewSim($this->ui))->run($nick, $this->simName($nick, $slug));
+                    break;
+                case $choice === 'addregion':
+                    (new NewSim($this->ui))->addRegion($nick, $this->simName($nick, $slug));
+                    break;
+                case $choice === 'toggle':
+                    if ($enabled) {
+                        SimState::disable($etcRoot, $slug);
+                        $this->ui->note("Disabled $slug.");
+                    } elseif (SimState::enable($etcRoot, $slug, "$etcRoot/grids/$nick/sims/$slug.ini")) {
+                        $this->ui->note("Enabled $slug.");
+                    } else {
+                        $this->ui->warn("Cannot enable $slug (no config).");
+                    }
+                    break;
+                default:
+                    $this->regionScreen($nick, $slug, substr($choice, strlen('region:')));
+            }
         }
-        $options['new'] = 'Create a new simulator';
-        $options['other'] = 'Create a simulator in another grid';
-        $options['back'] = 'Back';
-
-        $choice = $this->ui->choose("Simulators of {$this->activeGrid}", $options, $sims === [] ? 'new' : 'back');
-        if ($choice === 'back') {
-            return;
-        }
-        if ($choice === 'new' || $choice === 'other') {
-            (new NewSim($this->ui))->run($choice === 'new' ? $this->activeGrid : null);
-
-            return;
-        }
-        $this->simActions($choice, $etcRoot);
     }
 
-    private function simActions(string $slug, string $etcRoot): void
+    private function regionScreen(string $nick, string $slug, string $name): void
     {
-        $enabled = SimState::isEnabled($etcRoot, $slug);
-        $choice = $this->ui->choose("Simulator: $slug", [
-            'region' => 'Manage regions (add one)',
-            'reconfigure' => 'Reconfigure',
-            'toggle' => $enabled ? 'Disable' : 'Enable',
-            'back' => 'Back',
-        ], 'back');
+        while (true) {
+            $etcRoot = (new Config())->profile()['EtcRoot'] ?? '';
+            $region = RegionState::list("$etcRoot/grids/$nick/sims/$slug/regions")[$name] ?? null;
+            if ($region === null) {
+                return;
+            }
 
-        switch ($choice) {
-            case 'region':
-                (new NewSim($this->ui))->addRegion($this->activeGrid, $this->simName($slug));
-                break;
-            case 'reconfigure':
-                // The name typed at creation is not kept: the slug names it
-                (new NewSim($this->ui))->run($this->activeGrid, $this->simName($slug));
-                break;
-            case 'toggle':
-                if ($enabled) {
-                    SimState::disable($etcRoot, $slug);
-                    $this->ui->note("Disabled $slug.");
-                } elseif (SimState::enable($etcRoot, $slug, "$etcRoot/grids/{$this->activeGrid}/sims/$slug.ini")) {
-                    $this->ui->note("Enabled $slug.");
-                } else {
-                    $this->ui->warn("Cannot enable $slug (no config).");
-                }
-                break;
+            $choice = $this->ui->choose("Region: $name", [
+                'reconfigure' => 'Reconfigure',
+                'toggle' => $region['enabled'] ? 'Disable' : 'Enable',
+                'back' => 'Back',
+            ], 'back');
+
+            switch ($choice) {
+                case 'reconfigure':
+                    (new NewSim($this->ui))->reconfigureRegion($nick, $this->simName($nick, $slug), $name);
+                    break;
+                case 'toggle':
+                    $moved = $region['enabled'] ? RegionState::disable($region['file']) : RegionState::enable($region['file']);
+                    if ($moved === null) {
+                        $this->ui->warn("Cannot " . ($region['enabled'] ? 'disable' : 'enable') . " $name (permission, or a region of that name is there already).");
+                    } else {
+                        $this->ui->note(($region['enabled'] ? 'Disabled' : 'Enabled') . " $name: the simulator takes it into account when it starts.");
+                    }
+                    break;
+                default:
+                    return;
+            }
         }
     }
 
     /** The name of a simulator from the name of its instance: what follows the grid nick. */
-    private function simName(string $slug): string
+    private function simName(string $nick, string $slug): string
     {
-        $prefix = GridInfo::instanceName((string) $this->activeGrid) . '_';
+        $prefix = GridInfo::instanceName($nick) . '_';
 
         return str_starts_with($slug, $prefix) ? substr($slug, strlen($prefix)) : $slug;
-    }
-
-    private function simState(array $sims): string
-    {
-        return match (count($sims)) {
-            0 => 'create new',
-            1 => $sims[0],
-            default => count($sims) . ' sims',
-        };
     }
 
     /** @return list<string> grid nicks under EtcRoot/grids */

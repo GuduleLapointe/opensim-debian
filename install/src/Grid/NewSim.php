@@ -97,32 +97,9 @@ final class NewSim
     {
         $profile = (new Config())->profile();
         $grid = $this->grid($profile, $gridNick);
-        if ($grid === null) {
+        $plan = $grid === null ? null : $this->regionPlan($grid, $simName);
+        if ($plan === null) {
             return;
-        }
-
-        $plan = new SimPlan();
-        $plan->gridNick = $grid->nick;
-        $plan->gridName = $grid->name;
-        $plan->gridDir = $grid->dir;
-        $plan->hypergrid = $grid->hypergrid;
-        $plan->logsDirectory = $grid->logsDirectory;
-        $plan->simName = $simName;
-        $plan->slug = GridInfo::instanceName($grid->nick . '_' . $simName);
-        $plan->regionOnly = true;
-        $plan->createRegion = true;
-        if (!is_file($plan->iniPath())) {
-            $this->ui->error("Simulator '$simName' is not configured.");
-
-            return;
-        }
-        $plan->httpPort = (int) (GridInfo::parse($plan->iniPath())['httpPort'] ?? 0);
-        // The address the regions of this simulator already announce
-        foreach (glob("{$plan->regionsDir()}/*.ini") ?: [] as $file) {
-            if (preg_match('/^\s*ExternalHostName\s*=\s*(\S+)/m', (string) file_get_contents($file), $m)) {
-                $plan->externalHost = $m[1];
-                break;
-            }
         }
 
         $this->askRegion($plan, $grid, new Database($this->ui));
@@ -145,6 +122,81 @@ final class NewSim
             return;
         }
         Elevated::run($this->ui, '--apply-sim', ['plan' => $plan->toArray(), 'profile' => $profile], $profile['SystemUser']);
+    }
+
+    /** The plan of a region of a simulator already configured, null when it is not. */
+    private function regionPlan(GridInfo $grid, string $simName): ?SimPlan
+    {
+        $plan = new SimPlan();
+        $plan->gridNick = $grid->nick;
+        $plan->gridName = $grid->name;
+        $plan->gridDir = $grid->dir;
+        $plan->hypergrid = $grid->hypergrid;
+        $plan->logsDirectory = $grid->logsDirectory;
+        $plan->simName = $simName;
+        $plan->slug = GridInfo::instanceName($grid->nick . '_' . $simName);
+        $plan->regionOnly = true;
+        $plan->createRegion = true;
+        if (!is_file($plan->iniPath())) {
+            $this->ui->error("Simulator '$simName' is not configured.");
+
+            return null;
+        }
+        $plan->httpPort = (int) (GridInfo::parse($plan->iniPath())['httpPort'] ?? 0);
+        // The address the regions of this simulator already announce
+        foreach (glob("{$plan->regionsDir()}/*.ini") ?: [] as $file) {
+            if (preg_match('/^\s*ExternalHostName\s*=\s*(\S+)/m', (string) file_get_contents($file), $m)) {
+                $plan->externalHost = $m[1];
+                break;
+            }
+        }
+
+        return $plan;
+    }
+
+    /**
+     * Change the place and the port of a region that exists: its name and its UUID
+     * are its identity in the grid, they stay. Taken into account when the simulator
+     * starts again.
+     */
+    public function reconfigureRegion(string $gridNick, string $simName, string $regionName): void
+    {
+        $profile = (new Config())->profile();
+        $grid = $this->grid($profile, $gridNick);
+        $plan = $grid === null ? null : $this->regionPlan($grid, $simName);
+        if ($plan === null) {
+            return;
+        }
+        $region = RegionState::list($plan->regionsDir())[$regionName] ?? null;
+        if ($region === null || !$region['enabled']) {
+            $this->ui->warn("Region '$regionName' is disabled or unknown: enable it first.");
+
+            return;
+        }
+        $current = RegionState::values($region['file']);
+
+        $plan->regionName = $regionName;
+        $plan->regionUuid = $current['RegionUUID'] ?? self::uuid();
+        $plan->regionSize = (int) ($current['SizeX'] ?? 256);
+        $plan->externalHost = $current['ExternalHostName'] ?? $plan->externalHost;
+        $plan->overwriteRegion = true;
+        $plan->start = false;
+
+        $numeric = static fn (string $v): ?string => ctype_digit(trim($v)) ? null : 'Enter a port number.';
+        $plan->regionLocation = $this->askLocation($grid, new Database($this->ui), $current['Location'] ?? null);
+        $plan->regionPort = (int) $this->ui->text('Region port', $current['InternalPort'] ?? (string) $plan->regionPort, $numeric);
+
+        if (!$this->ui->confirm("Change region '$regionName' to {$plan->regionLocation}, port {$plan->regionPort}?", true)) {
+            $this->ui->note('Aborted — nothing changed.');
+
+            return;
+        }
+        if (!Elevated::needed($profile)) {
+            $this->apply($plan, $profile);
+        } else {
+            Elevated::run($this->ui, '--apply-sim', ['plan' => $plan->toArray(), 'profile' => $profile], $profile['SystemUser']);
+        }
+        $this->ui->note("Restart the simulator '$simName' to apply it: opensim restart {$plan->slug}");
     }
 
     /**
@@ -669,14 +721,19 @@ final class NewSim
      * or the free place nearest to it by the rule of the grid, the free blocks it
      * leaves between its regions.
      */
-    private function askLocation(GridInfo $grid, Database $database): string
+    private function askLocation(GridInfo $grid, Database $database, ?string $current = null): string
     {
         $known = (new GridRegistry($database))->locations($grid);
+        // A region that moves frees the place it holds
+        $ignored = $current !== null && ($place = LocationFinder::parse($current)) !== null ? LocationFinder::key($place[0], $place[1]) : null;
+        if ($ignored !== null) {
+            unset($known[$ignored]);
+        }
         $validate = static fn (string $v): ?string => LocationFinder::parse($v) === null ? 'Use x,y (e.g. 1000,1000).' : null;
 
         while (true) {
-            [$x, $y] = LocationFinder::parse($this->ui->text('Region location (x,y)', implode(',', LocationFinder::FIRST), $validate)) ?? LocationFinder::FIRST;
-            [$freeX, $freeY] = $this->freePlace($grid, $known, $x, $y);
+            [$x, $y] = LocationFinder::parse($this->ui->text('Region location (x,y)', $current ?? implode(',', LocationFinder::FIRST), $validate)) ?? LocationFinder::FIRST;
+            [$freeX, $freeY] = $this->freePlace($grid, $known, $x, $y, $ignored);
             if ($freeX === $x && $freeY === $y) {
                 return "$x,$y";
             }
@@ -696,7 +753,7 @@ final class NewSim
      * @param array<string,true> $known the places taken that are known here
      * @return array{0:int,1:int}
      */
-    private function freePlace(GridInfo $grid, array $known, int $x, int $y): array
+    private function freePlace(GridInfo $grid, array $known, int $x, int $y, ?string $ignored = null): array
     {
         $gap = $grid->regionSpacing;
         if (!$grid->remote) {
@@ -709,6 +766,9 @@ final class NewSim
                 $this->ui->warn("The grid does not answer at {$grid->baseHostname}:{$grid->privatePort}: its regions are not known here, ask its owner which place is free.");
 
                 return LocationFinder::nearestFree($known, $x, $y, $gap);
+            }
+            if ($ignored !== null) {
+                unset($asked[$ignored]);
             }
             [$freeX, $freeY] = LocationFinder::nearestFree($known + $asked, $x, $y, $gap);
             if (max(abs($freeX - $x), abs($freeY - $y)) + $gap <= $radius || $radius >= 320) {
