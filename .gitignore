@@ -29,3 +29,5 @@ vendor/
 /build/
 /dist/
 .DS_Store
+.bashunit/
+.phpunit.cache/
