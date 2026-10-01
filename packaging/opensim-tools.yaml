@@ -30,8 +30,12 @@ depends:
   - crudini
   - curl
   - default-mysql-client | virtual-mysql-client
-  - php-cli (>= 2:8.1)
+  - php-cli (>= 2:8.2)
+  - php-curl
+  - php-intl
   - php-mbstring
+  - php-mysql
+  - php-xml
   - procps
   - screen
   - sudo
