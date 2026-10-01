@@ -14,19 +14,58 @@
       "homepage": "https://magiiic.com"
     }
   ],
+  "require": {
+    "php": ">=8.1",
+    "laravel/prompts": "^0.3.18",
+    "magicoli/opensim-engine": "dev-dev",
+    "magicoli/opensim-helpers": "dev-dev",
+    "magicoli/opensim-rest-php": "dev-dev"
+  },
   "require-dev": {
     "deployer/deployer": "^7.3",
     "magicoli/bash-tools": "^1.0.4"
   },
+  "repositories": [
+    {
+      "type": "path",
+      "url": "../opensim-helpers",
+      "canonical": false,
+      "options": {
+        "symlink": true,
+        "versions": {
+          "magicoli/opensim-helpers": "dev-dev"
+        }
+      }
+    },
+    {
+      "type": "path",
+      "url": "../opensim-engine",
+      "canonical": false,
+      "options": {
+        "symlink": true,
+        "versions": {
+          "magicoli/opensim-engine": "dev-dev"
+        }
+      }
+    },
+    {
+      "type": "path",
+      "url": "../opensim-rest-php",
+      "canonical": false,
+      "options": {
+        "symlink": true,
+        "versions": {
+          "magicoli/opensim-rest-php": "dev-dev"
+        }
+      }
+    }
+  ],
+  "minimum-stability": "dev",
   "config": {
     "allow-plugins": {},
     "platform": {
       "php": "8.1.0"
     }
-  },
-  "require": {
-    "php": ">=8.1",
-    "laravel/prompts": "^0.3.18"
   },
   "autoload": {
     "psr-4": {
