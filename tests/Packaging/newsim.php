@@ -56,10 +56,20 @@ if (getenv('TEST_REMOTE_GRID')) {
 if (getenv('TEST_ADD_REGION')) {
     $answers['Region name'] = getenv('TEST_ADD_REGION');
 }
+// TEST_RECONFIGURE_REGION: change the place (TEST_LOCATION) of that region of the simulator TEST_SIM
+if (getenv('TEST_LOCATION')) {
+    $answers['Region location'] = getenv('TEST_LOCATION');
+}
 
 try {
     $wizard = new NewSim(new ScriptedUi($answers));
-    getenv('TEST_ADD_REGION') ? $wizard->addRegion(getenv('TEST_GRID'), $sim) : $wizard->run(getenv('TEST_REMOTE_GRID') ? null : (getenv('TEST_GRID') ?: null));
+    if (getenv('TEST_RECONFIGURE_REGION')) {
+        $wizard->reconfigureRegion(getenv('TEST_GRID'), $sim, getenv('TEST_RECONFIGURE_REGION'));
+    } elseif (getenv('TEST_ADD_REGION')) {
+        $wizard->addRegion(getenv('TEST_GRID'), $sim);
+    } else {
+        $wizard->run(getenv('TEST_REMOTE_GRID') ? null : (getenv('TEST_GRID') ?: null));
+    }
 } catch (SetupFailed) {
     echo "setup failed\n";
     exit(1);

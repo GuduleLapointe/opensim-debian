@@ -232,6 +232,12 @@ sim=$(sim_pid)
     echo "exit code: $?" >>/tmp/region2.out)
 check "a region is added to the running simulator, and online" "grep -q 'exit code: 0' /tmp/region2.out && grep -q 'Region Sim1North is online' /tmp/region2.out &&
     [ \"\$(mysql -BN -e \"SELECT CONCAT(locX DIV 256, ',', locY DIV 256) FROM testgrid_robust.regions WHERE regionName='Sim1North'\")\" = 1001,1000 ] && [ '$(sim_pid)' = '$sim' ]"
+# A region that exists is changed in place: its place, not its identity
+regionfile=/etc/opensim/grids/testgrid/sims/testgrid_sim1/regions/Sim1North.ini
+regionuuid=$(grep -m1 '^RegionUUID' $regionfile)
+(cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=Sim1 TEST_RECONFIGURE_REGION=Sim1North TEST_LOCATION=1000,1001 runuser -u opensim -- php /test/newsim.php >/tmp/region3.out 2>&1
+    echo "exit code: $?" >>/tmp/region3.out)
+check "a region is reconfigured in place, its UUID kept" "grep -q 'exit code: 0' /tmp/region3.out && grep -q '^Location = 1000,1001' $regionfile && [ \"\$(grep -m1 '^RegionUUID' $regionfile)\" = '$regionuuid' ]"
 # The ports of an instance are a block of ten, the same on any machine: Robust
 # 8002 public and 8003 private; the first simulator 8012 public, 8014 for its
 # console (kept, not enabled), its regions from 8015, in UDP
