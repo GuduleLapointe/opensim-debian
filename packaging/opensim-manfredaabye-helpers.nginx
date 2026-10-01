@@ -1,7 +1,7 @@
 # The search service of OpenSimulator, to add to the server block of your site.
 # Adjust the socket of PHP-FPM to your version.
 location /search/ {
-    alias /usr/share/opensim-helpers/search/;
+    alias /usr/share/opensim-manfredaabye-helpers/;
     index query.php;
 
     # Not for the web (first: the first matching pattern wins)

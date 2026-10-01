@@ -1,9 +1,10 @@
-opensim-helpers-search
-======================
+opensim-manfredaabye-helpers
+============================
 
-The web part of the OpenSimSearch module: PHP scripts that answer the search
+The helpers of the manfredaabye fork of OpenSimSearch, another implementation
+than the opensim-helpers of this project: PHP scripts that answer the search
 of the viewers and index the data of the regions. Nothing is enabled by
-installing the package: the scripts are in /usr/share/opensim-helpers/search,
+installing the package: the scripts are in /usr/share/opensim-manfredaabye-helpers,
 to be served by the web server of your choice.
 
 Needs PHP with curl, xml, xmlrpc and MySQL (the package depends on them) and a
@@ -17,12 +18,12 @@ MySQL or MariaDB database, on this machine or another one.
 
    then its tables:
 
-     mysql ossearch < /usr/share/opensim-helpers/search/sql/ossearch.sql
+     mysql ossearch < /usr/share/opensim-manfredaabye-helpers/sql/ossearch.sql
 
    An existing database is updated with the other file of that folder,
    ossearch-migrations.sql.
 
-2. The settings: /etc/opensim/helpers/search/databaseinfo.php (host, account,
+2. The settings: /etc/opensim/manfredaabye-helpers/databaseinfo.php (host, account,
    password and name of the database). It is readable by the web server only.
 
 3. The web server: examples/nginx.conf and examples/apache.conf, next to this

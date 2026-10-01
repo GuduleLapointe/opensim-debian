@@ -168,10 +168,10 @@ done
 
 # The web helpers of the search module: the webroot of its source (a snapshot
 # of an unversioned source, versioned by its date and commit)
-if wants opensim-helpers-search; then
+if wants opensim-manfredaabye-helpers; then
     source=contrib/OpenSimSearch/src
     [[ -e "$source/.git" ]] || git submodule update --init "$source"
-    BUILD=build/helpers-search
+    BUILD=build/manfredaabye-helpers
     rm -rf "$BUILD"
     mkdir -p "$BUILD"
     cp -R "$source/webroot/." "$BUILD/"
@@ -186,8 +186,8 @@ if wants opensim-helpers-search; then
     fi
     chmod -R u+rwX,go+rX,go-w "$BUILD"
     cat >>build/packaging.env <<EOF
-HELPERS_SEARCH_VERSION=0.0~git$(git -C "$source" log -1 --format=%cd --date=format:%Y%m%d).$(git -C "$source" rev-parse --short HEAD)
-HELPERS_SEARCH_REVISION=1
+MANFREDAABYE_HELPERS_VERSION=0.0~git$(git -C "$source" log -1 --format=%cd --date=format:%Y%m%d).$(git -C "$source" rev-parse --short HEAD)
+MANFREDAABYE_HELPERS_REVISION=1
 EOF
 fi
 

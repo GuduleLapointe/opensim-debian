@@ -312,16 +312,16 @@ apt_q install "$unstable"
 # The search service (the web part of the OpenSimSearch module), served by PHP:
 # a simulator registers with it, its data is indexed, and it answers a search
 ts "search service"
-helpers=$(deb opensim-helpers-search)
-apt_q install "$helpers"
-check "search helpers installed, their settings in /etc" "[ -f /usr/share/opensim-helpers/search/query.php ] &&
-    [ \"\$(readlink /usr/share/opensim-helpers/search/databaseinfo.php)\" = /etc/opensim/helpers/search/databaseinfo.php ] &&
-    [ \"\$(stat -c %a /etc/opensim/helpers/search/databaseinfo.php)\" = 640 ]"
-check "the errors of the scripts go to the error log" "! grep -rq PDOErrors /usr/share/opensim-helpers/search"
+searchpkg=$(deb opensim-manfredaabye-helpers)
+apt_q install "$searchpkg"
+check "search helpers installed, their settings in /etc" "[ -f /usr/share/opensim-manfredaabye-helpers/query.php ] &&
+    [ \"\$(readlink /usr/share/opensim-manfredaabye-helpers/databaseinfo.php)\" = /etc/opensim/manfredaabye-helpers/databaseinfo.php ] &&
+    [ \"\$(stat -c %a /etc/opensim/manfredaabye-helpers/databaseinfo.php)\" = 640 ]"
+check "the errors of the scripts go to the error log" "! grep -rq PDOErrors /usr/share/opensim-manfredaabye-helpers"
 mysql -e "CREATE DATABASE ossearch CHARACTER SET utf8; CREATE USER ossearch@localhost IDENTIFIED BY 'searchpw'; GRANT ALL ON ossearch.* TO ossearch@localhost"
-mysql ossearch </usr/share/opensim-helpers/search/sql/ossearch.sql
-sed -i 's/\$DB_PASSWORD = ""/$DB_PASSWORD = "searchpw"/' /etc/opensim/helpers/search/databaseinfo.php
-(cd /usr/share/opensim-helpers/search && nohup php -S 127.0.0.1:8088 >/tmp/php-search.log 2>&1 &)
+mysql ossearch </usr/share/opensim-manfredaabye-helpers/sql/ossearch.sql
+sed -i 's/\$DB_PASSWORD = ""/$DB_PASSWORD = "searchpw"/' /etc/opensim/manfredaabye-helpers/databaseinfo.php
+(cd /usr/share/opensim-manfredaabye-helpers && nohup php -S 127.0.0.1:8088 >/tmp/php-search.log 2>&1 &)
 sleep 2
 search() { curl -s -m 10 -X POST -H 'Content-Type: text/xml' -d "<?xml version=\"1.0\"?><methodCall><methodName>dir_places_query</methodName><params><param><value><struct><member><name>flags</name><value><int>0</int></value></member><member><name>text</name><value><string>$1</string></value></member><member><name>category</name><value><int>-1</int></value></member><member><name>query_start</name><value><int>0</int></value></member></struct></value></param></params></methodCall>" http://127.0.0.1:8088/query.php; }
 check "the search service answers a query" "search sim | grep -q '<name>success</name>' && search sim | grep -q '<boolean>1</boolean>'"

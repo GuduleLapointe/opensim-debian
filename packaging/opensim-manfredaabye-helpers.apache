@@ -1,13 +1,13 @@
 # The search service of OpenSimulator, to add to the virtual host of your site
 # (with libapache2-mod-php, or PHP-FPM handling .php).
-Alias /search /usr/share/opensim-helpers/search
-<Directory /usr/share/opensim-helpers/search>
+Alias /search /usr/share/opensim-manfredaabye-helpers
+<Directory /usr/share/opensim-manfredaabye-helpers>
     Options -Indexes
     Require all granted
     DirectoryIndex query.php
 </Directory>
 
 # Not for the web
-<DirectoryMatch "^/usr/share/opensim-helpers/search/(sql|wiredux)/">
+<DirectoryMatch "^/usr/share/opensim-manfredaabye-helpers/(sql|wiredux)/">
     Require all denied
 </DirectoryMatch>

@@ -1,0 +1,71 @@
+# The helpers of the OpenSimSearch module, in the implementation of the manfredaabye
+# fork (not the opensim-helpers of this project): the search service the viewers and
+# the simulators query, and the pages of events and classifieds. Built by
+# apt-package from build/manfredaabye-helpers (packaging/build), the webroot of the
+# OpenSimSearch source in contrib/OpenSimSearch/src. Served by the web server
+# of the machine, or any other: nothing is enabled by installing it.
+name: opensim-manfredaabye-helpers
+arch: all
+platform: linux
+version: ${MANFREDAABYE_HELPERS_VERSION}
+release: ${MANFREDAABYE_HELPERS_REVISION}
+version_schema: none
+section: web
+priority: optional
+maintainer: Gudule Lapointe <gudule@speculoos.world>
+description: |-
+  Web helpers of the manfredaabye fork of OpenSimSearch (search service)
+  PHP scripts answering the search of the viewers (places, land for sale,
+  events, classifieds) and collecting the data of the regions, with the pages
+  to manage events and classifieds. Installed in
+  /usr/share/opensim-manfredaabye-helpers, to be served by a web server; its
+  database settings are in /etc/opensim/manfredaabye-helpers/databaseinfo.php.
+  See /usr/share/doc/opensim-manfredaabye-helpers/README.Debian.
+homepage: https://github.com/ManfredAabye/OpenSimSearch
+license: none stated upstream
+
+depends:
+  - php-curl
+  - php-mysql
+  - php-xml
+  - php-xmlrpc
+recommends:
+  - default-mysql-server | virtual-mysql-server
+suggests:
+  - nginx | apache2
+  - php-fpm | libapache2-mod-php
+  - opensim-tools
+
+contents:
+  - src: build/manfredaabye-helpers
+    dst: /usr/share/opensim-manfredaabye-helpers
+    type: tree
+  # The settings are the administrator's: the script reads them from its own
+  # folder, where they are linked from /etc
+  - src: /etc/opensim/manfredaabye-helpers/databaseinfo.php
+    dst: /usr/share/opensim-manfredaabye-helpers/databaseinfo.php
+    type: symlink
+  - src: packaging/opensim-manfredaabye-helpers.databaseinfo.php
+    dst: /etc/opensim/manfredaabye-helpers/databaseinfo.php
+    type: config|noreplace
+    file_info:
+      mode: 0644
+  - src: packaging/opensim-manfredaabye-helpers.README.Debian
+    dst: /usr/share/doc/opensim-manfredaabye-helpers/README.Debian
+    file_info:
+      mode: 0644
+  - src: packaging/opensim-manfredaabye-helpers.nginx
+    dst: /usr/share/doc/opensim-manfredaabye-helpers/examples/nginx.conf
+    file_info:
+      mode: 0644
+  - src: packaging/opensim-manfredaabye-helpers.apache
+    dst: /usr/share/doc/opensim-manfredaabye-helpers/examples/apache.conf
+    file_info:
+      mode: 0644
+  - src: packaging/opensim-manfredaabye-helpers.copyright
+    dst: /usr/share/doc/opensim-manfredaabye-helpers/copyright
+    file_info:
+      mode: 0644
+
+scripts:
+  postinstall: packaging/opensim-manfredaabye-helpers.postinst
