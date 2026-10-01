@@ -54,14 +54,22 @@ The releases are installed read-only, so nothing may be written in their `bin/` 
 
 ## Tests
 
-`packaging/test/run` installs the packages of `dist/` in a container with systemd (podman): a release alone then the tools, a grid made by the wizard and run by the service, a simulator with its region joining that grid (its estate owner made through the console of Robust, a second region added while it runs), the console commands, the search service from its package to an indexed region, then upgrade, the other builds, removal of the tools and of the release, and purge:
+One command runs every test, `vendor/bin/pest` (`composer test`): the PHP ones with [Pest](https://pestphp.com), the shell scripts with [bashunit](https://bashunit.typeddevs.com) (`tests/lib/bashunit`), run from Pest. Everything is in `tests/`:
+
+- `tests/Environment`: the PHP minimum. It is read from `composer.json`, the composer platform must follow it, and `phpcs` with PHPCompatibility (`phpcs.xml.dist`) checks that the code needs nothing newer and uses nothing deprecated up to the newest PHP version listed in the test. It runs on the minimum PHP, 8.2 (`.php-version` for lerd).
+- `tests/Unit`: the shell scripts (`*-test.sh`, bashunit): they parse, and bash scripts use `#!/usr/bin/env bash`. Also `tests/lib/bashunit tests/Unit`.
+- `tests/Packaging`: the packages and the container image, tested in containers (podman). Slow, they need podman and the packages of `dist/`, so they run only when asked, on a host that has them: `PACKAGING=1 vendor/bin/pest`. The scripts also run by hand, from the repository root.
+
+`tests/Packaging/run` installs the packages of `dist/` in a container with systemd (podman): a release alone then the tools, a grid made by the wizard and run by the service, a simulator with its region joining that grid (its estate owner made through the console of Robust, a second region added while it runs), the console commands, the search service from its package to an indexed region, then upgrade, the other builds, removal of the tools and of the release, and purge:
 
 ```bash
-packaging/test/run                                   # Debian 12
-packaging/test/run docker.io/library/ubuntu:24.04    # Ubuntu 24.04
+tests/Packaging/run                                   # Debian 12
+tests/Packaging/run docker.io/library/ubuntu:24.04    # Ubuntu 24.04
 ```
 
-`scenario.sh` runs in the container, its scripted answers to the wizards are in `newgrid.php` and `newsim.php` (`ScriptedUi.php`). The container is capped to 700 MB (`MEMORY=1g packaging/test/run` to change it): the machine of podman is shared with every other container, and one that lacks memory stops the biggest process of any of them, not the one that asked for it. With the cap, the test does not reach the containers of the other projects as long as about 800 MB are free in that machine (the script says when they are not): stop the containers you do not need first, rather than giving the machine more memory. `KEEP=1` keeps the container for inspection.
+`scenario.sh` runs in the container, its scripted answers to the wizards are in `newgrid.php` and `newsim.php` (`ScriptedUi.php`). The container is capped to 700 MB (`MEMORY=1g tests/Packaging/run` to change it): the machine of podman is shared with every other container, and one that lacks memory stops the biggest process of any of them, not the one that asked for it. With the cap, the test does not reach the containers of the other projects as long as about 800 MB are free in that machine (the script says when they are not): stop the containers you do not need first, rather than giving the machine more memory. `KEEP=1` keeps the container for inspection.
+
+`tests/Packaging/distro-pest` runs the Pest suites of the kit and of its libraries with the PHP of a distribution and only the extensions the packages depend on (`tests/Packaging/distro-pest docker.io/library/ubuntu:24.04` for another one): this is what checks that the PHP minimum and the dependencies of the packages are the real ones. `tests/Packaging/container-image` checks the container image.
 
 ## References
 
