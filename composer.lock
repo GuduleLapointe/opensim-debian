@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "507dd3634df2c0c42a1de46212c50c69",
+    "content-hash": "ee88ff26ca8cc57bb4d7e51ed94980c5",
     "packages": [
         {
             "name": "laminas/laminas-escaper",
@@ -359,9 +359,10 @@
             "dist": {
                 "type": "path",
                 "url": "../opensim-engine",
-                "reference": "0474abd2c39dc8e8ddeedf5dd66578306d4a7311"
+                "reference": "d98b610d642258ae9b56972b2077b7b8405d1674"
             },
             "require": {
+                "ext-gettext": "*",
                 "laminas/laminas-escaper": "^2.12",
                 "laminas/laminas-filter": "^2.24",
                 "magicoli/opensim-rest-php": "dev-dev",
@@ -401,7 +402,7 @@
             "dist": {
                 "type": "path",
                 "url": "../opensim-helpers",
-                "reference": "c2af1c527c47bd704d2ac4523da18a8f3f6fc2b6"
+                "reference": "3154877d9893b1c532b2ed9f32d887ec4f7d31f1"
             },
             "require": {
                 "magicoli/opensim-engine": "dev-dev",
@@ -429,7 +430,7 @@
             "dist": {
                 "type": "path",
                 "url": "../opensim-rest-php",
-                "reference": "634bc26b4c93e5394cdef7d3b767e8aeafec7f1a"
+                "reference": "f10c6dcaec5de73f7c67b01e291ed00c5b59a272"
             },
             "require-dev": {
                 "clue/phar-composer": "^1.4"
@@ -1367,7 +1368,8 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": ">=8.1"
+        "php": ">=8.1",
+        "ext-gettext": "*"
     },
     "platform-dev": {},
     "platform-overrides": {

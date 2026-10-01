@@ -16,6 +16,7 @@
   ],
   "require": {
     "php": ">=8.1",
+    "ext-gettext": "*",
     "laravel/prompts": "^0.3.18",
     "magicoli/opensim-engine": "dev-dev",
     "magicoli/opensim-helpers": "dev-dev",
@@ -70,7 +71,10 @@
   "autoload": {
     "psr-4": {
       "OpenSim\\Installer\\": "install/src/"
-    }
+    },
+    "files": [
+      "install/engine.php"
+    ]
   },
   "prefer-stable": true
 }
