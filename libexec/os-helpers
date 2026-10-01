@@ -127,11 +127,50 @@ osLogWait() {
 	local logfile=$1 mark=$2 instance=$3 seconds=$4 pattern=$5 t=0
 	while [ $t -lt $((seconds * 2)) ]; do
 		tail -c +$((mark + 1)) "$logfile" 2>/dev/null | grep -aqE "$pattern" && return 0
+		osShowProgress
 		osInstanceRunning "$instance" || return 3
 		sleep 0.5
 		t=$((t + 1))
 	done
 	return 1
+}
+
+# How a simulator loads, shown while the launcher waits for it: the steps its log
+# reports (libexec/sim-progress.awk), on the standard error as the waits may be
+# run in a command substitution. What was shown is kept in a file for the same
+# reason.
+# Args: log file, byte of the log where this start begins, config file of the
+# instance (for its number of regions)
+osProgressStart() {
+	local regionsdir
+	OS_PROGRESS_LOG=$1
+	OS_PROGRESS_MARK=${2:-0}
+	OS_PROGRESS_STATE="$TMP.progress"
+	echo 0 >"$OS_PROGRESS_STATE"
+	regionsdir=$(crudget "$3" Startup regionload_regionsdir 2>/dev/null)
+	OS_PROGRESS_REGIONS=$(cat "$regionsdir"/*.ini 2>/dev/null | grep -c '^[[:blank:]]*\[')
+	[ "${OS_PROGRESS_REGIONS:-0}" -ge 1 ] 2>/dev/null || OS_PROGRESS_REGIONS=1
+}
+
+# Show the steps not shown yet, if osProgressStart was called.
+osShowProgress() {
+	[ -n "${OS_PROGRESS_LOG:-}" ] || return 0
+	local lines count shown
+	lines=$(tail -c +$((OS_PROGRESS_MARK + 1)) "$OS_PROGRESS_LOG" 2>/dev/null | awk -v regions="$OS_PROGRESS_REGIONS" -f "$BASEDIR/libexec/sim-progress.awk")
+	[ -n "$lines" ] || return 0
+	count=$(printf '%s\n' "$lines" | wc -l | tr -d ' ')
+	shown=$(cat "$OS_PROGRESS_STATE" 2>/dev/null || echo 0)
+	if [ "$count" -gt "$shown" ]; then
+		printf '%s\n' "$lines" | tail -n +$((shown + 1)) >&2
+		echo "$count" >"$OS_PROGRESS_STATE"
+	fi
+	return 0
+}
+
+# End of the progress of an instance: the last steps, then no more.
+osProgressStop() {
+	osShowProgress
+	unset OS_PROGRESS_LOG
 }
 
 # The connectors a Robust loads, as their class names, one per line: what its
@@ -168,8 +207,9 @@ osRobustServices() {
 # Args: log file, byte of the log where this start begins, instance, seconds,
 # then the class names.
 osWatchServices() {
-	local logfile=$1 mark=$2 instance=$3 seconds=$4 content class failed="" ticks=0
+	local logfile=$1 mark=$2 instance=$3 seconds=$4 content class failed="" ticks=0 reported=0
 	shift 4
+	local total=$#
 	local pending=" $* "
 	local max=$((seconds * 2))
 	OS_FAILED_SERVICES=
@@ -178,10 +218,12 @@ osWatchServices() {
 		for class in $*; do
 			[[ "$pending" == *" $class "* ]] || continue
 			if grep -aqE "\[SERVER\]: $class loaded successfully" <<<"$content"; then
-				printf '  %s\n' "$class"
+				reported=$((reported + 1))
+				printf '  %s %d/%d\n' "$class" "$reported" "$total"
 				pending=${pending/ $class / }
 			elif grep -aqE "Failed to load .*:$class([^A-Za-z0-9]|$)" <<<"$content"; then
-				printf '  %s: failed to load\n' "$class" >&2
+				reported=$((reported + 1))
+				printf '  %s: failed to load (%d/%d)\n' "$class" "$reported" "$total" >&2
 				failed="$failed $class"
 				pending=${pending/ $class / }
 			fi
@@ -237,6 +279,7 @@ osConsoleWait() {
 	local t=0 ticks=$((seconds * 2))
 	while [ $t -lt $ticks ]; do
 		osConsoleRead $osInstance "$pattern" && return
+		osShowProgress
 		# Stop waiting if the session is gone: the instance has exited.
 		osScreenExists "$osInstance" || return 3
 		sleep 0.5

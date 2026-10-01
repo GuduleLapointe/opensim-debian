@@ -271,7 +271,7 @@ check "modules in their own folders" "[ -f /usr/share/opensim-modules/0.9.3.0/op
 check "log config of the wizard" "[ -f /var/log/opensim/testgrid_robust.log ]"
 grid_core() {
     runuser -u opensim -- crudini --inplace --set /etc/opensim/grids/testgrid/testgrid.conf Grid CoreDirectory "$1"
-    opensim restart now testgrid >/dev/null 2>&1
+    opensim restart now testgrid >/tmp/robust-restart.out 2>&1
 }
 
 # The grid on the development build
@@ -280,6 +280,7 @@ grid_core /usr/share/opensim/unstable
 state after moving the grid to the development build
 check "grid on its own core" "grep 'Starting in' $(robust_log) | tail -1 | grep -q /usr/share/opensim/unstable/bin"
 check "development build ready" "[ \$(grep -c 'UserAgentServerConnector loaded' $(robust_log)) = $((ready + 1)) ]"
+check "the start of a Robust counts its services" "grep -qE '^  [A-Za-z]+Connector [0-9]+/[0-9]+\$' /tmp/robust-restart.out && grep -qE '^  [A-Za-z]+Connector ([0-9]+)/\\1\$' /tmp/robust-restart.out"
 
 # Removing a build stops the instances running from it only
 apt_q remove opensim-unstable
@@ -322,7 +323,8 @@ for setting in "Search Module \"OpenSimSearch\"" "Search SearchURL \"http://127.
     "DataSnapshot data_services \"http://127.0.0.1:8088/register.php\""; do
     eval "runuser -u opensim -- crudini --inplace --set /etc/opensim/grids/testgrid/sims/testgrid_sim1.ini $setting"
 done
-opensim restart now testgrid_sim1 >/dev/null 2>&1
+opensim restart now testgrid_sim1 >/tmp/sim-restart.out 2>&1
+check "the start of a simulator shows its modules with a count, then its region ready" "grep -qE '^  Sim1: .+ [0-9]+/[0-9]+\$' /tmp/sim-restart.out && grep -qE 'Sim1: registered in the grid \\([0-9]+/[0-9]+\\)' /tmp/sim-restart.out && grep -qE 'Sim1: ready \\([0-9]+/[0-9]+\\)' /tmp/sim-restart.out"
 search_registered() { [ -n "$(sim_pid)" ] && [ "$(mysql -BN -e 'SELECT COUNT(*) FROM ossearch.hostsregister')" -ge 1 ]; }
 search_indexed() {
     curl -s -m 60 http://127.0.0.1:8088/parser.php >/dev/null

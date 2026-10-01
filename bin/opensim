@@ -374,6 +374,7 @@ startSim() {
 				startResult=$?
 			fi
 		elif [ "$RestEnabled" = "true" ]; then
+			osProgressStart "$LogFile" "${logMark:-0}" "$inifile"
 			# No console to answer the questions of a first start: a region is
 			# fully described, and ready when its log says so
 			osLogWait "$LogFile" "${logMark:-0}" "$instance" 120 "RegionReady|LOAD REGIONS PLUGIN\]: Done"
@@ -383,6 +384,7 @@ startSim() {
 				osInstanceRunning "$instance" || startResult=3
 			fi
 		else
+			osProgressStart "$LogFile" "${logMark:-0}" "$inifile"
 			# The questions of a first start (region, estate) are answered with
 			# their default, each once, as they come: a region fully described
 			# asks none. A question blocks the loading, so the region is ready
@@ -415,6 +417,8 @@ startSim() {
 				osInstanceRunning "$instance" || startResult=3
 			fi
 		fi
+
+		osProgressStop
 
 		# Interpret the final wait result the same way for both server types.
 		case $startResult in
