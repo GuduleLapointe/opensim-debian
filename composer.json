@@ -22,9 +22,7 @@
     "ext-json": "*",
     "ext-mbstring": "*",
     "laravel/prompts": "^0.3.18",
-    "magicoli/opensim-engine": "dev-dev",
-    "magicoli/opensim-helpers": "dev-dev",
-    "magicoli/opensim-rest-php": "dev-dev"
+    "magicoli/opensim-helpers": "dev-opensim-kit"
   },
   "require-dev": {
     "dealerdirect/phpcodesniffer-composer-installer": "^1.2",
@@ -35,41 +33,7 @@
     "phpcompatibility/php-compatibility": "dev-develop",
     "squizlabs/php_codesniffer": "^4.0"
   },
-  "repositories": [
-    {
-      "type": "path",
-      "url": "../opensim-helpers",
-      "canonical": false,
-      "options": {
-        "symlink": true,
-        "versions": {
-          "magicoli/opensim-helpers": "dev-dev"
-        }
-      }
-    },
-    {
-      "type": "path",
-      "url": "../opensim-engine",
-      "canonical": false,
-      "options": {
-        "symlink": true,
-        "versions": {
-          "magicoli/opensim-engine": "dev-dev"
-        }
-      }
-    },
-    {
-      "type": "path",
-      "url": "../opensim-rest-php",
-      "canonical": false,
-      "options": {
-        "symlink": true,
-        "versions": {
-          "magicoli/opensim-rest-php": "dev-dev"
-        }
-      }
-    }
-  ],
+  "repositories": [],
   "minimum-stability": "dev",
   "config": {
     "allow-plugins": {
