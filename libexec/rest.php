@@ -5,7 +5,8 @@ declare(strict_types=1);
 
 /**
  * opensim rest: type commands in the remote (REST) console of an instance, on
- * this machine, in a container or on another machine (see RestConsole).
+ * this machine, in a container or on another machine (OpenSim_Rest, of the
+ * opensim-rest-php package).
  *
  *   rest.php --ini FILE [--wait SECONDS] (-- <command> | - | --repl)
  *   rest.php --url http://HOST:PORT --user USER [...]     password in OPENSIM_REST_PASSWORD
@@ -22,7 +23,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use OpenSim\Installer\RestConsole;
+use OpenSim\Installer\Grid\GridInfo;
 
 $wait = 5.0;
 $ini = $url = $user = null;
@@ -66,11 +67,14 @@ if ($mode === null || ($ini === null && $url === null)) {
 }
 
 if ($ini !== null) {
-    $console = RestConsole::fromIni($ini);
-    if ($console === null) {
+    $settings = GridInfo::parse($ini);
+    if (!isset($settings['consolePort'], $settings['consoleUser'], $settings['consolePass'])) {
         fwrite(STDERR, "rest: no remote console is set in $ini (ConsolePort, ConsoleUser and ConsolePass of [Network])\n");
         exit(1);
     }
+    $uri = 'http://127.0.0.1:' . $settings['consolePort'];
+    $user = (string) $settings['consoleUser'];
+    $password = (string) $settings['consolePass'];
 } else {
     $parts = parse_url((string) $url);
     $password = (string) getenv('OPENSIM_REST_PASSWORD');
@@ -78,11 +82,12 @@ if ($ini !== null) {
         fwrite(STDERR, "rest: --url http://HOST:PORT, --user and OPENSIM_REST_PASSWORD are needed\n");
         exit(2);
     }
-    $console = new RestConsole($parts['host'], (int) $parts['port'], $user, $password, $parts['scheme'] ?? 'http');
+    $uri = ($parts['scheme'] ?? 'http') . "://{$parts['host']}:{$parts['port']}";
 }
 
-if (!$console->connect()) {
-    fwrite(STDERR, "rest: {$console->error}\n");
+$console = new OpenSim_Rest(['uri' => $uri, 'ConsoleUser' => $user, 'ConsolePass' => $password]);
+if (!$console->connected()) {
+    fwrite(STDERR, "rest: {$console->reason}\n");
     exit(1);
 }
 
