@@ -24,6 +24,20 @@ check() {
         FAILED=1
     fi
 }
+# Like check, for what takes a while to be true (a region registers some seconds
+# after its instance runs): tried again every 3 seconds, for up to $1 seconds
+wait_check() {
+    local end=$((SECONDS + $1))
+    until eval "$3"; do
+        if [ "$SECONDS" -ge "$end" ]; then
+            echo "   FAILED: $2"
+            FAILED=1
+            return
+        fi
+        sleep 3
+    done
+    echo "   ok: $2"
+}
 cleanup() {
     "$ENGINE" rm -f "$app" "$db" >/dev/null 2>&1
     "$ENGINE" network rm "$p-net" >/dev/null 2>&1
@@ -36,7 +50,7 @@ cleanup
 # The container of the instances, on the volumes of the test
 run_app() {
     "$ENGINE" run -d --name "$app" --network "$p-net" --memory 450m --stop-timeout 120 \
-        -v "$p-etc:/etc/opensim" -v "$p-lib:/var/lib/opensim" -v "$p-log:/var/log/opensim" \
+        -v "$p-etc:/etc/opensim:z" -v "$p-lib:/var/lib/opensim:z" -v "$p-log:/var/log/opensim:z" \
         -v "$PWD/tests/Packaging:/test:ro" "$@" "$IMAGE" >/dev/null
 }
 inapp() { "$ENGINE" exec "$app" "$@"; }
@@ -99,7 +113,8 @@ run_app --read-only --tmpfs /tmp --tmpfs /var/cache/opensim:rw,mode=1777 --cap-d
     --security-opt no-new-privileges --pids-limit 600
 check "the instances run" "up 120"
 check "nothing can be written in the system" "! inapp sh -c 'touch /usr/share/opensim/x 2>/dev/null || touch /usr/bin/x 2>/dev/null'"
-check "the region is online again" "[ \"\$(registered)\" = 1 ] && inapp sh -c 'grep -a \"registered at 1000,1000\" /var/log/opensim/testgrid_sim1.log | tail -1' | grep -q ."
+region_registered() { [ "$(registered)" = 1 ] && inapp sh -c 'grep -a "registered at 1000,1000" /var/log/opensim/testgrid_sim1.log | tail -1' | grep -q .; }
+wait_check 120 "the region is online again" region_registered
 
 ts "done: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"
 exit $FAILED

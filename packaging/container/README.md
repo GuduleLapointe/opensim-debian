@@ -22,10 +22,12 @@ podman network create opensim
 podman run -d --name db --network opensim -e MARIADB_ROOT_PASSWORD=<root password> docker.io/library/mariadb:11
 
 podman run -d --name opensim --network opensim --stop-timeout 120 \
-    -v opensim-etc:/etc/opensim -v opensim-data:/var/lib/opensim -v opensim-logs:/var/log/opensim \
+    -v opensim-etc:/etc/opensim:z -v opensim-data:/var/lib/opensim:z -v opensim-logs:/var/log/opensim:z \
     $(opensim ports --publish) \
     opensim-kit:dev
 ```
+
+The `:z` of the volumes matters on a host with SELinux (Fedora, RHEL, the machine of podman on a Mac): without it, a container made again with the same volumes (a new image, a new option) cannot read what the previous one wrote, as each container has its own label, and its instances stop with "Permission denied". Docker on a host without SELinux ignores it.
 
 `opensim ports --publish`, run on the machine that holds the config, gives the
 `-p` options for exactly the ports the instances use: the public ports, the
@@ -71,7 +73,7 @@ The same container, with a read-only system, no capability and no new privilege
 podman run -d --name opensim --network opensim --stop-timeout 120 \
     --read-only --tmpfs /tmp --tmpfs /var/cache/opensim:rw,mode=1777 \
     --cap-drop ALL --security-opt no-new-privileges --pids-limit 600 --memory 2g \
-    -v opensim-etc:/etc/opensim -v opensim-data:/var/lib/opensim -v opensim-logs:/var/log/opensim \
+    -v opensim-etc:/etc/opensim:z -v opensim-data:/var/lib/opensim:z -v opensim-logs:/var/log/opensim:z \
     opensim-kit:dev
 ```
 
