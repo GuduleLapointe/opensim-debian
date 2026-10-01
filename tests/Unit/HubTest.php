@@ -164,3 +164,11 @@ describe( 'RegionState', function () {
 		expect( \OpenSim\Installer\Grid\RegionState::enable( "$regions/Far.ini.disabled" ) )->toBeNull();
 	} );
 } );
+
+describe( 'GridRegistry region names', function () {
+	test( 'are the ones of every simulator of the grid, disabled regions included, without the case', function () {
+		[ , $etc ] = hub_tree();
+
+		expect( array_keys( \OpenSim\Installer\Grid\GridRegistry::fileNames( "$etc/grids/alpha" ) ) )->toBe( array( 'far', 'sim1', 'sim1north' ) );
+	} );
+} );

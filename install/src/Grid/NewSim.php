@@ -33,7 +33,7 @@ final class NewSim
      * @param ?string $gridNick the grid it joins, asked when there are several and none is given
      * @param ?string $simName  the simulator to modify, asked when none is given
      */
-    public function run(?string $gridNick = null, ?string $simName = null): void
+    public function run(?string $gridNick = null, ?string $simName = null, bool $external = false): void
     {
         $profile = (new Config())->profile();
         $etcRoot = $profile['EtcRoot'] ?? '';
@@ -43,7 +43,7 @@ final class NewSim
             return;
         }
 
-        $grid = $this->grid($profile, $gridNick);
+        $grid = $this->grid($profile, $gridNick, $external);
         if ($grid === null) {
             return;
         }
@@ -384,9 +384,12 @@ final class NewSim
      * the known ones and "another grid", whose Robust is on another machine. With
      * no grid at all, the question is the address of that Robust.
      */
-    private function grid(array $profile, ?string $nick): ?GridInfo
+    private function grid(array $profile, ?string $nick, bool $external = false): ?GridInfo
     {
         $etcRoot = $profile['EtcRoot'];
+        if ($external) {
+            return $this->remoteGrid($profile);
+        }
         if ($nick === null) {
             $known = [];
             foreach (glob("$etcRoot/grids/*", GLOB_ONLYDIR) ?: [] as $dir) {
@@ -427,10 +430,10 @@ final class NewSim
         $etcRoot = $profile['EtcRoot'];
 
         $this->ui->note('The simulator joins a grid whose Robust server runs on another machine (or in another container): it needs its address and its ports.');
-        $address = trim($this->ui->text('Address of the grid (its Robust server: grid.example.org, or grid.example.org:8002)', '', $required));
+        $address = trim($this->ui->text('Address of the grid (host:port)', '', $required));
         $parts = parse_url(preg_match('#^https?://#', $address) ? $address : "http://$address") ?: [];
         $host = (string) ($parts['host'] ?? $address);
-        $public = (int) $this->ui->text('Public port of the grid', (string) ($parts['port'] ?? 8002), $numeric);
+        $public = (int) ($parts['port'] ?? 8002);
 
         $said = $this->gridSays($host, $public);
         if ($said === []) {
@@ -707,7 +710,18 @@ final class NewSim
 
     private function askRegion(SimPlan $plan, GridInfo $grid, Database $database): void
     {
-        $name = static fn (string $v): ?string => preg_match('/^[A-Za-z0-9][A-Za-z0-9 ._-]{0,49}$/', trim($v)) ? null : 'Letters, digits, spaces, . _ and - only.';
+        // A region name is unique in the grid: the same name registered twice stops the simulator
+        $taken = (new GridRegistry($database))->names($grid);
+        $name = static function (string $v) use ($taken, $grid): ?string {
+            if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9 ._-]{0,49}$/', trim($v))) {
+                return 'Letters, digits, spaces, . _ and - only.';
+            }
+            if (isset($taken[strtolower(trim($v))]) || ($grid->remote && RobustGrid::hasRegion($grid->baseHostname, $grid->privatePort, trim($v)) === true)) {
+                return 'The grid has a region of this name already.';
+            }
+
+            return null;
+        };
         $numeric = static fn (string $v): ?string => ctype_digit(trim($v)) ? null : 'Enter a port number.';
 
         $plan->regionName = trim($this->ui->text('Region name', $plan->simName, $name));

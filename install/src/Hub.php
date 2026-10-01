@@ -100,7 +100,7 @@ final class Hub
 
         match ($choice) {
             'new' => (new NewGrid($this->ui))->run(null),
-            'external' => (new NewSim($this->ui))->run(null),
+            'external' => (new NewSim($this->ui))->run(null, null, true),
             default => null,
         };
     }

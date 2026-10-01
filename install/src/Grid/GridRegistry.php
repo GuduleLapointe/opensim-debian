@@ -51,6 +51,42 @@ final class GridRegistry
     }
 
     /**
+     * The names of the regions the grid has, as far as it is known here: the
+     * registry, and the region files of its simulators (a disabled one keeps its
+     * name). Names are compared without the case.
+     *
+     * @return array<string,true> lower case names
+     */
+    public function names(GridInfo $grid): array
+    {
+        $names = [];
+        $rows = $grid->dbName === '' ? null : $this->database->select($grid->databasePlan(), 'SELECT regionName FROM regions');
+        foreach ($rows ?? [] as $row) {
+            $names[strtolower(trim($row))] = true;
+        }
+
+        return $names + self::fileNames($grid->dir);
+    }
+
+    /**
+     * The names of the regions described in the files of the simulators of a grid,
+     * a disabled one included.
+     *
+     * @return array<string,true> lower case names
+     */
+    public static function fileNames(string $gridDir): array
+    {
+        $names = [];
+        foreach (glob("$gridDir/sims/*/regions", GLOB_ONLYDIR) ?: [] as $dir) {
+            foreach (array_keys(RegionState::list($dir)) as $name) {
+                $names[strtolower($name)] = true;
+            }
+        }
+
+        return $names;
+    }
+
+    /**
      * The places the regions take, in the registry and in the local files of the
      * grid.
      *

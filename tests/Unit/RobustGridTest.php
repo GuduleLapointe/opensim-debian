@@ -21,3 +21,12 @@ describe( 'RobustGrid answers', function () {
 		expect( RobustGrid::regions( 'not xml' ) )->toBe( array() );
 	} );
 } );
+
+describe( 'RobustGrid region by name', function () {
+	test( 'tells a region that exists from one that does not', function () {
+		expect( RobustGrid::named( '<?xml version="1.0"?><ServerResponse><result type="List"><uuid>a</uuid><regionName>Sim1</regionName></result></ServerResponse>' ) )->toBeTrue();
+		expect( RobustGrid::named( '<?xml version="1.0"?><ServerResponse><result>null</result></ServerResponse>' ) )->toBeFalse();
+		expect( RobustGrid::named( 'not xml' ) )->toBeFalse();
+	} );
+} );
+

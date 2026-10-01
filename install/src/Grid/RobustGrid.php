@@ -41,6 +41,30 @@ final class RobustGrid
     }
 
     /**
+     * Whether the grid has a region of this name (the grid compares names without
+     * the case).
+     *
+     * @return bool|null null when the grid does not answer
+     */
+    public static function hasRegion(string $host, int $port, string $name): ?bool
+    {
+        $answer = self::ask($host, $port, ['METHOD' => 'get_region_by_name', 'SCOPEID' => self::NO_SCOPE, 'NAME' => $name]);
+
+        return $answer === null ? null : self::named($answer);
+    }
+
+    /** Whether an answer to get_region_by_name describes a region. */
+    public static function named(string $xml): bool
+    {
+        $previous = libxml_use_internal_errors(true);
+        $document = simplexml_load_string($xml);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        return $document !== false && isset($document->result->uuid);
+    }
+
+    /**
      * The regions of an answer of the grid service: their place, in blocks, and
      * the blocks they take.
      *
