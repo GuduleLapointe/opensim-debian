@@ -15,7 +15,7 @@ $packages = glob( "$root/dist/*.deb" ) ?: array();
 if ( ! getenv( 'PACKAGING' ) ) {
 	$skip = 'slow, set PACKAGING=1 to run them (podman and the packages of dist/)';
 } elseif ( ! $podman ) {
-	$skip = 'podman is not available here (not in the lerd container), run the scripts of tests/Packaging on a host that has it';
+	$skip = 'podman is not available on this machine, run the scripts of tests/Packaging where it is';
 } else {
 	$skip = '';
 }

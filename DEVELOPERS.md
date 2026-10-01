@@ -56,7 +56,7 @@ The releases are installed read-only, so nothing may be written in their `bin/` 
 
 One command runs every test, `vendor/bin/pest` (`composer test`): the PHP ones with [Pest](https://pestphp.com), the shell scripts with [bashunit](https://bashunit.typeddevs.com) (`tests/lib/bashunit`), run from Pest. Everything is in `tests/`:
 
-- `tests/Environment`: the PHP minimum. It is read from `composer.json`, the composer platform must follow it, and `phpcs` with PHPCompatibility (`phpcs.xml.dist`) checks that the code needs nothing newer and uses nothing deprecated up to the newest PHP version listed in the test. It runs on the minimum PHP, 8.2 (`.php-version` for lerd).
+- `tests/Environment`: the PHP minimum. It is read from `composer.json`, the composer platform must follow it, and `phpcs` with PHPCompatibility (`phpcs.xml.dist`) checks that the code needs nothing newer and uses nothing deprecated up to the newest PHP version listed in the test. It runs on the minimum PHP, 8.2 (pinned in `.php-version` for the tools that read it).
 - `tests/Unit`: the shell scripts (`*-test.sh`, bashunit): they parse, and bash scripts use `#!/usr/bin/env bash`. Also `tests/lib/bashunit tests/Unit`.
 - `tests/Packaging`: the packages and the container image, tested in containers (podman). Slow, they need podman and the packages of `dist/`, so they run only when asked, on a host that has them: `PACKAGING=1 vendor/bin/pest`. The scripts also run by hand, from the repository root.
 

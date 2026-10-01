@@ -6,7 +6,7 @@
 
 $root    = dirname( __DIR__, 2 );
 $bash    = trim( (string) shell_exec( 'command -v bash' ) );
-$missing = ! $bash ? 'bash is not available here (lerd php:pkg add bash)' : ( ! is_file( "$root/tests/lib/bashunit" ) ? 'tests/lib/bashunit is missing' : '' );
+$missing = ! $bash ? 'bash is not available on this machine' : ( ! is_file( "$root/tests/lib/bashunit" ) ? 'tests/lib/bashunit is missing' : '' );
 
 describe( 'Shell scripts', function () use ( $root, $bash, $missing ) {
 	test( 'bashunit suites pass', function () use ( $root, $bash ) {
