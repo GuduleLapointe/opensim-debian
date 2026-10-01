@@ -71,5 +71,6 @@
     "psr-4": {
       "OpenSim\\Installer\\": "install/src/"
     }
-  }
+  },
+  "prefer-stable": true
 }

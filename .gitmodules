@@ -1,6 +1,3 @@
-[submodule "contrib/web/flexible_helper_scripts"]
-	path = lib/opensim-helpers
-	url = https://github.com/GuduleLapointe/opensim-helpers/
 [submodule "contrib/web/offline-mail-forwarding"]
 	path = dev/contrib/offline-mail-forwarding
 	url = https://github.com/GuduleLapointe/offline-mail-forwarding

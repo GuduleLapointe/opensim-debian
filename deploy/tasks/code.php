@@ -38,9 +38,8 @@ task('deploy:core', function () {
     // Helper executables (called by opensim, not directly by users)
     rsyncTo("$src/libexec/", "$remote:$libexec/", excludeFile('core'));
 
-    // PHP libraries
-    rsyncTo("$src/lib/opensim-helpers/",  "$remote:$lib/opensim-helpers/");
-    rsyncTo("$src/lib/opensim-rest-php/", "$remote:$lib/opensim-rest-php/");
+    // PHP libraries (composer packages, linked packages copied as real files)
+    rsyncTo("$src/vendor/", "$remote:$lib/vendor/", '', ['--copy-links']);
 
     // Static data and system templates
     rsyncTo("$src/share/systemd/",         "$remote:$share/systemd/");
@@ -89,8 +88,8 @@ task('deploy:web', function () {
     $lib    = get('opensim_lib');
     $remote = remoteTarget();
 
-    if (is_dir("$src/lib/opensim-helpers")) {
-        rsyncTo("$src/lib/opensim-helpers/", "$remote:$lib/opensim-helpers/");
+    if (is_dir("$src/vendor/magicoli/opensim-helpers")) {
+        rsyncTo("$src/vendor/magicoli/opensim-helpers/", "$remote:$lib/opensim-helpers/", '', ['--copy-links']);
     }
 })->desc('Deploy web integration modules');
 
