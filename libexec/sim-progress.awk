@@ -13,14 +13,14 @@ BEGIN {
 	}
 }
 
-# The plugins of region modules are the ones loaded after the controller of the
-# region modules: that is how many the log is going to report
+# The plugins of region modules are all the plugins loaded but the ones of the
+# framework and of the application: that is how many the log is going to report
 /\[PLUGINS\]: Plugin Loaded: / {
-	if (controller) {
+	line = $0
+	sub(/.*\[PLUGINS\]: Plugin Loaded: /, "", line)
+	sub(/[[:space:]]+$/, "", line)
+	if (line !~ /^(OpenSim|Robust|OpenSim\.Region\.Framework|OpenSim\.Data|OpenSim\.ApplicationPlugins\..*)$/) {
 		plugins++
-	}
-	if ($0 ~ /RegionModulesController[[:space:]]*$/) {
-		controller = 1
 	}
 	next
 }

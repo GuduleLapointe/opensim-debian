@@ -167,8 +167,20 @@ osShowProgress() {
 	return 0
 }
 
-# End of the progress of an instance: the last steps, then no more.
+# End of the progress of an instance. The regions announce themselves to the grid
+# some seconds after their configuration is loaded: the steps keep showing until
+# all of them did (or for a minute, or while the instance runs), then no more.
 osProgressStop() {
+	[ -n "${OS_PROGRESS_LOG:-}" ] || return 0
+	local t=0 registered
+	while [ $t -lt 120 ]; do
+		osShowProgress
+		registered=$(tail -c +$((OS_PROGRESS_MARK + 1)) "$OS_PROGRESS_LOG" 2>/dev/null | grep -ac '\[GRID SERVICE\]: Region .* registered at')
+		[ "${registered:-0}" -ge "${OS_PROGRESS_REGIONS:-1}" ] && break
+		osInstanceRunning "${instance:-}" || break
+		sleep 0.5
+		t=$((t + 1))
+	done
 	osShowProgress
 	unset OS_PROGRESS_LOG
 }

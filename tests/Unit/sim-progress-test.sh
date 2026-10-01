@@ -12,7 +12,9 @@ progress() {
 }
 
 function test_plugins_of_modules_are_counted_on_the_total_the_log_announces() {
-	local log='2026-10-01 20:51:08,010 INFO  [PLUGINS]: Plugin Loaded: OpenSim.ApplicationPlugins.RegionModulesController
+	local log='2026-10-01 20:51:08,005 INFO  [PLUGINS]: Plugin Loaded: OpenSim
+2026-10-01 20:51:08,006 INFO  [PLUGINS]: Plugin Loaded: OpenSim.ApplicationPlugins.RegionModulesController
+2026-10-01 20:51:08,007 INFO  [PLUGINS]: Plugin Loaded: OpenSim.ApplicationPlugins.RemoteController
 2026-10-01 20:51:08,011 INFO  [PLUGINS]: Plugin Loaded: LindenUDP
 2026-10-01 20:51:08,012 INFO  [PLUGINS]: Plugin Loaded: OpenSim.Region.CoreModules
 2026-10-01 20:51:08,100 INFO  [REGIONMODULES]: From plugin LindenUDP, (version 0.9.3.0), loaded 1 modules, 0 shared, 1 non-shared 0 unknown
