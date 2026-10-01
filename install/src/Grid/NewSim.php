@@ -656,17 +656,56 @@ final class NewSim
     private function askRegion(SimPlan $plan, GridInfo $grid, Database $database): void
     {
         $name = static fn (string $v): ?string => preg_match('/^[A-Za-z0-9][A-Za-z0-9 ._-]{0,49}$/', trim($v)) ? null : 'Letters, digits, spaces, . _ and - only.';
-        $location = static fn (string $v): ?string => preg_match('/^\d+,\d+$/', trim($v)) ? null : 'Use x,y (e.g. 1000,1000).';
         $numeric = static fn (string $v): ?string => ctype_digit(trim($v)) ? null : 'Enter a port number.';
 
         $plan->regionName = trim($this->ui->text('Region name', $plan->simName, $name));
         $plan->regionUuid = self::uuid();
-        if ($grid->remote) {
-            $this->ui->note('The regions of this grid are not known here: ask its owner which location is free.');
-        }
-        $suggested = $grid->remote ? GridRegistry::scatteredLocation($plan->regionUuid) : (new GridRegistry($database))->nextLocation($grid);
-        $plan->regionLocation = str_replace(' ', '', $this->ui->text('Region location (x,y)', $suggested, $location));
+        $plan->regionLocation = $this->askLocation($grid, $database);
         $plan->regionPort = (int) $this->ui->text('Region port', (string) $this->nextRegionPort($plan, $grid, $database), $numeric);
+    }
+
+    /**
+     * The place of the region among the ones of the grid, by what it is meant for:
+     * the free place nearest to where the grid gathers its regions, next to them,
+     * with a free block between, or away from them, or one chosen. A grid on
+     * another machine is asked what its regions take.
+     */
+    private function askLocation(GridInfo $grid, Database $database): string
+    {
+        $used = (new GridRegistry($database))->locations($grid);
+        $anchor = null;
+        if ($grid->remote) {
+            $anchor = RobustGrid::anchor($grid->baseHostname, $grid->privatePort);
+            [$x, $y] = $anchor ?? LocationFinder::FIRST;
+            $known = RobustGrid::locations($grid->baseHostname, $grid->privatePort, $x, $y);
+            if ($known === null) {
+                $this->ui->warn("The grid does not answer at {$grid->baseHostname}:{$grid->privatePort}: its regions are not known here, ask its owner which location is free.");
+            } else {
+                $used += $known;
+            }
+        }
+        [$x, $y] = LocationFinder::center($used) ?? $anchor ?? LocationFinder::FIRST;
+
+        $intent = $used === [] ? 'near' : $this->ui->choose('Where does the region go?', [
+            'near' => 'Next to the others',
+            'spaced' => 'Close to the others, with a free block between',
+            'far' => 'Away from the others',
+            'exact' => 'At a place I choose',
+        ], 'near');
+        [$suggestedX, $suggestedY] = LocationFinder::nearestFree($used, $x, $y, LocationFinder::GAPS[$intent] ?? 0);
+
+        $validate = static function (string $v) use ($used): ?string {
+            $place = LocationFinder::parse($v);
+            if ($place === null) {
+                return 'Use x,y (e.g. 1000,1000).';
+            }
+
+            return isset($used[LocationFinder::key($place[0], $place[1])])
+                ? 'This place is taken, the nearest free one is ' . implode(',', LocationFinder::nearestFree($used, $place[0], $place[1])) . '.'
+                : null;
+        };
+
+        return str_replace(' ', '', $this->ui->text('Region location (x,y)', "$suggestedX,$suggestedY", $validate));
     }
 
     /** The port of a region: the next one of the block of its simulator (x5 to x9, then x3), else the next free one. */

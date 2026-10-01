@@ -51,50 +51,31 @@ final class GridRegistry
     }
 
     /**
-     * The places taken, "x,y" in regions, by the registered regions and by the
-     * ones described in the local files of the grid.
+     * The places the regions take, in the registry and in the local files of the
+     * grid.
      *
      * @return array<string,true>
      */
     public function locations(GridInfo $grid): array
     {
         $used = [];
-        $rows = $grid->dbName === '' ? null : $this->database->select($grid->databasePlan(), "SELECT CONCAT(locX DIV 256, ',', locY DIV 256) FROM regions");
+        $rows = $grid->dbName === '' ? null : $this->database->select($grid->databasePlan(), "SELECT CONCAT_WS(' ', locX DIV 256, locY DIV 256, sizeX DIV 256, sizeY DIV 256) FROM regions");
         foreach ($rows ?? [] as $row) {
-            $used[trim($row)] = true;
+            $n = array_map('intval', preg_split('/\s+/', trim($row)) ?: []);
+            if (count($n) === 4) {
+                LocationFinder::take($used, $n[0], $n[1], $n[2], $n[3]);
+            }
         }
         foreach (glob("{$grid->dir}/sims/*/regions/*.ini") ?: [] as $file) {
-            if (preg_match_all('/^\s*Location\s*=\s*(\d+)\s*,\s*(\d+)/m', (string) file_get_contents($file), $m, PREG_SET_ORDER)) {
-                foreach ($m as $match) {
-                    $used["{$match[1]},{$match[2]}"] = true;
+            foreach (preg_split('/^\s*\[/m', (string) file_get_contents($file)) ?: [] as $section) {
+                if (preg_match('/^\s*Location\s*=\s*(\d+)\s*,\s*(\d+)/m', $section, $m)) {
+                    $width = preg_match('/^\s*SizeX\s*=\s*(\d+)/m', $section, $w) ? intdiv((int) $w[1], 256) : 1;
+                    $height = preg_match('/^\s*SizeY\s*=\s*(\d+)/m', $section, $h) ? intdiv((int) $h[1], 256) : 1;
+                    LocationFinder::take($used, (int) $m[1], (int) $m[2], $width, $height);
                 }
             }
         }
 
         return $used;
-    }
-
-    /**
-     * A place for a region of a grid whose regions are not known here (its Robust
-     * is elsewhere): scattered by the UUID of the region, so that two newcomers
-     * rarely choose the same one, and not the 1000,1000 everybody takes. The owner
-     * of the grid has the last word.
-     */
-    public static function scatteredLocation(string $uuid): string
-    {
-        $number = (int) hexdec(substr(str_replace('-', '', $uuid), 0, 7));
-
-        return (1000 + $number % 1000) . ',' . (1000 + intdiv($number, 1000) % 1000);
-    }
-
-    /** The first place, from 1000,1000, that no region holds. */
-    public function nextLocation(GridInfo $grid): string
-    {
-        $used = $this->locations($grid);
-        for ($x = 1000; ; $x++) {
-            if (!isset($used["$x,1000"])) {
-                return "$x,1000";
-            }
-        }
     }
 }

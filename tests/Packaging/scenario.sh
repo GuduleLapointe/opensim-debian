@@ -370,6 +370,12 @@ far_registered() {
         grep -q '^ExternalHostName = SYSTEMIP' /etc/opensim/grids/Elsewhere/sims/elsewhere_far/regions/Far.ini
 }
 wait_check 90 "its region registered in the grid, from its own block of ports" far_registered
+# Asked to Robust over HTTP, the wizard puts it next to the others, not on one of them
+far_placed() {
+    [ "$(mysql -BN -e "SELECT COUNT(*) FROM testgrid_robust.regions WHERE locX DIV 256 = (SELECT locX DIV 256 FROM testgrid_robust.regions WHERE regionName='Far') AND locY DIV 256 = (SELECT locY DIV 256 FROM testgrid_robust.regions WHERE regionName='Far')")" = 1 ] &&
+        [ "$(mysql -BN -e "SELECT COUNT(*) FROM testgrid_robust.regions WHERE regionName='Far' AND ABS(CAST(locX DIV 256 AS SIGNED) - 1000) <= 3 AND ABS(CAST(locY DIV 256 AS SIGNED) - 1000) <= 3")" = 1 ]
+}
+check "its place is free, next to the regions of the grid it asked Robust about" far_placed
 opensim stop now elsewhere_far >/dev/null 2>&1
 rm -f /etc/opensim/opensim.d/elsewhere_far.ini
 
