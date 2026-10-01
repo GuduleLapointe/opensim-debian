@@ -25,7 +25,7 @@ fi
 # address: as the caller, no config needed
 if [ "${1:-}" = "rest" ]; then
 	shift
-	exec php "$BASEDIR/libexec/rest.php" "$@"
+	exec php "$BASEDIR/vendor/magicoli/opensim-rest-php/opensim-rest-cli.php" "$@"
 fi
 
 # The ports of the instances: read from their config, as the caller
@@ -507,9 +507,11 @@ commandSim() {
 	inifile=$(buildIni "$instance" 2>/dev/null)
 	if osUseRest "$inifile"; then
 		if [ "$1" = "-" ]; then
-			exec php "$BASEDIR/libexec/rest.php" --ini "$inifile" -
+			osRest --ini "$inifile" -
+			exit $?
 		fi
-		exec php "$BASEDIR/libexec/rest.php" --ini "$inifile" -- "$*"
+		osRest --ini "$inifile" -- "$*"
+		exit $?
 	fi
 	osScreenExists "$instance" || end 1 "$instance is not running"
 	if [ "$1" = "-" ]; then
@@ -545,7 +547,8 @@ consoleSim() {
 	# The remote console: a prompt, every line typed goes to it
 	if osUseRest "$inifile"; then
 		log "remote console of $instance, Ctrl-D to leave it running"
-		exec php "$BASEDIR/libexec/rest.php" --ini "$inifile" --repl
+		osRest --ini "$inifile" --repl
+		exit $?
 	fi
 	end 1 "$instance is not running"
 }

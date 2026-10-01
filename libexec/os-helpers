@@ -57,7 +57,7 @@ osConsole() {
 	if [ "$OSIM_REST_INI" ]; then
 		# The remote console: an empty line answers a question with its default
 		[ "$osCommand" = "\n" ] && osCommand=""
-		printf '%s\n' "$osCommand" | php "$BASEDIR/libexec/rest.php" --ini "$OSIM_REST_INI" - >/dev/null 2>&1
+		printf '%s\n' "$osCommand" | osRest --ini "$OSIM_REST_INI" - >/dev/null 2>&1
 		return
 	fi
 	[ "$osCommand" = "\n" ] && unset osCommand
@@ -99,6 +99,12 @@ osInstanceRunning() {
 	osScreenExists "$1" && return 0
 	local ini=${2:-${OS_CURRENT_INI:-}}
 	[ -n "$ini" ] && pgrep -f -- "-inifile=$ini( |\$)" >/dev/null 2>&1
+}
+
+# The command-line client of the remote console (opensim-rest-php), for an
+# instance of this machine: reached at the local address, whatever BaseURL says
+osRest() {
+	php "$BASEDIR/vendor/magicoli/opensim-rest-php/opensim-rest-cli.php" --host 127.0.0.1 "$@"
 }
 
 # Whether the config of an instance gives it a remote console (a port, a user
