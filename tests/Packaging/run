@@ -4,14 +4,14 @@
 # and purge. Exits non-zero when a check fails.
 #
 # Usage, from the repository root, after building the packages:
-#   packaging/test/run [base image]
-#   e.g. packaging/test/run docker.io/library/ubuntu:24.04
+#   tests/Packaging/run [base image]
+#   e.g. tests/Packaging/run docker.io/library/ubuntu:24.04
 # KEEP=1 keeps the container for inspection.
 
 set -e
 
 BASE=${1:-docker.io/library/debian:bookworm}
-TEST_DIR=packaging/test
+TEST_DIR=tests/Packaging
 name=opensim-kit-test-$(basename "$BASE" | tr ':.' '--')
 
 cd "$(git rev-parse --show-toplevel)"

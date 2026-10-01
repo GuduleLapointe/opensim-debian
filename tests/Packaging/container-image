@@ -4,7 +4,7 @@
 # one, the logs on the console of the container, a clean stop, the instances
 # back after a restart, and the same under a locked-down run.
 #
-# Usage, from the repository root: packaging/container/test
+# Usage, from the repository root: tests/Packaging/container-image
 # KEEP=1 keeps the containers; ENGINE=docker; IMAGE=<image>
 # The memory of each container is capped: the machine of podman is shared.
 
@@ -37,7 +37,7 @@ cleanup
 run_app() {
     "$ENGINE" run -d --name "$app" --network "$p-net" --memory 450m --stop-timeout 120 \
         -v "$p-etc:/etc/opensim" -v "$p-lib:/var/lib/opensim" -v "$p-log:/var/log/opensim" \
-        -v "$PWD/packaging/test:/test:ro" "$@" "$IMAGE" >/dev/null
+        -v "$PWD/tests/Packaging:/test:ro" "$@" "$IMAGE" >/dev/null
 }
 inapp() { "$ENGINE" exec "$app" "$@"; }
 # Wait for instances, up to $1 seconds

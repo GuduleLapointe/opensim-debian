@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Package test scenario, run by packaging/test/run inside the test container,
+# Package test scenario, run by tests/Packaging/run inside the test container,
 # with the packages in /dist.
 
 FAILED=0

@@ -1,4 +1,4 @@
-# Test system with systemd, for packaging/test/run, with the database, sudo
+# Test system with systemd, for tests/Packaging/run, with the database, sudo
 # and what the setup of the Magiiic repository needs
 ARG BASE=docker.io/library/debian:bookworm
 FROM ${BASE}

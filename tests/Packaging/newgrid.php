@@ -1,7 +1,7 @@
 <?php
 
 // Runs the grid wizard of the installed kit with scripted answers, for
-// packaging/test/scenario.sh.
+// tests/Packaging/scenario.sh.
 
 require '/usr/share/opensim-tools/vendor/autoload.php';
 

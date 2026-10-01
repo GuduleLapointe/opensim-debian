@@ -6,7 +6,7 @@ not published anywhere.
 
 ```bash
 packaging/container/build            # from the packages of dist/, image opensim-kit:dev
-packaging/container/test             # checks it (podman, about ten minutes)
+tests/Packaging/container-image             # checks it (podman, about ten minutes)
 ```
 
 `ENGINE=docker` for docker, `BASE=<image>` for another Ubuntu or Debian base
@@ -65,7 +65,7 @@ podman exec opensim opensim status
 ## Locked down
 
 The same container, with a read-only system, no capability and no new privilege
-(checked by `packaging/container/test`):
+(checked by `tests/Packaging/container-image`):
 
 ```bash
 podman run -d --name opensim --network opensim --stop-timeout 120 \

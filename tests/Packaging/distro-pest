@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Runs the pest suites of the kit and of its libraries (opensim-engine,
+# opensim-helpers, opensim-rest-php, siblings of this repository) with the PHP
+# of a distribution and only the extensions the tools depend on, from copies of
+# the working trees (nothing is written in them).
+#
+# Usage, from the repository root:
+#   tests/Packaging/distro-pest [base image]
+#   tests/Packaging/distro-pest docker.io/library/ubuntu:24.04    # default: Debian 12
+# The PHP minimum of the projects is the one of Debian 12, so this is the test
+# that the minimum and the dependencies of the packages are the real ones.
+
+set -e
+
+BASE=${1:-docker.io/library/debian:bookworm}
+cd "$(git rev-parse --show-toplevel)"
+PROJECTS=${PROJECTS:-"opensim-rest-php opensim-engine opensim-helpers $(basename "$PWD")"}
+
+podman run --rm --memory=1g -e PROJECTS="$PROJECTS" -v "$(dirname "$PWD")":/src:ro "$BASE" bash -c '
+set -e
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -qq >/dev/null
+apt-get install -y -qq --no-install-recommends php-cli php-curl php-intl php-mbstring php-mysql php-xml ca-certificates tar >/dev/null
+php -v | head -1
+mkdir /work
+for p in $PROJECTS; do
+    tar -C /src --exclude=.git --exclude="$p/build" --exclude="$p/contrib" --exclude="$p/upstream" --exclude="$p/core" --exclude="$p/dev" -cf - "$p" | tar -C /work -xf -
+done
+status=0
+for p in $PROJECTS; do
+    echo "== $p"
+    (cd "/work/$p" && php vendor/bin/pest 2>&1 | grep -E "Tests:|⨯|FAILED|^  \+" ) || status=1
+    (cd "/work/$p" && php vendor/bin/pest >/dev/null 2>&1) || status=1
+done
+exit $status
+'
