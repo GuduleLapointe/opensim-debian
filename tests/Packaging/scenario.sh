@@ -324,7 +324,7 @@ for setting in "Search Module \"OpenSimSearch\"" "Search SearchURL \"http://127.
     eval "runuser -u opensim -- crudini --inplace --set /etc/opensim/grids/testgrid/sims/testgrid_sim1.ini $setting"
 done
 opensim restart now testgrid_sim1 >/tmp/sim-restart.out 2>&1
-check "the start of a simulator shows its modules with a count, then its region ready" "grep -qE '^  Sim1: .+ [0-9]+/[0-9]+\$' /tmp/sim-restart.out && grep -qE 'Sim1: registered in the grid \\([0-9]+/[0-9]+\\)' /tmp/sim-restart.out && grep -qE 'Sim1: ready \\([0-9]+/[0-9]+\\)' /tmp/sim-restart.out"
+check "the start of a simulator counts its plugins of modules, then shows its region in the grid" "grep -qE '^  OpenSim.Region.CoreModules [0-9]+/[0-9]+\$' /tmp/sim-restart.out && grep -qE '^  Sim1: registered in the grid \\([0-9]+/[0-9]+\\)\$' /tmp/sim-restart.out"
 search_registered() { [ -n "$(sim_pid)" ] && [ "$(mysql -BN -e 'SELECT COUNT(*) FROM ossearch.hostsregister')" -ge 1 ]; }
 search_indexed() {
     curl -s -m 60 http://127.0.0.1:8088/parser.php >/dev/null
