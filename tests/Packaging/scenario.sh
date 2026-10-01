@@ -12,6 +12,20 @@ check() {
         FAILED=1
     fi
 }
+# Like check, for what takes a while to be true on a slow machine: the condition
+# is tried again every 3 seconds, for up to $1 seconds
+wait_check() {
+    local seconds=$1 end=$((SECONDS + $1))
+    until eval "$3"; do
+        if [ "$SECONDS" -ge "$end" ]; then
+            echo "   FAILED: $2"
+            FAILED=1
+            return
+        fi
+        sleep 3
+    done
+    echo "   ok: $2"
+}
 apt_q() {
     DEBIAN_FRONTEND=noninteractive apt-get "$@" -y -qq 2>&1 |
         grep -E "opensim|needs|E:" | grep -vE "^(Selecting|Preparing|Unpacking)"
@@ -309,10 +323,13 @@ for setting in "Search Module \"OpenSimSearch\"" "Search SearchURL \"http://127.
     eval "runuser -u opensim -- crudini --inplace --set /etc/opensim/grids/testgrid/sims/testgrid_sim1.ini $setting"
 done
 opensim restart now testgrid_sim1 >/dev/null 2>&1
-sim=$(sim_pid)
-check "the simulator registers with the search service" "[ -n '$sim' ] && [ \"\$(mysql -BN -e 'SELECT COUNT(*) FROM ossearch.hostsregister')\" -ge 1 ]"
-curl -s -m 60 http://127.0.0.1:8088/parser.php >/dev/null
-check "its region is indexed" "[ \"\$(mysql -BN -e \"SELECT COUNT(*) FROM ossearch.regions WHERE regionname='Sim1'\")\" = 1 ]"
+search_registered() { [ -n "$(sim_pid)" ] && [ "$(mysql -BN -e 'SELECT COUNT(*) FROM ossearch.hostsregister')" -ge 1 ]; }
+search_indexed() {
+    curl -s -m 60 http://127.0.0.1:8088/parser.php >/dev/null
+    [ "$(mysql -BN -e "SELECT COUNT(*) FROM ossearch.regions WHERE regionname='Sim1'")" = 1 ]
+}
+wait_check 90 "the simulator registers with the search service" search_registered
+wait_check 90 "its region is indexed" search_indexed
 pkill -f 'php -S 127.0.0.1:8088'
 check "no error in the search scripts" "! grep -E 'Fatal|Parse error' /tmp/php-search.log"
 
@@ -330,7 +347,7 @@ opensim ports >/tmp/ports-rest.out 2>&1
 check "opensim ports lists its console, and its block" "grep -qE '8022 +tcp +public' /tmp/ports-rest.out && grep -qE '8024 +tcp +console' /tmp/ports-rest.out && grep -qE '8025 +udp +public' /tmp/ports-rest.out"
 check "a command reaches its console through the port" "opensim command testgrid_rest 'show info' | grep -q 'Version: OpenSim'"
 rest_user=$(sed -nE 's/^ConsoleUser = "([a-z]+)"/\1/p' /etc/opensim/grids/testgrid/sims/testgrid_rest.ini)
-check "a wrong password is refused" "! OPENSIM_REST_PASSWORD=wrong php /usr/share/opensim-tools/libexec/rest.php --url http://127.0.0.1:8024 --user $rest_user -- 'show info' >/dev/null 2>&1"
+check "a wrong password is refused" "! OPENSIM_REST_PASSWORD=wrong php /usr/share/opensim-tools/vendor/magicoli/opensim-rest-php/opensim-rest-cli.php --url http://127.0.0.1:8024 --user $rest_user -- 'show info' >/dev/null 2>&1"
 opensim stop now testgrid_rest >/tmp/rest-stop.out 2>&1
 check "it stops through its console" "! pgrep -f 'OpenSim.dll -inifile=/etc/opensim/opensim.d/testgrid_rest.ini' >/dev/null"
 opensim start testgrid_rest >/tmp/rest-start.out 2>&1
@@ -348,7 +365,11 @@ ts "simulator of a grid elsewhere"
 check "the simulator wizard joins a grid by its address and ends well" "grep -q 'exit code: 0' /tmp/far.out && grep -q 'Wrote /etc/opensim/grids/Elsewhere/Elsewhere.conf' /tmp/far.out && grep -q \"Simulator 'Far' is running\" /tmp/far.out"
 check "the grid is kept as a remote one, with its address and its ports" "grep -q '^Remote = true' /etc/opensim/grids/Elsewhere/Elsewhere.conf && grep -q '^BaseHostname = localhost' /etc/opensim/grids/Elsewhere/Elsewhere.conf &&
     grep -q '^PublicPort = 8002' /etc/opensim/grids/Elsewhere/Elsewhere.conf && grep -q '^PrivatePort = 8003' /etc/opensim/grids/Elsewhere/Elsewhere.conf"
-check "its region registered in the grid, from its own block of ports" "[ \"\$(mysql -BN -e \"SELECT COUNT(*) FROM testgrid_robust.regions WHERE regionName='Far'\")\" = 1 ] && grep -q '^ExternalHostName = SYSTEMIP' /etc/opensim/grids/Elsewhere/sims/elsewhere_far/regions/Far.ini"
+far_registered() {
+    [ "$(mysql -BN -e "SELECT COUNT(*) FROM testgrid_robust.regions WHERE regionName='Far'")" = 1 ] &&
+        grep -q '^ExternalHostName = SYSTEMIP' /etc/opensim/grids/Elsewhere/sims/elsewhere_far/regions/Far.ini
+}
+wait_check 90 "its region registered in the grid, from its own block of ports" far_registered
 opensim stop now elsewhere_far >/dev/null 2>&1
 rm -f /etc/opensim/opensim.d/elsewhere_far.ini
 
@@ -387,7 +408,8 @@ ts "remove the tools, grid started by the service"
 registered=$(sim_registered)
 systemctl restart opensim
 robust_state
-check "the service starts the grid, then its simulator" "[ -n '$(robust_pid)' ] && [ -n '$(sim_pid)' ] && [ '$(sim_registered)' -gt '$registered' ]"
+grid_started() { [ -n "$(robust_pid)" ] && [ -n "$(sim_pid)" ] && [ "$(sim_registered)" -gt "$registered" ]; }
+wait_check 120 "the service starts the grid, then its simulator" grid_started
 before=$(quits)
 apt_q remove opensim-tools
 robust_state
