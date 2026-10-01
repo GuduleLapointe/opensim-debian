@@ -275,12 +275,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/GuduleLapointe/opensim-rest-php.git",
-                "reference": "267868ffa8f8720f2f3e5e930488dae2b0ef565c"
+                "reference": "f1cb48ab58b1875b5585b5f4231fdc533cd42140"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/GuduleLapointe/opensim-rest-php/zipball/267868ffa8f8720f2f3e5e930488dae2b0ef565c",
-                "reference": "267868ffa8f8720f2f3e5e930488dae2b0ef565c",
+                "url": "https://api.github.com/repos/GuduleLapointe/opensim-rest-php/zipball/f1cb48ab58b1875b5585b5f4231fdc533cd42140",
+                "reference": "f1cb48ab58b1875b5585b5f4231fdc533cd42140",
                 "shasum": ""
             },
             "require": {
@@ -317,7 +317,7 @@
                 "issues": "https://github.com/GuduleLapointe/opensim-rest-php/issues",
                 "source": "https://github.com/GuduleLapointe/opensim-rest-php/tree/opensim-kit"
             },
-            "time": "2026-10-01T14:58:16+00:00"
+            "time": "2026-10-01T19:55:21+00:00"
         },
         {
             "name": "phpxmlrpc/phpxmlrpc",
