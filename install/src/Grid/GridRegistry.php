@@ -74,6 +74,19 @@ final class GridRegistry
         return $used;
     }
 
+    /**
+     * A place for a region of a grid whose regions are not known here (its Robust
+     * is elsewhere): scattered by the UUID of the region, so that two newcomers
+     * rarely choose the same one, and not the 1000,1000 everybody takes. The owner
+     * of the grid has the last word.
+     */
+    public static function scatteredLocation(string $uuid): string
+    {
+        $number = (int) hexdec(substr(str_replace('-', '', $uuid), 0, 7));
+
+        return (1000 + $number % 1000) . ',' . (1000 + intdiv($number, 1000) % 1000);
+    }
+
     /** The first place, from 1000,1000, that no region holds. */
     public function nextLocation(GridInfo $grid): string
     {

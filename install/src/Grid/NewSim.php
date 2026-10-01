@@ -661,7 +661,11 @@ final class NewSim
 
         $plan->regionName = trim($this->ui->text('Region name', $plan->simName, $name));
         $plan->regionUuid = self::uuid();
-        $plan->regionLocation = str_replace(' ', '', $this->ui->text('Region location (x,y)', (new GridRegistry($database))->nextLocation($grid), $location));
+        if ($grid->remote) {
+            $this->ui->note('The regions of this grid are not known here: ask its owner which location is free.');
+        }
+        $suggested = $grid->remote ? GridRegistry::scatteredLocation($plan->regionUuid) : (new GridRegistry($database))->nextLocation($grid);
+        $plan->regionLocation = str_replace(' ', '', $this->ui->text('Region location (x,y)', $suggested, $location));
         $plan->regionPort = (int) $this->ui->text('Region port', (string) $this->nextRegionPort($plan, $grid, $database), $numeric);
     }
 
