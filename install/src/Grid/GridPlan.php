@@ -13,6 +13,8 @@ final class GridPlan
     public string $gridNick = '';
     public string $gridSlug = '';
     public bool $enableHypergrid = true;
+    /** Free blocks the regions of the grid leave between them (0: side by side). */
+    public int $regionSpacing = 0;
 
     // Selected core (multi-version aware).
     public string $coreDirectory = '';

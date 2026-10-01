@@ -15,22 +15,6 @@ final class RobustGrid
     private const NO_SCOPE = '00000000-0000-0000-0000-000000000000';
 
     /**
-     * A place where the grid gathers its regions: its first default region (the
-     * one new accounts start in), the middle of the grid more often than not.
-     *
-     * @return array{0:int,1:int}|null null when the grid does not answer or has none
-     */
-    public static function anchor(string $host, int $port): ?array
-    {
-        $regions = self::regions(self::ask($host, $port, ['METHOD' => 'get_default_regions', 'SCOPEID' => self::NO_SCOPE]));
-        foreach ($regions as [$x, $y]) {
-            return [$x, $y];
-        }
-
-        return null;
-    }
-
-    /**
      * The places taken around a place, within $radius blocks.
      *
      * @return array<string,true>|null null when the grid does not answer

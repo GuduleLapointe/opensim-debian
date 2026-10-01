@@ -55,12 +55,12 @@ describe( 'LocationFinder nearest free place', function () {
 		expect( LocationFinder::nearestFree( taken( array( array( 10, 10 ) ) ), 10, 10, 1 ) )->toBe( array( 12, 10 ) );
 	} );
 
-	test( 'keeps its distance from every place taken, far from everything', function () {
+	test( 'keeps its distance from every place taken with a large gap', function () {
 		$used  = taken( array( array( 10, 10 ), array( 11, 10 ), array( 10, 11 ) ) );
-		$place = LocationFinder::nearestFree( $used, 10, 10, LocationFinder::GAPS['far'] );
+		$place = LocationFinder::nearestFree( $used, 10, 10, 8 );
 
 		foreach ( array( array( 10, 10 ), array( 11, 10 ), array( 10, 11 ) ) as [ $x, $y ] ) {
-			expect( max( abs( $place[0] - $x ), abs( $place[1] - $y ) ) )->toBeGreaterThan( LocationFinder::GAPS['far'] );
+			expect( max( abs( $place[0] - $x ), abs( $place[1] - $y ) ) )->toBeGreaterThan( 8 );
 		}
 	} );
 
@@ -79,11 +79,6 @@ describe( 'LocationFinder nearest free place', function () {
 } );
 
 describe( 'LocationFinder places', function () {
-	test( 'the center is the middle of the places taken', function () {
-		expect( LocationFinder::center( taken( array( array( 0, 0 ), array( 10, 10 ) ) ) ) )->toBe( array( 5, 5 ) );
-		expect( LocationFinder::center( array() ) )->toBeNull();
-	} );
-
 	test( 'a location is read as x,y', function () {
 		expect( LocationFinder::parse( '1000, 1002' ) )->toBe( array( 1000, 1002 ) );
 		expect( LocationFinder::parse( 'a,b' ) )->toBeNull();

@@ -14,6 +14,8 @@ final class GridInfo
     public string $name = '';
     public string $slug = '';
     public bool $hypergrid = true;
+    /** Free blocks the regions leave between them, the rule of the grid (a grid only described here follows the default one). */
+    public int $regionSpacing = 0;
     public string $dir = '';
     public string $robustIni = '';
     public string $coreDirectory = '';
@@ -52,6 +54,7 @@ final class GridInfo
         $grid->hypergrid = str_contains(basename($robustIni), '.HG.');
         $grid->name = $current['gridName'] ?? ($conf['GridName'] ?? ucfirst($nick));
         $grid->slug = $conf['slug'] ?? Slug::slug($grid->name);
+        $grid->regionSpacing = ctype_digit($conf['RegionSpacing'] ?? '') ? (int) $conf['RegionSpacing'] : 0;
         $grid->coreDirectory = $conf['CoreDirectory'] ?? ($profile['CoreDirectory'] ?? '');
         $grid->baseHostname = $current['baseHostname'] ?? 'localhost';
         $grid->publicPort = $current['publicPort'] ?? 8002;

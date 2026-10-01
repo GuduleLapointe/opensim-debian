@@ -284,6 +284,9 @@ final class NewGrid
         $hgDefault = $existing !== null ? str_contains(basename($existing), '.HG.') : true;
         $plan->enableHypergrid = $this->ui->confirm('Enable Hypergrid?', $hgDefault);
 
+        // The rule that places the regions: free blocks between them
+        $plan->regionSpacing = (int) $this->ui->text('Free blocks between regions (0: side by side)', '0', static fn (string $v): ?string => ctype_digit(trim($v)) && (int) $v <= 50 ? null : 'A number of blocks, 0 to 50.');
+
         // Core selection (multi-version aware).
         $coreRoot = $profile['CoreRoot'] ?? '';
         $cores = Cores::list($coreRoot);
@@ -419,6 +422,7 @@ final class NewGrid
         $lines = [
             "  Grid:        {$plan->gridName}  ({$plan->gridNick})",
             '  Hypergrid:   ' . ($plan->enableHypergrid ? 'yes' : 'no'),
+            '  Regions:     ' . ($plan->regionSpacing === 0 ? 'side by side' : "{$plan->regionSpacing} free block(s) between them"),
             "  Core:        {$plan->coreDirectory}",
             "  Hostname:    {$plan->baseHostname}",
             "  Ports:       public {$plan->publicPort} / private {$plan->privatePort}",

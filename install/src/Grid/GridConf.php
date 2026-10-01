@@ -64,6 +64,7 @@ final class GridConf
             'DataDirectory = "' . $plan->dataDirectory . '"',
             'CacheDirectory = "' . $plan->cacheDirectory . '"',
             'LogsDirectory = "' . $plan->logsDirectory . '"',
+            "RegionSpacing = {$plan->regionSpacing}",
             '',
         ];
 

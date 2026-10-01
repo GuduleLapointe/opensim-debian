@@ -9,16 +9,13 @@ namespace OpenSim\Installer\Grid;
  * which a region of that size takes (a larger one takes several); the places
  * taken are a set of "x,y" keys.
  *
- * The new region goes to the free place nearest to a point, by distance, so that
- * regions added one after the other fill a disc around it: the circle that a
- * grid without any other intention tends to form around its first region. A gap
- * asks for free blocks around the place, to leave room between the regions.
+ * The new region goes to the free place nearest to the one asked, by distance, so
+ * that regions asked for the same place fill a disc around it: the circle that a
+ * grid tends to form around its first region. The rule of the grid is a gap: free
+ * blocks around the place, to leave room between the regions.
  */
 final class LocationFinder
 {
-    /** Free blocks asked around the place, by what the new region is for. */
-    public const GAPS = ['near' => 0, 'spaced' => 1, 'far' => 8];
-
     /** The first place of a grid. */
     public const FIRST = [1000, 1000];
 
@@ -50,27 +47,6 @@ final class LocationFinder
                 $used[self::key($x + $dx, $y + $dy)] = true;
             }
         }
-    }
-
-    /**
-     * The middle of the places taken, where the regions gather.
-     *
-     * @param array<string,true> $used
-     * @return array{0:int,1:int}|null null when no place is taken
-     */
-    public static function center(array $used): ?array
-    {
-        if ($used === []) {
-            return null;
-        }
-        $sumX = $sumY = 0;
-        foreach (array_keys($used) as $key) {
-            [$x, $y] = self::parse((string) $key) ?? [0, 0];
-            $sumX += $x;
-            $sumY += $y;
-        }
-
-        return [(int) round($sumX / count($used)), (int) round($sumY / count($used))];
     }
 
     /**
