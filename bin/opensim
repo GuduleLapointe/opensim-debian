@@ -40,6 +40,12 @@ if [ "${1:-}" = "next" ]; then
 	exec php "$BASEDIR/libexec/next.php" "$@"
 fi
 
+# The accounts of a grid (a list made directly in its database): as the caller
+if [ "${1:-}" = "users" ]; then
+	shift
+	exec php "$BASEDIR/libexec/users.php" "$@"
+fi
+
 # The web side of a grid (helpers, URLs, snippets for the web server): as the caller
 if [ "${1:-}" = "web" ]; then
 	shift
@@ -52,6 +58,9 @@ HELP="
 opensim <start|stop [now]|restart [now]> [instance1] [instance2] [...]
 opensim status
 opensim setup           create or modify grids and simulators (setup wizard)
+opensim users import FILE [--grid NICK] [--apply]
+                        make the accounts of a list (CSV or JSON) in the database
+                        of a grid; without --apply, tells what would be made
 opensim web [show|check] [--grid NICK]
 opensim web snippet <caddy|nginx|apache> [--grid NICK]
                         the helpers of a grid (economy, search, offline messages):
