@@ -20,7 +20,6 @@
 ## Next steps
 
 - add full import procedure for existing grids/simulators (normalized config + db + assets and other data)
-- write INSTALLATION.md, the detailed instructions the README refers to
 - add/update bash completion
 - build ready to use zip packages for simple download, added to the release assets alongside the source code and apt package
 - add simplified installation script, detecting the platform and installing with the appropriate method (zip package or apt package), with a one-line command like `curl -sSL https://raw.githubusercontent.com/GuduleLapointe/opensim-kit/refs/heads/master/install.sh | bash`
@@ -34,8 +33,6 @@
 
 - localize the setup and the launcher with gettext (a requirement of the project), their messages are still English strings
 - localize helpers
-- `opensim enable/disable <instance>`
-- Command-line equivalents of the setup menus, to enable or disable a grid, a simulator or a region from a script (the setup does it from its screens)
 - `opensim online`: show who's online
 
 ## Could be great
