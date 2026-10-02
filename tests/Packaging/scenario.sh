@@ -250,13 +250,13 @@ check "a region is reconfigured in place, its UUID kept" "grep -q 'exit code: 0'
 check "opensim next location gives the free place nearest to the first one" "[ \"\$(opensim next location testgrid)\" = 999,1000 ]"
 check "opensim next port gives a free port" "[ \"\$(opensim next port 9100)\" = 9100 ]"
 # The ports of an instance are a block of ten, the same on any machine: Robust
-# 8002 public and 8003 private; the first simulator 9002 public, 9004 for its
-# console (kept, not enabled), its regions from 9005, in UDP
+# 8002 public and 8003 private; the first simulator 9000, 9004 for its console
+# (kept, not enabled), its regions 9001 and 9002, in UDP
 opensim ports >/tmp/ports.out 2>&1
 check "opensim ports tells what to open, by block of ten, the regions in UDP" "grep -qE '8002 +tcp +public' /tmp/ports.out && grep -qE '8003 +tcp +private' /tmp/ports.out &&
-    grep -qE '9002 +tcp +public' /tmp/ports.out && grep -qE '9004 +tcp +off' /tmp/ports.out &&
-    grep -qE '9005 +udp +public' /tmp/ports.out && grep -qE '9006 +udp +public' /tmp/ports.out"
-check "the private port is published to the local machine only" "opensim ports --publish | grep -q -- '-p 127.0.0.1:8003:8003' && opensim ports --publish | grep -q -- '-p 9005:9005/udp'"
+    grep -qE '9000 +tcp +public' /tmp/ports.out && grep -qE '9004 +tcp +off' /tmp/ports.out &&
+    grep -qE '9001 +udp +public' /tmp/ports.out && grep -qE '9002 +udp +public' /tmp/ports.out"
+check "the private port is published to the local machine only" "opensim ports --publish | grep -q -- '-p 127.0.0.1:8003:8003' && opensim ports --publish | grep -q -- '-p 9001:9001/udp'"
 check "a command reaches the console of a running instance" "opensim command testgrid_sim1 'show info' && sleep 1 &&
     runuser -u opensim -- screen -S testgrid_sim1 -X hardcopy /tmp/console.txt && grep -aq 'Version: OpenSim' /tmp/console.txt"
 check "a command to an instance that does not run fails" "! opensim command nosuchinstance 'show info' >/dev/null 2>&1"
@@ -363,7 +363,7 @@ check "its console is in its config, on the port x4 of its block" "grep -q '^con
     grep -qE '^ConsoleUser = \"[a-z]{12}\"' /etc/opensim/grids/testgrid/sims/testgrid_rest.ini && grep -qE '^ConsolePass = \"[A-Za-z0-9]{32}\"' /etc/opensim/grids/testgrid/sims/testgrid_rest.ini"
 check "it has no screen session, and it runs" "! runuser -u opensim -- screen -ls | grep -q testgrid_rest && pgrep -f 'OpenSim.dll -inifile=/etc/opensim/opensim.d/testgrid_rest.ini' >/dev/null"
 opensim ports >/tmp/ports-rest.out 2>&1
-check "opensim ports lists its console, and its block" "grep -qE '9012 +tcp +public' /tmp/ports-rest.out && grep -qE '9014 +tcp +console' /tmp/ports-rest.out && grep -qE '9015 +udp +public' /tmp/ports-rest.out"
+check "opensim ports lists its console, and its block" "grep -qE '9010 +tcp +public' /tmp/ports-rest.out && grep -qE '9014 +tcp +console' /tmp/ports-rest.out && grep -qE '9011 +udp +public' /tmp/ports-rest.out"
 check "a command reaches its console through the port" "opensim command testgrid_rest 'show info' | grep -q 'Version: OpenSim'"
 rest_user=$(sed -nE 's/^ConsoleUser = "([a-z]+)"/\1/p' /etc/opensim/grids/testgrid/sims/testgrid_rest.ini)
 check "a wrong password is refused" "! OPENSIM_REST_PASSWORD=wrong php /usr/share/opensim-tools/vendor/magicoli/opensim-rest-php/opensim-rest-cli.php --url http://127.0.0.1:9014 --user $rest_user -- 'show info' >/dev/null 2>&1"
