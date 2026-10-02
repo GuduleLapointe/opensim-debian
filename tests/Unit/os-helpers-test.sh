@@ -37,3 +37,52 @@ function test_cleanupini_strips_windows_line_endings() {
 function test_cleanupini_gives_nothing_for_a_missing_file() {
 	assert_equals '' "$(cleanupIni "$WORK/missing.ini")"
 }
+
+function test_oscountdown_counts_down_to_the_shutdown_not_to_the_next_warning() {
+    eval "$(sed -n '/^osCountdown()/,/^}/p' "$ROOT/libexec/os-helpers")"
+    osStep() { echo "$1"; }
+    osStepEnd() { :; }
+    sleep() { :; }
+
+    assert_equals '  Stopping x in 80s' "$(osCountdown 40 'Stopping x' 40)"
+}
+
+function test_oscountdown_stops_when_the_check_succeeds() {
+    eval "$(sed -n '/^osCountdown()/,/^}/p' "$ROOT/libexec/os-helpers")"
+    osStep() { :; }
+    osStepEnd() { :; }
+    sleep() { :; }
+    nobody() { return 0; }
+
+    osCountdown 40 'x' 0 nobody
+    assert_equals '1' "$?"
+}
+
+function test_oscountdown_goes_to_the_end_when_the_check_fails() {
+    eval "$(sed -n '/^osCountdown()/,/^}/p' "$ROOT/libexec/os-helpers")"
+    osStep() { :; }
+    osStepEnd() { :; }
+    sleep() { :; }
+    somebody() { return 1; }
+
+    osCountdown 40 'x' 0 somebody
+    assert_equals '0' "$?"
+}
+
+function test_oscountrealusers_ignores_npcs_and_children() {
+    eval "$(sed -n '/^osCountRealUsers()/,/^}/p' "$ROOT/libexec/os-helpers")"
+    OSIM_REST_INI=x
+    osRest() {
+        printf 'Agents connected: 3\n\nName Type Agent ID\nAnn Lee Root 1\nBob NPC Root 2\nCy Child 3\nDee Root 4\n'
+    }
+
+    assert_equals '2' "$(osCountRealUsers)"
+}
+
+function test_oscountrealusers_does_not_guess_without_a_list() {
+    eval "$(sed -n '/^osCountRealUsers()/,/^}/p' "$ROOT/libexec/os-helpers")"
+    OSIM_REST_INI=x
+    osRest() { printf 'something else\n'; }
+
+    assert_equals '' "$(osCountRealUsers)"
+}

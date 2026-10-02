@@ -2,6 +2,8 @@
 
 ### Unreleased
 
+- fix `opensim stop` counts down to the shutdown (`Stopping sim in 120s`), not to the next warning to the users
+- update `opensim stop` does not wait when no real user is in the regions of the simulator (NPCs and child agents are not counted), and says so; it needs the remote console to know, else it waits as before
 - update the parcel of a region added to a running simulator is named after the region without a restart: the setup loads an OAR with the parcel only through the console and checks the database; the restart stays as the fallback when the name did not change
 - new OSSL is in the standard config: each grid has its own `osslDefaultEnable.ini` and `osslEnable.ini` (the defaults of the core, functions on, `osSetParcelDetails` for the owner of the estate and of the parcel), included by its simulators; `share/region-init/init-region.lsl` is a region initialization script to customize, which names the parcel after the region by itself; it is not delivered to new regions yet
 - new `opensim profile list|add|default|remove`: registers an install made by hand (`add NAME --core DIR [--etc DIR] [--data DIR]`, the config and data directories being the core one in an install by the book) so the tools follow its own directories; the default profile is only the default of new grids

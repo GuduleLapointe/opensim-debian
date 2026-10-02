@@ -532,18 +532,28 @@ stopSim() {
 
 		# Only a running region has users to warn
 		if [ "$stopType" = "OpenSim" ] && { [ -n "${OSIM_REST_INI:-}" ] && osInstanceRunning "$simName" "$inifile" || osScreenExists "$simName"; }; then
-			[ $shutdownDelay = 0 ] && warnDelay=0 || warnDelay=$(($shutdownDelay / $shutdownWarnings))
+			delay=$shutdownDelay
+			warnings=$shutdownWarnings
+			[ $delay -le 10 ] && warnings=1
+			[ $delay -eq 0 ] && warnings=0
+			# Nobody to warn: no reason to wait
+			nobody=0
+			if [ $warnings -gt 0 ] && osNoRealUsers; then
+				log "$simName: no user in its regions, stopping now"
+				warnings=0
+				nobody=1
+			fi
+			[ $warnings -gt 0 ] && warnDelay=$(($delay / $warnings)) && log "$simName: warning its users, it stops in $delay seconds"
 			warn=0
-			[ $shutdownDelay -le 10 ] && shutdownWarnings=1
-			[ $shutdownDelay -eq 0 ] && shutdownWarnings=0
-			[ $shutdownWarnings -gt 0 ] && log "$simName: warning its users, it stops in $shutdownDelay seconds"
-			while [ $warn -lt $shutdownWarnings ]; do
-				remaining=$(($shutdownDelay - $warn * $warnDelay))
+			while [ $warn -lt $warnings ]; do
+				remaining=$(($delay - $warn * $warnDelay))
 				osConsole $simName "alert Attention: this simulator will be stopped in $remaining seconds. Please teleport to another region to avoid being disconnected."
-				osCountdown $warnDelay "Stopping $simName"
+				# The countdown is the time left before the shutdown, not before the next warning
+				osCountdown $warnDelay "Stopping $simName" $(($remaining - $warnDelay)) osNoRealUsers ||
+					{ log "$simName: no user left in its regions, stopping now"; nobody=1; break; }
 				warn=$(($warn + 1))
 			done
-			osConsole $simName "alert Shutting down now."
+			[ $nobody = 1 ] || osConsole $simName "alert Shutting down now."
 		fi
 		debug shutting down $simName
 		pid=$(ps -C mono -C dotnet --no-headers -o pid,args 2>/dev/null |
