@@ -32,9 +32,9 @@ debug region ini $RegionIniPath
 # log "new region $RegionName in sim $SimName ($RegionIni)"
 [ -f "$RegionIniPath" ] && cp "$RegionIniPath" $TMP.region.ini
 
-InternalPort=$(nextfreeports)
+InternalPort=$("$BASEDIR/bin/opensim" next port)
 readvar InternalPort
-nextfreeports $InternalPort | grep -q "^$InternalPort" || end $? "Port $InternalPort already used by an OpenSim instance"
+"$BASEDIR/bin/opensim" next port $InternalPort | grep -q "^$InternalPort" || end $? "Port $InternalPort already used by an OpenSim instance"
 netstat -an | egrep ":$InternalPort[[:blank:]].*LISTEN" && end 1 "Port $InternalPort already in use"
 [ $InternalPort -gt 9000 -a $InternalPort -lt 10000 ] ||
 	yesno "Port $InternalPort is outside the usual 9000-9999 range, are you sure?" ||

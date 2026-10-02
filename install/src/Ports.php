@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace OpenSim\Installer;
 
 /**
- * PHP port of bin/nextfreeports — shared, not installer-specific (the launcher
- * port and others will reuse it). Same logic as the bash script: a port is
+ * The next free ports, shared by the setup and `opensim next port`: a port is
  * "in use" if it appears (even commented) in any OpenSim config .ini under the
  * known roots — as InternalPort / PublicPort / PrivatePort / http_listener_port
  * / console_port — or if it is currently bound (netstat). next()/nextFree()

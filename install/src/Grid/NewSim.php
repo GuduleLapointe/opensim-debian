@@ -935,37 +935,22 @@ final class NewSim
     }
 
     /**
-     * The free place nearest to a place, by the rule of the grid. A grid on another
-     * machine is asked what its regions take around the place, in a wider area as
-     * long as the answer could hide a nearer place.
+     * The free place nearest to a place, by the rule of the grid (see Places).
      *
      * @param array<string,true> $known the places taken that are known here
      * @return array{0:int,1:int}
      */
     private function freePlace(GridInfo $grid, array $known, int $x, int $y, ?string $ignored = null): array
     {
-        $gap = $grid->regionSpacing;
-        if (!$grid->remote) {
-            return LocationFinder::nearestFree($known, $x, $y, $gap);
+        $unreachable = false;
+        $place = Places::nearestFree($grid, $known, $x, $y, $ignored, $unreachable);
+        if ($unreachable) {
+            $this->ui->warn(
+                "The grid does not answer at {$grid->baseHostname}:{$grid->privatePort}: its regions are not known here, ask its owner which place is free.",
+            );
         }
 
-        for ($radius = 20; ; $radius *= 2) {
-            $asked = RobustGrid::locations($grid->baseHostname, $grid->privatePort, $x, $y, $radius);
-            if ($asked === null) {
-                $this->ui->warn(
-                    "The grid does not answer at {$grid->baseHostname}:{$grid->privatePort}: its regions are not known here, ask its owner which place is free.",
-                );
-
-                return LocationFinder::nearestFree($known, $x, $y, $gap);
-            }
-            if ($ignored !== null) {
-                unset($asked[$ignored]);
-            }
-            [$freeX, $freeY] = LocationFinder::nearestFree($known + $asked, $x, $y, $gap);
-            if (max(abs($freeX - $x), abs($freeY - $y)) + $gap <= $radius || $radius >= 320) {
-                return [$freeX, $freeY];
-            }
-        }
+        return $place;
     }
 
     /** The port of a region: the next one of the block of its simulator (x5 to x9, then x3), else the next free one. */

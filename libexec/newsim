@@ -149,7 +149,7 @@ fi
 
 crudget $TMP.ini Network 2>/dev/null || crudget $TMP.ini network 2>/dev/null || end $? could not read $TMP.ini Network section
 
-[ "$http_listener_port" ] || http_listener_port=$(nextfreeports $firstport)
+[ "$http_listener_port" ] || http_listener_port=$("$BASEDIR/bin/opensim" next port $firstport)
 readvar http_listener_port
 crudini --set $TMP.ini Network http_listener_port "$http_listener_port"
 debug "getting db settings"
@@ -182,7 +182,7 @@ crudini --set $TMP.ini DatabaseService ConnectionString "\"$ConnectionString\""
 remote_enabled=$(crudget $TMP.OpenSim.ini RemoteAdmin enabled)
 if [ "$remote_enabled" = "true" ]; then
 	# crudini --set $TMP.ini RemoteAdmin enabled true
-	crudini --set $TMP.ini RemoteAdmin port $(nextfreeports $((http_listener_port + 1)))
+	crudini --set $TMP.ini RemoteAdmin port $("$BASEDIR/bin/opensim" next port $((http_listener_port + 1)))
 fi
 
 crudini --set $TMP.ini Includes Include-Common "$EtcRoot/OpenSim.ini"
@@ -228,14 +228,14 @@ if [ $? -ne 0 ]; then
 		RegionUUID=$($uuidgen)
 		readvar RegionUUID
 
-		Location=$(nextlocation $gridnick)
+		Location=$("$BASEDIR/bin/opensim" next location $gridnick)
 		readvar Location
-		checklocation=$(nextlocation $gridnick $Location)
+		checklocation=$("$BASEDIR/bin/opensim" next location $gridnick $Location)
 		[ "$checklocation" != "$Location" ] && log $? "Invalid location, using $checklocation" && Location=$checklocation
 
-		InternalPort=$(nextfreeports $((http_listener_port + 2)))
+		InternalPort=$("$BASEDIR/bin/opensim" next port $((http_listener_port + 2)))
 		readvar InternalPort
-		checkInternalPort=$(nextfreeports $InternalPort)
+		checkInternalPort=$("$BASEDIR/bin/opensim" next port $InternalPort)
 		[ $checkInternalPort != "$InternalPort" ] && log $? "Invalid InternalPort, using $checkInternalPort" && InternalPort=$checkInternalPort
 
 		cat <<EOF >$simConfigDir/regions/$RegionName.ini

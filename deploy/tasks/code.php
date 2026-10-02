@@ -32,8 +32,6 @@ task('deploy:core', function () {
 
     // Single user-facing orchestrator
     rsyncTo("$src/bin/opensim", "$remote:$bin/opensim");
-    rsyncTo("$src/bin/nextfreeports", "$remote:$bin/nextfreeports");
-    rsyncTo("$src/bin/nextlocation", "$remote:$bin/nextlocation");
 
     // Helper executables (called by opensim, not directly by users)
     rsyncTo("$src/libexec/", "$remote:$libexec/", excludeFile('core'));

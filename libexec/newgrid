@@ -142,19 +142,19 @@ localhost | 127.0.0.1 | "") BaseHostname=$(hostname -f) ;;
 esac
 readvar BaseHostname && [ "${BaseHostname}" != "" ] || end $? "BaseHostname cannot be empty"
 
-PublicPort=${PublicPort:-$(nextfreeports 8002)}
+PublicPort=${PublicPort:-$("$BASEDIR/bin/opensim" next port 8002)}
 readvar PublicPort && [ "${PublicPort}" != "" ] || end $? "PublicPort cannot be empty"
 
 if [ "${update:-}" != "yes" -o "$PublicPort" != "$savedPublicPort" ]; then
-	PublicPort=$(nextfreeports $PublicPort)
+	PublicPort=$("$BASEDIR/bin/opensim" next port $PublicPort)
 fi
 
 debug "PublicPort: $PublicPort"
 
-PrivatePort=${PrivatePort:-$(nextfreeports $(($PublicPort + 1)))}
+PrivatePort=${PrivatePort:-$("$BASEDIR/bin/opensim" next port $(($PublicPort + 1)))}
 readvar PrivatePort && [ "${PrivatePort}" != "" ] || end $? "PrivatePort cannot be empty"
 if [ "${update:-}" != "yes" -o "$PublicPort" != "$savedPublicPort" ]; then
-	PrivatePort=$(nextfreeports $PrivatePort)
+	PrivatePort=$("$BASEDIR/bin/opensim" next port $PrivatePort)
 fi
 
 WebURL="https://$BaseHostname"

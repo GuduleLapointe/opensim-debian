@@ -34,6 +34,12 @@ if [ "${1:-}" = "ports" ]; then
 	exec php "$BASEDIR/libexec/ports.php" "$@"
 fi
 
+# The next free port or place, by the rules of the setup: as the caller
+if [ "${1:-}" = "next" ]; then
+	shift
+	exec php "$BASEDIR/libexec/next.php" "$@"
+fi
+
 # Before the helpers, which answer -h
 USAGE="opensim [-hvq] <command> [instance...]"
 HELP="
@@ -47,6 +53,11 @@ opensim ports [--publish|--ufw] [instance...]
                         the ports the instances listen on, and who has to reach
                         them; --publish gives the -p options of a container,
                         --ufw the rules of the firewall
+opensim next port [-e PORT] [MIN] [COUNT]
+                        free ports from MIN (default 9010)
+opensim next location [-e X,Y] GRID [X,Y] [COUNT]
+                        the free places nearest to X,Y (default 1000,1000) by
+                        the rule of the grid
 opensim console|screen <instance>
                         attach to the console of a running instance (Ctrl-A D
                         leaves it running)
