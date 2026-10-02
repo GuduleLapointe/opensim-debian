@@ -13,14 +13,8 @@
 
 LIBEXECDIR=$(cd "$(dirname "$(readlink -f "$0")")" && pwd)
 TMP=$(mktemp "${TMPDIR:-/tmp}/install-dotnet.XXXXXX")
-# bash-helpers of bash-tools: composer's copy in a git checkout, else the
-# bash-tools package
-helpers=$(dirname "$LIBEXECDIR")/vendor/bin/bash-helpers
-[ -f "$helpers" ] || helpers=$(command -v bash-helpers) || {
-	echo "install-dotnet: bash-helpers not found, install bash-tools" >&2
-	exit 1
-}
-. "$helpers" || exit 1
+# bash-helpers of bash-tools: the kit's own copy, not the first one of the PATH (see load-helpers)
+. "$LIBEXECDIR/load-helpers" || exit 1
 
 ASSUME_YES=
 [ "${1:-}" = "-y" ] && ASSUME_YES=yes && shift

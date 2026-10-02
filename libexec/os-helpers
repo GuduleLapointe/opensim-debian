@@ -34,18 +34,12 @@ abspath() {
 BINDIR=$(cd $(dirname "$0") && pwd)
 LIBEXECDIR=$(cd $(dirname "${BASH_SOURCE}") && pwd)
 
-BASEDIR=$(dirname "$BINDIR")
+# The kit is where this file is, whatever the script that sources it was called as
+BASEDIR=$(dirname "$LIBEXECDIR")
 
-# bash-helpers of bash-tools: composer's copy in a git checkout, else the
-# bash-tools package
+# bash-helpers of bash-tools: the kit's own copy, not the first one of the PATH (see load-helpers)
 export PATH=$BINDIR:$LIBEXECDIR:$BASEDIR/vendor/bin:$PATH
-_helpers=$BASEDIR/vendor/bin/bash-helpers
-[ -f "$_helpers" ] || _helpers=$(command -v bash-helpers) || {
-	echo "$PGM: bash-helpers not found, install bash-tools" >&2
-	exit 1
-}
-. "$_helpers" || exit 1
-unset _helpers
+. "$LIBEXECDIR/load-helpers" || exit 1
 
 ## Rest of the Business logic after functions...
 

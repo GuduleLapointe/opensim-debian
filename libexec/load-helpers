@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+# Loads bash-helpers of bash-tools, for the scripts of the kit (os-helpers, install-dotnet).
+#
+# The kit's own copy comes first: the one of composer (bundled in the package), else the one of
+# the bash-tools package. Only then the PATH, where another copy can be found that the kit did not
+# install (composer global, outdated), which does not have what the scripts use.
+
+_kit=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+for _helpers in "$_kit/vendor/magicoli/bash-tools/bin/bash-helpers" /usr/share/bash-tools/bin/bash-helpers; do
+	[ -f "$_helpers" ] && break
+	_helpers=
+done
+[ -n "$_helpers" ] || _helpers=$(command -v bash-helpers) || {
+	echo "${PGM:-opensim}: bash-helpers not found, install bash-tools" >&2
+	exit 1
+}
+. "$_helpers" || exit 1
+declare -F debug >/dev/null || {
+	echo "${PGM:-opensim}: $_helpers is too old (it has no debug function), update bash-tools" >&2
+	exit 1
+}
+unset _kit _helpers

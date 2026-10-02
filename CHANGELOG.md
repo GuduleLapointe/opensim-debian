@@ -1,5 +1,9 @@
 ## Changelog
 
+### Unreleased
+
+- fix the scripts use the bash-tools the kit has (its own copy, then the package, the `PATH` last): an older copy found first in the `PATH` (composer global) stopped them with `debug: command not found`; a copy that is too old is refused with a message
+
 ### 3.0.0-beta.2
 
 - new simulators and regions from `opensim setup`: a simulator has its own database (created with the administrator account when it does not exist) and an estate whose owner is an account of the grid, chosen or created through the console of Robust; the wizard writes its config, links it into `opensim.d`, starts it and checks its region is online in the grid. More regions are added to a running simulator from the same menu, without restarting it

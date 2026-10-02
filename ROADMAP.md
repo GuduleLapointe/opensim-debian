@@ -2,7 +2,7 @@
 
 ## Fixes
 
-- confirm on ubuntu 24.04 (ursull) that the kit runs with its own bash-tools: `debug: command not found` came from an outdated copy in composer global, found instead of the 1.0.4 one; bash-tools is now a non-dev dependency, bundled in the `opensim-tools` package and loaded first
+- confirm on ubuntu 24.04 (ursull), with the next package and an outdated bash-tools left in composer global, that `opensim setup` no longer ends with `debug: command not found` (the scripts now load the bash-tools of the kit before the one of the `PATH`, see `libexec/load-helpers`)
 - dependencies packages must be added to the release assets in their own repositories
 - users created should have home set to DefaultRegion. Users get an error on login until they set home manually in the viewer
 - opensim status "down" count should not be displayed when none of the instances are down
