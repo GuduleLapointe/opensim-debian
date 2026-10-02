@@ -350,6 +350,7 @@ final class NewSim
         if (!$this->registered($plan, $grid)) {
             $this->failed($plan, "Region {$plan->regionName} did not register in the grid '{$grid->nick}'.");
         }
+        $this->giveHome($plan, $grid);
         $this->needRestart($profile, $plan, 'added');
         $this->ui->note("Region {$plan->regionName} is online.");
     }
@@ -364,6 +365,25 @@ final class NewSim
         $this->ui->note(
             "Updated {$grid->robustIni}: {$plan->regionName} is " . implode(', ', $plan->regionRoles) . '.',
         );
+    }
+
+    /**
+     * The owner of the estate gets the default region as home: Robust sets the home of an account
+     * when it is made, and the default region did not exist yet for this one.
+     */
+    private function giveHome(SimPlan $plan, GridInfo $grid): void
+    {
+        if ($grid->remote || !in_array(RegionFlags::DEFAULT, $plan->regionRoles, true)) {
+            return;
+        }
+        $owner = $plan->estateOwner !== '' ? $plan->estateOwner : (string) (GridInfo::parse($plan->iniPath())['estateOwner'] ?? '');
+        if ($owner === '') {
+            return;
+        }
+        $done = (new GridAccounts(new Database($this->ui), $this->ui))->setHome($grid, $owner, $plan->regionUuid);
+        if ($done !== true) {
+            $this->ui->warn("Could not set the home of $owner: set it from the viewer, or the first login ends with an error.");
+        }
     }
 
     /** Robust gives the roles to a region when it registers, from its config read when it starts. */
@@ -416,6 +436,7 @@ final class NewSim
                 );
             }
             if ($plan->createRegion) {
+                $this->giveHome($plan, $grid);
                 $this->needRestart($profile, $plan, 'added');
             }
             $this->ui->note(

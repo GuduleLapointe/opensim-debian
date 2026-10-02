@@ -4,7 +4,6 @@
 
 - confirm on ubuntu 24.04 (ursull), with the next package and an outdated bash-tools left in composer global, that `opensim setup` no longer ends with `debug: command not found` (the scripts now load the bash-tools of the kit before the one of the `PATH`, see `libexec/load-helpers`)
 - dependencies packages must be added to the release assets in their own repositories
-- users created should have home set to DefaultRegion. Users get an error on login until they set home manually in the viewer
 - opensim status "down" count should not be displayed when none of the instances are down
 - a new region is named in the database while its simulator is stopped, which costs a restart of the simulator (TODO in `Actions::nameParcels`): look for a better way to name its parcel
 - try to open ports if firewall is active

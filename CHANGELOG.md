@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+- fix the owner of the first estate gets the default region as home: Robust sets the home of an account from its default region when it makes it, and that region did not exist yet for the account made by the setup, so its first login ended with an error until it set its home from the viewer
 - update the package `opensim-manfredaabye-helpers` is gone: the web helpers are the operator's choice, `opensim-helpers` (the library of this project, made for the kit) or the solution of another project (w4os, the fork of Kevin Cozens, wiredux), which all follow the protocols of OpenSimulator and its viewers
 - update the detailed installation (packages, git) is in `INSTALLATION.md`, the README keeps the short version; the wizard screens, the first simulator and its default region, the restarts offered when quitting are described
 - update the bash completion of `opensim` knows every command (`setup`, `enable`, `disable`, `console`, `command`, `ports`, `next`, `stop now`...) and proposes the instances: the enabled ones, or every grid and simulator for `enable` and `disable`

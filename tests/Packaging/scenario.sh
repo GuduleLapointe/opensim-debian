@@ -217,6 +217,12 @@ check "the region is registered in the grid" "[ \"\$(mysql -BN -e \"SELECT CONCA
 check "the first region is the default region of the grid, and Robust says so" "grep -q '^Region_Sim1 = \"DefaultRegion, DefaultHGRegion, Persistent\"' /etc/opensim/grids/testgrid/Robust.HG.ini &&
     [ \"\$(mysql -BN -e \"SELECT (flags & 1 AND flags & 2) FROM testgrid_robust.regions WHERE regionName='Sim1'\")\" = 1 ] &&
     curl -s -d 'METHOD=get_default_regions&SCOPEID=00000000-0000-0000-0000-000000000000' http://127.0.0.1:8003/grid | grep -q '>Sim1<'"
+# Robust gives a home to an account from its default region when it makes it: the owner of the first estate was
+# made before that region existed, so the setup gives it that home; an account made later gets it from Robust
+home_is_default() {
+    [ "$(mysql -BN -e "SELECT g.HomeRegionID = r.uuid FROM testgrid_robust.GridUser g JOIN testgrid_robust.UserAccounts u ON u.PrincipalID = g.UserID JOIN testgrid_robust.regions r ON r.regionName = 'Sim1' WHERE u.FirstName = '$1' AND u.LastName = '$2'")" = 1 ]
+}
+check "the owner of the estate has the default region as home" "home_is_default Test Owner"
 check "the simulator has its own database, its config is enabled" "mysql -e 'SELECT 1' testgrid_sim1 >/dev/null 2>&1 &&
     [ -L /etc/opensim/opensim.d/testgrid_sim1.ini ] && [ -f /etc/opensim/grids/testgrid/sims/testgrid_sim1/regions/Sim1.ini ]"
 check "the estate belongs to the account made in the grid" "[ -n \"\$(mysql -BN -e \"SELECT PrincipalID FROM testgrid_robust.UserAccounts WHERE FirstName='Test' AND LastName='Owner'\")\" ] &&
@@ -238,6 +244,8 @@ sim=$(sim_pid)
     echo "exit code: $?" >>/tmp/region2.out)
 check "a region is added to the running simulator, and online" "grep -q 'exit code: 0' /tmp/region2.out && grep -q 'Region Sim1North is online' /tmp/region2.out &&
     [ \"\$(mysql -BN -e \"SELECT CONCAT(locX DIV 256, ',', locY DIV 256) FROM testgrid_robust.regions WHERE regionName='Sim1North'\")\" = 1001,1000 ] && [ '$(sim_pid)' = '$sim' ]"
+(cd /var/lib/opensim && TEST_GRID=testgrid runuser -u opensim -- php /test/account.php >/tmp/account.out 2>&1; echo "exit code: $?" >>/tmp/account.out)
+check "an account made after the default region has it as home" "grep -q 'exit code: 0' /tmp/account.out && home_is_default Later User"
 # A region that exists is changed in place: its place, not its identity
 regionfile=/etc/opensim/grids/testgrid/sims/testgrid_sim1/regions/Sim1North.ini
 regionuuid=$(grep -m1 '^RegionUUID' $regionfile)
