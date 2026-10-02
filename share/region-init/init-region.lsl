@@ -1,6 +1,7 @@
 // Region initialization script of the OpenSim kit.
 //
-// An object holding this script runs it once in a new region, as the owner of the estate. Customize it freely:
+// An object holding this script runs it once in a new region, as the owner of the estate. It reads the name of
+// the region and of its parcel itself, nothing has to be written for a given region. Customize it freely:
 // it is the place for whatever a new region should have from the start (parcel name, music, media, flags).
 // It uses OSSL (osSetParcelDetails), enabled in the standard config of the kit simulators ([OSSL] section).
 
@@ -27,6 +28,7 @@ default
     {
         init();
         llOwnerSay("Region initialized");
-        llRemoveInventory(llGetScriptName());
+        // The object has done its job: the copy rezzed in the region goes, the original stays in the library
+        llDie();
     }
 }

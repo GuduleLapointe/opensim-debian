@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OpenSim\Installer\Grid;
 
+use OpenSim\Installer\Ini;
 use OpenSim\Installer\TextFile;
 
 /**
@@ -34,7 +35,7 @@ final class GridShared
         $architecture = $hypergrid ? 'GridHypergrid.ini' : 'Grid.ini';
         $written = [];
 
-        foreach ([$architecture, 'GridCommon.ini', 'FlotsamCache.ini'] as $file) {
+        foreach ([$architecture, 'GridCommon.ini', 'FlotsamCache.ini', 'osslDefaultEnable.ini', 'osslEnable.ini'] as $file) {
             $dest = "$dir/$file";
             if (is_file($dest)) {
                 if (TextFile::clean($dest)) {
@@ -45,7 +46,7 @@ final class GridShared
                 if ($source === null) {
                     continue;
                 }
-                @mkdir($dir, 0o755, true);
+                is_dir($dir) || mkdir($dir, 0o755, true);
                 if (TextFile::copy($source, $dest)) {
                     $written[] = $dest;
                 }
@@ -64,6 +65,11 @@ final class GridShared
                     '/^(\s*Include-FlotsamCache\s*=\s*)"?config-include\/FlotsamCache\.ini"?/m' =>
                         '$1"' . $dir . '/FlotsamCache.ini"',
                 ]),
+                $this->patch("$dir/osslDefaultEnable.ini", [
+                    '/^(\s*Include-osslEnable\s*=\s*)"?config-include\/osslEnable\.ini"?/m' =>
+                        '$1"' . $dir . '/osslEnable.ini"',
+                ]),
+                $this->enableOssl("$dir/osslEnable.ini"),
                 $this->patch("$dir/FlotsamCache.ini", [
                     '/^(\s*CacheDirectory\s*=\s*)\.?\/?assetcache\s*$/m' => '$1"${Const|CacheDirectory}/assetcache"',
                 ]),
@@ -71,6 +77,34 @@ final class GridShared
         );
 
         return array_values(array_unique($written));
+    }
+
+    /**
+     * OSSL is part of the standard config: the functions are on, with the permissions of the defaults of the
+     * core, plus the one the region initialization script needs (osSetParcelDetails, for the owner of the
+     * estate and of the parcel) unless the file already says what it is.
+     *
+     * @return ?string the path when written
+     */
+    private function enableOssl(string $path): ?string
+    {
+        if (!is_file($path)) {
+            return null;
+        }
+        $ini = Ini::load($path);
+        $before = $ini->toString();
+        if ($ini->get('OSSL', 'AllowOSFunctions') !== 'true') {
+            $ini->set('OSSL', 'AllowOSFunctions', 'true');
+        }
+        if ($ini->get('OSSL', 'Allow_osSetParcelDetails') === null) {
+            $ini->set('OSSL', 'Allow_osSetParcelDetails', 'ESTATE_OWNER,PARCEL_OWNER');
+        }
+        if ($ini->toString() === $before) {
+            return null;
+        }
+        $ini->save($path);
+
+        return $path;
     }
 
     /** The file in the core, as it is or as an example. */
