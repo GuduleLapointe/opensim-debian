@@ -35,7 +35,7 @@ Publishing skips the packages whose version is already in the repository, so the
 
 `packaging/build` runs first and prepares only the packages asked for:
 
-- `opensim-tools`: `build/opensim-tools` from the committed tree (`git archive HEAD`), with the PHP dependencies (`composer install --no-dev`), without the paths listed in `packaging/distignore`. Uncommitted changes are not packaged.
+- `opensim-tools`: `build/opensim-tools` from the committed tree (`git archive HEAD`), with the PHP dependencies (`composer install --no-dev`, bash-tools included), without the paths listed in `packaging/distignore`. The `bash-tools` package it depends on is at least the version composer bundles (`BASH_TOOLS_VERSION`, read from `composer.json`). Uncommitted changes are not packaged.
 - `opensim-core`, `opensim`: the release of `packaging/opensim-core.versions`, the last one or `OPENSIM_VERSION`, e.g. `OPENSIM_VERSION=0.9.3.0 /opt/apt-repo/bin/apt-package opensim-core`. Its tarball is downloaded into `src/` and checked against its SHA256.
 
 - `opensim-unstable`: OpenSimulator built from the commit of the `upstream/opensim` submodule (a shallow clone of the upstream repository, `master`), in a .NET SDK container (podman, or `CONTAINER=docker`). Each commit is built once, into `build/cache/`. Update it with `git submodule update --remote upstream/opensim`.

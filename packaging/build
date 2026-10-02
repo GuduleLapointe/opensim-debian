@@ -83,6 +83,15 @@ if wants opensim-tools; then
 
     # Installed read-only for everyone but root, whatever the local umask
     chmod -R go-w "$BUILD"
+
+    # The bash-tools package is at least the version composer bundles (^1.0.4: 1.0.4), as the
+    # scripts use the bundled copy first and the package after it (see libexec/load-helpers)
+    BASH_TOOLS_VERSION=$(sed -n 's/.*"magicoli\/bash-tools": *"[^0-9]*\([0-9][0-9.]*\)".*/\1/p' composer.json | head -1)
+    if [[ -z "$BASH_TOOLS_VERSION" ]]; then
+        echo "magicoli/bash-tools is not in composer.json" >&2
+        exit 1
+    fi
+    echo "BASH_TOOLS_VERSION=$BASH_TOOLS_VERSION" >>build/packaging.env
 fi
 
 # The native libraries of the distribution are for amd64 and arm64
