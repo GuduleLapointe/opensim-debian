@@ -1,4 +1,4 @@
-# OpenSim Kit
+# OpenSimulator Kit
 
 ![Stable](https://img.shields.io/github/release/GuduleLapointe/opensim-debian?label=stable&color=green&include_prerelease)
 ![GitHub Tag](https://img.shields.io/github/tag/GuduleLapointe/opensim-debian?label=latest&include_prereleases)
@@ -13,6 +13,23 @@ This is an framework to facilitate installation and use of OpenSim with Debian o
 https://www.speculoos.world/opensim-debian-installation-framework/
 
 ## Installation
+
+**From packages (recommended)**
+
+```bash
+## Add the Magiiic APT repository (once)
+curl -fsSL https://apt.magiiic.com/magiiic-packaging.asc | sudo gpg --dearmor -o /usr/share/keyrings/magiiic-packaging.gpg
+echo "deb [signed-by=/usr/share/keyrings/magiiic-packaging.gpg] https://apt.magiiic.com stable main" | sudo tee /etc/apt/sources.list.d/magiiic.list
+sudo apt update
+
+## Install the packages
+sudo apt install opensim-kit
+opensim setup
+```
+
+See INSTALLATION.md for more details and advanced installation options.
+
+**From source (advanced)**
 
 ```bash
 ./install/install.sh

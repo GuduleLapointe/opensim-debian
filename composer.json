@@ -1,64 +1,64 @@
 {
-  "name": "gudulelapointe/opensim-kit",
-  "description": "OpenSim deployment and management tools for Debian-based systems",
-  "type": "project",
-  "license": "AGPL-3.0-or-later",
-  "authors": [
-    {
-      "name": "Gudule Lapointe",
-      "email": "gudule@speculoos.world",
-      "homepage": "https://speculoos.world"
+    "name": "gudulelapointe/opensim-kit",
+    "description": "OpenSim deployment and management tools for Debian-based systems",
+    "type": "project",
+    "license": "AGPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Gudule Lapointe",
+            "email": "gudule@speculoos.world",
+            "homepage": "https://speculoos.world"
+        },
+        {
+            "name": "Olivier van Helden",
+            "homepage": "https://magiiic.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "ext-ctype": "*",
+        "ext-gettext": "*",
+        "ext-iconv": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "laravel/prompts": "^0.3.18",
+        "magicoli/opensim-helpers": "^3.0.0-beta.1",
+        "nubs/random-name-generator": "^2.2"
     },
-    {
-      "name": "Olivier van Helden",
-      "homepage": "https://magiiic.com"
+    "require-dev": {
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.2",
+        "deployer/deployer": "^7.3",
+        "magicoli/bash-tools": "^1.0.4",
+        "magicoli/pest-failure-summary": "^1.0",
+        "pestphp/pest": "^3.0",
+        "phpcompatibility/php-compatibility": "dev-develop",
+        "squizlabs/php_codesniffer": "^4.0"
+    },
+    "repositories": [],
+    "minimum-stability": "dev",
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "pestphp/pest-plugin": true
+        },
+        "platform": {
+            "php": "8.2.0"
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "OpenSim\\Installer\\": "install/src/"
+        },
+        "files": [
+            "install/engine.php"
+        ]
+    },
+    "prefer-stable": true,
+    "suggest": {
+        "ext-intl": "better transliteration of the grid names",
+        "ext-posix": "detect the user the setup runs as"
+    },
+    "scripts": {
+        "test": "pest"
     }
-  ],
-  "require": {
-    "php": ">=8.2",
-    "ext-ctype": "*",
-    "ext-gettext": "*",
-    "ext-iconv": "*",
-    "ext-json": "*",
-    "ext-mbstring": "*",
-    "laravel/prompts": "^0.3.18",
-    "magicoli/opensim-helpers": "^3.0.0-beta.1",
-    "nubs/random-name-generator": "^2.2"
-  },
-  "require-dev": {
-    "dealerdirect/phpcodesniffer-composer-installer": "^1.2",
-    "deployer/deployer": "^7.3",
-    "magicoli/bash-tools": "^1.0.4",
-    "magicoli/pest-failure-summary": "^1.0",
-    "pestphp/pest": "^3.0",
-    "phpcompatibility/php-compatibility": "dev-develop",
-    "squizlabs/php_codesniffer": "^4.0"
-  },
-  "repositories": [],
-  "minimum-stability": "dev",
-  "config": {
-    "allow-plugins": {
-      "dealerdirect/phpcodesniffer-composer-installer": true,
-      "pestphp/pest-plugin": true
-    },
-    "platform": {
-      "php": "8.2.0"
-    }
-  },
-  "autoload": {
-    "psr-4": {
-      "OpenSim\\Installer\\": "install/src/"
-    },
-    "files": [
-      "install/engine.php"
-    ]
-  },
-  "prefer-stable": true,
-  "suggest": {
-    "ext-intl": "better transliteration of the grid names",
-    "ext-posix": "detect the user the setup runs as"
-  },
-  "scripts": {
-    "test": "pest"
-  }
 }
