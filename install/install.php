@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use OpenSim\Installer\Actions;
 use OpenSim\Installer\Grid\GridPlan;
 use OpenSim\Installer\Grid\NewGrid;
 use OpenSim\Installer\Grid\NewSim;
@@ -33,6 +34,10 @@ try {
         // The same for a simulator
         $data = json_decode((string) stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
         (new NewSim(new PromptsUi()))->apply(SimPlan::fromArray($data['plan']), $data['profile']);
+    } elseif (($argv[1] ?? '') === '--apply-action') {
+        // What a menu does to the install (enable, disable, restart), as the system user
+        $data = json_decode((string) stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
+        exit((new Actions(new PromptsUi()))->perform($data['op'], $data['args'], $data['profile']) ? 0 : 1);
     } else {
         (new Hub(new PromptsUi()))->run();
     }

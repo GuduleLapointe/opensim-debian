@@ -61,9 +61,65 @@ final class Hub
                 default => $this->gridScreen(substr($choice, strlen('grid:'))),
             };
             if ($quit) {
+                $this->offerRestarts();
+
                 return;
             }
         }
+    }
+
+    /** What the setup did that needs instances to restart: shown when it ends, to restart them or leave them. */
+    private function offerRestarts(): void
+    {
+        $profile = (new Config())->profile();
+        $etcRoot = $profile['EtcRoot'] ?? '';
+        $pending = PendingRestarts::read($profile);
+        if ($pending === []) {
+            return;
+        }
+
+        $lines = [];
+        $running = false;
+        foreach ($pending as $entry) {
+            $lines[] = "  {$entry['instance']}: {$entry['reason']}";
+            $running = $running || Console::running("$etcRoot/opensim.d/{$entry['instance']}.ini");
+        }
+        $this->ui->note("To take these changes into account, restart:\n" . implode("\n", $lines));
+        if (!$this->ui->confirm('Restart them now?', true)) {
+            $this->ui->note('They stay listed in ' . PendingRestarts::path($profile) . ': the setup offers them again next time.');
+
+            return;
+        }
+        // A simulator that runs warns its users and waits, or restarts at once
+        $warn = $running && $this->ui->confirm('Warn the users of the simulators first (it takes two minutes)?', false);
+        if (!$this->act('restart', ['warn' => $warn])) {
+            $this->ui->warn('Some instances did not restart: see above, they stay listed.');
+        }
+    }
+
+    /**
+     * What a menu does to the install, by the system user of the install.
+     *
+     * @param array<string,mixed> $args
+     */
+    private function act(string $op, array $args): bool
+    {
+        $profile = (new Config())->profile();
+        if (!Elevated::needed($profile)) {
+            return (new Actions($this->ui))->perform($op, $args, $profile);
+        }
+        try {
+            Elevated::run(
+                $this->ui,
+                '--apply-action',
+                ['op' => $op, 'args' => $args, 'profile' => $profile],
+                $profile['SystemUser'],
+            );
+        } catch (SetupFailed) {
+            return false;
+        }
+
+        return true;
     }
 
     /** @return bool whether to quit the setup */
@@ -162,13 +218,8 @@ final class Hub
                     }
                     break;
                 case $choice === 'toggle':
-                    if ($enabled) {
-                        GridState::disable($etcRoot, $nick);
-                        $this->ui->note("Disabled $nick.");
-                    } elseif (GridState::enable($etcRoot, $nick)) {
-                        $this->ui->note("Enabled $nick.");
-                    } else {
-                        $this->ui->warn("Cannot enable $nick (no Robust config).");
+                    if ($this->act($enabled ? 'grid-disable' : 'grid-enable', ['nick' => $nick])) {
+                        $this->ui->note(($enabled ? 'Disabled' : 'Enabled') . " $nick.");
                     }
                     break;
                 default:
@@ -218,13 +269,12 @@ final class Hub
                     (new NewSim($this->ui))->addRegion($nick, $this->simName($nick, $slug));
                     break;
                 case $choice === 'toggle':
-                    if ($enabled) {
-                        SimState::disable($etcRoot, $slug);
-                        $this->ui->note("Disabled $slug.");
-                    } elseif (SimState::enable($etcRoot, $slug, "$etcRoot/grids/$nick/sims/$slug.ini")) {
-                        $this->ui->note("Enabled $slug.");
-                    } else {
-                        $this->ui->warn("Cannot enable $slug (no config).");
+                    $done = $this->act(
+                        $enabled ? 'sim-disable' : 'sim-enable',
+                        ['slug' => $slug, 'ini' => "$etcRoot/grids/$nick/sims/$slug.ini"],
+                    );
+                    if ($done) {
+                        $this->ui->note(($enabled ? 'Disabled' : 'Enabled') . " $slug.");
                     }
                     break;
                 default:
@@ -261,19 +311,15 @@ final class Hub
                     (new NewSim($this->ui))->reconfigureRegion($nick, $this->simName($nick, $slug), $name);
                     break;
                 case 'toggle':
-                    $moved = $region['enabled']
-                        ? RegionState::disable($region['file'])
-                        : RegionState::enable($region['file']);
-                    if ($moved === null) {
-                        $this->ui->warn(
-                            'Cannot ' .
-                                ($region['enabled'] ? 'disable' : 'enable') .
-                                " $name (permission, or a region of that name is there already).",
-                        );
-                    } else {
+                    $done = $this->act($region['enabled'] ? 'region-disable' : 'region-enable', [
+                        'file' => $region['file'],
+                        'name' => $name,
+                        'instance' => $slug,
+                    ]);
+                    if ($done) {
                         $this->ui->note(
                             ($region['enabled'] ? 'Disabled' : 'Enabled') .
-                                " $name: the simulator takes it into account when it starts.",
+                                " $name: the simulator takes it into account when it restarts.",
                         );
                     }
                     break;

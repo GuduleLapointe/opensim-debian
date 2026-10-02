@@ -217,7 +217,6 @@ check "the region is registered in the grid" "[ \"\$(mysql -BN -e \"SELECT CONCA
 check "the first region is the default region of the grid, and Robust says so" "grep -q '^Region_Sim1 = \"DefaultRegion, DefaultHGRegion, Persistent\"' /etc/opensim/grids/testgrid/Robust.HG.ini &&
     [ \"\$(mysql -BN -e \"SELECT (flags & 1 AND flags & 2) FROM testgrid_robust.regions WHERE regionName='Sim1'\")\" = 1 ] &&
     curl -s -d 'METHOD=get_default_regions&SCOPEID=00000000-0000-0000-0000-000000000000' http://127.0.0.1:8003/grid | grep -q '>Sim1<'"
-check "the parcel of the region has the name of the region" "[ \"\$(mysql -BN -e 'SELECT Name FROM testgrid_sim1.land LIMIT 1')\" = Sim1 ]"
 check "the simulator has its own database, its config is enabled" "mysql -e 'SELECT 1' testgrid_sim1 >/dev/null 2>&1 &&
     [ -L /etc/opensim/opensim.d/testgrid_sim1.ini ] && [ -f /etc/opensim/grids/testgrid/sims/testgrid_sim1/regions/Sim1.ini ]"
 check "the estate belongs to the account made in the grid" "[ -n \"\$(mysql -BN -e \"SELECT PrincipalID FROM testgrid_robust.UserAccounts WHERE FirstName='Test' AND LastName='Owner'\")\" ] &&

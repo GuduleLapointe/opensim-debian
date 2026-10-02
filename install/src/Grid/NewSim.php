@@ -7,6 +7,7 @@ namespace OpenSim\Installer\Grid;
 use OpenSim\Installer\Config;
 use OpenSim\Installer\Console;
 use OpenSim\Installer\Elevated;
+use OpenSim\Installer\PendingRestarts;
 use OpenSim\Installer\Ports;
 use OpenSim\Installer\SetupFailed;
 use OpenSim\Installer\System;
@@ -142,15 +143,6 @@ final class NewSim
             return;
         }
         $plan->start = $this->ui->confirm('Load it now (starting the simulator when it is not running)?', true);
-        // The simulator restarts once to name the parcel of the region
-        $plan->warnUsers =
-            $plan->start &&
-            Console::running(SimState::link($profile['EtcRoot'] ?? '', $plan->slug)) &&
-            $this->ui->confirm(
-                'The simulator is running: warn its users and wait two minutes before restarting it?',
-                false,
-            );
-
         $this->write($plan, $profile);
     }
 
@@ -231,7 +223,7 @@ final class NewSim
             return;
         }
         $this->write($plan, $profile);
-        $this->ui->note("Restart the simulator '$simName' to apply it: opensim restart {$plan->slug}");
+        $this->ui->note("The simulator '$simName' restarts to apply it when you quit the setup, or now: opensim restart {$plan->slug}");
     }
 
     /**
@@ -307,7 +299,7 @@ final class NewSim
                 $this->giveToSystemUser($systemUser, [SimState::link($etcRoot, $plan->slug)], false);
                 $this->ui->note('Enabled: ' . SimState::link($etcRoot, $plan->slug));
                 if ($plan->start) {
-                    $this->startSim($plan, $grid);
+                    $this->startSim($plan, $grid, $profile);
                 }
             } else {
                 $this->ui->warn('Could not enable the simulator (config missing).');
@@ -330,12 +322,15 @@ final class NewSim
         );
         $this->giveToSystemUser($profile['SystemUser'] ?? '', [$plan->regionsDir()], true);
         $this->giveRoles($plan, $grid);
+        if ($plan->overwriteRegion) {
+            $this->needRestart($profile, $plan, 'changed');
+        }
         if (!$plan->start) {
             return;
         }
 
         if (!Console::running(SimState::link($profile['EtcRoot'], $plan->slug))) {
-            $this->startSim($plan, $grid);
+            $this->startSim($plan, $grid, $profile);
 
             return;
         }
@@ -355,7 +350,7 @@ final class NewSim
         if (!$this->registered($plan, $grid)) {
             $this->failed($plan, "Region {$plan->regionName} did not register in the grid '{$grid->nick}'.");
         }
-        $this->nameParcel($plan);
+        $this->needRestart($profile, $plan, 'added');
         $this->ui->note("Region {$plan->regionName} is online.");
     }
 
@@ -381,55 +376,17 @@ final class NewSim
         }
     }
 
-    /**
-     * The land of a new region is one parcel the size of the region, that OpenSim names "Your
-     * Parcel": named after the region instead, in the database of the simulator once it is there,
-     * and the simulator restarts to load it (a parcel named "Your Parcel" would make no sense).
-     *
-     * TODO: look for a better way. OpenSim has no setting nor console command for the name of the
-     * default parcel, and the running region does not read the land again from its database, so
-     * this costs a restart of the simulator (and of its other regions) for each new region.
-     */
-    private function nameParcel(SimPlan $plan): void
+    /** The simulator has to restart to take the region into account (its parcel is named then, see Actions). */
+    private function needRestart(array $profile, SimPlan $plan, string $why): void
     {
-        if (
-            !preg_match('/^[0-9a-fA-F-]{36}$/', $plan->regionUuid) ||
-            RegionName::problem($plan->regionName) !== null
-        ) {
-            return;
-        }
-        $database = new Database($this->ui);
-        $check = $plan->databasePlan();
-        for ($i = 0; $i < 20; $i++) {
-            $rows = $database->select($check, "SELECT 1 FROM land WHERE RegionUUID = '{$plan->regionUuid}'");
-            if ($rows === null) {
-                return; // cannot be read from here
-            }
-            if ($rows !== []) {
-                $database->select(
-                    $check,
-                    "UPDATE land SET Name = '{$plan->regionName}' WHERE RegionUUID = '{$plan->regionUuid}' AND Name = 'Your Parcel'",
-                );
-                $opensim = dirname(__DIR__, 3) . '/bin/opensim';
-                $now = $plan->warnUsers ? '' : 'now ';
-                [$code] = System::runShown(System::arg($opensim) . " restart $now" . System::arg($plan->slug));
-                if ($code !== 0) {
-                    $this->ui->warn(
-                        "The simulator did not restart: the parcel of {$plan->regionName} is named at its next start. Try: $opensim -v restart {$plan->slug}",
-                    );
-                }
-
-                return;
-            }
-            sleep(1);
-        }
+        PendingRestarts::add($profile, $plan->slug, "region {$plan->regionName} $why");
     }
 
     /**
      * Start the simulator and report whether it came up: the launcher's
      * answer, then, for a new region, its registration in the grid.
      */
-    private function startSim(SimPlan $plan, GridInfo $grid): void
+    private function startSim(SimPlan $plan, GridInfo $grid, array $profile): void
     {
         $opensim = dirname(__DIR__, 3) . '/bin/opensim';
 
@@ -458,8 +415,8 @@ final class NewSim
                     "Simulator '{$plan->simName}' runs, but the region {$plan->regionName} did not register in the grid '{$grid->nick}'.",
                 );
             }
-            if ($plan->createRegion && !$grid->remote) {
-                $this->nameParcel($plan);
+            if ($plan->createRegion) {
+                $this->needRestart($profile, $plan, 'added');
             }
             $this->ui->note(
                 "Simulator '{$plan->simName}' is running" .
@@ -1065,14 +1022,11 @@ final class NewSim
             : null;
 
         while (true) {
+            // The place proposed is the first free one from the first place of a grid, not always the same
+            $first = $current ?? implode(',', $this->freePlace($grid, $known, ...LocationFinder::FIRST));
             [$x, $y] =
-                LocationFinder::parse(
-                    $this->ui->text(
-                        'Region location (x,y)',
-                        $current ?? implode(',', LocationFinder::FIRST),
-                        $validate,
-                    ),
-                ) ?? LocationFinder::FIRST;
+                LocationFinder::parse($this->ui->text('Region location (x,y)', $first, $validate)) ??
+                LocationFinder::FIRST;
             [$freeX, $freeY] = $this->freePlace($grid, $known, $x, $y, $ignored);
             if ($freeX === $x && $freeY === $y) {
                 return "$x,$y";
