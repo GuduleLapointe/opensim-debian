@@ -32,3 +32,4 @@ vendor/
 .bashunit/
 .phpunit.cache/
 .zed/
+.phpunit.result.cache
