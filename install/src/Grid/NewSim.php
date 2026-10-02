@@ -639,11 +639,12 @@ final class NewSim
             $grid->coreDirectory !== '' ? $grid->coreDirectory : null,
         );
 
-        // The ports of a simulator are a block of ten, the first free one, on this
-        // machine and among the regions the grid knows on the others: the public
-        // port ends with 2, the console with 4, the regions come after
+        // The ports of a simulator are a block of ten, the first free one from where the
+        // simulators of the grid start (9000 for Robust on 8002), on this machine and among
+        // the regions the grid knows on the others: the public port ends with 2, the console
+        // with 4, the regions come after
         $foreign = (new GridRegistry($database))->ports($grid) ?? [];
-        $block = Ports::nextBlock(intdiv($grid->privatePort, 10) * 10 + 10, $foreign);
+        $block = Ports::nextBlock(Ports::simulatorsFrom($grid->publicPort), $foreign);
         $plan->httpPort = (int) $this->ui->text(
             'Simulator HTTP port',
             (string) ($current['httpPort'] ?? $block + 2),

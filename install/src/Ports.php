@@ -17,12 +17,22 @@ namespace OpenSim\Installer;
  *   more port for what it may need: SSL, XML-RPC, one more region), x4 console
  *   (REST), x5-x9 more services or, for a simulator, the ports of its regions.
  * Robust takes 8002 (public), 8003 (private), 8004 (console), the first simulator
- * 8012, 8013, 8014 and 8015-8019, the next one 8022... nextBlock() returns the
+ * 9002, 9003, 9004 and 9005-9009, the next one 9012... nextBlock() returns the
  * first free block, where "in use" includes what the caller knows of other
  * machines (the regions registered in the grid).
  */
 final class Ports
 {
+    /**
+     * Where the simulators of a grid are looked for: the thousand above the grid, in
+     * its hundred, which is where the users are used to find them (Robust on 8002:
+     * simulators from 9000; a grid on 8102: from 9100).
+     */
+    public static function simulatorsFrom(int $gridPublicPort): int
+    {
+        return intdiv($gridPublicPort + 1000, 100) * 100;
+    }
+
     public static function next(int $min = 9010, array $exclude = []): int
     {
         return self::nextFree($min, 1, $exclude)[0];
