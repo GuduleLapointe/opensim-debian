@@ -23,6 +23,8 @@ sudo apt install opensim-kit
 - `opensim`: the latest release
 - `opensim-<version>-<module>`, e.g. `opensim-0.9.3.0-gloebit`, `opensim-0.9.3.0-opensimsearch`: a module for a release. Installing it does not enable it. It works with any build of the same version.
 - `opensim-unstable`: OpenSimulator built from the development branch, in `/usr/share/opensim/unstable`
+- `opensim-helpers`: the helpers of a grid (economy, search, offline messages), in `/usr/share/opensim-helpers`, to be served by a web server. Their settings are read from the kit (`/etc/opensim/grids/<grid>/helpers.ini`, written by the setup), nothing to edit in the package. Any other implementation of the helpers (w4os, the fork of Kevin Cozens, wiredux) works with the grid too: the choice is yours.
+- `opensim-web`: a placeholder site for the grid (its name, how to connect, where its services are), until it has its own.
 - `opensim-kit`: the tools, the latest release, its essential modules and a database server. The other modules are in the repository, not installed automatically.
 
 OpenSim and Robust cannot run without a database. The packages of OpenSimulator accept MySQL/MariaDB or PostgreSQL (and SQLite for regions), on this machine or another one; the setup of this kit works with MySQL/MariaDB (`opensim-kit` installs the server). The setup runs as the user who starts it, with that user's own rights on the database (or as root, `sudo opensim setup`): only the writing of the files and the start of the instances are done as the system user of the install, through `sudo -u`, as every other command. Before writing anything, it checks the account can log in, then that it can use the database. The account of the grid is always tried with its own credentials only, as OpenSimulator will, whatever is in the `~/.my.cnf` of the user. Only what is missing is created, one statement at a time, with an administrator account of the database server: the setup uses the access the user already has (root, or a database account of their own that may create accounts and databases, e.g. in their `~/.my.cnf`, or sudo without a password), and otherwise asks for the credentials of an administrator account, on this machine or another one, kept in memory for the session only. A problem of access can be tried again; a creation that fails ends the setup with the commands to run from an administrator account. A database prepared by someone else, with the credentials, needs none of it.
@@ -34,6 +36,16 @@ OpenSimulator 0.9.3 needs the .NET 8 runtime and the native library `libgdiplus`
 ```bash
 sudo opensim install-dotnet
 ```
+
+The setup asks whether the grid's economy, search and offline messages are served by opensim-helpers, and where: `/helpers` by default, any path you already use (`/helper`, `/search`, `/guide`...) can be chosen, in the setup or in the `helpers.ini` of the grid. Then:
+
+```bash
+opensim web                       # where the services are
+opensim web check                 # which ones answer
+opensim web snippet caddy         # what the web server needs: caddy, nginx or apache
+```
+
+Include the snippet in the site of the grid (it names the grid to the helpers, aliases the paths you chose and denies what is not for the web); the config of your web server is not touched.
 
 Create a grid with the setup wizard, then start it:
 

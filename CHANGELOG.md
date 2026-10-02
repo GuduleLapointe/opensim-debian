@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+- new packages `opensim-helpers` (the helpers of a grid, a webroot whose settings are read from the kit) and `opensim-web` (a placeholder site: the name of the grid, how to connect, where its services are); `opensim-kit` recommends `opensim-web`
 - new the web side of a grid: the setup asks whether its economy, search and offline messages are served by opensim-helpers, and where (`/helpers` by default, the operator's choice), writes the `helpers.ini` of the grid (what the helpers need, so the web server does not read the Robust config; the path, the paths of each service such as `/search` or `/guide`, other databases are the operator's and kept) and tells the viewers in the grid info; `opensim web` shows where the services are, `opensim web check` asks them, `opensim web snippet caddy|nginx|apache` writes what the web server needs, aliases of the custom paths included
 - fix the owner of the first estate gets the default region as home: Robust sets the home of an account from its default region when it makes it, and that region did not exist yet for the account made by the setup, so its first login ended with an error until it set its home from the viewer
 - update the package `opensim-manfredaabye-helpers` is gone: the web helpers are the operator's choice, `opensim-helpers` (the library of this project, made for the kit) or the solution of another project (w4os, the fork of Kevin Cozens, wiredux), which all follow the protocols of OpenSimulator and its viewers

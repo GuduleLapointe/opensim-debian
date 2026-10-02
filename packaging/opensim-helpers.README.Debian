@@ -1,0 +1,36 @@
+opensim-helpers
+===============
+
+The helpers of a grid: the scripts the viewers and the simulators query for the economy, the search and
+the offline messages, with the pages to manage them. They are the helpers of this project, made for the
+OpenSim kit; any other implementation (w4os, the fork of Kevin Cozens, wiredux) follows the same
+protocols and can be used instead, nothing here is needed for it.
+
+The scripts are in /usr/share/opensim-helpers, to be served by a web server. Nothing is enabled by
+installing the package.
+
+Settings
+--------
+
+None to edit here. The settings of the grid are read from the OpenSim kit: /etc/opensim/opensim.conf,
+the Robust config of the grid and its helpers.ini (/etc/opensim/grids/<grid>/helpers.ini), written by
+`opensim setup`. The helpers are specific to a grid: with several grids on a machine, the virtual host
+of each one sets OPENSIM_GRID (the snippets below do).
+
+In helpers.ini, the operator chooses:
+
+  [Helpers] path     where the helpers are on the web site (default /helpers, e.g. /helper)
+  [Urls]             the public path of a service, when it is not <path>/<script>.php
+                     (search = "/search", guide = "/guide", ...)
+  [search_db] ...    another database for a service (hostname, prefix, user, password)
+
+Web server
+----------
+
+`opensim web` tells where the services are and what answers;
+`opensim web snippet caddy|nginx|apache` writes what the web server needs, the aliases of the paths of
+helpers.ini included. Include the result in the site of the grid; the config of the web server is not
+touched.
+
+helpers.ini holds the password of the database: it is readable by the web server only (group www-data
+when the machine has one).

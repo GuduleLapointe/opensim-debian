@@ -10,6 +10,8 @@ The packages are built with [nfpm](https://nfpm.goreleaser.com) and published to
 | `opensim-<version>`          | `opensim-core.yaml`     | OpenSimulator release + revision | an OpenSimulator release, in `/usr/share/opensim/<version>`, for amd64 and arm64                     |
 | `opensim`                    | `opensim.yaml`          | same as the latest release       | metapackage, the latest release                                                                      |
 | `opensim-kit`                | `opensim-kit.yaml`      | git tag of this repository       | metapackage, the tools and the latest release                                                        |
+| `opensim-helpers`            | `opensim-helpers.yaml`  | `.version` of the helpers        | the helpers of a grid (economy, search, offline messages) with their dependencies, a webroot in `/usr/share/opensim-helpers`; their settings are read from the kit |
+| `opensim-web`                | `opensim-web.yaml`      | git tag of this repository       | the placeholder site of a grid, in `/usr/share/opensim-web/html` (`share/web`)                       |
 | `opensim-unstable`           | `opensim-unstable.yaml` | source version, date and commit  | OpenSimulator built from the `upstream/opensim` submodule, in `/usr/share/opensim/unstable`          |
 | `opensim-<core>-<module>`    | `opensim-<module>.yaml` | module version + revision        | a module for a release or `unstable`, in `/usr/share/opensim-modules/<core>/<module>`, not loaded until enabled |
 
@@ -37,6 +39,8 @@ Publishing skips the packages whose version is already in the repository, so the
 - `opensim-tools`: `build/opensim-tools` from the committed tree (`git archive HEAD`), with the PHP dependencies (`composer install --no-dev`, bash-tools included), without the paths listed in `packaging/distignore`. The `bash-tools` package it depends on is at least the version composer bundles (`BASH_TOOLS_VERSION`, read from `composer.json`). Uncommitted changes are not packaged.
 - `opensim-core`, `opensim`: the release of `packaging/opensim-core.versions`, the last one or `OPENSIM_VERSION`, e.g. `OPENSIM_VERSION=0.9.3.0 /opt/apt-repo/bin/apt-package opensim-core`. Its tarball is downloaded into `src/` and checked against its SHA256.
 
+- `opensim-helpers`: `build/opensim-helpers`, `composer create-project magicoli/opensim-helpers` at the version the kit requires in `composer.json` (a branch during development, a release after it), without tests, tools and git files; versioned by its `.version` (`3.0.1-dev` is `3.0.1~dev`). Its `includes/config.php` is `packaging/opensim-helpers.config.php`: the settings come from the kit.
+- `opensim-web`: `share/web` as it is.
 - `opensim-unstable`: OpenSimulator built from the commit of the `upstream/opensim` submodule (a shallow clone of the upstream repository, `master`), in a .NET SDK container (podman, or `CONTAINER=docker`). Each commit is built once, into `build/cache/`. Update it with `git submodule update --remote upstream/opensim`.
 - `opensim-<module>`: the files listed for the module in `packaging/opensim-modules.versions`, for the release of `opensim-core`, or the core of `MODULES_CORE` (a release or `unstable`), e.g. `MODULES_CORE=unstable /opt/apt-repo/bin/apt-package opensim-gloebit`. The files downloaded go to `src/`, checked against their SHA256. The packages are named after the modules.
 

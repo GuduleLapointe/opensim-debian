@@ -26,5 +26,9 @@ depends:
   # OpenSim cannot run without a database: everything on this machine
   - default-mysql-server | virtual-mysql-server
 
+# The web side of a grid: the placeholder site, and the helpers it needs
+recommends:
+  - opensim-web
+
 scripts:
   postinstall: packaging/opensim-kit.postinst
