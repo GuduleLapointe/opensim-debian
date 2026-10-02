@@ -11,6 +11,7 @@ use OpenSim\Installer\Grid\GridState;
 use OpenSim\Installer\Grid\RegionName;
 use OpenSim\Installer\Grid\RegionState;
 use OpenSim\Installer\Grid\SimState;
+use OpenSim\Installer\Import\RobustImporter;
 use OpenSim\Installer\Ui\InstallerUi;
 
 /**
@@ -55,6 +56,28 @@ final class Actions
                 return true;
             case 'restart':
                 return $this->restart($profile, (bool) ($args['warn'] ?? false));
+            case 'copy-regions':
+                // The region files of an imported simulator: copied, the original ones are not touched
+                @mkdir((string) $args['to'], 0o755, true);
+                foreach ($args['files'] as $file) {
+                    $dest = rtrim((string) $args['to'], '/') . '/' . basename((string) $file);
+                    if (!is_file($dest) && !@copy((string) $file, $dest)) {
+                        return $this->no("Cannot copy $file to $dest.");
+                    }
+                }
+
+                return true;
+            case 'inject-config':
+                // The settings of an imported config go into the config the kit wrote, and the report beside it
+                $path = (string) $args['path'];
+                if (!is_file($path) || @file_put_contents($path, RobustImporter::inject((string) file_get_contents($path), $args['customizations'])) === false) {
+                    return $this->no("Cannot write the settings into $path.");
+                }
+                if (($args['report_path'] ?? '') !== '') {
+                    @file_put_contents((string) $args['report_path'], (string) $args['report']);
+                }
+
+                return true;
         }
 
         return $this->no("Unknown action $op.");

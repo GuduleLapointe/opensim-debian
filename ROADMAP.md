@@ -11,7 +11,7 @@
 ## Critical improvements
 
 - bulk avatar creation (from a list provided by a third-party source; format to be defined, likely CSV or JSON). This is a genuine, long-awaited user request. This feature relies on the ability to use the current host configuration—unchanged—regardless of the installation method employed (with or without OpenSimKit).
-- add configuration import from Robust.ini or OpenSim.ini (standardized to OpenSimKit /etc/config, but without modifying the existing configuration) to enable bulk avatar creation on existing grids.
+- test `opensim import robust|sim` on real grids (first working version: what works, what is missing), and `opensim users import` on a test grid
 - add opensim-helpers package and examples of configuration as alias/subfolder in caddy, nginx and apache2
 - add docker/podman installation support in setup
 - rename composer packages to match github account GuduleLapointe

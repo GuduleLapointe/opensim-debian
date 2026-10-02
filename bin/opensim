@@ -40,6 +40,12 @@ if [ "${1:-}" = "next" ]; then
 	exec php "$BASEDIR/libexec/next.php" "$@"
 fi
 
+# The configuration of a grid not made by the kit, ported: as the caller (it writes through the system user)
+if [ "${1:-}" = "import" ]; then
+	shift
+	exec php "$BASEDIR/libexec/import.php" "$@"
+fi
+
 # The accounts of a grid (a list made directly in its database): as the caller
 if [ "${1:-}" = "users" ]; then
 	shift
@@ -58,6 +64,12 @@ HELP="
 opensim <start|stop [now]|restart [now]> [instance1] [instance2] [...]
 opensim status
 opensim setup           create or modify grids and simulators (setup wizard)
+opensim import robust FILE [--nick NICK] [--core DIR] [--apply]
+opensim import sim FILE --grid NICK [--name NAME] [--core DIR] [--apply]
+                        port the configuration of a grid or of a simulator not
+                        made by the kit (its files are not changed); without
+                        --apply, tells what would be written and which settings
+                        of the original are kept
 opensim users import FILE [--grid NICK] [--apply]
                         make the accounts of a list (CSV or JSON) in the database
                         of a grid; without --apply, tells what would be made
