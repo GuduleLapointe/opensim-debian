@@ -46,6 +46,8 @@ HELP="
 opensim <start|stop [now]|restart [now]> [instance1] [instance2] [...]
 opensim status
 opensim setup           create or modify grids and simulators (setup wizard)
+opensim <enable|disable> <instance> [instance2] [...]
+                        enable or disable a grid or a simulator
 opensim rest --url http://HOST:PORT --user USER (-- <command> | - | --repl)
                         the remote console of an instance of another machine or
                         a container (password in OPENSIM_REST_PASSWORD)
@@ -88,6 +90,11 @@ if [ -n "$SystemUser" ] && [ "$(id -un)" != "$SystemUser" ] && [ "${1:-}" != "se
 		exec runuser -u "$SystemUser" -- "$0" "${ARGV_GIVEN[@]}"
 	fi
 	exec sudo -H -u "$SystemUser" "$0" "${ARGV_GIVEN[@]}"
+fi
+
+# Enable or disable a grid or a simulator, as the system user
+if [ "${1:-}" = "enable" ] || [ "${1:-}" = "disable" ]; then
+	exec php "$BASEDIR/libexec/toggle.php" "$@"
 fi
 
 # The setup wizard
