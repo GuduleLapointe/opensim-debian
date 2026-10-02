@@ -641,17 +641,17 @@ final class NewSim
 
         // The ports of a simulator are a block of ten, the first free one from where the
         // simulators of the grid start (9000 for Robust on 8002), on this machine and among
-        // the regions the grid knows on the others: the public port ends with 2, the console
-        // with 4, the regions come after
+        // the regions the grid knows on the others: its HTTP port is the first one, the
+        // console is x4, the regions take the others
         $foreign = (new GridRegistry($database))->ports($grid) ?? [];
         $block = Ports::nextBlock(Ports::simulatorsFrom($grid->publicPort), $foreign);
         $plan->httpPort = (int) $this->ui->text(
             'Simulator HTTP port',
-            (string) ($current['httpPort'] ?? $block + 2),
+            (string) ($current['httpPort'] ?? $block),
             $numeric,
         );
-        $base = $plan->httpPort % 10 === 2 ? intdiv($plan->httpPort, 10) * 10 : 0;
-        $plan->consolePort = $base > 0 ? $base + 4 : 0;
+        $base = Ports::simulatorBlock($plan->httpPort);
+        $plan->consolePort = $base !== null ? $base + 4 : 0;
 
         // What the regions announce as their address, the viewers connect to it: the
         // public name of this machine. SYSTEMIP is the address of its first interface,
@@ -954,19 +954,12 @@ final class NewSim
         return $place;
     }
 
-    /** The port of a region: the next one of the block of its simulator (x5 to x9, then x3), else the next free one. */
+    /** The port of a region: the next one of the block of its simulator, else the next free one. */
     private function nextRegionPort(SimPlan $plan, GridInfo $grid, Database $database): int
     {
         $taken = array_merge((new GridRegistry($database))->ports($grid) ?? [], [$plan->httpPort]);
-        $base = $plan->httpPort % 10 === 2 ? intdiv($plan->httpPort, 10) * 10 : 0;
 
-        // x5 to x9, then the spare x3 (a simulator has no private port of its own)
-        $port = $base > 0 ? Ports::inBlock($base, 5, $taken) : null;
-        if ($port === null && $base > 0 && Ports::isFree($base + 3, $taken)) {
-            $port = $base + 3;
-        }
-
-        return $port ?? Ports::next($plan->httpPort + 1, $taken);
+        return Ports::nextRegion($plan->httpPort, $taken) ?? Ports::next($plan->httpPort + 1, $taken);
     }
 
     /** A random UUID (version 4). */

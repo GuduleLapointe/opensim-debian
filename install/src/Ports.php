@@ -11,15 +11,14 @@ namespace OpenSim\Installer;
  * / console_port — or if it is currently bound (netstat). next()/nextFree()
  * then return the first free port(s) at or above $min.
  *
- * The ports of an instance are a block of ten, the same wherever it runs, so a
- * simulator can move to another machine without changing any port:
- *   x2 public, x3 private (Robust; a simulator has none of its own, it is one
- *   more port for what it may need: SSL, XML-RPC, one more region), x4 console
- *   (REST), x5-x9 more services or, for a simulator, the ports of its regions.
- * Robust takes 8002 (public), 8003 (private), 8004 (console), the first simulator
- * 9002, 9003, 9004 and 9005-9009, the next one 9012... nextBlock() returns the
- * first free block, where "in use" includes what the caller knows of other
- * machines (the regions registered in the grid).
+ * The ports of an instance are a block of ten, the same wherever it runs, so an
+ * instance can move to another machine without changing any port. The console
+ * (REST) is always x4. Robust has a public port (x2) and a private one (x3):
+ * 8002, 8003 and 8004. A simulator has one HTTP port, the first of its block, and
+ * its regions take the others: 9000, its console 9004, its regions 9001, 9002,
+ * 9003 and 9005-9009, the next simulator 9010... nextBlock() returns the first
+ * free block, where "in use" includes what the caller knows of other machines (the
+ * regions registered in the grid).
  */
 final class Ports
 {
@@ -68,16 +67,32 @@ final class Ports
     }
 
     /**
-     * The first free port of a block, from its offset.
+     * The block a simulator belongs to, from its HTTP port: x0 (the convention) or x2
+     * (the way simulators were first made), null for any other port.
+     */
+    public static function simulatorBlock(int $httpPort): ?int
+    {
+        return in_array($httpPort % 10, [0, 2], true) ? intdiv($httpPort, 10) * 10 : null;
+    }
+
+    /**
+     * The next free port for a region of a simulator, in its block: x1 to x3 then x5 to x9
+     * (x4 is the console). A simulator on x2 keeps what it had: x5 to x9, then x3.
+     * Null when the block has none left, or the port is not one of a block.
      *
      * @param list<int> $exclude
      */
-    public static function inBlock(int $base, int $from = 5, array $exclude = []): ?int
+    public static function nextRegion(int $httpPort, array $exclude = []): ?int
     {
+        $base = self::simulatorBlock($httpPort);
+        if ($base === null) {
+            return null;
+        }
+
         $inUse = self::inUse($exclude);
-        for ($port = $base + $from; $port < $base + 10; $port++) {
-            if (!in_array($port, $inUse, true)) {
-                return $port;
+        foreach ($httpPort % 10 === 0 ? [1, 2, 3, 5, 6, 7, 8, 9] : [5, 6, 7, 8, 9, 3] as $offset) {
+            if (!in_array($base + $offset, $inUse, true)) {
+                return $base + $offset;
             }
         }
 
