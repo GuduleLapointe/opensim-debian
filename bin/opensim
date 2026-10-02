@@ -46,6 +46,12 @@ if [ "${1:-}" = "import" ]; then
 	exec php "$BASEDIR/libexec/import.php" "$@"
 fi
 
+# The installs the tools know about (profiles of opensim.conf): as the caller
+if [ "${1:-}" = "profile" ]; then
+	shift
+	exec php "$BASEDIR/libexec/profile.php" "$@"
+fi
+
 # The accounts of a grid (a list made directly in its database): as the caller
 if [ "${1:-}" = "users" ]; then
 	shift
@@ -70,6 +76,9 @@ opensim import sim FILE --grid NICK [--name NAME] [--core DIR] [--apply]
                         made by the kit (its files are not changed); without
                         --apply, tells what would be written and which settings
                         of the original are kept
+opensim profile list|add|default|remove
+                        the installs the tools know about: add NAME --core DIR
+                        [--etc DIR] [--data DIR] registers an install made by hand
 opensim users import FILE [--grid NICK] [--apply]
                         make the accounts of a list (CSV or JSON) in the database
                         of a grid; without --apply, tells what would be made

@@ -10,8 +10,16 @@ namespace OpenSim\Installer;
  */
 final class Config
 {
+    public function __construct(private readonly ?string $file = null)
+    {
+    }
+
     public function path(): ?string
     {
+        if ($this->file !== null) {
+            return is_file($this->file) ? $this->file : null;
+        }
+
         $home = getenv('HOME') ?: '';
         $candidates = array_filter([
             $home !== '' ? "$home/.config/opensim/opensim.conf" : null,
@@ -126,6 +134,57 @@ final class Config
         return $path;
     }
 
+    /**
+     * Register an install that exists (made by hand or by another tool): its base directories are the whole
+     * profile. Only the core directory is required, the config and data ones default to it (an install by the book).
+     * The default profile is left alone unless asked.
+     *
+     * @return array<string,string> the profile written
+     */
+    public function addProfile(string $name, string $core, ?string $etc = null, ?string $data = null, bool $makeDefault = false): array
+    {
+        if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/', $name) || $name === 'Defaults') {
+            throw new \InvalidArgumentException(sprintf(_('Invalid profile name: %s'), $name));
+        }
+        $core = rtrim($core, '/');
+        $etc = rtrim($etc ?? $core, '/');
+        $data = rtrim($data ?? $core, '/');
+        $profile = [
+            'DirectoryLayout' => 'flat',
+            'CoreDirectory' => $core,
+            'EtcRoot' => $etc,
+            'DataRoot' => $data,
+        ];
+
+        $path = $this->path() ?? $this->file ?? '/etc/opensim/opensim.conf';
+        $all = is_file($path) ? (parse_ini_file($path, true, INI_SCANNER_RAW) ?: []) : [];
+        $all[$name] = $profile;
+        $current = $all['Defaults']['DefaultProfile'] ?? null;
+        if ($makeDefault || $current === null) {
+            $all['Defaults'] = ['DefaultProfile' => $name] + $profile + ($all['Defaults'] ?? []);
+        }
+        $this->save($path, $all);
+
+        return $profile;
+    }
+
+    /** Forget a profile; the default one cannot be removed (choose another first). */
+    public function removeProfile(string $name): bool
+    {
+        $path = $this->path();
+        $all = $path === null ? [] : (parse_ini_file($path, true, INI_SCANNER_RAW) ?: []);
+        if (!isset($all[$name]) || $name === 'Defaults') {
+            return false;
+        }
+        if (($all['Defaults']['DefaultProfile'] ?? null) === $name) {
+            throw new \RuntimeException(sprintf(_('%s is the default profile, make another one the default first'), $name));
+        }
+        unset($all[$name]);
+        $this->save($path, $all);
+
+        return true;
+    }
+
     /** @return array<string,string> */
     private function profileValues(Plan $plan): array
     {
@@ -166,7 +225,7 @@ final class Config
             $out .= "\n";
         }
 
-        @mkdir(dirname($path), 0o755, true);
+        is_dir(dirname($path)) || mkdir(dirname($path), 0o755, true);
         file_put_contents($path, $out);
     }
 
