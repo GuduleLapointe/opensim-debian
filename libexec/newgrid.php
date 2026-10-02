@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
+OpenSim\Installer\I18n::init();
+
 use OpenSim\Installer\Grid\NewGrid;
 use OpenSim\Installer\SetupFailed;
 use OpenSim\Installer\Ui\PromptsUi;

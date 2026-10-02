@@ -38,7 +38,7 @@ final class Runtime
         $installed = $this->dotnetMajors();
 
         if (in_array($major, $installed, true)) {
-            $this->ui->note(".NET $major is installed; OpenSim {$plan->version} will use it.");
+            $this->ui->note(sprintf(_(".NET %s is installed; OpenSim %s will use it."), $major, $plan->version));
 
             return;
         }
@@ -49,7 +49,7 @@ final class Runtime
                 "OpenSim {$plan->version} targets .NET $major. Installed: " . implode(', ', $installed),
                 [
                     'rollforward' => 'Use roll-forward on .NET ' . max($newer) . ' (no additional install)',
-                    'install' => "Install native .NET $major",
+                    'install' => sprintf(_("Install native .NET %s"), $major),
                 ],
                 'rollforward',
             );
@@ -65,7 +65,7 @@ final class Runtime
         if ($this->ui->confirm($msg . "OpenSim {$plan->version} needs .NET $major. Install it now?", true)) {
             $plan->installRuntime = true;
         } else {
-            $this->ui->error("OpenSim {$plan->version} cannot run without .NET $major.");
+            $this->ui->error(sprintf(_("OpenSim %s cannot run without .NET %s."), $plan->version, $major));
             exit(1);
         }
     }
@@ -75,15 +75,15 @@ final class Runtime
         $plan->runtime = 'mono';
 
         if (System::commandExists('mono')) {
-            $this->ui->note("Mono is installed; OpenSim {$plan->version} will use it.");
+            $this->ui->note(sprintf(_("Mono is installed; OpenSim %s will use it."), $plan->version));
 
             return;
         }
 
-        if ($this->ui->confirm("OpenSim {$plan->version} needs Mono. Install it now?", true)) {
+        if ($this->ui->confirm(sprintf(_("OpenSim %s needs Mono. Install it now?"), $plan->version), true)) {
             $plan->installRuntime = true;
         } else {
-            $this->ui->error("OpenSim {$plan->version} cannot run without Mono.");
+            $this->ui->error(sprintf(_("OpenSim %s cannot run without Mono."), $plan->version));
             exit(1);
         }
     }
@@ -119,11 +119,11 @@ final class Runtime
                     System::arg($script),
             ) !== 0
         ) {
-            $this->ui->error('Could not fetch dotnet-install.sh.');
+            $this->ui->error(_('Could not fetch dotnet-install.sh.'));
             exit(1);
         }
 
-        $this->ui->note("Installing .NET $major into $dir");
+        $this->ui->note(sprintf(_("Installing .NET %s into %s"), $major, $dir));
         $code = System::run(
             $sudo .
                 'bash ' .
@@ -134,7 +134,7 @@ final class Runtime
                 System::arg($dir),
         );
         if ($code !== 0) {
-            $this->ui->error(".NET $major installation failed.");
+            $this->ui->error(sprintf(_(".NET %s installation failed."), $major));
             exit(1);
         }
     }
@@ -142,19 +142,19 @@ final class Runtime
     private function installMono(): void
     {
         $package = PHP_OS_FAMILY === 'Darwin' ? 'mono' : 'mono-complete';
-        $this->ui->note("Installing $package …");
+        $this->ui->note(sprintf(_("Installing %s …"), $package));
 
         // The package manager may exit non-zero on a non-fatal post-install
         // step (e.g. Homebrew's mono GAC setup) while mono itself is perfectly
         // usable, so judge success by whether the binary ends up available.
         (new Packages($this->ui))->install($package);
         if (!System::commandExists('mono')) {
-            $this->ui->error("Mono installation failed ($package not on PATH).");
+            $this->ui->error(sprintf(_("Mono installation failed (%s not on PATH)."), $package));
             exit(1);
         }
 
         [, $version] = System::capture('mono --version');
-        $this->ui->note('mono ready: ' . (strtok($version, "\n") ?: 'installed'));
+        $this->ui->note(sprintf(_('mono ready: %s'), strtok($version, "\n") ?: _('installed')));
     }
 
     /** @return list<int> installed Microsoft.NETCore.App major versions, ascending */

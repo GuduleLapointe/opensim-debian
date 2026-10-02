@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
+OpenSim\Installer\I18n::init();
+
 use OpenSim\Installer\Actions;
 use OpenSim\Installer\Grid\GridPlan;
 use OpenSim\Installer\Grid\NewGrid;

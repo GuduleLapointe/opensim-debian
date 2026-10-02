@@ -25,7 +25,7 @@ final class Installer
         $releases = new Releases();
         $list = $ui->spin(static fn() => $releases->available(), 'Fetching the OpenSim release list…');
         if ($list === []) {
-            $ui->error('Could not retrieve the OpenSim release list (no network and no cache).');
+            $ui->error(_('Could not retrieve the OpenSim release list (no network and no cache).'));
 
             return;
         }
@@ -37,15 +37,15 @@ final class Installer
                 'opensim-' . $release['version'] . ($release['installed'] ? '  (installed)' : '');
             $byVersion[$release['version']] = $release;
         }
-        $options['dev'] = 'Development version (unstable, built from source — not yet implemented)';
-        $options['back'] = 'Back';
+        $options['dev'] = _('Development version (unstable, built from source — not yet implemented)');
+        $options['back'] = _('Back');
 
-        $choice = $ui->choose('OpenSim version to install', $options, array_key_first($options));
+        $choice = $ui->choose(_('OpenSim version to install'), $options, array_key_first($options));
         if ($choice === 'back') {
             return;
         }
         if ($choice === 'dev') {
-            $ui->error('Building from source is not implemented yet.');
+            $ui->error(_('Building from source is not implemented yet.'));
 
             return;
         }
@@ -60,51 +60,51 @@ final class Installer
         // --- Layout + locations ---
         $absolute = static fn(string $v): ?string => str_starts_with($v, '/')
             ? null
-            : 'Use an absolute path (starting with /).';
+            : _('Use an absolute path (starting with /).');
 
-        $plan->layout = $ui->choose('Installation layout', Layout::LABELS, 'system');
+        $plan->layout = $ui->choose(_('Installation layout'), Layout::LABELS, 'system');
         $plan->installPath = Layout::needsBase($plan->layout)
-            ? $ui->text('Install base directory', Layout::defaultBase($plan->layout), $absolute)
+            ? $ui->text(_('Install base directory'), Layout::defaultBase($plan->layout), $absolute)
             : Layout::defaultBase($plan->layout);
 
         Layout::applyDefaults($plan);
 
-        $plan->coreRoot = $ui->text('Core root', $plan->coreRoot, $absolute);
-        $plan->coreDirectory = $ui->text('Core directory', $plan->coreDirectory, $absolute);
-        $plan->etcRoot = $ui->text('Etc directory', $plan->etcRoot, $absolute);
-        $plan->varRoot = $ui->text('Var directory', $plan->varRoot, $absolute);
-        $plan->logsRoot = $ui->text('Logs directory', $plan->logsRoot, $absolute);
-        $plan->cacheRoot = $ui->text('Cache directory', $plan->cacheRoot, $absolute);
-        $plan->dataRoot = $ui->text('Data directory', $plan->dataRoot, $absolute);
+        $plan->coreRoot = $ui->text(_('Core root'), $plan->coreRoot, $absolute);
+        $plan->coreDirectory = $ui->text(_('Core directory'), $plan->coreDirectory, $absolute);
+        $plan->etcRoot = $ui->text(_('Etc directory'), $plan->etcRoot, $absolute);
+        $plan->varRoot = $ui->text(_('Var directory'), $plan->varRoot, $absolute);
+        $plan->logsRoot = $ui->text(_('Logs directory'), $plan->logsRoot, $absolute);
+        $plan->cacheRoot = $ui->text(_('Cache directory'), $plan->cacheRoot, $absolute);
+        $plan->dataRoot = $ui->text(_('Data directory'), $plan->dataRoot, $absolute);
         // Downloads go next to a git checkout, in the cache for a packaged kit
         $sources = file_exists("$root/.git") ? "$root/src" : "{$plan->cacheRoot}/src";
-        $plan->sourcesDirectory = $ui->text('Sources directory', $sources, $absolute);
+        $plan->sourcesDirectory = $ui->text(_('Sources directory'), $sources, $absolute);
 
         // --- Profile name + default ---
         $plan->profile = $ui->text(
-            'Profile name',
+            _('Profile name'),
             "opensim-{$plan->version}",
             static fn(string $v): ?string => preg_match('/^[A-Za-z0-9._-]+$/', $v)
                 ? null
-                : 'Letters, digits, dot, dash and underscore only.',
+                : _('Letters, digits, dot, dash and underscore only.'),
         );
 
         $current = (new Config())->defaultProfile();
         $plan->makeDefault =
             $current === null ||
             $current === $plan->profile ||
-            $ui->confirm("Make '{$plan->profile}' the default install (current: $current)?", false);
+            $ui->confirm(sprintf(_("Make '%s' the default install (current: %s)?"), $plan->profile, $current), false);
 
         // --- Show the gathered plan ---
         $lines = [];
         foreach ($plan->summary() as $label => $value) {
             $lines[] = sprintf('  %-16s %s', $label . ':', $value);
         }
-        $ui->note("Installation plan:\n" . implode("\n", $lines));
+        $ui->note(_('Installation plan:') . "\n" . implode("\n", $lines));
 
         // --- Apply ---
-        if (!$ui->confirm('Proceed with the installation?', true)) {
-            $ui->note('Aborted — nothing changed.');
+        if (!$ui->confirm(_('Proceed with the installation?'), true)) {
+            $ui->note(_('Aborted — nothing changed.'));
 
             return;
         }
@@ -113,7 +113,7 @@ final class Installer
 
         // A packaged kit ships its submodules
         if (file_exists("$root/.git")) {
-            $ui->note('Updating git submodules…');
+            $ui->note(_('Updating git submodules…'));
             System::run('git -C ' . System::arg($root) . ' submodule update --init');
         }
 
@@ -141,12 +141,12 @@ final class Installer
         (new Runtime($ui))->install($plan);
 
         if (!is_file("{$plan->coreDirectory}/bin/OpenSim.exe") && !is_file("{$plan->coreDirectory}/bin/OpenSim.dll")) {
-            $ui->error("Core not found after install: {$plan->coreDirectory}/bin/OpenSim.dll");
+            $ui->error(sprintf(_("Core not found after install: %s/bin/OpenSim.dll"), $plan->coreDirectory));
 
             return;
         }
 
         $path = (new Config())->write($plan);
-        $ui->note("OpenSim {$plan->version} installed. Config: $path");
+        $ui->note(sprintf(_("OpenSim %s installed. Config: %s"), $plan->version, $path));
     }
 }

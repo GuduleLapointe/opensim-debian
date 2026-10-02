@@ -18,12 +18,12 @@ final class Distribution
         $tarball = $plan->sourcesDirectory . '/' . basename($plan->tarball);
 
         if (is_file($tarball)) {
-            $this->ui->note('Using previous download: ' . $tarball);
+            $this->ui->note(sprintf(_('Using previous download: %s'), $tarball));
         } else {
-            $this->ui->note('Downloading ' . $plan->tarball);
+            $this->ui->note(sprintf(_('Downloading %s'), $plan->tarball));
             $code = System::run('curl -fSL ' . System::arg($plan->tarball) . ' -o ' . System::arg($tarball));
             if ($code !== 0 || !is_file($tarball)) {
-                $this->ui->error('Download failed: ' . $plan->tarball);
+                $this->ui->error(sprintf(_('Download failed: %s'), $plan->tarball));
                 exit(1);
             }
         }
@@ -41,7 +41,7 @@ final class Distribution
             'Extracting ' . basename($tarball) . ' …',
         );
         if ($code !== 0) {
-            $this->ui->error('Extraction failed.');
+            $this->ui->error(_('Extraction failed.'));
             exit(1);
         }
 

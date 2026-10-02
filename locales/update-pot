@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Update the catalog of the strings of the kit, and the translations that follow it.
+#
+#   locales/update-pot            extract the strings (xgettext), merge them into the .po files that exist
+#   locales/update-pot fr_FR      start the translation into fr_FR (locales/fr_FR/LC_MESSAGES/opensim-kit.po)
+#
+# The strings are English, in the code: _('Text'), sprintf(_('Region %s is online.'), $name). The catalogs are compiled
+# (.mo) by packaging/build, not kept in the repository. Needs gettext (xgettext, msgmerge, msginit).
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+pot=locales/opensim-kit.pot
+files=$(git ls-files 'install/*.php' 'libexec/*.php' | grep -v '^install/engine.php$')
+# shellcheck disable=SC2086
+xgettext --from-code=UTF-8 --language=PHP --keyword=_ --keyword=ngettext:1,2 --add-comments=TRANSLATORS \
+    --package-name=opensim-kit --msgid-bugs-address=gudule@speculoos.world \
+    --sort-by-file -o "$pot" $files
+
+for lang in "$@"; do
+    po=locales/$lang/LC_MESSAGES/opensim-kit.po
+    if [ ! -f "$po" ]; then
+        mkdir -p "$(dirname "$po")"
+        msginit --no-translator --locale="$lang" --input="$pot" --output-file="$po" >/dev/null
+    fi
+done
+
+for po in locales/*/LC_MESSAGES/opensim-kit.po; do
+    [ -f "$po" ] || continue
+    msgmerge --quiet --update --backup=none "$po" "$pot"
+done
+echo "$(grep -c '^msgid' "$pot") strings in $pot"

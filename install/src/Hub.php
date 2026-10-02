@@ -47,16 +47,16 @@ final class Hub
                     ? "$name (Robust on another machine)"
                     : $name . (GridState::isEnabled($etcRoot, $nick) ? '' : ' [disabled]');
             }
-            $options['add'] = 'Add grid';
-            $options['quit'] = 'Quit';
+            $options['add'] = _('Add grid');
+            $options['quit'] = _('Quit');
 
             $default = $cores === [] ? 'core' : ($grids === [] ? 'add' : "grid:{$grids[0]}");
-            $choice = $this->ui->choose('OpenSim — setup', $options, $default);
+            $choice = $this->ui->choose(_('OpenSim — setup'), $options, $default);
 
             $quit = match (true) {
                 $choice === 'quit' => true,
                 $choice === 'core' => $this->coreMenu($cores),
-                $cores === [] => $this->ui->warn('Install an OpenSim core first.') ?? false,
+                $cores === [] => $this->ui->warn(_('Install an OpenSim core first.')) ?? false,
                 $choice === 'add' => $this->addGrid(),
                 default => $this->gridScreen(substr($choice, strlen('grid:'))),
             };
@@ -84,16 +84,16 @@ final class Hub
             $lines[] = "  {$entry['instance']}: {$entry['reason']}";
             $running = $running || Console::running("$etcRoot/opensim.d/{$entry['instance']}.ini");
         }
-        $this->ui->note("To take these changes into account, restart:\n" . implode("\n", $lines));
-        if (!$this->ui->confirm('Restart them now?', true)) {
-            $this->ui->note('They stay listed in ' . PendingRestarts::path($profile) . ': the setup offers them again next time.');
+        $this->ui->note(_('To take these changes into account, restart:') . "\n" . implode("\n", $lines));
+        if (!$this->ui->confirm(_('Restart them now?'), true)) {
+            $this->ui->note(sprintf(_('They stay listed in %s: the setup offers them again next time.'), PendingRestarts::path($profile)));
 
             return;
         }
         // A simulator that runs warns its users and waits, or restarts at once
-        $warn = $running && $this->ui->confirm('Warn the users of the simulators first (it takes two minutes)?', false);
+        $warn = $running && $this->ui->confirm(_('Warn the users of the simulators first (it takes two minutes)?'), false);
         if (!$this->act('restart', ['warn' => $warn])) {
-            $this->ui->warn('Some instances did not restart: see above, they stay listed.');
+            $this->ui->warn(_('Some instances did not restart: see above, they stay listed.'));
         }
     }
 
@@ -129,11 +129,11 @@ final class Hub
         foreach ($cores as $name) {
             $options[$name] = $name;
         }
-        $options['new'] = 'Install a new version';
-        $options['back'] = 'Back';
-        $options['quit'] = 'Quit';
+        $options['new'] = _('Install a new version');
+        $options['back'] = _('Back');
+        $options['quit'] = _('Quit');
 
-        $choice = $this->ui->choose('OpenSim core', $options, 'new');
+        $choice = $this->ui->choose(_('OpenSim core'), $options, 'new');
         if ($choice === 'new') {
             (new Installer($this->ui))->run();
         } elseif ($choice !== 'back' && $choice !== 'quit') {
@@ -152,12 +152,12 @@ final class Hub
     private function addGrid(): bool
     {
         $choice = $this->ui->choose(
-            'Add a grid',
+            _('Add a grid'),
             [
-                'new' => 'Create grid on this machine',
-                'external' => 'Connect to an external grid',
-                'back' => 'Back',
-                'quit' => 'Quit',
+                'new' => _('Create grid on this machine'),
+                'external' => _('Connect to an external grid'),
+                'back' => _('Back'),
+                'quit' => _('Quit'),
             ],
             'new',
         );
@@ -191,13 +191,13 @@ final class Hub
                     $this->ui->entity($this->simTitle($etcRoot, $nick, $slug)) .
                     (SimState::isEnabled($etcRoot, $slug) ? '' : ' [disabled]');
             }
-            $options['addsim'] = 'Add simulator';
+            $options['addsim'] = _('Add simulator');
             if (!$remote) {
-                $options['configure'] = 'Configure grid';
+                $options['configure'] = _('Configure grid');
                 $options['toggle'] = $enabled ? 'Disable this grid' : 'Enable this grid';
             }
-            $options['back'] = 'Back';
-            $options['quit'] = 'Quit';
+            $options['back'] = _('Back');
+            $options['quit'] = _('Quit');
 
             $choice = $this->ui->choose(
                 'Grid: ' . $this->ui->entity($nick) . ($remote ? ' (Robust on another machine)' : ''),
@@ -247,11 +247,11 @@ final class Hub
             foreach ($regions as $name => $region) {
                 $options["region:$name"] = $this->ui->entity($name) . ($region['enabled'] ? '' : ' [disabled]');
             }
-            $options['addregion'] = 'Add region';
-            $options['reconfigure'] = 'Configure sim';
+            $options['addregion'] = _('Add region');
+            $options['reconfigure'] = _('Configure sim');
             $options['toggle'] = $enabled ? 'Disable this simulator' : 'Enable this simulator';
-            $options['back'] = 'Back';
-            $options['quit'] = 'Quit';
+            $options['back'] = _('Back');
+            $options['quit'] = _('Quit');
 
             $choice = $this->ui->choose(
                 'Simulator: ' . $this->ui->entity($this->simTitle($etcRoot, $nick, $slug)),
@@ -298,10 +298,10 @@ final class Hub
             $choice = $this->ui->choose(
                 'Region: ' . $this->ui->entity($name),
                 [
-                    'reconfigure' => 'Reconfigure',
+                    'reconfigure' => _('Reconfigure'),
                     'toggle' => $region['enabled'] ? 'Disable this region' : 'Enable this region',
-                    'back' => 'Back',
-                    'quit' => 'Quit',
+                    'back' => _('Back'),
+                    'quit' => _('Quit'),
                 ],
                 'back',
             );
@@ -318,8 +318,12 @@ final class Hub
                     ]);
                     if ($done) {
                         $this->ui->note(
-                            ($region['enabled'] ? 'Disabled' : 'Enabled') .
-                                " $name: the simulator takes it into account when it restarts.",
+                            sprintf(
+                                $region['enabled']
+                                    ? _('Disabled %s: the simulator takes it into account when it restarts.')
+                                    : _('Enabled %s: the simulator takes it into account when it restarts.'),
+                                $name,
+                            ),
                         );
                     }
                     break;

@@ -81,6 +81,16 @@ if wants opensim-tools; then
 
     composer install --no-dev --no-interaction --quiet --optimize-autoloader --working-dir="$BUILD"
 
+    # Compiled translations (the .po are the sources)
+    if command -v msgfmt >/dev/null; then
+        for po in "$BUILD"/locales/*.po; do
+            [[ -f "$po" ]] || continue
+            lang=$(basename "$po" .po)
+            mkdir -p "$BUILD/locales/$lang/LC_MESSAGES"
+            msgfmt -o "$BUILD/locales/$lang/LC_MESSAGES/opensim-kit.mo" "$po"
+        done
+    fi
+
     # Installed read-only for everyone but root, whatever the local umask
     chmod -R go-w "$BUILD"
 

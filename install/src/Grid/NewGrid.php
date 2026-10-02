@@ -31,7 +31,7 @@ final class NewGrid
     {
         $profile = (new Config())->profile();
         if ($profile === [] || ($profile['EtcRoot'] ?? '') === '') {
-            $this->ui->error('No installed framework found. Install an OpenSim core first.');
+            $this->ui->error(_('No installed framework found. Install an OpenSim core first.'));
 
             return null;
         }
@@ -47,12 +47,12 @@ final class NewGrid
         $database = new Database($this->ui);
         while (($result = $database->ensure($plan)) !== Database::OK) {
             if ($result === Database::ABORT) {
-                $this->ui->error('Stopped, nothing was changed: OpenSim cannot run without its database.');
+                $this->ui->error(_('Stopped, nothing was changed: OpenSim cannot run without its database.'));
 
                 throw new SetupFailed('database');
             }
-            if (!$this->ui->confirm('Try again (the database settings can be changed)?', true)) {
-                $this->ui->note('Stopped, nothing was changed: OpenSim cannot run without its database.');
+            if (!$this->ui->confirm(_('Try again (the database settings can be changed)?'), true)) {
+                $this->ui->note(_('Stopped, nothing was changed: OpenSim cannot run without its database.'));
 
                 return null;
             }
@@ -65,16 +65,16 @@ final class NewGrid
         }
 
         $this->showPlan($plan);
-        if (!$this->ui->confirm("Apply this configuration to grid '{$plan->gridNick}'?", true)) {
-            $this->ui->note('Aborted — nothing changed.');
+        if (!$this->ui->confirm(sprintf(_("Apply this configuration to grid '%s'?"), $plan->gridNick), true)) {
+            $this->ui->note(_('Aborted — nothing changed.'));
 
             return null;
         }
 
         // What to do once written is asked here, while the user is at the
         // keyboard: writing may be done by another process
-        $plan->enable = $this->ui->confirm("Enable grid '{$plan->gridNick}' (link into robust.d)?", true);
-        $plan->start = $plan->enable && $this->ui->confirm("Start grid '{$plan->gridNick}' now?", true);
+        $plan->enable = $this->ui->confirm(sprintf(_("Enable grid '%s' (link into robust.d)?"), $plan->gridNick), true);
+        $plan->start = $plan->enable && $this->ui->confirm(sprintf(_("Start grid '%s' now?"), $plan->gridNick), true);
 
         $this->write($plan, $profile);
 
@@ -111,14 +111,14 @@ final class NewGrid
         $etcRoot = $profile['EtcRoot'];
         $this->makeDirs($plan);
         $conf = (new GridConf())->write($plan);
-        $this->ui->note("Wrote $conf");
+        $this->ui->note(sprintf(_("Wrote %s"), $conf));
         $this->writeRobust($plan);
         $this->writeHelpers($plan);
         $this->copyConfigInclude($plan);
 
         $logConfig = (new LogConfig())->write($plan);
         if ($logConfig !== null) {
-            $this->ui->note("Wrote $logConfig");
+            $this->ui->note(sprintf(_("Wrote %s"), $logConfig));
         }
 
         $systemUser = $profile['SystemUser'] ?? '';
@@ -127,16 +127,16 @@ final class NewGrid
         if ($plan->enable) {
             if (GridState::enable($etcRoot, $plan->gridNick)) {
                 $this->giveToSystemUser($systemUser, [GridState::link($etcRoot, $plan->gridNick)], false);
-                $this->ui->note('Enabled: ' . GridState::link($etcRoot, $plan->gridNick));
+                $this->ui->note(sprintf(_('Enabled: %s'), GridState::link($etcRoot, $plan->gridNick)));
                 if ($plan->start) {
                     $this->startGrid($plan);
                 }
             } else {
-                $this->ui->warn('Could not enable the grid (Robust config missing).');
+                $this->ui->warn(_('Could not enable the grid (Robust config missing).'));
             }
         }
 
-        $this->ui->note("Grid '{$plan->gridName}' configured.");
+        $this->ui->note(sprintf(_("Grid '%s' configured."), $plan->gridName));
     }
 
     /**
@@ -181,19 +181,19 @@ final class NewGrid
         // healthy Robust is ready within a minute, so that is a failure too.
         $pending = $code === 0 && str_contains($said, 'still starting');
         if ($code === 0 && !$pending) {
-            $this->ui->note("Grid '$nick' is running.");
+            $this->ui->note(sprintf(_("Grid '%s' is running."), $nick));
 
             return;
         }
 
         $this->ui->error(
             $pending
-                ? "Grid '$nick' is configured but was not ready after two minutes. Try: $opensim -v start $nick"
-                : "Grid '$nick' is configured but did not start. Try: $opensim -v start $nick",
+                ? sprintf(_("Grid '%s' is configured but was not ready after two minutes. Try: %s -v start %s"), $nick, $opensim, $nick)
+                : sprintf(_("Grid '%s' is configured but did not start. Try: %s -v start %s"), $nick, $opensim, $nick),
         );
         $log = $plan->logsDirectory . '/' . $plan->gridSlug . '_robust.log';
         if (is_file($log)) {
-            $this->ui->note('Recent log:');
+            $this->ui->note(_('Recent log:'));
             System::run('tail -n 30 ' . System::arg($log));
         }
 
@@ -235,7 +235,7 @@ final class NewGrid
             @copy($path, "$path~"); // backup
         }
         file_put_contents($path, (new RobustConfig())->generate($plan));
-        $this->ui->note("Wrote $path");
+        $this->ui->note(sprintf(_("Wrote %s"), $path));
     }
 
     /**
@@ -269,9 +269,9 @@ final class NewGrid
             chmod($path, 0o640);
         } else {
             chmod($path, 0o644);
-            $this->ui->warn("$path holds the database password and is readable by every user of this machine: give it to the group of your web server (chgrp, then chmod 640).");
+            $this->ui->warn(sprintf(_("%s holds the database password and is readable by every user of this machine: give it to the group of your web server (chgrp, then chmod 640)."), $path));
         }
-        $this->ui->note("Wrote $path");
+        $this->ui->note(sprintf(_("Wrote %s"), $path));
     }
 
     private function copyConfigInclude(GridPlan $plan): void
@@ -302,13 +302,13 @@ final class NewGrid
         }
         // Ready for the simulators that will join the grid
         (new GridShared())->prepare($plan->etcDirectory, $plan->binDir, $plan->enableHypergrid);
-        $this->ui->note('Copied config-include defaults.');
+        $this->ui->note(_('Copied config-include defaults.'));
     }
 
     private function gather(array $profile, ?string $modifyNick): ?GridPlan
     {
         $required = static fn(string $v): ?string => trim($v) === '' ? 'This field is required.' : null;
-        $numeric = static fn(string $v): ?string => ctype_digit(trim($v)) ? null : 'Enter a port number.';
+        $numeric = static fn(string $v): ?string => ctype_digit(trim($v)) ? null : _('Enter a port number.');
 
         $etcRoot = $profile['EtcRoot'];
 
@@ -318,21 +318,21 @@ final class NewGrid
             $gridDir = "$etcRoot/grids/$nick";
             $existing = $this->findExisting($gridDir);
             $current = $existing !== null ? $this->parseExisting($existing) : [];
-            $name = $this->ui->text('Grid name', $current['gridName'] ?? ucfirst($nick), $required);
+            $name = $this->ui->text(_('Grid name'), $current['gridName'] ?? ucfirst($nick), $required);
         } else {
-            $name = $this->ui->text('Grid name', $this->defaultName(), $required);
-            $nick = $this->ui->text('Grid nick (alphanumeric)', Slug::nick($name), $required);
+            $name = $this->ui->text(_('Grid name'), $this->defaultName(), $required);
+            $nick = $this->ui->text(_('Grid nick (alphanumeric)'), Slug::nick($name), $required);
             $gridDir = "$etcRoot/grids/$nick";
             $existing = $this->findExisting($gridDir);
             $current = [];
             if ($existing !== null) {
                 $action = $this->ui->choose(
-                    "Grid '$nick' is already configured ($existing).",
-                    ['modify' => 'Modify its settings', 'abandon' => 'Abandon, keep it unchanged'],
+                    sprintf(_("Grid '%s' is already configured (%s)."), $nick, $existing),
+                    ['modify' => _('Modify its settings'), 'abandon' => _('Abandon, keep it unchanged')],
                     'modify',
                 );
                 if ($action === 'abandon') {
-                    $this->ui->note('Left unchanged.');
+                    $this->ui->note(_('Left unchanged.'));
 
                     return null;
                 }
@@ -352,49 +352,49 @@ final class NewGrid
 
         // Hypergrid — after the existence check; default from the existing file.
         $hgDefault = $existing !== null ? str_contains(basename($existing), '.HG.') : true;
-        $plan->enableHypergrid = $this->ui->confirm('Enable Hypergrid?', $hgDefault);
+        $plan->enableHypergrid = $this->ui->confirm(_('Enable Hypergrid?'), $hgDefault);
 
         // The rule that places the regions: free blocks between them
         $plan->regionSpacing = (int) $this->ui->text(
-            'Free blocks between regions (0: side by side)',
+            _('Free blocks between regions (0: side by side)'),
             '0',
             static fn(string $v): ?string => ctype_digit(trim($v)) && (int) $v <= 50
                 ? null
-                : 'A number of blocks, 0 to 50.',
+                : _('A number of blocks, 0 to 50.'),
         );
 
         // Core selection (multi-version aware).
         $coreRoot = $profile['CoreRoot'] ?? '';
         $cores = Cores::list($coreRoot);
         if ($cores === []) {
-            $this->ui->error("No OpenSim core found under $coreRoot.");
+            $this->ui->error(sprintf(_("No OpenSim core found under %s."), $coreRoot));
 
             return null;
         }
         $plan->coreDirectory = $this->ui->choose(
-            'OpenSim core to run this grid',
+            _('OpenSim core to run this grid'),
             $cores,
             $profile['CoreDirectory'] ?? null,
         );
         $plan->binDir = $plan->coreDirectory . '/bin';
 
         $defaultHost = $current['baseHostname'] ?? (trim(System::capture('hostname -f')[1]) ?: 'localhost');
-        $plan->baseHostname = $this->ui->text('Base hostname', $defaultHost, $required);
+        $plan->baseHostname = $this->ui->text(_('Base hostname'), $defaultHost, $required);
         // The ports of an instance are a block of ten, the first free one (see Ports):
         // public ends with 2, private with 3, the console with 4
         $block = Ports::nextBlock(8000);
         $plan->publicPort = (int) $this->ui->text(
-            'Public port',
+            _('Public port'),
             (string) ($current['publicPort'] ?? $block + 2),
             $numeric,
         );
         $plan->privatePort = (int) $this->ui->text(
-            'Private port',
+            _('Private port'),
             (string) ($current['privatePort'] ??
                 ($plan->publicPort % 10 === 2 ? $plan->publicPort + 1 : Ports::next($plan->publicPort + 1))),
             $numeric,
         );
-        $plan->webUrl = $this->ui->text('Web URL', $current['webUrl'] ?? "https://{$plan->baseHostname}", $required);
+        $plan->webUrl = $this->ui->text(_('Web URL'), $current['webUrl'] ?? "https://{$plan->baseHostname}", $required);
         $this->askHelpers($plan, $gridDir);
 
         $this->askConsole($plan, $current, $numeric);
@@ -420,7 +420,7 @@ final class NewGrid
     {
         $existing = HelpersConfig::read($gridDir);
         $plan->helpers = $this->ui->confirm(
-            'Serve the economy, search and offline messages of the grid with opensim-helpers?',
+            _('Serve the economy, search and offline messages of the grid with opensim-helpers?'),
             $existing !== [] || is_dir(Snippets::WEBROOT),
         );
         if (!$plan->helpers) {
@@ -429,11 +429,11 @@ final class NewGrid
         $plan->helpersUrls = $existing['Urls'] ?? [];
         $plan->helpersPath = Services::normalize(
             $this->ui->text(
-                'Path of the helpers on the web site',
+                _('Path of the helpers on the web site'),
                 $existing['Helpers']['path'] ?? HelpersConfig::DEFAULT_PATH,
                 static fn(string $v): ?string => preg_match('#^/?[A-Za-z0-9._/-]*$#', trim($v))
                     ? null
-                    : 'A path such as /helpers.',
+                    : _('A path such as /helpers.'),
             ),
         );
     }
@@ -448,10 +448,10 @@ final class NewGrid
     private function askConsole(GridPlan $plan, array $current, \Closure $numeric): void
     {
         $plan->consoleMode = $this->ui->choose(
-            'Console of the grid',
+            _('Console of the grid'),
             [
-                'rest' => 'Remote REST console (recommended)',
-                'screen' => 'Screen session (on this machine)',
+                'rest' => _('Remote REST console (recommended)'),
+                'screen' => _('Screen session (on this machine)'),
             ],
             isset($current['consoleUser']) || $current === [] ? 'rest' : 'screen',
         );
@@ -461,7 +461,7 @@ final class NewGrid
 
         $base = $plan->publicPort % 10 === 2 ? $plan->publicPort - 2 : 0;
         $plan->consolePort = (int) $this->ui->text(
-            'Console port',
+            _('Console port'),
             (string) ($current['consolePort'] ?? ($base > 0 ? $base + 4 : Ports::next($plan->privatePort + 1))),
             $numeric,
         );
@@ -480,13 +480,13 @@ final class NewGrid
     {
         $required = static fn(string $v): ?string => trim($v) === '' ? 'This field is required.' : null;
 
-        $plan->dbHost = $this->ui->text('Database host', $defaults['dbHost'], $required);
-        $plan->dbName = $this->ui->text('Database name', $defaults['dbName'], $required);
-        $plan->dbUser = $this->ui->text('Database user', $defaults['dbUser'], $required);
+        $plan->dbHost = $this->ui->text(_('Database host'), $defaults['dbHost'], $required);
+        $plan->dbName = $this->ui->text(_('Database name'), $defaults['dbName'], $required);
+        $plan->dbUser = $this->ui->text(_('Database user'), $defaults['dbUser'], $required);
         // An account keeps its password for the whole session, entered or
         // generated once: an attempt started again proposes the same one
         $password = Database::recall($plan->dbHost, $plan->dbUser) ?? $defaults['dbPass'];
-        $plan->dbPass = $this->ui->text('Database password', $password, $required);
+        $plan->dbPass = $this->ui->text(_('Database password'), $password, $required);
         Database::remember($plan->dbHost, $plan->dbUser, $plan->dbPass);
     }
 
@@ -562,6 +562,6 @@ final class NewGrid
             "  Robust ini:  {$plan->robustIni()}",
             "  Grid dir:    {$plan->etcDirectory}",
         ];
-        $this->ui->note("Grid plan:\n" . implode("\n", $lines));
+        $this->ui->note(_('Grid plan:') . "\n" . implode("\n", $lines));
     }
 }
