@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fb1401046c613a9558cc16aa7135044d",
+    "content-hash": "aa916ff8cf7f040332569827fb9d30a5",
     "packages": [
         {
             "name": "laminas/laminas-escaper",
-            "version": "2.19.x-dev",
+            "version": "2.18.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laminas/laminas-escaper.git",
-                "reference": "f506f3545a706ec9416baf2a3ebcc1e5ce070783"
+                "reference": "06f211dfffff18d91844c1f55250d5d13c007e18"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laminas/laminas-escaper/zipball/f506f3545a706ec9416baf2a3ebcc1e5ce070783",
-                "reference": "f506f3545a706ec9416baf2a3ebcc1e5ce070783",
+                "url": "https://api.github.com/repos/laminas/laminas-escaper/zipball/06f211dfffff18d91844c1f55250d5d13c007e18",
+                "reference": "06f211dfffff18d91844c1f55250d5d13c007e18",
                 "shasum": ""
             },
             "require": {
@@ -29,13 +29,12 @@
                 "zendframework/zend-escaper": "*"
             },
             "require-dev": {
-                "infection/infection": "^0.32.0",
+                "infection/infection": "^0.31.0",
                 "laminas/laminas-coding-standard": "~3.1.0",
                 "phpunit/phpunit": "^11.5.42",
                 "psalm/plugin-phpunit": "^0.19.5",
                 "vimeo/psalm": "^6.13.1"
             },
-            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -62,11 +61,11 @@
             },
             "funding": [
                 {
-                    "url": "https://crowdfunding.linuxfoundation.org/initiatives/laminas-project",
-                    "type": "custom"
+                    "url": "https://funding.communitybridge.org/projects/laminas-project",
+                    "type": "community_bridge"
                 }
             ],
-            "time": "2026-09-28T00:30:51+00:00"
+            "time": "2025-10-14T18:31:13+00:00"
         },
         {
             "name": "laravel/prompts",
@@ -129,16 +128,16 @@
         },
         {
             "name": "magicoli/opensim-engine",
-            "version": "dev-opensim-kit",
+            "version": "3.0.0-beta.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/GuduleLapointe/opensim-engine.git",
-                "reference": "a2e30f9a371fda20b64a506d7ec6c9be32ce38c3"
+                "reference": "88f5c01207943f18a6ab322eeb1cc2b4ffa068f4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/GuduleLapointe/opensim-engine/zipball/a2e30f9a371fda20b64a506d7ec6c9be32ce38c3",
-                "reference": "a2e30f9a371fda20b64a506d7ec6c9be32ce38c3",
+                "url": "https://api.github.com/repos/GuduleLapointe/opensim-engine/zipball/88f5c01207943f18a6ab322eeb1cc2b4ffa068f4",
+                "reference": "88f5c01207943f18a6ab322eeb1cc2b4ffa068f4",
                 "shasum": ""
             },
             "require": {
@@ -152,8 +151,8 @@
                 "ext-pdo": "*",
                 "ext-session": "*",
                 "ext-simplexml": "*",
-                "laminas/laminas-escaper": "2.19.x-dev",
-                "magicoli/opensim-rest-php": "dev-opensim-kit",
+                "laminas/laminas-escaper": "^2.12@stable",
+                "magicoli/opensim-rest-php": "^1.1.0",
                 "php": ">=8.2",
                 "phpxmlrpc/phpxmlrpc": "^4.11"
             },
@@ -189,22 +188,22 @@
             "description": "OpenSimulator Engine - Framework-agnostic core functionality for OpenSim grids",
             "support": {
                 "issues": "https://github.com/GuduleLapointe/opensim-engine/issues",
-                "source": "https://github.com/GuduleLapointe/opensim-engine/tree/opensim-kit"
+                "source": "https://github.com/GuduleLapointe/opensim-engine/tree/3.0.0-beta.1"
             },
-            "time": "2026-10-01T18:54:55+00:00"
+            "time": "2026-10-02T08:51:36+00:00"
         },
         {
             "name": "magicoli/opensim-helpers",
-            "version": "dev-opensim-kit",
+            "version": "3.0.0-beta.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/GuduleLapointe/opensim-helpers.git",
-                "reference": "cbd497d97914c7159a07b1c09c048b0331981379"
+                "reference": "da3e85f8129c5e61af885d72f4074de124aa66cf"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/GuduleLapointe/opensim-helpers/zipball/cbd497d97914c7159a07b1c09c048b0331981379",
-                "reference": "cbd497d97914c7159a07b1c09c048b0331981379",
+                "url": "https://api.github.com/repos/GuduleLapointe/opensim-helpers/zipball/da3e85f8129c5e61af885d72f4074de124aa66cf",
+                "reference": "da3e85f8129c5e61af885d72f4074de124aa66cf",
                 "shasum": ""
             },
             "require": {
@@ -218,8 +217,8 @@
                 "ext-pdo": "*",
                 "ext-session": "*",
                 "ext-simplexml": "*",
-                "magicoli/opensim-engine": "dev-opensim-kit",
-                "magicoli/opensim-rest-php": "dev-opensim-kit",
+                "magicoli/opensim-engine": "^3.0.0-beta.1",
+                "magicoli/opensim-rest-php": "^1.1",
                 "php": ">=8.2",
                 "phpxmlrpc/phpxmlrpc": "^4.11"
             },
@@ -247,7 +246,7 @@
             "description": "Helpers needed to enable common functionalties like search, currency, events in OpenSimulator grids.",
             "support": {
                 "issues": "https://github.com/GuduleLapointe/opensim-helpers/issues",
-                "source": "https://github.com/GuduleLapointe/opensim-helpers/tree/opensim-kit"
+                "source": "https://github.com/GuduleLapointe/opensim-helpers/tree/3.0.0-beta.1"
             },
             "funding": [
                 {
@@ -267,20 +266,20 @@
                     "type": "open_collective"
                 }
             ],
-            "time": "2026-10-01T18:32:09+00:00"
+            "time": "2026-10-02T13:26:20+00:00"
         },
         {
             "name": "magicoli/opensim-rest-php",
-            "version": "dev-opensim-kit",
+            "version": "1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/GuduleLapointe/opensim-rest-php.git",
-                "reference": "f1cb48ab58b1875b5585b5f4231fdc533cd42140"
+                "reference": "4896afdf2ef8ff57c5b8ead6167779f1d2394fcb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/GuduleLapointe/opensim-rest-php/zipball/f1cb48ab58b1875b5585b5f4231fdc533cd42140",
-                "reference": "f1cb48ab58b1875b5585b5f4231fdc533cd42140",
+                "url": "https://api.github.com/repos/GuduleLapointe/opensim-rest-php/zipball/4896afdf2ef8ff57c5b8ead6167779f1d2394fcb",
+                "reference": "4896afdf2ef8ff57c5b8ead6167779f1d2394fcb",
                 "shasum": ""
             },
             "require": {
@@ -315,9 +314,9 @@
             "description": "OpenSimulator REST PHP library and command-line client",
             "support": {
                 "issues": "https://github.com/GuduleLapointe/opensim-rest-php/issues",
-                "source": "https://github.com/GuduleLapointe/opensim-rest-php/tree/opensim-kit"
+                "source": "https://github.com/GuduleLapointe/opensim-rest-php/tree/1.1.0"
             },
-            "time": "2026-10-01T19:55:21+00:00"
+            "time": "2026-10-02T08:02:58+00:00"
         },
         {
             "name": "nubs/random-name-generator",
@@ -4889,7 +4888,6 @@
     "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
-        "magicoli/opensim-helpers": 20,
         "phpcompatibility/php-compatibility": 20
     },
     "prefer-stable": true,
@@ -4906,5 +4904,5 @@
     "platform-overrides": {
         "php": "8.2.0"
     },
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }

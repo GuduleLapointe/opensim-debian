@@ -22,7 +22,7 @@
     "ext-json": "*",
     "ext-mbstring": "*",
     "laravel/prompts": "^0.3.18",
-    "magicoli/opensim-helpers": "dev-opensim-kit",
+    "magicoli/opensim-helpers": "^3.0.0-beta.1",
     "nubs/random-name-generator": "^2.2"
   },
   "require-dev": {

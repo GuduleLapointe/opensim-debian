@@ -1,6 +1,6 @@
 ## Changelog
 
-### Unreleased
+### 3.0.0-beta.2
 
 - new simulators and regions from `opensim setup`: a simulator has its own database (created with the administrator account when it does not exist) and an estate whose owner is an account of the grid, chosen or created through the console of Robust; the wizard writes its config, links it into `opensim.d`, starts it and checks its region is online in the grid. More regions are added to a running simulator from the same menu, without restarting it
 - new the ports of an instance are a block of ten, the first free one, looking at the config files, the ports in use and the regions the grid knows on its other machines: Robust has its public port on x2 and its private one on x3, a simulator its HTTP port on x0 and its regions on the others, the console of any instance on x4; `opensim ports` tells what each instance listens on and who has to reach it, `--publish` gives the options of a container, `--ufw` the firewall rules
