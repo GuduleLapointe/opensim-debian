@@ -4,16 +4,16 @@
 
 The packages are built with [nfpm](https://nfpm.goreleaser.com) and published to the Magiiic apt repository with the tools of apt-repo (`git@git.magiiic.com:magic/apt-repo.git`, cloned in `/opt/apt-repo`), whose README documents the whole chain. Everything lives in `packaging/`, one definition per package:
 
-| Package                      | Definition              | Version                          | Content                                                                                              |
-| ---------------------------- | ----------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `opensim-tools`              | `opensim-tools.yaml`    | git tag of this repository       | the tools, in `/usr/share/opensim-tools`, the `opensim` command, the service                         |
-| `opensim-<version>`          | `opensim-core.yaml`     | OpenSimulator release + revision | an OpenSimulator release, in `/usr/share/opensim/<version>`, for amd64 and arm64                     |
-| `opensim`                    | `opensim.yaml`          | same as the latest release       | metapackage, the latest release                                                                      |
-| `opensim-kit`                | `opensim-kit.yaml`      | git tag of this repository       | metapackage, the tools and the latest release                                                        |
-| `opensim-helpers`            | `opensim-helpers.yaml`  | `.version` of the helpers        | the helpers of a grid (economy, search, offline messages) with their dependencies, a webroot in `/usr/share/opensim-helpers`; their settings are read from the kit |
-| `opensim-web`                | `opensim-web.yaml`      | git tag of this repository       | the placeholder site of a grid, in `/usr/share/opensim-web/html` (`share/web`)                       |
-| `opensim-unstable`           | `opensim-unstable.yaml` | source version, date and commit  | OpenSimulator built from the `upstream/opensim` submodule, in `/usr/share/opensim/unstable`          |
-| `opensim-<core>-<module>`    | `opensim-<module>.yaml` | module version + revision        | a module for a release or `unstable`, in `/usr/share/opensim-modules/<core>/<module>`, not loaded until enabled |
+| Package                   | Definition              | Version                          | Content                                                                                                                                                            |
+| ------------------------- | ----------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `opensim-tools`           | `opensim-tools.yaml`    | git tag of this repository       | the tools, in `/usr/share/opensim-tools`, the `opensim` command, the service                                                                                       |
+| `opensim-<version>`       | `opensim-core.yaml`     | OpenSimulator release + revision | an OpenSimulator release, in `/usr/share/opensim/<version>`, for amd64 and arm64                                                                                   |
+| `opensim`                 | `opensim.yaml`          | same as the latest release       | metapackage, the latest release                                                                                                                                    |
+| `opensim-kit`             | `opensim-kit.yaml`      | git tag of this repository       | metapackage, the tools and the latest release                                                                                                                      |
+| `opensim-helpers`         | `opensim-helpers.yaml`  | `.version` of the helpers        | the helpers of a grid (economy, search, offline messages) with their dependencies, a webroot in `/usr/share/opensim-helpers`; their settings are read from the kit |
+| `opensim-web`             | `opensim-web.yaml`      | git tag of this repository       | the placeholder site of a grid, in `/usr/share/opensim-web/html` (`share/web`)                                                                                     |
+| `opensim-unstable`        | `opensim-unstable.yaml` | source version, date and commit  | OpenSimulator built from the `upstream/opensim` submodule, in `/usr/share/opensim/unstable`                                                                        |
+| `opensim-<core>-<module>` | `opensim-<module>.yaml` | module version + revision        | a module for a release or `unstable`, in `/usr/share/opensim-modules/<core>/<module>`, not loaded until enabled                                                    |
 
 The tools and the releases install without each other. `opensim-tools` adds an install profile for each release in `/usr/share/opensim`, and removes it with the release, through a dpkg trigger.
 
@@ -89,7 +89,7 @@ tests/Packaging/run docker.io/library/ubuntu:24.04    # Ubuntu 24.04
 Active:
 
 - **Gloebit**: https://github.com/gloebit/opensim-moneymodule-gloebit
-  - Compiled dlls https://github.com/gloebit/opensim-moneymodule-gloebit/releases
+    - Compiled dlls https://github.com/gloebit/opensim-moneymodule-gloebit/releases
 - **PayPal**: https://github.com/Outworldz/DTL-PayPal
 - **DTL/NSL**: https://github.com/MTSGJ/opensim.currency
 - **Podex Exchange**: https://www.podex.info/p/setting-up-money-server.html (service active, but see below for dll module)
@@ -111,3 +111,8 @@ Outdated:
 - https://www.osgrid.org/download (most popular)
 - https://github.com/Outworldz/DreamGrid-Opensim (dist 7.2 but based on opensim 0.9.3.1)
 - https://metaverseink.com/Downloads.html (outdated 0.9.2.0), https://github.com/diva (outdated)
+
+**OpenSimulator.org resources**
+
+- [Console commands reference](http://opensimulator.org/wiki/Server_Commands):
+- [OSSL functions reference](http://opensimulator.org/wiki/Category:OSSL_Functions)
