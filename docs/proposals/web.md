@@ -2,14 +2,15 @@
 
 ## Need
 
-A grid needs a web side from the first day: a landing page (the `welcome` and `DestinationGuide` URLs of Robust point to the web URL) and the scripts of opensim-helpers, served at `{weburl}/helper/` by default (`currency.php`, `query.php`, `register.php`, `offline.php`, `guide.php`, ...). The default URL is `/helper`; the older template of `libexec/newgrid` said `/helpers`.
+A grid needs a web side from the first day: a landing page (the `welcome` and `DestinationGuide` URLs of Robust point to the web URL) and the scripts of opensim-helpers, served at `{weburl}/helpers/` by default (`currency.php`, `query.php`, `register.php`, `offline.php`, `guide.php`, ...); the helpers are those **of the grid**: configured with its credentials and its connectors, nothing is shared between grids. The default path is `/helpers`: the current documentation of opensim-helpers (`CURRENCY_HELPER_URL`, the registrars of `config.example.php`) and the older template of `libexec/newgrid` say `/helpers`, and the convention does not change from one to the other. The path is one variable (`HELPERS_PATH`) in the snippets and the setup, so `/helper`, the historical name of the currency helper, is a setting away.
 
 ## Known
 
 - **opensim-helpers** (3.0.x): every script starts with `require_once 'includes/config.php'`, a PHP file of `define()` constants made by hand from `includes/config.example.php` (`OPENSIM_GRID_NAME`, `OPENSIM_LOGIN_URI`, the credentials of the databases `OPENSIM_DB_*`, `SEARCH_DB_*`, `CURRENCY_DB_*`, the mail sender...). It does not read `/etc/opensim`.
 - **The kit** has all of this already, in its files: the name and nick of the grid (`GridInfoService`), its web URL (`[Const] WebURL`), the ports, the credentials of the Robust database (`DatabaseService ConnectionString`), the locations of the config, data and logs from `opensim.conf` (`EtcRoot`, `DataRoot`...).
 - **opensim-engine** already has `Engine_Settings` (the one place of settings of the PHP libraries) and `class-ini.php`; opensim-helpers requires it.
-- **opensim-manfredaabye-helpers** (the search module's package) shows how a webroot is packaged: files in `/usr/share/opensim-manfredaabye-helpers`, settings in `/etc/opensim/manfredaabye-helpers`, and snippets for nginx and apache that `Alias` a path to the webroot (`packaging/opensim-manfredaabye-helpers.{nginx,apache}`).
+- The former `opensim-manfredaabye-helpers` package (removed) showed how a webroot is packaged: files in `/usr/share/<package>`, settings in `/etc/opensim/<package>`, and snippets for nginx and apache that `Alias` a path to the webroot (see its files in the history of `packaging/`).
+- Other implementations of the helpers exist (w4os for WordPress, the fork of Kevin Cozens and Manfred Aabye, wiredux): all follow the protocols of OpenSimulator and its viewers, so they are interchangeable in principle. The kit does not package them: the operator chooses `opensim-helpers` or a third-party solution, and the web URLs of the setup are only URLs.
 - The sim and Robust configs the setup writes have the web URLs commented (`;economy`, `;search`, `;message`, `DATA_SRV_MISearch`), none active.
 
 ## Proposed
@@ -29,7 +30,7 @@ A grid needs a web side from the first day: a landing page (the `welcome` and `D
 ### 3. The placeholder site
 
 - A static page (one `index.html`, no build step, light and dark theme) with the name of the grid, how to connect (the login URI, the viewers' grid manager entry, Hypergrid address), the status (`/helper/` `get_grid_info` or the `GridStatus` URL), and where the helpers are; the grid name and URI come from a small generated `site.json` (the setup rewrites it when the grid changes), so the page is not a template to edit by hand.
-- The setup offers, when a grid is made, to write the web URLs in the config: `[GridInfoService] welcome`, `economy`, `search`, `message` (`{weburl}/helper/currency.php`, `query.php`, `offline.php`), the simulator `[Economy]`, `[Search]`, `[Messaging]`, `DATA_SRV_MISearch` (`{weburl}/helper/register.php`), active only when the helpers are installed (the check is the presence of the package or of a URL that answers).
+- The setup offers, when a grid is made, to write the web URLs in the config: `[GridInfoService] welcome`, `economy`, `search`, `message` (`{weburl}/helpers/currency.php`, `query.php`, `offline.php`), the simulator `[Economy]`, `[Search]`, `[Messaging]`, `DATA_SRV_MISearch` (`{weburl}/helpers/register.php`), active only when the helpers are installed (the check is the presence of the package or of a URL that answers).
 
 ### 4. A command
 
@@ -43,9 +44,13 @@ A grid needs a web side from the first day: a landing page (the `welcome` and `D
 4. packaging: `opensim-helpers`, `opensim-web`, the snippets (the build for the three libraries is an apt-repo job: not something the cloud session can publish).
 5. `opensim web`.
 
+## Decided
+
+- The helpers are specific to each grid (its credentials and its connectors): one `helpers.ini` per grid, never one for the machine. A search shared between grids (another project of the author, 2do Directory) will change only a part of the settings of the helpers, which stay those of the grid; it is supported later, not now.
+- No package for another implementation of the helpers; no clash to avoid with a package of the fork, which is gone.
+
 ## To decide
 
-- Names: `opensim-helpers` is the project name of the library; the package that holds the helpers of the manfredaabye fork has another name (`opensim-manfredaabye-helpers`), which avoids a clash, but both serve the same kind of URLs (`/search/` for the fork, `/helper/` here): fine side by side?
-- The default path: `/helper` (as asked), and the old `/helpers` of `newgrid` is dropped.
-- `helpers.ini`: one per grid (proposed) or one for the machine; what the helpers do on a machine with several grids (`OPENSIM_GRID` set by the virtual host).
+- The path, `/helpers` or `/helper`: `/helpers` as in the documentation, `HELPERS_PATH` makes it a setting.
+- What the helpers do on a machine with several grids (`OPENSIM_GRID` set by the virtual host).
 - A placeholder site per grid or one per machine.
