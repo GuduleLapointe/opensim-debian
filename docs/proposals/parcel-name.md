@@ -26,6 +26,12 @@ A problem for another day: the current way works (a restart offered when the set
 
 Next step when taking it up: try the OAR with a parcel only on a test region, with `--force-parcels`, and see whether the name changes live and survives a restart.
 
+## Decided
+
+- OSSL is part of the standard config of the simulators (an `[OSSL]` section in the config the setup writes: `AllowOSFunctions`, and `osSetParcelDetails` for the estate owner and managers only). Customizing it comes later.
+- The script is `share/region-init/init-region.lsl`, easy to find and to customize: a region initialization script is useful beyond the parcel name. It names the parcel after the region when it still has the default name, says so, and removes itself.
+- Still to do: how the script gets into a new region (an OAR with one prim, or rows in the region store), and removing the restart once it works. The restart stays until then.
+
 ## Now
 
 Keep the restart. The solution stays a stopgap until then.
