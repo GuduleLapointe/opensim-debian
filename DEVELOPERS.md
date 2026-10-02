@@ -12,7 +12,6 @@ The packages are built with [nfpm](https://nfpm.goreleaser.com) and published to
 | `opensim-kit`                | `opensim-kit.yaml`      | git tag of this repository       | metapackage, the tools and the latest release                                                        |
 | `opensim-unstable`           | `opensim-unstable.yaml` | source version, date and commit  | OpenSimulator built from the `upstream/opensim` submodule, in `/usr/share/opensim/unstable`          |
 | `opensim-<core>-<module>`    | `opensim-<module>.yaml` | module version + revision        | a module for a release or `unstable`, in `/usr/share/opensim-modules/<core>/<module>`, not loaded until enabled |
-| `opensim-manfredaabye-helpers`     | `opensim-manfredaabye-helpers.yaml` | date and commit of the source | the helpers of the manfredaabye fork of OpenSimSearch (`webroot` of `contrib/OpenSimSearch/src`, not the opensim-helpers of this project), in `/usr/share/opensim-manfredaabye-helpers`, settings in `/etc/opensim/manfredaabye-helpers` |
 
 The tools and the releases install without each other. `opensim-tools` adds an install profile for each release in `/usr/share/opensim`, and removes it with the release, through a dpkg trigger.
 
@@ -39,7 +38,6 @@ Publishing skips the packages whose version is already in the repository, so the
 - `opensim-core`, `opensim`: the release of `packaging/opensim-core.versions`, the last one or `OPENSIM_VERSION`, e.g. `OPENSIM_VERSION=0.9.3.0 /opt/apt-repo/bin/apt-package opensim-core`. Its tarball is downloaded into `src/` and checked against its SHA256.
 
 - `opensim-unstable`: OpenSimulator built from the commit of the `upstream/opensim` submodule (a shallow clone of the upstream repository, `master`), in a .NET SDK container (podman, or `CONTAINER=docker`). Each commit is built once, into `build/cache/`. Update it with `git submodule update --remote upstream/opensim`.
-- `opensim-manfredaabye-helpers`: `build/manfredaabye-helpers`, the `webroot` of the OpenSimSearch source (`contrib/OpenSimSearch/src`, the `manfredaabye` tag, whose scripts are those of the original), without its settings, which are in `/etc`, and with the errors of the database going to the error log of PHP. Versioned `0.0~git<date>.<commit>` of the source, revision in `packaging/build`.
 - `opensim-<module>`: the files listed for the module in `packaging/opensim-modules.versions`, for the release of `opensim-core`, or the core of `MODULES_CORE` (a release or `unstable`), e.g. `MODULES_CORE=unstable /opt/apt-repo/bin/apt-package opensim-gloebit`. The files downloaded go to `src/`, checked against their SHA256. The packages are named after the modules.
 
 A new OpenSimulator release is added at the end of `packaging/opensim-core.versions`, with its checksum. A published package is never changed: a packaging change of a published release gets the next revision in that file, as for the modules in `packaging/opensim-modules.versions`.
@@ -60,7 +58,7 @@ One command runs every test, `vendor/bin/pest` (`composer test`): the PHP ones w
 - `tests/Unit`: the shell scripts (`*-test.sh`, bashunit): they parse, and bash scripts use `#!/usr/bin/env bash`. Also `tests/lib/bashunit tests/Unit`.
 - `tests/Packaging`: the packages and the container image, tested in containers (podman). Slow, they need podman and the packages of `dist/`, so they run only when asked, on a host that has them: `PACKAGING=1 vendor/bin/pest`. The scripts also run by hand, from the repository root.
 
-`tests/Packaging/run` installs the packages of `dist/` in a container with systemd (podman): a release alone then the tools, a grid made by the wizard and run by the service, a simulator with its region joining that grid (its estate owner made through the console of Robust, a second region added while it runs), the console commands, the search service from its package to an indexed region, then upgrade, the other builds, removal of the tools and of the release, and purge:
+`tests/Packaging/run` installs the packages of `dist/` in a container with systemd (podman): a release alone then the tools, a grid made by the wizard and run by the service, a simulator with its region joining that grid (its estate owner made through the console of Robust, a second region added while it runs), the console commands, then upgrade, the other builds, removal of the tools and of the release, and purge:
 
 ```bash
 tests/Packaging/run                                   # Debian 12

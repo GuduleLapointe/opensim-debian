@@ -29,6 +29,8 @@
 - add nat/port forwarding instructions or presets (with standard tools or third-party provides like ngrok, cloudflare...)
 - make most opensim-tools features installation-agnostic (support both opensim-kit and custom/standard opensim installations) : `/etc/opensim/opensim.conf` becomes only a reference pointing to the user's actual core installation and configuration files location (e.g. `/opt/osgrid`, `~/diva`, `~/opensim/opensim-0.9.3.0/bin`...)
 
+- test the OpenSimSearch module from end to end again (a region registers, is indexed and found) with the `opensim-helpers` package once it exists: the test written for the former `opensim-manfredaabye-helpers` package is gone with it
+
 ## Less urgent
 
 - localize the setup and the launcher with gettext (a requirement of the project), their messages are still English strings

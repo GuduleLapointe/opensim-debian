@@ -175,31 +175,6 @@ ${prefix}_REVISION=$module_revision
 EOF
 done
 
-# The web helpers of the search module: the webroot of its source (a snapshot
-# of an unversioned source, versioned by its date and commit)
-if wants opensim-manfredaabye-helpers; then
-    source=contrib/OpenSimSearch/src
-    [[ -e "$source/.git" ]] || git submodule update --init "$source"
-    BUILD=build/manfredaabye-helpers
-    rm -rf "$BUILD"
-    mkdir -p "$BUILD"
-    cp -R "$source/webroot/." "$BUILD/"
-    # The settings are the administrator's, in /etc
-    rm -f "$BUILD/databaseinfo.php"
-    # The folder of the scripts is not writable: the errors of the database go
-    # to the error log of PHP
-    perl -pi -e 's/file_put_contents\(\x27PDOErrors\.txt\x27, .*FILE_APPEND\);/error_log(\$e->getMessage());/' "$BUILD"/*.php
-    if grep -rq PDOErrors "$BUILD"; then
-        echo "The scripts of $source/webroot changed: adapt the error log patch of packaging/build" >&2
-        exit 1
-    fi
-    chmod -R u+rwX,go+rX,go-w "$BUILD"
-    cat >>build/packaging.env <<EOF
-MANFREDAABYE_HELPERS_VERSION=0.0~git$(git -C "$source" log -1 --format=%cd --date=format:%Y%m%d).$(git -C "$source" rev-parse --short HEAD)
-MANFREDAABYE_HELPERS_REVISION=1
-EOF
-fi
-
 if wants opensim-unstable; then
     source=upstream/opensim
     [[ -e "$source/.git" ]] || git submodule update --init "$source"

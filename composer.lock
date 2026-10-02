@@ -219,18 +219,14 @@
             },
             "type": "library",
             "autoload": {
-                "psr-4": {
-                    "OpenSim\\Engine\\": "src/"
-                },
                 "files": [
                     "includes/functions-escaping.php"
-                ]
+                ],
+                "psr-4": {
+                    "OpenSim\\Engine\\": "src/"
+                }
             },
-            "scripts": {
-                "test": [
-                    "pest"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "AGPL-3.0-or-later"
             ],
@@ -242,8 +238,8 @@
             ],
             "description": "OpenSimulator Engine - Framework-agnostic core functionality for OpenSim grids",
             "support": {
-                "source": "https://github.com/GuduleLapointe/opensim-engine/tree/opensim-kit",
-                "issues": "https://github.com/GuduleLapointe/opensim-engine/issues"
+                "issues": "https://github.com/GuduleLapointe/opensim-engine/issues",
+                "source": "https://github.com/GuduleLapointe/opensim-engine/tree/opensim-kit"
             },
             "time": "2026-10-02T18:18:32+00:00"
         },
@@ -288,11 +284,7 @@
                 "ext-imagick": "textgen.php, the text images"
             },
             "type": "library",
-            "scripts": {
-                "test": [
-                    "pest"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "AGPL-3.0-or-later"
             ],
@@ -304,25 +296,25 @@
             ],
             "description": "Helpers needed to enable common functionalties like search, currency, events in OpenSimulator grids.",
             "support": {
-                "source": "https://github.com/GuduleLapointe/opensim-helpers/tree/opensim-kit",
-                "issues": "https://github.com/GuduleLapointe/opensim-helpers/issues"
+                "issues": "https://github.com/GuduleLapointe/opensim-helpers/issues",
+                "source": "https://github.com/GuduleLapointe/opensim-helpers/tree/opensim-kit"
             },
             "funding": [
                 {
-                    "type": "github",
-                    "url": "https://github.com/GuduleLapointe"
+                    "url": "https://www.buymeacoffee.com/speculoos.world",
+                    "type": "buy_me_a_coffee"
                 },
                 {
-                    "type": "buy_me_a_coffee",
-                    "url": "https://www.buymeacoffee.com/speculoos.world"
+                    "url": "https://magiiic.com/donate/project/?project=opensim-helpers",
+                    "type": "custom"
                 },
                 {
-                    "type": "open_collective",
-                    "url": "https://opencollective.com/speculoosworld"
+                    "url": "https://github.com/GuduleLapointe",
+                    "type": "github"
                 },
                 {
-                    "type": "custom",
-                    "url": "https://magiiic.com/donate/project/?project=opensim-helpers"
+                    "url": "https://opencollective.com/speculoosworld",
+                    "type": "open_collective"
                 }
             ],
             "time": "2026-10-02T18:22:25+00:00"
@@ -360,11 +352,7 @@
                     "class-rest.php"
                 ]
             },
-            "scripts": {
-                "test": [
-                    "pest"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "AGPL-3.0-or-later"
             ],
@@ -376,8 +364,8 @@
             ],
             "description": "OpenSimulator REST PHP library and command-line client",
             "support": {
-                "source": "https://github.com/GuduleLapointe/opensim-rest-php/tree/opensim-kit",
-                "issues": "https://github.com/GuduleLapointe/opensim-rest-php/issues"
+                "issues": "https://github.com/GuduleLapointe/opensim-rest-php/issues",
+                "source": "https://github.com/GuduleLapointe/opensim-rest-php/tree/opensim-kit"
             },
             "time": "2026-10-02T18:18:14+00:00"
         },
