@@ -10,6 +10,14 @@ namespace OpenSim\Installer;
  */
 final class Console
 {
+    /** Whether an instance runs, from the config file it was started with (the link in opensim.d or robust.d). */
+    public static function running(string $ini): bool
+    {
+        [$code] = System::capture('pgrep -f -- ' . System::arg("-inifile=$ini( |\$)"));
+
+        return $code === 0;
+    }
+
     /**
      * Send lines to the console of an instance. An empty line answers a
      * prompt with its default.

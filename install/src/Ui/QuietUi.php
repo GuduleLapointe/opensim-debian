@@ -15,6 +15,11 @@ final class QuietUi implements InstallerUi
 
     public function note(string $message): void {}
 
+    public function entity(string $name): string
+    {
+        return $name;
+    }
+
     public function warn(string $message): void
     {
         fwrite(STDERR, "$message\n");
@@ -30,6 +35,11 @@ final class QuietUi implements InstallerUi
     public function choose(string $label, array $options, ?string $default = null, ?string $hint = null): string
     {
         return $default ?? (string) array_key_first($options);
+    }
+
+    public function checklist(string $label, array $options, array $defaults = [], ?string $hint = null): array
+    {
+        return $defaults;
     }
 
     public function text(string $label, string $default = '', ?\Closure $validate = null, ?string $hint = null): string

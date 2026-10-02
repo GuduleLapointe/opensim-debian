@@ -6,11 +6,32 @@
 #   awk -v regions=2 -f sim-progress.awk < simulator.log
 #
 # regions: how many regions the simulator has, for the "1/2" of the region steps.
+# mode=start: the output of the process at its very start (what it prints before its log
+# has anything), of which only the first lines are steps.
 
 BEGIN {
 	if (regions < 1) {
 		regions = 1
 	}
+}
+
+# What the process says first, before its log has any plugin to report: it is the first
+# sign of life of a simulator that takes a while to load. Shown as it is said.
+tolower($0) ~ /configured log4net using|system locale|environment is supported by opensimulator|reading configuration settings|starting opensim|logging started to file/ {
+	line = $0
+	gsub(/\033\[[0-9;?]*[A-Za-z]/, "", line)
+	gsub(/\r/, "", line)
+	sub(/^[0-9-]+ [0-9:,.]+ +[A-Z]+ +(\[[^]]*\]: *)?/, "", line)
+	sub(/^[[:space:]]+/, "", line)
+	sub(/[[:space:]]+$/, "", line)
+	if (line != "") {
+		print "  " line
+	}
+	next
+}
+
+mode == "start" {
+	next
 }
 
 # The plugins of region modules are all the plugins loaded but the ones of the

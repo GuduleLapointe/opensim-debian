@@ -56,3 +56,33 @@ function test_a_region_goes_from_its_config_to_the_grid_then_ready() {
 function test_other_lines_say_nothing() {
 	assert_equals "" "$(progress "2026-10-01 20:51:08,617 DEBUG [WORLD MAP]: Generating map image for Far")"
 }
+
+# The first lines a process prints, in a file of their own, before its log says anything
+start_progress() {
+	awk -v mode=start -f "$ROOT/libexec/sim-progress.awk" <<<"$1"
+}
+
+function test_the_first_signs_of_life_are_shown_as_the_process_says_them() {
+	local out='2026-10-01 20:51:03,100 INFO  [LOG4NET]: configured log4net using "/etc/opensim/OpenSim.exe.config"
+2026-10-01 20:51:03,200 INFO  [OPENSIM MAIN]: System Locale is en-US
+2026-10-01 20:51:03,300 INFO  [OPENSIM MAIN]: Environment is supported by OpenSimulator.
+2026-10-01 20:51:03,400 INFO  [OPENSIM MAIN]: Reading configuration settings
+2026-10-01 20:51:03,500 INFO  [OPENSIM MAIN]: STARTING OPENSIM
+2026-10-01 20:51:03,600 INFO  [OPENSIM MAIN]: Logging started to file /var/log/opensim/sim.log
+2026-10-01 20:51:03,700 INFO  [PLUGINS]: Plugin Loaded: LindenUDP'
+
+	assert_equals '  configured log4net using "/etc/opensim/OpenSim.exe.config"
+  System Locale is en-US
+  Environment is supported by OpenSimulator.
+  Reading configuration settings
+  STARTING OPENSIM
+  Logging started to file /var/log/opensim/sim.log' "$(start_progress "$out")"
+}
+
+function test_the_output_of_a_screen_session_has_its_control_codes_removed() {
+	assert_equals "  STARTING OPENSIM" "$(start_progress $'\033[1;32mSTARTING OPENSIM\033[0m\r')"
+}
+
+function test_the_log_says_them_too_with_the_steps() {
+	assert_equals "  STARTING OPENSIM" "$(progress "2026-10-01 20:51:03,500 INFO  [OPENSIM MAIN]: STARTING OPENSIM")"
+}

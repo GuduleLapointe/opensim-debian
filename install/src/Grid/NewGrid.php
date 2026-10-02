@@ -23,18 +23,19 @@ final class NewGrid
 {
     public function __construct(private InstallerUi $ui) {}
 
-    public function run(?string $modifyNick = null): void
+    /** @return ?string the nick of the grid configured, null when nothing was */
+    public function run(?string $modifyNick = null): ?string
     {
         $profile = (new Config())->profile();
         if ($profile === [] || ($profile['EtcRoot'] ?? '') === '') {
             $this->ui->error('No installed framework found. Install an OpenSim core first.');
 
-            return;
+            return null;
         }
 
         $plan = $this->gather($profile, $modifyNick);
         if ($plan === null) {
-            return; // abandoned
+            return null; // abandoned
         }
 
         // Nothing is written before the database is known to work. A problem of
@@ -50,7 +51,7 @@ final class NewGrid
             if (!$this->ui->confirm('Try again (the database settings can be changed)?', true)) {
                 $this->ui->note('Stopped, nothing was changed: OpenSim cannot run without its database.');
 
-                return;
+                return null;
             }
             $this->askDatabase($plan, [
                 'dbHost' => $plan->dbHost,
@@ -64,7 +65,7 @@ final class NewGrid
         if (!$this->ui->confirm("Apply this configuration to grid '{$plan->gridNick}'?", true)) {
             $this->ui->note('Aborted — nothing changed.');
 
-            return;
+            return null;
         }
 
         // What to do once written is asked here, while the user is at the
@@ -74,11 +75,7 @@ final class NewGrid
 
         $this->write($plan, $profile);
 
-        if ($modifyNick === null) {
-            $this->ui->note(
-                "Next: add a simulator. Its first region will be '{$plan->defaultRegion}', the default region of the grid: nobody can log in before it exists.",
-            );
-        }
+        return $plan->gridNick;
     }
 
     /**
@@ -326,21 +323,6 @@ final class NewGrid
                 : 'A number of blocks, 0 to 50.',
         );
 
-        // The region visitors arrive in, and fall back to: one is enough, the operator can make
-        // several and separate the roles later. Robust gives its flags to a region when it registers
-        $plan->defaultRegion = trim(
-            $this->ui->text(
-                'Default region (where visitors arrive, and fall back to)',
-                $current['defaultRegion'] ?? 'Welcome',
-                static fn(string $v): ?string => RegionName::problem($v),
-            ),
-        );
-        if (isset($current['defaultRegion']) && $current['defaultRegion'] !== $plan->defaultRegion) {
-            $this->ui->note(
-                "The region '{$plan->defaultRegion}' gets its flags when it registers: restart its simulator to apply the change.",
-            );
-        }
-
         // Core selection (multi-version aware).
         $coreRoot = $profile['CoreRoot'] ?? '';
         $cores = Cores::list($coreRoot);
@@ -497,7 +479,6 @@ final class NewGrid
         $lines = [
             "  Grid:        {$plan->gridName}  ({$plan->gridNick})",
             '  Hypergrid:   ' . ($plan->enableHypergrid ? 'yes' : 'no'),
-            "  Default reg: {$plan->defaultRegion}",
             '  Regions:     ' .
             ($plan->regionSpacing === 0 ? 'side by side' : "{$plan->regionSpacing} free block(s) between them"),
             "  Core:        {$plan->coreDirectory}",

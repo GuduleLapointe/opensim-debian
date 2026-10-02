@@ -1,11 +1,13 @@
 <?php
 /**
- * The default region of a grid: one name asked in the grid setup, written in
- * the Robust config as the key Robust looks for, read back from it.
+ * The roles of the regions of a grid (default, default for Hypergrid, fallback): given to a
+ * region when its simulator is created, written in the Robust config as the key Robust looks for,
+ * read back from it.
  */
 
 use OpenSim\Installer\Grid\GridInfo;
 use OpenSim\Installer\Grid\GridPlan;
+use OpenSim\Installer\Grid\RegionFlags;
 use OpenSim\Installer\Grid\RegionName;
 use OpenSim\Installer\Grid\RobustConfig;
 
@@ -54,69 +56,128 @@ describe('RegionName', function () {
     });
 });
 
-describe('Default region in the Robust config', function () {
-    test('is Welcome unless the setup says otherwise', function () {
+/** A Robust config as the distribution ships it: examples, and the comments of the next section before its header. */
+function robust_example()
+{
+    return implode("\n", [
+        '[GridService]',
+        '    StorageProvider = "OpenSim.Data.MySQL.dll:MySqlRegionData"',
+        '    ;; Region_Welcome_Area = "DefaultRegion, DefaultHGRegion"',
+        '    MapTileDirectory = "x"',
+        '',
+        '[Other]',
+        '    Setting = 1',
+        '',
+        ';; Documentation of the next section',
+        ';; on two lines',
+        '[FreeswitchService]',
+        '    LocalServiceModule = "y"',
+        '',
+    ]);
+}
+
+/** A file holding a text, to give to something that reads files. */
+function robust_file(string $text)
+{
+    $file = tempnam(sys_get_temp_dir(), 'robust');
+    file_put_contents($file, $text);
+
+    return $file;
+}
+
+describe('Grid setup', function () {
+    test('gives no region the roles: that is for the first simulator', function () {
         $plan = new GridPlan();
         $plan->baseHostname = 'localhost';
 
-        expect($plan->defaultRegion)->toBe('Welcome');
-        expect(robust_generated($plan))->toContain(
-            'Region_Welcome = "DefaultRegion, DefaultHGRegion, FallbackRegion, Persistent"',
-        );
-    });
-
-    test('is the one chosen, under the key Robust looks for, and only that one', function () {
-        $plan = new GridPlan();
-        $plan->baseHostname = 'localhost';
-        $plan->defaultRegion = 'Velcome Area';
-        $ini = robust_generated($plan);
-
-        expect($ini)->toContain('Region_Velcome_Area = "DefaultRegion, DefaultHGRegion, FallbackRegion, Persistent"');
-        expect($ini)->not->toMatch('/^\s*Region_Welcome\b/m');
-    });
-
-    test('is read back from the config of the grid', function () {
-        $plan = new GridPlan();
-        $plan->baseHostname = 'localhost';
-        $plan->defaultRegion = 'Velcome Area';
-        $file = tempnam(sys_get_temp_dir(), 'robust');
-        file_put_contents($file, robust_generated($plan));
-        $read = GridInfo::parse($file);
-        unlink($file);
-
-        expect($read['defaultRegion'])->toBe('Velcome Area');
-    });
-
-    test('is not found in a config where the example line is still commented', function () {
-        $file = tempnam(sys_get_temp_dir(), 'robust');
-        file_put_contents(
-            $file,
-            "[GridService]\n    ; Region_Welcome_Area = \"DefaultRegion, DefaultHGRegion\"\n    Region_Other = \"Persistent\"\n",
-        );
-        $read = GridInfo::parse($file);
-        unlink($file);
-
-        expect($read)->not->toHaveKey('defaultRegion');
+        expect(robust_generated($plan))->not->toMatch('/^\s*Region_\w+\s*=/m');
     });
 });
 
-describe('Default region comes first', function () {
-    test('is due on a grid run from this machine until a region of that name exists', function () {
-        $grid = new GridInfo();
-        $grid->defaultRegion = 'Welcome';
-
-        expect($grid->defaultRegionDue([]))->toBeTrue();
-        expect($grid->defaultRegionDue(['sandbox' => true]))->toBeTrue();
-        expect($grid->defaultRegionDue(['welcome' => true, 'sandbox' => true]))->toBeFalse();
+describe('Roles of a region', function () {
+    test('are the default region, the one of Hypergrid visitors on a grid that has it, and the fallback', function () {
+        expect(RegionFlags::roles(true))->toBe(['DefaultRegion', 'DefaultHGRegion', 'FallbackRegion']);
+        expect(RegionFlags::roles(false))->toBe(['DefaultRegion', 'FallbackRegion']);
     });
 
-    test('is never due on a grid run elsewhere, nor on one that has no default region', function () {
+    test('are found in the config, the commented example left out', function () {
+        $text = "[GridService]\n    ; Region_Welcome_Area = \"DefaultRegion\"\n    Region_Home = \"DefaultRegion, Persistent\"\n    Region_Two = \"FallbackRegion\"\n";
+
+        expect(RegionFlags::found($text))->toBe(['DefaultRegion', 'Persistent', 'FallbackRegion']);
+        expect(RegionFlags::found("[GridService]\n    ; Region_Welcome_Area = \"DefaultRegion\"\n"))->toBe([]);
+    });
+
+    test('are written under the key Robust looks for, in place of the example of the config', function () {
+        $file = robust_file(robust_example());
+        RegionFlags::give($file, 'Welcome Home', ['DefaultRegion', 'DefaultHGRegion']);
+        $lines = explode("\n", (string) file_get_contents($file));
+        unlink($file);
+
+        $at = array_search('Region_Welcome_Home = "DefaultRegion, DefaultHGRegion, Persistent"', $lines, true);
+        expect($at)->not->toBeFalse();
+        expect($lines[$at - 1])->toContain('; Region_Welcome_Area');
+    });
+
+    test('are written before the comments of the next section when the config has no example', function () {
+        $file = robust_file(str_replace('    ;; Region_Welcome_Area = "DefaultRegion, DefaultHGRegion"' . "\n", '', robust_example()));
+        RegionFlags::give($file, 'Welcome', ['DefaultRegion']);
+        $text = (string) file_get_contents($file);
+        unlink($file);
+
+        expect($text)->toContain('Region_Welcome = "DefaultRegion, Persistent"');
+        expect(strpos($text, 'Region_Welcome ='))->toBeLessThan(strpos($text, '[Other]'));
+        expect($text)->toContain(";; Documentation of the next section\n;; on two lines\n[FreeswitchService]");
+    });
+
+    test('are kept when a region gets more', function () {
+        $file = robust_file("[GridService]\nRegion_Welcome = \"DefaultRegion, Persistent\"\n");
+        RegionFlags::give($file, 'Welcome', ['FallbackRegion']);
+        $text = (string) file_get_contents($file);
+        unlink($file);
+
+        expect($text)->toContain('Region_Welcome = "DefaultRegion, Persistent, FallbackRegion"');
+        expect(substr_count($text, 'Region_Welcome'))->toBe(1);
+    });
+
+    test('are read back from the config of the grid', function () {
+        $file = robust_file("[GridService]\nRegion_Welcome = \"DefaultRegion, Persistent\"\n");
+        $read = GridInfo::parse($file);
+        unlink($file);
+
+        expect($read['regionFlags'])->toBe(['DefaultRegion', 'Persistent']);
+    });
+});
+
+describe('The landing region of a grid', function () {
+    test('is needed on a grid run from this machine until a region has the default roles', function () {
+        $grid = new GridInfo();
+
+        expect($grid->needsLandingRegion())->toBeTrue();
+        expect($grid->missingRoles())->toBe(['DefaultRegion', 'DefaultHGRegion', 'FallbackRegion']);
+
+        $grid->regionFlags = ['DefaultRegion'];
+        expect($grid->needsLandingRegion())->toBeTrue(); // the Hypergrid visitors have none yet
+        expect($grid->missingRoles())->toBe(['DefaultHGRegion', 'FallbackRegion']);
+
+        $grid->regionFlags = ['DefaultRegion', 'DefaultHGRegion'];
+        expect($grid->needsLandingRegion())->toBeFalse();
+        expect($grid->missingRoles())->toBe(['FallbackRegion']);
+    });
+
+    test('does not ask the Hypergrid role on a grid without Hypergrid', function () {
+        $grid = new GridInfo();
+        $grid->hypergrid = false;
+
+        expect($grid->missingRoles())->toBe(['DefaultRegion', 'FallbackRegion']);
+        $grid->regionFlags = ['DefaultRegion'];
+        expect($grid->needsLandingRegion())->toBeFalse();
+    });
+
+    test('is the business of the grid run elsewhere', function () {
         $remote = new GridInfo();
         $remote->remote = true;
-        $remote->defaultRegion = 'Welcome';
-        $none = new GridInfo();
 
-        expect($remote->defaultRegionDue([]))->toBeFalse();
-        expect($none->defaultRegionDue([]))->toBeFalse();
+        expect($remote->needsLandingRegion())->toBeFalse();
+        expect($remote->missingRoles())->toBe([]);
     });
 });

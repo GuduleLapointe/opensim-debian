@@ -16,8 +16,8 @@ final class GridInfo
     public bool $hypergrid = true;
     /** Free blocks the regions leave between them, the rule of the grid (a grid only described here follows the default one). */
     public int $regionSpacing = 0;
-    /** The region visitors arrive in (the one the Robust config flags as default); empty when the grid has none, or is described only. */
-    public string $defaultRegion = '';
+    /** @var list<string> The roles the regions of the Robust config have (see RegionFlags); empty for a grid described only. */
+    public array $regionFlags = [];
     public string $dir = '';
     public string $robustIni = '';
     public string $coreDirectory = '';
@@ -57,7 +57,7 @@ final class GridInfo
         $grid->name = $current['gridName'] ?? ($conf['GridName'] ?? ucfirst($nick));
         $grid->slug = $conf['slug'] ?? Slug::slug($grid->name);
         $grid->regionSpacing = ctype_digit($conf['RegionSpacing'] ?? '') ? (int) $conf['RegionSpacing'] : 0;
-        $grid->defaultRegion = (string) ($current['defaultRegion'] ?? '');
+        $grid->regionFlags = $current['regionFlags'] ?? [];
         $grid->coreDirectory = $conf['CoreDirectory'] ?? ($profile['CoreDirectory'] ?? '');
         $grid->baseHostname = $current['baseHostname'] ?? 'localhost';
         $grid->publicPort = $current['publicPort'] ?? 8002;
@@ -74,14 +74,25 @@ final class GridInfo
     }
 
     /**
-     * Whether the default region of a grid run from this machine still has to be created, which
-     * comes before any other region: until it exists nobody can log in.
+     * The roles no region of a grid run from this machine has yet (see RegionFlags::roles()),
+     * to offer them to the next region.
      *
-     * @param array<string,mixed> $known the names of the regions of the grid, as keys
+     * @return list<string>
      */
-    public function defaultRegionDue(array $known): bool
+    public function missingRoles(): array
     {
-        return !$this->remote && $this->defaultRegion !== '' && !RegionName::isIn($this->defaultRegion, $known);
+        return $this->remote
+            ? []
+            : array_values(array_diff(RegionFlags::roles($this->hypergrid), $this->regionFlags));
+    }
+
+    /**
+     * Whether a grid run from this machine still needs its default region (the one visitors
+     * arrive in), which comes first: until it exists nobody can log in.
+     */
+    public function needsLandingRegion(): bool
+    {
+        return array_intersect($this->missingRoles(), [RegionFlags::DEFAULT, RegionFlags::DEFAULT_HG]) !== [];
     }
 
     /** Whether the grid is only described here, its Robust being on another machine. */
@@ -181,7 +192,7 @@ final class GridInfo
      * Current settings of an existing Robust or simulator config (tolerant
      * regex, comments and quotes ignored).
      *
-     * @return array<string,string|int>
+     * @return array<string,string|int|list<string>>
      */
     public static function parse(string $path): array
     {
@@ -231,9 +242,9 @@ final class GridInfo
         if (($port = $grab('ConsolePort') ?? $grab('console_port')) !== null && ctype_digit($port) && (int) $port > 0) {
             $current['consolePort'] = (int) $port;
         }
-        // The region flagged as the default one: Region_<Name> = "DefaultRegion, ..."
-        if (preg_match('/^\s*(Region_[^\s=]+)\s*=\s*"?[^"\n]*\bDefaultRegion\b[^"\n]*"?\s*$/im', $text, $m)) {
-            $current['defaultRegion'] = RegionName::fromConfigKey($m[1]);
+        // The roles of the regions: Region_<Name> = "DefaultRegion, ..."
+        if (($flags = RegionFlags::found($text)) !== []) {
+            $current['regionFlags'] = $flags;
         }
         foreach (['estateName' => 'DefaultEstateName', 'estateOwner' => 'DefaultEstateOwnerName'] as $field => $key) {
             $value = $grab($key);

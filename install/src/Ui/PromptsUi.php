@@ -7,6 +7,7 @@ namespace OpenSim\Installer\Ui;
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\error;
 use function Laravel\Prompts\intro;
+use function Laravel\Prompts\multiselect;
 use function Laravel\Prompts\note;
 use function Laravel\Prompts\outro;
 use function Laravel\Prompts\password;
@@ -31,6 +32,11 @@ final class PromptsUi implements InstallerUi
         note($message);
     }
 
+    public function entity(string $name): string
+    {
+        return "\e[36m$name\e[39m";
+    }
+
     public function warn(string $message): void
     {
         warning($message);
@@ -53,6 +59,14 @@ final class PromptsUi implements InstallerUi
             options: $options,
             default: $default ?? array_key_first($options),
             hint: $hint ?? '',
+        );
+    }
+
+    public function checklist(string $label, array $options, array $defaults = [], ?string $hint = null): array
+    {
+        return array_map(
+            'strval',
+            multiselect(label: $label, options: $options, default: $defaults, required: false, hint: $hint ?? ''),
         );
     }
 

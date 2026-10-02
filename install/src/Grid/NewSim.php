@@ -25,31 +25,35 @@ use OpenSim\Installer\Ui\InstallerUi;
  */
 final class NewSim
 {
+    private const LANDING = 'At least a default landing region should be created.';
+    private const FIRST = 'Welcome';
+
     public function __construct(private InstallerUi $ui) {}
 
     /**
      * @param ?string $gridNick the grid it joins, asked when there are several and none is given
      * @param ?string $simName  the simulator to modify, asked when none is given
+     * @return ?array{0:string,1:string} the grid and the instance of the simulator configured, null when nothing was
      */
-    public function run(?string $gridNick = null, ?string $simName = null, bool $external = false): void
+    public function run(?string $gridNick = null, ?string $simName = null, bool $external = false): ?array
     {
         $profile = (new Config())->profile();
         $etcRoot = $profile['EtcRoot'] ?? '';
         if ($etcRoot === '') {
             $this->ui->error('No installed framework found. Install an OpenSim core first.');
 
-            return;
+            return null;
         }
 
         $grid = $this->grid($profile, $gridNick, $external);
         if ($grid === null) {
-            return;
+            return null;
         }
 
         $database = new Database($this->ui);
         $plan = $this->gather($grid, $profile, $database, $simName);
         if ($plan === null) {
-            return;
+            return null;
         }
 
         // Nothing is written before the database of the simulator works
@@ -63,7 +67,7 @@ final class NewSim
             if (!$this->ui->confirm('Try again (the database settings can be changed)?', true)) {
                 $this->ui->note('Stopped, nothing was changed: OpenSim cannot run without its database.');
 
-                return;
+                return null;
             }
             $this->askDatabase($plan, $grid);
             $check = $plan->databasePlan();
@@ -73,12 +77,30 @@ final class NewSim
         if (!$this->ui->confirm("Apply this configuration to simulator '{$plan->simName}'?", true)) {
             $this->ui->note('Aborted — nothing changed.');
 
-            return;
+            return null;
         }
 
+        // A simulator already linked may run, with users in it: restarting it warns them, and takes two minutes
+        $wasEnabled = SimState::isEnabled($etcRoot, $plan->slug);
         $plan->enable = $this->ui->confirm("Enable simulator '{$plan->simName}' (link into opensim.d)?", true);
         $plan->start = $plan->enable && $this->ui->confirm("Start simulator '{$plan->simName}' now?", true);
+        $plan->warnUsers =
+            $plan->start &&
+            $wasEnabled &&
+            Console::running(SimState::link($etcRoot, $plan->slug)) &&
+            $this->ui->confirm(
+                'The simulator is running: warn its users and wait two minutes before restarting it?',
+                false,
+            );
 
+        $this->write($plan, $profile);
+
+        return [$grid->nick, $plan->slug];
+    }
+
+    /** Write as the user who owns the install (see Elevated). */
+    private function write(SimPlan $plan, array $profile): void
+    {
         if (!Elevated::needed($profile)) {
             $this->apply($plan, $profile);
 
@@ -120,18 +142,16 @@ final class NewSim
             return;
         }
         $plan->start = $this->ui->confirm('Load it now (starting the simulator when it is not running)?', true);
+        // The simulator restarts once to name the parcel of the region
+        $plan->warnUsers =
+            $plan->start &&
+            Console::running(SimState::link($profile['EtcRoot'] ?? '', $plan->slug)) &&
+            $this->ui->confirm(
+                'The simulator is running: warn its users and wait two minutes before restarting it?',
+                false,
+            );
 
-        if (!Elevated::needed($profile)) {
-            $this->apply($plan, $profile);
-
-            return;
-        }
-        Elevated::run(
-            $this->ui,
-            '--apply-sim',
-            ['plan' => $plan->toArray(), 'profile' => $profile],
-            $profile['SystemUser'],
-        );
+        $this->write($plan, $profile);
     }
 
     /** The plan of a region of a simulator already configured, null when it is not. */
@@ -210,16 +230,7 @@ final class NewSim
 
             return;
         }
-        if (!Elevated::needed($profile)) {
-            $this->apply($plan, $profile);
-        } else {
-            Elevated::run(
-                $this->ui,
-                '--apply-sim',
-                ['plan' => $plan->toArray(), 'profile' => $profile],
-                $profile['SystemUser'],
-            );
-        }
+        $this->write($plan, $profile);
         $this->ui->note("Restart the simulator '$simName' to apply it: opensim restart {$plan->slug}");
     }
 
@@ -284,6 +295,10 @@ final class NewSim
             );
         }
 
+        if ($plan->createRegion) {
+            $this->giveRoles($plan, $grid);
+        }
+
         $systemUser = $profile['SystemUser'] ?? '';
         $this->giveToSystemUser($systemUser, [$plan->gridDir, $plan->dataDirectory, $plan->cacheDirectory], true);
 
@@ -302,7 +317,10 @@ final class NewSim
         $this->ui->note("Simulator '{$plan->simName}' configured.");
     }
 
-    /** Write the region, and load it in the simulator (started when it is not running). */
+    /**
+     * Write the region, and load it in the simulator through its console, which does not restart
+     * it. The simulator is started when it is not running.
+     */
     private function applyRegion(SimPlan $plan, array $profile, GridInfo $grid): void
     {
         @mkdir($plan->regionsDir(), 0o755, true);
@@ -311,20 +329,100 @@ final class NewSim
             $region !== null ? "Wrote $region" : "Region {$plan->regionName} already described, left as it is.",
         );
         $this->giveToSystemUser($profile['SystemUser'] ?? '', [$plan->regionsDir()], true);
+        $this->giveRoles($plan, $grid);
         if (!$plan->start) {
             return;
         }
 
-        $file = basename($plan->regionIni());
-        if (Console::send($plan->slug, "create region \"{$plan->regionName}\" $file\n")) {
-            if (!$this->registered($plan, $grid)) {
-                $this->failed($plan, "Region {$plan->regionName} did not register in the grid '{$grid->nick}'.");
-            }
-            $this->ui->note("Region {$plan->regionName} is online.");
+        if (!Console::running(SimState::link($profile['EtcRoot'], $plan->slug))) {
+            $this->startSim($plan, $grid);
 
             return;
         }
-        $this->startSim($plan, $grid);
+
+        // Robust reads the roles of its regions when it starts
+        if ($plan->regionRoles !== [] && !$grid->remote) {
+            $this->restartGrid($grid);
+        }
+        // The questions of a region with no estate are answered with their default (the estate it has)
+        $file = basename($plan->regionIni());
+        if (!Console::send($plan->slug, "create region \"{$plan->regionName}\" $file\n\n\n")) {
+            $this->failed(
+                $plan,
+                "The simulator '{$plan->simName}' did not take the region {$plan->regionName} through its console. It is described, and loaded the next time the simulator starts: opensim restart {$plan->slug}",
+            );
+        }
+        if (!$this->registered($plan, $grid)) {
+            $this->failed($plan, "Region {$plan->regionName} did not register in the grid '{$grid->nick}'.");
+        }
+        $this->nameParcel($plan);
+        $this->ui->note("Region {$plan->regionName} is online.");
+    }
+
+    /** Give the roles asked to the region in the Robust config of the grid. */
+    private function giveRoles(SimPlan $plan, GridInfo $grid): void
+    {
+        if ($plan->regionRoles === [] || $grid->remote || $grid->robustIni === '') {
+            return;
+        }
+        RegionFlags::give($grid->robustIni, $plan->regionName, $plan->regionRoles);
+        $this->ui->note(
+            "Updated {$grid->robustIni}: {$plan->regionName} is " . implode(', ', $plan->regionRoles) . '.',
+        );
+    }
+
+    /** Robust gives the roles to a region when it registers, from its config read when it starts. */
+    private function restartGrid(GridInfo $grid): void
+    {
+        $opensim = dirname(__DIR__, 3) . '/bin/opensim';
+        [$code] = System::runShown(System::arg($opensim) . ' restart now ' . System::arg($grid->nick));
+        if ($code !== 0) {
+            $this->ui->warn("The grid '{$grid->nick}' did not restart: try $opensim -v restart now {$grid->nick}");
+        }
+    }
+
+    /**
+     * The land of a new region is one parcel the size of the region, that OpenSim names "Your
+     * Parcel": named after the region instead, in the database of the simulator once it is there,
+     * and the simulator restarts to load it (a parcel named "Your Parcel" would make no sense).
+     *
+     * TODO: look for a better way. OpenSim has no setting nor console command for the name of the
+     * default parcel, and the running region does not read the land again from its database, so
+     * this costs a restart of the simulator (and of its other regions) for each new region.
+     */
+    private function nameParcel(SimPlan $plan): void
+    {
+        if (
+            !preg_match('/^[0-9a-fA-F-]{36}$/', $plan->regionUuid) ||
+            RegionName::problem($plan->regionName) !== null
+        ) {
+            return;
+        }
+        $database = new Database($this->ui);
+        $check = $plan->databasePlan();
+        for ($i = 0; $i < 20; $i++) {
+            $rows = $database->select($check, "SELECT 1 FROM land WHERE RegionUUID = '{$plan->regionUuid}'");
+            if ($rows === null) {
+                return; // cannot be read from here
+            }
+            if ($rows !== []) {
+                $database->select(
+                    $check,
+                    "UPDATE land SET Name = '{$plan->regionName}' WHERE RegionUUID = '{$plan->regionUuid}' AND Name = 'Your Parcel'",
+                );
+                $opensim = dirname(__DIR__, 3) . '/bin/opensim';
+                $now = $plan->warnUsers ? '' : 'now ';
+                [$code] = System::runShown(System::arg($opensim) . " restart $now" . System::arg($plan->slug));
+                if ($code !== 0) {
+                    $this->ui->warn(
+                        "The simulator did not restart: the parcel of {$plan->regionName} is named at its next start. Try: $opensim -v restart {$plan->slug}",
+                    );
+                }
+
+                return;
+            }
+            sleep(1);
+        }
     }
 
     /**
@@ -338,7 +436,9 @@ final class NewSim
         // A region registers with the grid when it starts: the grid has to run (when
         // it is ours: a Robust on another machine is its administrator's)
         if (!$grid->remote) {
-            [$code] = System::runShown(System::arg($opensim) . ' start ' . System::arg($grid->nick));
+            // Robust reads the roles of its regions when it starts: it starts again to give them
+            $action = $plan->regionRoles !== [] ? 'restart now' : 'start';
+            [$code] = System::runShown(System::arg($opensim) . " $action " . System::arg($grid->nick));
             if ($code !== 0) {
                 $this->failed(
                     $plan,
@@ -347,7 +447,9 @@ final class NewSim
             }
         }
 
-        [$code, $said] = System::runShown(System::arg($opensim) . ' restart ' . System::arg($plan->slug));
+        // The simulator restarts at once, unless its users are to be warned first (see opensim restart)
+        $now = $plan->warnUsers ? '' : 'now ';
+        [$code, $said] = System::runShown(System::arg($opensim) . " restart $now" . System::arg($plan->slug));
         $pending = $code === 0 && str_contains($said, 'still starting');
         if ($code === 0 && !$pending) {
             if ($plan->createRegion && !$grid->remote && !$this->registered($plan, $grid)) {
@@ -355,6 +457,9 @@ final class NewSim
                     $plan,
                     "Simulator '{$plan->simName}' runs, but the region {$plan->regionName} did not register in the grid '{$grid->nick}'.",
                 );
+            }
+            if ($plan->createRegion && !$grid->remote) {
+                $this->nameParcel($plan);
             }
             $this->ui->note(
                 "Simulator '{$plan->simName}' is running" .
@@ -589,12 +694,17 @@ final class NewSim
         // A remote grid not kept yet is written with the simulator
         $plan->remoteGrid = $grid->remote && !is_file("{$grid->dir}/{$grid->nick}.conf") ? $grid->describe() : null;
 
+        // The first simulator of a grid has the name of its landing region, that is its first region
+        $firstSim = !$grid->remote && SimState::names($grid->dir) === [];
+        if ($simName === null && $grid->needsLandingRegion()) {
+            $this->ui->note(self::LANDING);
+        }
         $plan->simName =
             $simName ??
             trim(
                 $this->ui->text(
                     'Simulator name',
-                    '',
+                    $firstSim ? self::FIRST : '',
                     static fn(string $v): ?string => preg_match('/^[A-Za-z0-9][A-Za-z0-9 _-]*$/', trim($v))
                         ? null
                         : 'Letters, digits, spaces, _ and - only.',
@@ -853,6 +963,35 @@ final class NewSim
         return true;
     }
 
+    /**
+     * The roles no region of the grid has yet: the default region is checked, so is the one of
+     * Hypergrid visitors when the grid has Hypergrid, the fallback is not.
+     *
+     * @return list<string>
+     */
+    private function askRoles(GridInfo $grid): array
+    {
+        $missing = $grid->missingRoles();
+        if ($missing === []) {
+            return [];
+        }
+        $labels = [
+            RegionFlags::DEFAULT => 'set as Default Region',
+            RegionFlags::DEFAULT_HG => 'set as Default HG Region',
+            RegionFlags::FALLBACK => 'set as Fallback Region',
+        ];
+        $options = [];
+        foreach ($missing as $role) {
+            $options[$role] = $labels[$role];
+        }
+
+        return $this->ui->checklist(
+            'Role of this region in the grid',
+            $options,
+            array_values(array_diff($missing, [RegionFlags::FALLBACK])),
+        );
+    }
+
     private function askRegion(SimPlan $plan, GridInfo $grid, Database $database): void
     {
         // A region name is unique in the grid: the same name registered twice stops the simulator
@@ -872,16 +1011,12 @@ final class NewSim
         };
         $numeric = static fn(string $v): ?string => ctype_digit(trim($v)) ? null : 'Enter a port number.';
 
-        // The default region of a grid run from this machine is the first one created: until it
-        // exists nobody can log in. Its name is the grid's to give (changed in the grid setup)
-        if ($grid->defaultRegionDue($taken)) {
-            $plan->regionName = $grid->defaultRegion;
-            $this->ui->note(
-                "This region is the default region of the grid, '{$plan->regionName}': it comes first, nobody can log in without it. Another name is set in the setup of the grid.",
-            );
-        } else {
-            $plan->regionName = trim($this->ui->text('Region name', $plan->simName, $name));
+        // A grid run from this machine needs a landing region: until it exists nobody can log in
+        if ($grid->needsLandingRegion()) {
+            $this->ui->note(self::LANDING);
         }
+        $plan->regionName = trim($this->ui->text('Region name', $plan->simName, $name));
+        $plan->regionRoles = $this->askRoles($grid);
         $plan->regionUuid = self::uuid();
         $plan->regionLocation = $this->askLocation($grid, $database);
         $plan->regionPort = (int) $this->ui->text(
@@ -989,6 +1124,9 @@ final class NewSim
         ];
         if ($plan->createRegion) {
             $lines[] = "  Region:      {$plan->regionName} at {$plan->regionLocation}, port {$plan->regionPort}";
+            if ($plan->regionRoles !== []) {
+                $lines[] = '  Roles:       ' . implode(', ', $plan->regionRoles);
+            }
         }
         $lines[] = "  Config:      {$plan->iniPath()}";
         $this->ui->note("Simulator plan:\n" . implode("\n", $lines));

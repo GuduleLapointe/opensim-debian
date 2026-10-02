@@ -66,6 +66,9 @@ final class SimPlan
     public int $regionPort = 9001;
     public int $regionSize = 256;
 
+    /** @var list<string> The roles it takes in the grid, given in the Robust config (see RegionFlags). */
+    public array $regionRoles = [];
+
     /** Only a region is added to a simulator already configured. */
     public bool $regionOnly = false;
     /** Write the region file again, to change a region that exists (its UUID is kept). */
@@ -74,6 +77,8 @@ final class SimPlan
     // What to do once written, asked before anything is written.
     public bool $enable = true;
     public bool $start = true;
+    /** A simulator that runs warns its users and waits before it restarts; else it restarts at once. */
+    public bool $warnUsers = false;
 
     public function binDir(): string
     {

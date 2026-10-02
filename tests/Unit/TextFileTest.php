@@ -63,6 +63,6 @@ describe('Robust config from a distribution with Windows line endings', function
         $ini = (new RobustConfig())->generate($plan);
 
         expect($ini)->not->toContain("\r");
-        expect($ini)->toContain('Region_Welcome = ');
+        expect($ini)->toContain('MapTileDirectory = ');
     });
 });

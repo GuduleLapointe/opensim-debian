@@ -29,6 +29,11 @@ final class ScriptedUi implements InstallerUi
     {
         echo "note: $message\n";
     }
+    public function entity(string $name): string
+    {
+        return $name;
+    }
+
     public function warn(string $message): void
     {
         echo "warn: $message\n";
@@ -48,6 +53,15 @@ final class ScriptedUi implements InstallerUi
         echo "choose: $label -> $choice\n";
 
         return (string) $choice;
+    }
+
+    public function checklist(string $label, array $options, array $defaults = [], ?string $hint = null): array
+    {
+        $value = $this->answer($label);
+        $keys = $value === null ? $defaults : array_values(array_filter(explode(',', (string) $value)));
+        echo "checklist: $label -> " . implode(',', $keys) . "\n";
+
+        return $keys;
     }
 
     public function text(string $label, string $default = '', ?\Closure $validate = null, ?string $hint = null): string

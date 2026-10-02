@@ -17,6 +17,9 @@ interface InstallerUi
 
     public function note(string $message): void;
 
+    /** A name (of a grid, a simulator, a region) as it shows among the words of a menu, to tell it from them. */
+    public function entity(string $name): string;
+
     public function warn(string $message): void;
 
     public function error(string $message): void;
@@ -30,6 +33,15 @@ interface InstallerUi
      * @return string                         the chosen key
      */
     public function choose(string $label, array $options, ?string $default = null, ?string $hint = null): string;
+
+    /**
+     * Several choices among options, any of them or none.
+     *
+     * @param array<string,string> $options   key => label shown to the user
+     * @param list<string>         $defaults  the keys checked at first
+     * @return list<string>                   the keys checked
+     */
+    public function checklist(string $label, array $options, array $defaults = [], ?string $hint = null): array;
 
     /**
      * Free text input.

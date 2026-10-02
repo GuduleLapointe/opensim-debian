@@ -135,18 +135,43 @@ osLogWait() {
 	return 1
 }
 
-# How a simulator loads, shown while the launcher waits for it: the steps its log
-# reports (libexec/sim-progress.awk), on the standard error as the waits may be
-# run in a command substitution. What was shown is kept in a file for the same
-# reason.
+# One line of progress. On a terminal each one takes the place of the previous, which
+# makes a quiet line of what takes a while; elsewhere (a log, a pipe) each is a line of
+# its own, once. osStepEnd closes the line left open.
+osStep() {
+	local text=$1 cols
+	if [ -t 2 ]; then
+		cols=$(tput cols 2>/dev/null || echo 80)
+		printf '\r\033[2K%s' "${text:0:$((cols - 1))}" >&2
+		: >"$TMP.step"
+		return 0
+	fi
+	[ "$text" = "$(cat "$TMP.step.last" 2>/dev/null)" ] && return 0
+	printf '%s\n' "$text" >&2
+	printf '%s' "$text" >"$TMP.step.last"
+}
+
+# End the line of progress left open by osStep, so that what comes next starts on its own.
+osStepEnd() {
+	rm -f "$TMP.step.last"
+	[ -e "$TMP.step" ] || return 0
+	rm -f "$TMP.step"
+	printf '\n' >&2
+}
+
+# How a simulator loads, shown while the launcher waits for it: what it prints first,
+# then the steps its log reports (libexec/sim-progress.awk), on the standard error as the
+# waits may be run in a command substitution. What was shown is kept in a file for the
+# same reason, each step once.
 # Args: log file, byte of the log where this start begins, config file of the
-# instance (for its number of regions)
+# instance (for its number of regions), file of what the process prints (optional)
 osProgressStart() {
 	local regionsdir
 	OS_PROGRESS_LOG=$1
 	OS_PROGRESS_MARK=${2:-0}
+	OS_PROGRESS_START=${4:-}
 	OS_PROGRESS_STATE="$TMP.progress"
-	echo 0 >"$OS_PROGRESS_STATE"
+	: >"$OS_PROGRESS_STATE"
 	regionsdir=$(crudget "$3" Startup regionload_regionsdir 2>/dev/null)
 	OS_PROGRESS_REGIONS=$(cat "$regionsdir"/*.ini 2>/dev/null | grep -c '^[[:blank:]]*\[')
 	[ "${OS_PROGRESS_REGIONS:-0}" -ge 1 ] 2>/dev/null || OS_PROGRESS_REGIONS=1
@@ -155,15 +180,17 @@ osProgressStart() {
 # Show the steps not shown yet, if osProgressStart was called.
 osShowProgress() {
 	[ -n "${OS_PROGRESS_LOG:-}" ] || return 0
-	local lines count shown
-	lines=$(tail -c +$((OS_PROGRESS_MARK + 1)) "$OS_PROGRESS_LOG" 2>/dev/null | awk -v regions="$OS_PROGRESS_REGIONS" -f "$BASEDIR/libexec/sim-progress.awk")
-	[ -n "$lines" ] || return 0
-	count=$(printf '%s\n' "$lines" | wc -l | tr -d ' ')
-	shown=$(cat "$OS_PROGRESS_STATE" 2>/dev/null || echo 0)
-	if [ "$count" -gt "$shown" ]; then
-		printf '%s\n' "$lines" | tail -n +$((shown + 1)) >&2
-		echo "$count" >"$OS_PROGRESS_STATE"
-	fi
+	local line
+	{
+		[ -n "${OS_PROGRESS_START:-}" ] &&
+			awk -v mode=start -f "$BASEDIR/libexec/sim-progress.awk" "$OS_PROGRESS_START" 2>/dev/null
+		tail -c +$((OS_PROGRESS_MARK + 1)) "$OS_PROGRESS_LOG" 2>/dev/null |
+			awk -v regions="$OS_PROGRESS_REGIONS" -f "$BASEDIR/libexec/sim-progress.awk"
+	} | while IFS= read -r line; do
+		grep -qxF -- "$line" "$OS_PROGRESS_STATE" 2>/dev/null && continue
+		printf '%s\n' "$line" >>"$OS_PROGRESS_STATE"
+		osStep "$line"
+	done
 	return 0
 }
 
@@ -182,7 +209,51 @@ osProgressStop() {
 		t=$((t + 1))
 	done
 	osShowProgress
-	unset OS_PROGRESS_LOG
+	osStepEnd
+	unset OS_PROGRESS_LOG OS_PROGRESS_START
+}
+
+# The log file an instance writes, from the arguments of its process: its -logfile
+# (Robust), else the file of its log config. Args: pid
+osLogOfPid() {
+	local args file config
+	args=$(ps -o args= -p "$1" 2>/dev/null) || return 1
+	file=$(sed -nE "s/.* -logfile='?([^' ]+)'?.*/\1/p" <<<"$args")
+	if [ -z "$file" ]; then
+		config=$(sed -nE "s/.* -logconfig='?([^' ]+)'?.*/\1/p" <<<"$args")
+		[ -f "$config" ] &&
+			file=$(grep -E "LogFileAppender|<file" "$config" | grep -A1 "LogFileAppender" | head -2 | tail -1 | cut -d '"' -f 2)
+	fi
+	[ -n "$file" ] && echo "$file"
+}
+
+# Wait for the process of an instance to exit, showing what it does meanwhile (the last line
+# of its log). 0 when it exited, 1 at the end of the delay.
+# Args: instance name, pid, seconds
+osWaitExit() {
+	local name=$1 pid=$2 seconds=$3 t=0 logfile last="" text
+	logfile=$(osLogOfPid "$pid")
+	while kill -0 "$pid" 2>/dev/null; do
+		[ $t -lt $((seconds * 2)) ] || { osStepEnd; return 1; }
+		last=$(tail -n 1 "$logfile" 2>/dev/null | tr -d '\r' | sed -E 's/^[0-9-]+ [0-9:,.]+ +[A-Z]+ +//')
+		text="  Waiting for $name to stop"
+		[ -t 2 ] && text="$text ($((t / 2))s)"
+		osStep "$text${last:+: $last}"
+		sleep 0.5
+		t=$((t + 1))
+	done
+	osStepEnd
+	return 0
+}
+
+# Wait for a delay, counting it down. Args: seconds, what is waited for
+osCountdown() {
+	local left=$1 label=$2
+	while [ "$left" -gt 0 ]; do
+		osStep "  $label in ${left}s"
+		if [ -t 2 ]; then sleep 1; left=$((left - 1)); else sleep "$left"; left=0; fi
+	done
+	osStepEnd
 }
 
 # The connectors a Robust loads, as their class names, one per line: what its
@@ -231,10 +302,11 @@ osWatchServices() {
 			[[ "$pending" == *" $class "* ]] || continue
 			if grep -aqE "\[SERVER\]: $class loaded successfully" <<<"$content"; then
 				reported=$((reported + 1))
-				printf '  %s %d/%d\n' "$class" "$reported" "$total"
+				osStep "  $class $reported/$total"
 				pending=${pending/ $class / }
 			elif grep -aqE "Failed to load .*:$class([^A-Za-z0-9]|$)" <<<"$content"; then
 				reported=$((reported + 1))
+				osStepEnd
 				printf '  %s: failed to load (%d/%d)\n' "$class" "$reported" "$total" >&2
 				failed="$failed $class"
 				pending=${pending/ $class / }

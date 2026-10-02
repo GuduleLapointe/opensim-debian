@@ -26,25 +26,34 @@ final class Ini
         return new self(is_file($path) ? TextFile::read($path) : '');
     }
 
-    /** Set key = value in section (uncommenting an existing commented key). */
-    public function set(string $section, string $key, string $value): void
+    /**
+     * Set key = value in section (uncommenting an existing commented key).
+     *
+     * A key the section does not have goes after the last commented example of
+     * the same family when $near is given (a prefix such as "Region_"), else at the
+     * end of the section's own lines: the comments before the next section
+     * (separated from the lines above by a blank one) document that section, the
+     * key does not go between them and it.
+     */
+    public function set(string $section, string $key, string $value, ?string $near = null): void
     {
         $newLine = "$key = $value";
         $keyRe = '/^\s*;?\s*' . preg_quote($key, '/') . '\s*=/';
 
         $sectionStart = -1;
         $inTarget = false;
+        $example = null;
+        $nearRe = $near === null ? null : '/^\s*;+\s*' . preg_quote($near, '/') . '/';
 
         foreach ($this->lines as $i => $text) {
             if (preg_match('/^\s*\[(.+?)\]\s*$/', $text, $m)) {
                 if ($inTarget) {
                     // Reached the next section without finding the key: insert it
-                    // after the section's last content line, before trailing blanks.
-                    $at = $i;
-                    while ($at > 0 && trim($this->lines[$at - 1]) === '') {
-                        $at--;
-                    }
-                    array_splice($this->lines, $at, 0, [$newLine]);
+                    // after the example of its family, else after the section's last
+                    // content line, before trailing blanks.
+                    array_splice($this->lines, $example !== null ? $example + 1 : $this->endOfContent($i), 0, [
+                        $newLine,
+                    ]);
 
                     return;
                 }
@@ -61,6 +70,9 @@ final class Ini
 
                 return;
             }
+            if ($inTarget && $nearRe !== null && preg_match($nearRe, $text)) {
+                $example = $i;
+            }
         }
 
         if ($sectionStart === -1) {
@@ -74,7 +86,37 @@ final class Ini
         }
 
         // Target section is the last one and the key was absent: append.
+        if ($example !== null) {
+            array_splice($this->lines, $example + 1, 0, [$newLine]);
+
+            return;
+        }
         $this->lines[] = $newLine;
+    }
+
+    /**
+     * Where the lines of a section end, given the header of the next one: before
+     * the blank lines, and before the comments that document the next section
+     * (a comment block after a blank line).
+     */
+    private function endOfContent(int $header): int
+    {
+        $at = $header;
+        while ($at > 0 && trim($this->lines[$at - 1]) === '') {
+            $at--;
+        }
+        $comments = $at;
+        while ($comments > 0 && preg_match('/^\s*[;#]/', $this->lines[$comments - 1])) {
+            $comments--;
+        }
+        if ($comments < $at && $comments > 0 && trim($this->lines[$comments - 1]) === '') {
+            $at = $comments;
+            while ($at > 0 && trim($this->lines[$at - 1]) === '') {
+                $at--;
+            }
+        }
+
+        return $at;
     }
 
     /**
@@ -144,7 +186,9 @@ final class Ini
 
     public function save(string $path): void
     {
-        @mkdir(dirname($path), 0o755, true);
+        if (!is_dir(dirname($path))) {
+            @mkdir(dirname($path), 0o755, true);
+        }
         file_put_contents($path, $this->toString());
     }
 }

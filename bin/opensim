@@ -385,7 +385,7 @@ startSim() {
 				startResult=$?
 			fi
 		elif [ "$RestEnabled" = "true" ]; then
-			osProgressStart "$LogFile" "${logMark:-0}" "$inifile"
+			osProgressStart "$LogFile" "${logMark:-0}" "$inifile" "$startlog"
 			# No console to answer the questions of a first start: a region is
 			# fully described, and ready when its log says so
 			osLogWait "$LogFile" "${logMark:-0}" "$instance" 120 "RegionReady|LOAD REGIONS PLUGIN\]: Done"
@@ -395,7 +395,7 @@ startSim() {
 				osInstanceRunning "$instance" || startResult=3
 			fi
 		else
-			osProgressStart "$LogFile" "${logMark:-0}" "$inifile"
+			osProgressStart "$LogFile" "${logMark:-0}" "$inifile" "$startlog"
 			# The questions of a first start (region, estate) are answered with
 			# their default, each once, as they come: a region fully described
 			# asks none. A question blocks the loading, so the region is ready
@@ -430,6 +430,7 @@ startSim() {
 		fi
 
 		osProgressStop
+		osStepEnd
 
 		# Interpret the final wait result the same way for both server types.
 		case $startResult in
@@ -483,16 +484,15 @@ stopSim() {
 
 		# Only a running region has users to warn
 		if [ "$stopType" = "OpenSim" ] && { [ -n "${OSIM_REST_INI:-}" ] && osInstanceRunning "$simName" "$inifile" || osScreenExists "$simName"; }; then
-			debug notiy users in $simName
 			[ $shutdownDelay = 0 ] && warnDelay=0 || warnDelay=$(($shutdownDelay / $shutdownWarnings))
 			warn=0
 			[ $shutdownDelay -le 10 ] && shutdownWarnings=1
 			[ $shutdownDelay -eq 0 ] && shutdownWarnings=0
+			[ $shutdownWarnings -gt 0 ] && log "$simName: warning its users, it stops in $shutdownDelay seconds"
 			while [ $warn -lt $shutdownWarnings ]; do
 				remaining=$(($shutdownDelay - $warn * $warnDelay))
-				debug " $remaining seconds left"
 				osConsole $simName "alert Attention: this simulator will be stopped in $remaining seconds. Please teleport to another region to avoid being disconnected."
-				sleep $warnDelay
+				osCountdown $warnDelay "Stopping $simName"
 				warn=$(($warn + 1))
 			done
 			osConsole $simName "alert Shutting down now."
@@ -501,12 +501,12 @@ stopSim() {
 		pid=$(ps -C mono -C dotnet --no-headers -o pid,args 2>/dev/null |
 			grep " -inifile=" | grep -F "$inifile" | awk '{print $1}' | head -1)
 		osConsole $simName shutdown
-		timeout=60
+		timeout=120
 		[ -z "${OSIM_REST_INI:-}" ] && osScreenExists "$simName" && screen -x $simName >/dev/null 2>&1
 		if [ "$pid" ]; then
-			debug "Waiting for $simName (pid $pid) to exit..."
-			timeout $timeout tail --pid=$pid -f /dev/null 2>/dev/null
-			kill -0 $pid 2>/dev/null && debug "$simName still running after ${timeout}s"
+			log "stopping $simName"
+			osWaitExit "$simName" "$pid" $timeout && log "$simName stopped" ||
+				log 1 "$simName still running after ${timeout}s"
 		fi
 	done
 }
