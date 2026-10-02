@@ -240,14 +240,48 @@ osWaitExit() {
 	return 0
 }
 
-# Wait for a delay, counting it down. Args: seconds, what is waited for
+# Wait for a delay, counting it down. Args: seconds, what is waited for, seconds
+# still to wait after this delay (the shown count is the total, default 0), a
+# command that tells the wait is useless when it succeeds (checked every 5
+# seconds). 0 when the delay is over, 1 when the command succeeded.
 osCountdown() {
-	local left=$1 label=$2
+	local left=$1 label=$2 offset=${3:-0} check=${4:-} tick shown=0 since=0
 	while [ "$left" -gt 0 ]; do
-		osStep "  $label in ${left}s"
-		if [ -t 2 ]; then sleep 1; left=$((left - 1)); else sleep "$left"; left=0; fi
+		if [ -t 2 ] || [ $shown = 0 ]; then
+			osStep "  $label in $((left + offset))s"
+			shown=1
+		fi
+		if [ -t 2 ]; then tick=1; else tick=$left; fi
+		[ -n "$check" ] && [ "$tick" -gt 5 ] && tick=5
+		sleep "$tick"
+		left=$((left - tick))
+		since=$((since + tick))
+		if [ -n "$check" ] && [ $since -ge 5 ] && [ "$left" -gt 0 ]; then
+			since=0
+			if "$check"; then osStepEnd; return 1; fi
+		fi
 	done
 	osStepEnd
+}
+
+# The real users in the regions of the simulator being stopped (simName, its
+# remote console in OSIM_REST_INI): NPCs and child agents are not counted. Says
+# nothing, and fails, when it cannot tell: only a remote console gives an answer,
+# and one that has the list of users in it.
+osCountRealUsers() {
+	local out
+	[ -n "${OSIM_REST_INI:-}" ] || return 1
+	out=$(osRest --ini "$OSIM_REST_INI" -- "show users" 2>/dev/null) || return 1
+	# The list has a header, even when it is empty: no header, no answer
+	printf '%s\n' "$out" | grep -qiE 'agents|^ *name ' || return 1
+	printf '%s\n' "$out" | grep -iE '(^|[[:space:]])root([[:space:]]|$)' | grep -viE 'npc' | wc -l
+}
+
+# Succeeds when the simulator is known to have no real user left
+osNoRealUsers() {
+	local count
+	count=$(osCountRealUsers) || return 1
+	[ "$count" -eq 0 ]
 }
 
 # The connectors a Robust loads, as their class names, one per line: what its
