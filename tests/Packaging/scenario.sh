@@ -75,7 +75,7 @@ ts "grid from the wizard"
 systemctl start mariadb
 mysql -e "CREATE DATABASE testgrid_robust; CREATE USER opensim@localhost IDENTIFIED BY 'testpass';
     GRANT ALL ON testgrid_robust.* TO opensim@localhost;"
-(cd /var/lib/opensim && runuser -u opensim -- php /test/newgrid.php | tail -1)
+(cd /var/lib/opensim && TEST_DEFAULT_REGION=Sim1 runuser -u opensim -- php /test/newgrid.php | tail -1)
 check "grid enabled" "[ -L /etc/opensim/robust.d/testgrid.ini ]"
 
 # The database, as the setup checks it (see Grid/Database.php). As opensim,
@@ -211,6 +211,11 @@ owner_password='Pa ss^w0rd\z'
 check "the simulator wizard ends well, the region is online" "grep -q 'exit code: 0' /tmp/sim1.out &&
     grep -q 'region Sim1 is online' /tmp/sim1.out && [ -n '$(sim_pid)' ]"
 check "the region is registered in the grid" "[ \"\$(mysql -BN -e \"SELECT CONCAT(locX DIV 256, ',', locY DIV 256) FROM testgrid_robust.regions WHERE regionName='Sim1'\")\" = 1000,1000 ]"
+# The grid gives the flags of its default region to the first region it registers, the one that lets
+# visitors in: without it a login fails with "destination not found"
+check "the first region is the default region of the grid, and Robust says so" "grep -q '^Region_Sim1 = \"DefaultRegion, DefaultHGRegion, FallbackRegion' /etc/opensim/grids/testgrid/Robust.HG.ini &&
+    [ \"\$(mysql -BN -e \"SELECT (flags & 1 AND flags & 2 AND flags & 1024) FROM testgrid_robust.regions WHERE regionName='Sim1'\")\" = 1 ] &&
+    curl -s -d 'METHOD=get_default_regions&SCOPEID=00000000-0000-0000-0000-000000000000' http://127.0.0.1:8003/grid | grep -q '>Sim1<'"
 check "the simulator has its own database, its config is enabled" "mysql -e 'SELECT 1' testgrid_sim1 >/dev/null 2>&1 &&
     [ -L /etc/opensim/opensim.d/testgrid_sim1.ini ] && [ -f /etc/opensim/grids/testgrid/sims/testgrid_sim1/regions/Sim1.ini ]"
 check "the estate belongs to the account made in the grid" "[ -n \"\$(mysql -BN -e \"SELECT PrincipalID FROM testgrid_robust.UserAccounts WHERE FirstName='Test' AND LastName='Owner'\")\" ] &&

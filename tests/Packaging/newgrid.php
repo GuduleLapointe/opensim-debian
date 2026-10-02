@@ -22,6 +22,8 @@ $answers = [
     'Grid name' => $name,
     'Grid nick' => strtolower($name),
     'Base hostname' => 'localhost',
+    // The first region of the grid, which the grid flags as its default one
+    'Default region' => getenv('TEST_DEFAULT_REGION') ?: 'Welcome',
     'Try again' => false,
     'Enable grid' => getenv('TEST_NO_ENABLE') ? false : true,
     'Start grid' => false,
