@@ -1,0 +1,800 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" dir="ltr">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta name="generator" content="MediaWiki 1.19.9" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="search" type="application/opensearchdescription+xml" href="/opensearch_desc.php" title="OpenSimulator (en)" />
+<link rel="EditURI" type="application/rsd+xml" href="http://opensimulator.org/api.php?action=rsd" />
+<link rel="copyright" href="http://creativecommons.org/licenses/by-sa/2.5/" />
+<link rel="alternate" type="application/atom+xml" title="OpenSimulator Atom feed" href="/index.php?title=Special:RecentChanges&amp;feed=atom" />		<title>Server Commands - OpenSimulator</title>
+		<style type="text/css" media="screen, projection">/*<![CDATA[*/
+			@import "/skins/common/shared.css?303";
+			@import "/skins/osmonobook/main.css?303";
+		/*]]>*/</style>
+		<link rel="stylesheet" type="text/css" media="print" href="/skins/common/commonPrint.css?303" />
+		<!--[if lt IE 5.5000]><style type="text/css">@import "/skins/osmonobook/IE50Fixes.css?303";</style><![endif]-->
+		<!--[if IE 5.5000]><style type="text/css">@import "/skins/osmonobook/IE55Fixes.css?303";</style><![endif]-->
+		<!--[if IE 6]><style type="text/css">@import "/skins/osmonobook/IE60Fixes.css?303";</style><![endif]-->
+		<!--[if IE 7]><style type="text/css">@import "/skins/osmonobook/IE70Fixes.css?303";</style><![endif]-->
+		<!--[if lt IE 7]><script type="text/javascript" src="/skins/common/IEFixes.js?303"></script>
+		<meta http-equiv="imagetoolbar" content="no" /><![endif]-->
+		
+		<script>if(window.mw){
+mw.config.set({"wgCanonicalNamespace":"","wgCanonicalSpecialPageName":false,"wgNamespaceNumber":0,"wgPageName":"Server_Commands","wgTitle":"Server Commands","wgCurRevisionId":54822,"wgArticleId":1544,"wgIsArticle":true,"wgAction":"view","wgUserName":null,"wgUserGroups":["*"],"wgCategories":["Support","Help","Configuration","Getting Started","Development"],"wgBreakFrames":false,"wgPageContentLanguage":"en","wgSeparatorTransformTable":["",""],"wgDigitTransformTable":["",""],"wgRelevantPageName":"Server_Commands","wgRestrictionEdit":[],"wgRestrictionMove":[],"wgSearchNamespaces":[0]});
+}</script>                
+		<script type="text/javascript" src="/skins/common/wikibits.js?303"><!-- wikibits js --></script>
+		<!-- Head Scripts -->
+<script src="http://opensimulator.org/load.php?debug=false&amp;lang=en&amp;modules=startup&amp;only=scripts&amp;skin=osmonobook&amp;*"></script>
+<script>if(window.mw){
+mw.config.set({"wgCanonicalNamespace":"","wgCanonicalSpecialPageName":false,"wgNamespaceNumber":0,"wgPageName":"Server_Commands","wgTitle":"Server Commands","wgCurRevisionId":54822,"wgArticleId":1544,"wgIsArticle":true,"wgAction":"view","wgUserName":null,"wgUserGroups":["*"],"wgCategories":["Support","Help","Configuration","Getting Started","Development"],"wgBreakFrames":false,"wgPageContentLanguage":"en","wgSeparatorTransformTable":["",""],"wgDigitTransformTable":["",""],"wgRelevantPageName":"Server_Commands","wgRestrictionEdit":[],"wgRestrictionMove":[],"wgSearchNamespaces":[0]});
+}</script><script>if(window.mw){
+mw.loader.implement("user.options",function($){mw.user.options.set({"ccmeonemails":0,"cols":80,"date":"default","diffonly":0,"disablemail":0,"disablesuggest":0,"editfont":"default","editondblclick":0,"editsection":1,"editsectiononrightclick":0,"enotifminoredits":0,"enotifrevealaddr":0,"enotifusertalkpages":1,"enotifwatchlistpages":0,"extendwatchlist":0,"externaldiff":0,"externaleditor":0,"fancysig":0,"forceeditsummary":0,"gender":"unknown","hideminor":0,"hidepatrolled":0,"highlightbroken":1,"imagesize":2,"justify":0,"math":1,"minordefault":0,"newpageshidepatrolled":0,"nocache":0,"noconvertlink":0,"norollbackdiff":0,"numberheadings":0,"previewonfirst":0,"previewontop":1,"quickbar":5,"rcdays":7,"rclimit":50,"rememberpassword":0,"rows":25,"searchlimit":20,"showhiddencats":0,"showjumplinks":1,"shownumberswatching":1,"showtoc":1,"showtoolbar":1,"skin":"osmonobook","stubthreshold":0,"thumbsize":2,"underline":2,"uselivepreview":0,"usenewrc":0,"watchcreations":0,"watchdefault":0,
+"watchdeletion":0,"watchlistdays":3,"watchlisthideanons":0,"watchlisthidebots":0,"watchlisthideliu":0,"watchlisthideminor":0,"watchlisthideown":0,"watchlisthidepatrolled":0,"watchmoves":0,"wllimit":250,"variant":"en","language":"en","searchNs0":true,"searchNs1":false,"searchNs2":false,"searchNs3":false,"searchNs4":false,"searchNs5":false,"searchNs6":false,"searchNs7":false,"searchNs8":false,"searchNs9":false,"searchNs10":false,"searchNs11":false,"searchNs12":false,"searchNs13":false,"searchNs14":false,"searchNs15":false});;},{},{});mw.loader.implement("user.tokens",function($){mw.user.tokens.set({"editToken":"+\\","watchToken":false});;},{},{});
+
+/* cache key: oslwiki-wiki_:resourceloader:filter:minify-js:7:230849de8b60da8a23d6b96c4e1e3f85 */
+}</script>
+<script>if(window.mw){
+mw.loader.load(["mediawiki.page.startup","mediawiki.legacy.wikibits","mediawiki.legacy.ajax"]);
+}</script>	</head>
+<body  class="mediawiki  ltr ns-0 ns-subject page-Server_Commands">
+	<div id="globalWrapper">
+		<div id="column-content">
+	<div id="content-wrapper">
+	<div id="p-cactions" class="portlet">
+		<h5>Views</h5>
+		<div class="pBody">
+			<ul>
+                                                    <li id="ca-nstab-main" class="selected"><a href="/wiki/Server_Commands"Array>Page</a></li>
+                                                    <li id="ca-talk"><a href="/wiki/Talk:Server_Commands"Array>Discussion</a></li>
+                                                    <li id="ca-viewsource"><a href="/index.php?title=Server_Commands&amp;action=edit"Array>View source</a></li>
+                                                    <li id="ca-history"><a href="/index.php?title=Server_Commands&amp;action=history"Array>History</a></li>
+                          			</ul>
+		</div>
+	</div>
+        <div id="content">
+		<a name="top" id="top"></a>
+				<h1 class="firstHeading">Server Commands</h1>
+		<div id="bodyContent">
+			<h3 id="siteSub">From OpenSimulator</h3>
+			<div id="contentSub"></div>
+									<div id="jump-to-nav">Jump to: <a href="#column-one">navigation</a>, <a href="#searchInput">search</a></div>			<!-- start content -->
+			<div id="mw-content-text" lang="en" dir="ltr" class="mw-content-ltr"><div style="width:750px; margin-left:auto;margin-right:auto;padding:10px;border:0px solid #AAAAAA; height:60px;">
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/Main_Page" title="Main Page">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:Home.png" class="image" title="image page"><img alt="image page" src="/images/thumb/9/9a/Home.png/32px-Home.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/Main_Page" title="Main Page">Home</a></b></center></div>
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/Download" title="Download">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:Compfile.png" class="image" title="image page"><img alt="image page" src="/images/thumb/f/f1/Compfile.png/32px-Compfile.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/Download" title="Download">Download</a></b></center></div>
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/News" title="News">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:News.png" class="image" title="image page"><img alt="image page" src="/images/thumb/0/07/News.png/32px-News.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/News" title="News">News</a></b></center></div>
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/Support" title="Support">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:Edu_languages.png" class="image" title="image page"><img alt="image page" src="/images/thumb/d/d7/Edu_languages.png/32px-Edu_languages.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/Support" title="Support">Support</a></b></center></div>
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/User_Documentation" title="User Documentation">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:Package_system.png" class="image" title="image page"><img alt="image page" src="/images/thumb/f/fd/Package_system.png/32px-Package_system.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/User_Documentation" title="User Documentation">Admin</a></b></center></div>
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/Developer_Documentation" title="Developer Documentation">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:Openterm.png" class="image" title="image page"><img alt="image page" src="/images/thumb/2/23/Openterm.png/32px-Openterm.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/Developer_Documentation" title="Developer Documentation">Dev</a></b></center></div>
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/Media" title="Media" class="mw-redirect">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:Media.png" class="image" title="image page"><img alt="image page" src="/images/thumb/3/35/Media.png/32px-Media.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/Media" title="Media" class="mw-redirect">Screen Shots</a></b></center></div>
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/Grid_List" title="Grid List">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:Compfile.png" class="image" title="image page"><img alt="image page" src="/images/thumb/f/f1/Compfile.png/32px-Compfile.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/Grid_List" title="Grid List">Grid List</a></b></center></div>
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/Bugs" title="Bugs">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:Bug.png" class="image" title="image page"><img alt="image page" src="/images/thumb/7/7d/Bug.png/32px-Bug.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/Bugs" title="Bugs">Bugs</a></b></center></div>
+</div>
+<div class="LanguageLinks" style="margin: 1em 0;">
+<table style="width: 100%; clear: both; border: 1px solid #aaaaaa; border-collapse: collapse; padding: 0.2em; margin: 0; font-size: 85%; margin: 0 1px;">
+<tr valign="center" style="background: #EEF3E2">
+<td style="width: 25px; padding-left: 0.5em;"><a href="/wiki/File:Geographylogo.png" class="image" title="Languages"><img alt="Languages" src="/images/thumb/5/59/Geographylogo.png/25px-Geographylogo.png" width="25" height="25" /></a></td>
+<td style="width: 10px; white-space: nowrap; padding: 4px 1em 0 0.5em; border-right: 1px solid #aaaaaa;"><b>Languages:</b>&#160;</td>
+<td>
+<p><b><a href="/wiki/File:En.png" class="image"><img alt="En.png" src="/images/3/3b/En.png" width="22" height="15" /></a> <strong class="selflink">English</strong></b> <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>&#160;&#160;<span lang="de"><a href="/wiki/File:De.png" class="image"><img alt="De.png" src="/images/8/8f/De.png" width="22" height="15" /></a>&#160;<a href="/wiki/Server_Commands/de" title="Server Commands/de">Deutsch</a></span>
+<span></span><span></span>
+<span></span><span></span>&#160;&#160;<span lang="fr"><a href="/wiki/File:Fr.png" class="image"><img alt="Fr.png" src="/images/4/4b/Fr.png" width="22" height="15" /></a>&#160;<a href="/wiki/Server_Commands/fr" title="Server Commands/fr">Français</a></span>
+<span></span><span></span><span></span><span></span><span></span><span></span>
+&#160;&#160;<span lang="ja"><a href="/wiki/File:Jp.png" class="image"><img alt="Jp.png" src="/images/e/e1/Jp.png" width="22" height="15" /></a>&#160;<a href="/wiki/Server_Commands/ja" title="Server Commands/ja" class="mw-redirect">日本語</a></span>
+<span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+<span></span><span></span><span></span>
+<span></span><span></span><span></span>
+<span></span><span></span>&#160;&#160;<span lang="ru"><a href="/wiki/File:Ru.png" class="image"><img alt="Ru.png" src="/images/f/fb/Ru.png" width="22" height="15" /></a>&#160;<a href="/wiki/Server_Commands/ru" title="Server Commands/ru">Русский</a></span>
+<span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+</p>
+</td>
+</tr>
+</table>
+</div>
+<table id="toc" class="toc"><tr><td><div id="toctitle"><h2>Contents</h2></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#What_are_server_commands.3F"><span class="tocnumber">1</span> <span class="toctext">What are server commands?</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="#Commands"><span class="tocnumber">2</span> <span class="toctext">Commands</span></a>
+<ul>
+<li class="toclevel-2 tocsection-3"><a href="#General_Server_Commands"><span class="tocnumber">2.1</span> <span class="toctext">General Server Commands</span></a>
+<ul>
+<li class="toclevel-3 tocsection-4"><a href="#General"><span class="tocnumber">2.1.1</span> <span class="toctext">General</span></a></li>
+<li class="toclevel-3 tocsection-5"><a href="#Debug"><span class="tocnumber">2.1.2</span> <span class="toctext">Debug</span></a></li>
+</ul>
+</li>
+<li class="toclevel-2 tocsection-6"><a href="#Simulator_Commands"><span class="tocnumber">2.2</span> <span class="toctext">Simulator Commands</span></a>
+<ul>
+<li class="toclevel-3 tocsection-7"><a href="#General_2"><span class="tocnumber">2.2.1</span> <span class="toctext">General</span></a></li>
+<li class="toclevel-3 tocsection-8"><a href="#Appearance_Commands"><span class="tocnumber">2.2.2</span> <span class="toctext">Appearance Commands</span></a></li>
+<li class="toclevel-3 tocsection-9"><a href="#Archive_Commands"><span class="tocnumber">2.2.3</span> <span class="toctext">Archive Commands</span></a></li>
+<li class="toclevel-3 tocsection-10"><a href="#Asset_Commands"><span class="tocnumber">2.2.4</span> <span class="toctext">Asset Commands</span></a></li>
+<li class="toclevel-3 tocsection-11"><a href="#Config_Commands"><span class="tocnumber">2.2.5</span> <span class="toctext">Config Commands</span></a></li>
+<li class="toclevel-3 tocsection-12"><a href="#Land_Commands"><span class="tocnumber">2.2.6</span> <span class="toctext">Land Commands</span></a></li>
+<li class="toclevel-3 tocsection-13"><a href="#Map_Commands"><span class="tocnumber">2.2.7</span> <span class="toctext">Map Commands</span></a></li>
+<li class="toclevel-3 tocsection-14"><a href="#Object_Commands"><span class="tocnumber">2.2.8</span> <span class="toctext">Object Commands</span></a></li>
+<li class="toclevel-3 tocsection-15"><a href="#Estate_Commands"><span class="tocnumber">2.2.9</span> <span class="toctext">Estate Commands</span></a></li>
+<li class="toclevel-3 tocsection-16"><a href="#Region_Commands"><span class="tocnumber">2.2.10</span> <span class="toctext">Region Commands</span></a></li>
+<li class="toclevel-3 tocsection-17"><a href="#Scene_Commands"><span class="tocnumber">2.2.11</span> <span class="toctext">Scene Commands</span></a></li>
+<li class="toclevel-3 tocsection-18"><a href="#Script_Commands"><span class="tocnumber">2.2.12</span> <span class="toctext">Script Commands</span></a></li>
+<li class="toclevel-3 tocsection-19"><a href="#Stats_Commands"><span class="tocnumber">2.2.13</span> <span class="toctext">Stats Commands</span></a></li>
+<li class="toclevel-3 tocsection-20"><a href="#Terrain_Commands"><span class="tocnumber">2.2.14</span> <span class="toctext">Terrain Commands</span></a></li>
+<li class="toclevel-3 tocsection-21"><a href="#Tree_Commands"><span class="tocnumber">2.2.15</span> <span class="toctext">Tree Commands</span></a></li>
+<li class="toclevel-3 tocsection-22"><a href="#User_Commands"><span class="tocnumber">2.2.16</span> <span class="toctext">User Commands</span></a></li>
+<li class="toclevel-3 tocsection-23"><a href="#Windlight.2FLightShare_Commands"><span class="tocnumber">2.2.17</span> <span class="toctext">Windlight/LightShare Commands</span></a></li>
+<li class="toclevel-3 tocsection-24"><a href="#YEngine_Commands"><span class="tocnumber">2.2.18</span> <span class="toctext">YEngine Commands</span></a></li>
+</ul>
+</li>
+<li class="toclevel-2 tocsection-25"><a href="#ROBUST_Service_Commands"><span class="tocnumber">2.3</span> <span class="toctext">ROBUST Service Commands</span></a>
+<ul>
+<li class="toclevel-3 tocsection-26"><a href="#Asset_Service"><span class="tocnumber">2.3.1</span> <span class="toctext">Asset Service</span></a></li>
+<li class="toclevel-3 tocsection-27"><a href="#Grid_Service"><span class="tocnumber">2.3.2</span> <span class="toctext">Grid Service</span></a></li>
+<li class="toclevel-3 tocsection-28"><a href="#User_Service"><span class="tocnumber">2.3.3</span> <span class="toctext">User Service</span></a></li>
+<li class="toclevel-3 tocsection-29"><a href="#Login_Service"><span class="tocnumber">2.3.4</span> <span class="toctext">Login Service</span></a></li>
+</ul>
+</li>
+<li class="toclevel-2 tocsection-30"><a href="#Details_of_Terrain_Module_Commands"><span class="tocnumber">2.4</span> <span class="toctext">Details of Terrain Module Commands</span></a>
+<ul>
+<li class="toclevel-3 tocsection-31"><a href="#terrain_load"><span class="tocnumber">2.4.1</span> <span class="toctext">terrain load</span></a></li>
+<li class="toclevel-3 tocsection-32"><a href="#terrain_load-tile"><span class="tocnumber">2.4.2</span> <span class="toctext">terrain load-tile</span></a></li>
+<li class="toclevel-3 tocsection-33"><a href="#terrain_save"><span class="tocnumber">2.4.3</span> <span class="toctext">terrain save</span></a></li>
+<li class="toclevel-3 tocsection-34"><a href="#terrain_fill"><span class="tocnumber">2.4.4</span> <span class="toctext">terrain fill</span></a></li>
+<li class="toclevel-3 tocsection-35"><a href="#terrain_elevate"><span class="tocnumber">2.4.5</span> <span class="toctext">terrain elevate</span></a></li>
+<li class="toclevel-3 tocsection-36"><a href="#terrain_lower"><span class="tocnumber">2.4.6</span> <span class="toctext">terrain lower</span></a></li>
+<li class="toclevel-3 tocsection-37"><a href="#terrain_multiply"><span class="tocnumber">2.4.7</span> <span class="toctext">terrain multiply</span></a></li>
+<li class="toclevel-3 tocsection-38"><a href="#terrain_bake"><span class="tocnumber">2.4.8</span> <span class="toctext">terrain bake</span></a></li>
+<li class="toclevel-3 tocsection-39"><a href="#terrain_revert"><span class="tocnumber">2.4.9</span> <span class="toctext">terrain revert</span></a></li>
+<li class="toclevel-3 tocsection-40"><a href="#terrain_newbrushes"><span class="tocnumber">2.4.10</span> <span class="toctext">terrain newbrushes</span></a></li>
+<li class="toclevel-3 tocsection-41"><a href="#terrain_stats"><span class="tocnumber">2.4.11</span> <span class="toctext">terrain stats</span></a></li>
+<li class="toclevel-3 tocsection-42"><a href="#terrain_effect"><span class="tocnumber">2.4.12</span> <span class="toctext">terrain effect</span></a></li>
+<li class="toclevel-3 tocsection-43"><a href="#terrain_modify"><span class="tocnumber">2.4.13</span> <span class="toctext">terrain modify</span></a></li>
+</ul>
+</li>
+<li class="toclevel-2 tocsection-44"><a href="#Details_of_Hypergrid_Commands"><span class="tocnumber">2.5</span> <span class="toctext">Details of Hypergrid Commands</span></a></li>
+<li class="toclevel-2 tocsection-45"><a href="#Frame_Statistics_Values"><span class="tocnumber">2.6</span> <span class="toctext">Frame Statistics Values</span></a></li>
+</ul>
+</li>
+</ul>
+</td></tr></table>
+<h1> <span class="mw-headline" id="What_are_server_commands.3F"> What are server commands? </span></h1>
+<p>Server commands are those you can type on the console to make the server do various things.
+</p><p>Commands can be divided up into those that apply to the simulator (simulator commands) and those that apply to grid services (service commands).
+</p><p>On a standalone system, both simulator and service commands will be available on the single standalone system console.
+</p><p>On a grid architecture, the simulator commands will be available on the simulators, whilst the service commands will be available on the ROBUST console.
+</p><p><b>Disclaimer</b>: some commands may not work as expected, some may not work at all, and there is a chance that you may even lose all your settings/contents. This summary quickly goes out of date - the best place to find commands is by typing "help" on the region console.
+</p><p>Except where noted, this list should be accurate for OpenSimulator 0.7.1 onwards.
+</p>
+<h1> <span class="mw-headline" id="Commands"> Commands </span></h1>
+<h2> <span class="mw-headline" id="General_Server_Commands"> General Server Commands </span></h2>
+<p>These commands are available in both simulator and robust consoles.
+</p>
+<h3> <span class="mw-headline" id="General"> General </span></h3>
+<ul><li> command-script [scriptfile] - Runs a command script containing console commands.
+</li><li> quit - shutdown the server.
+</li><li> show info - show server information (version and startup path).  Before OpenSimulator 0.7.5 this is only available on the simulator console.
+</li><li> show uptime - show server startup time and uptime.  Before OpenSimulator 0.7.5 this is only available on the simulator console.
+</li><li> show version - show server version.  Before OpenSimulator 0.7.5 this is only available on the simulator console.
+</li><li> shutdown - synonym for quit
+</li><li> get log level - In OpenSimulator 0.7.5 and later, print the current console logging level.  In OpenSimulator 0.7.4 and earlier please use the "set log level" command instead without a level parameter.
+</li><li> set log level [level] - change the console logging level only. For example, off or debug. See <a href="/wiki/Logging" title="Logging">Logging</a> for more information.  In OpenSimulator 0.7.4 and earlier, if called without the level argument prints the current level.  In OpenSimulator 0.7.5 and later please use the "get log level" command instead.  Only available on ROBUST console from OpenSimulator 0.7.5.
+</li></ul>
+<h3> <span class="mw-headline" id="Debug"> Debug </span></h3>
+<ul><li> debug http [&lt;level&gt;] - Turn on/off extra logging for HTTP request debugging.  Only available on robust console from commit 94517c8 (dev code post 0.7.3.1).  In current development code (for OpenSimulator 0.7.5) this is debug http in|out|all [&lt;level&gt;] since outbound HTTP messages can also now be logged (this was only possible for inbound before). For more information on this command, see <a href="/wiki/Debugging" title="Debugging">Debugging</a>.
+</li></ul>
+<ul><li> debug threadpool level &lt;level&gt; - Turn on/off logging of activity in the main threadpool. For more information, see <a href="/wiki/General-Purpose_Threadpool" title="General-Purpose Threadpool">General-Purpose Threadpool</a>.
+</li></ul>
+<h2> <span class="mw-headline" id="Simulator_Commands"> Simulator Commands </span></h2>
+<h3> <span class="mw-headline" id="General_2"> General </span></h3>
+<ul><li> change region &lt;region name&gt; - subsequent commands apply only to the specified region. If region name is "root" then all regions are selected
+</li><li> debug packet &lt;level&gt; - Turn on packet debugging, where OpenSimulator prints out summaries of incoming and outgoing packets for viewers, depending on the level set
+</li><li> emergency-monitoring - turn emergency debugging monitoring mode on or off.
+</li><li> help [&lt;command&gt;] - Get general command list or more detailed help on a specific command or set of commands
+</li><li> link-mapping - Set a local grid co-ordinate to link to a remote hypergrid 
+</li><li> link-region - Link a HyperGrid region. Not sure how this differs from link-mapping
+</li><li> modules list - List modules
+</li><li> modules load &lt;name&gt; - Load a module
+</li><li> modules unload &lt;name&gt; - Unload a module
+</li><li> monitor report - Returns a variety of statistics about the current region and/or simulator
+</li><li> set terrain heights &lt;corner&gt; &lt;min&gt; &lt;max&gt; [&lt;x&gt;] [&lt;y&gt;] - Sets the terrain texture heights on corner #&lt;corner&gt; to &lt;min&gt;/&lt;max&gt;, if &lt;x&gt; or &lt;y&gt; are specified, it will only set it on regions with a matching coordinate. Specify -1 in &lt;x&gt; or &lt;y&gt; to wildcard that coordinate. Corner # SW = 0, NW = 1, SE = 2, NE = 3.
+</li><li> set terrain texture &lt;number&gt; &lt;uuid&gt; [&lt;x&gt;] [&lt;y&gt;] - Sets the terrain &lt;number&gt; to &lt;uuid&gt;, if &lt;x&gt; or &lt;y&gt; are specified, it will only set it on regions with a matching coordinate. Specify -1 in &lt;x&gt; or &lt;y&gt; to wildcard that coordinate.
+</li><li> show caps - show all registered capabilities URLs
+</li></ul>
+<dl><dd>NOTE: In OpenSimulator 0.7.1, "show capabilities" is shown as a result for help command, but actually only "show caps" will be accepted. (<a rel="nofollow" class="external text" href="http://opensimulator.org/mantis/view.php?id=5467">#5467</a>)
+</dd></dl>
+<ul><li> set water height # - sets the height simulator wide or single region if you use change region.
+</li><li> show circuits - Show agent circuit data
+</li><li> show connections - show connections data
+</li><li> show http-handlers - show all registered http handlers
+</li><li> show hyperlinks - list hg regions
+</li><li> show modules - show module data
+</li><li> show pending-objects - show number of objects in the pending queues of all viewers
+</li><li> show pqueues [full] - show priority queue data for each client. Without the 'full' option, only root agents are shown. With the 'full' option child agents are also shown.
+</li><li> show queues - Show queue data for agent connections.
+</li><li> show threads - shows the persistent threads registered with the system. Does not include threadpool threads. 
+</li><li> show throttles [full] - Show throttle data for each client connection, and the maximum allowed for each connection by the server. Without the 'full' option, only root agents are shown. With the 'full' option child agents are also shown.
+</li><li> unlink-region &lt;local name&gt; - unlink a hypergrid region
+</li></ul>
+<h3> <span class="mw-headline" id="Appearance_Commands"> Appearance Commands </span></h3>
+<ul><li> appearance find &lt;uuid-or-start-of-uuid&gt; - Find out which avatar uses the given asset as a baked texture, if any.
+</li><li> appearance rebake &lt;first-name&gt; &lt;last-name&gt; - Send a request to the user's viewer for it to rebake and reupload its appearance textures.
+</li><li> appearance send [&lt;first-name&gt; &lt;last-name&gt;] - Send appearance data for each avatar in the simulator to other viewers.
+</li><li> appearance show [&lt;first-name&gt; &lt;last-name&gt;] - Show appearance information for avatars.
+</li></ul>
+<p>Only exists in development code at the moment.
+</p>
+<h3> <span class="mw-headline" id="Archive_Commands"> Archive Commands </span></h3>
+<ul><li> load iar &lt;first&gt; &lt;last&gt; &lt;inventory path&gt; &lt;password&gt; [&lt;archive path&gt;] - Load user inventory archive. See <a href="/wiki/Inventory_Archives" title="Inventory Archives">Inventory Archives</a>.
+</li><li> load oar [filename] - load an OpenSimulator archive. This entirely replaces the current region. Default filename is <b>region.oar</b>. See <a href="/wiki/OpenSim_Archives" title="OpenSim Archives">OpenSim Archives</a>.
+</li><li> load xml [-newIDs [&lt;x&gt; &lt;y&gt; &lt;z&gt;]] - Load a region's data from XML format (0.7.*: DEPRECATED and may be REMOVED soon. Use "load xml2" instead)
+</li></ul>
+<dl><dd>those xml are the result of the export save or *export save-all
+</dd></dl>
+<ul><li> load xml2 [filename] - optional parameters not supported for XML2 format as at 1-Jul-2008 
+</li><li> save iar &lt;first&gt; &lt;last&gt; &lt;inventory path&gt; &lt;password&gt; [&lt;archive path&gt;] - Save user inventory archive. See <a href="/wiki/Inventory_Archives" title="Inventory Archives">Inventory Archives</a>
+</li><li> save oar [filename] - save the current region to an OpenSimulator archive. Default filename is <b>region.oar</b>. See <a href="/wiki/OpenSim_Archives" title="OpenSim Archives">OpenSim Archives</a>.
+</li><li> save prims xml2 [&lt;prim name&gt; &lt;file name&gt;] - Save named prim to XML2
+</li><li> save xml [filename] - save prims to XML 
+</li><li> save xml2 [filename] - save prims to XML (Format 2 - rearrangement of some nodes, to make loading/saving easier) 
+</li></ul>
+<h3> <span class="mw-headline" id="Asset_Commands"> Asset Commands </span></h3>
+<p>The fcache commands only currently appearance if you are using the fcache asset cache.  This is the default on OpenSimulator.
+</p>
+<ul><li> fcache assets - Attempt a deep scan and cache of all assets in all scenes
+</li><li> fcache clear [file] [memory] - Remove all assets in the cache.  If file or memory is specified then only this cache is cleared.
+</li><li> fcache clearnegatives - just clear negative cache entries if enabled
+</li><li> fcache expire &lt;datetime&gt; - Purge cached assets older then the specified date/time
+</li><li> fcache status - Display cache status
+</li><li> j2k decode &lt;ID&gt; - Do JPEG2000 decoding of an asset.
+</li></ul>
+<h3> <span class="mw-headline" id="Config_Commands"> Config Commands </span></h3>
+<ul><li> config get [&lt;section&gt;] [&lt;key&gt;] - Get the current configuration, either for a particular key, a particular section or the whole config.
+</li><li> config save &lt;path&gt; - Save the current configuration to a file.
+</li><li> config set &lt;section&gt; &lt;key&gt; - Set a particular configuration value. On the whole, this is useless since neither OpenSimulator nor modules dynamically reload config values.
+</li><li> config show [&lt;section&gt;] [&lt;key&gt;] - Synonym for 'config get'
+</li></ul>
+<h3> <span class="mw-headline" id="Land_Commands"> Land Commands </span></h3>
+<ul><li> land show - Shows all parcels on the current region.
+</li><li> land clear - Clears all parcels on the land.
+</li></ul>
+<h3> <span class="mw-headline" id="Map_Commands"> Map Commands </span></h3>
+<ul><li> export-map [&lt;path&gt;] - Save an image of the world map (default name is exportmap.jpg)
+</li><li> generate map - Regenerates and stores map tile.  Only in development code post 0.7.6.
+</li></ul>
+<h3> <span class="mw-headline" id="Object_Commands"> Object Commands </span></h3>
+<ul><li> backup - Persist currently unsaved object changes immediately instead of waiting for the normal persistence call.  This shouldn't normally be required - the simulator persists region objects automatically at regular intervals and on shutdown.
+</li><li> delete object creator &lt;UUID&gt; - Delete a scene object by creator
+</li><li> delete object name [--regex] &lt;name&gt; - Delete a scene object by name.
+</li><li> delete object outside - Delete all scene objects outside region boundaries.  This is currently if z &lt; 0 or z &gt; 10000.  Object outside these bounds have been known to cause issues with OpenSimulator's use of some physics engines (such as the Open Dynamics Engine).
+</li><li> delete object owner &lt;UUID&gt; - Delete a scene object by owner
+</li><li> delete object id &lt;UUID-or-localID&gt; - Delete a scene object by uuid or localID. Pre 0.7.5, this was "delete object uuid".
+</li><li> dump object id &lt;UUID-or-localID&gt; - Dump the serialization of the given object to a file for debug purposes.
+</li><li> edit scale &lt;name&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt; - Change the scale of a named prim
+</li><li> force update - Force the region to send all clients updates about all objects.
+</li><li> show object name [--regex] &lt;name&gt; - Show details of scene objects with the given name.
+</li><li> show object id &lt;UUID-or-localID&gt; - Show details of a scene object with the given UUID or localID. Pre 0.7.5, this was "show object uuid".
+</li><li> show part name [--regex] &lt;name&gt; - Show details of scene object parts with the given name.
+</li><li> show part id &lt;UUID-or-localID&gt; - Show details of a scene object parts with the given UUID or localID. Pre 0.7.5, this was "show part uuid".
+</li></ul>
+<h3> <span class="mw-headline" id="Estate_Commands"> Estate Commands </span></h3>
+<ul><li> reload estate - reload estate data
+</li><li> estate link region &lt;estate ID&gt; &lt;region ID&gt; - Attaches the specified region to the specified estate.
+</li><li> estate show - This command will show the estate name, ID, and owner for regions currently running in the simulator. This list does not necessarily include all estates that are present in the database.  
+</li></ul>
+<p>Sample usage: 
+</p>
+<pre>estate show&lt;enter&gt;
+Estate information for region TestRegion
+Estate Name ID Owner
+My Estate 103 Test User
+</pre>
+<ul><li> estate set name &lt;estate ID&gt; &lt;new name&gt; - Rename an estate
+</li><li> estate set owner &lt;estate ID&gt; &lt;FirstName&gt; &lt;LastName&gt; - Change the owner of an estate. This command supports two forms; this one uses the owner's name.
+</li><li> estate set owner &lt;estate ID&gt; &lt;owner UUID&gt; - Change the owner of an estate. This command supports two forms; this one uses the owner's UUID.
+</li><li> estate create &lt;owner UUID&gt; &lt;estate name&gt; - Must be a user UUID which you can get from 'show names'
+</li></ul>
+<h3> <span class="mw-headline" id="Region_Commands"> Region Commands </span></h3>
+<ul><li> change region &lt;region name&gt; - subsequent commands apply only to the specified region. If region name is "root" then all regions are selected
+</li><li> create region [name] [filename] - Create a new region 
+</li><li> delete-region &lt;name&gt; - Delete a region from disk.
+</li><li> region get - Post OpenSimulator 0.8.0.*.  Show region parameters (Region Name, Region UUID, Location, URI, Owner ID, Flags).
+</li><li> region restart abort [&lt;message&gt;] - Abort a scheduled region restart, with an optional message
+</li><li> region restart bluebox &lt;message&gt; &lt;delta seconds&gt;+ - Schedule a region restart. If one delta is given then the region is restarted in delta seconds time. A time to restart is sent to users in the region as a dismissable bluebox notice. If multiple deltas are given then a notice is sent when we reach each delta.
+</li><li> region restart notice &lt;message&gt; &lt;delta seconds&gt;+ - Schedule a region restart. Same as above except showing a transient notice instead of a dismissable bluebox.
+</li><li> region set - Post OpenSimulator 0.8.0.*.  Set certain region parameters.  Currently, can set
+<ul><li> agent-limit - The current avatar limit for the region.  More usually this is set via the region/estate dialog in a typical viewer.  This persists over simulator restarts.
+</li><li> max-agent-limit - The maximum value that agent-limit can have.  Unfortunately, setting it here does not currently persist over server restarts.  For that to happen it must be separately set as the MaxAgents parameter in the region config file.
+</li></ul>
+</li><li> remove-region - remove a region from the simulator
+</li><li> restart - Restarts all sims in this instance
+</li><li> restart region &lt;regionname&gt; - Restarts just one sim in an instance. Set the console to the region name first, with 'change region &lt;regionname&gt;', or all regions will restart.
+</li><li> set region flags &lt;Region name&gt; &lt;flags&gt; - Set database flags for region
+</li></ul>
+<dl><dd>Flags can be one of the following:
+</dd><dd><b>DefaultRegion</b>	Used for new Rez. Random if multiple defined
+</dd><dd><b>FallbackRegion</b>	Regions we redirect to when the destination is down
+</dd><dd><b>RegionOnline</b>	Set when a region comes online, unset when it unregisters and DeleteOnUnregister is false
+</dd><dd><b>NoDirectLogin</b>	Region unavailable for direct logins (by name)
+</dd><dd><b>Persistent</b>	Don't remove on unregister
+</dd><dd><b>LockedOut</b>	Don't allow registration
+</dd><dd><b>NoMove	</b>Don't allow moving this region
+</dd><dd><b>Reservation</b>	This is an inactive reservation
+</dd><dd><b>Authenticate</b>	Require authentication
+</dd><dd><b>Hyperlink</b>	Record represents a HG link
+</dd><dd><b>DefaultHGRegion</b>	Record represents a default region for hypergrid teleports only.
+</dd><dd>Note: flags are additive, there is no way to unset them from the console.
+</dd></dl>
+<ul><li> show neighbours - Shows the local regions' neighbours
+</li><li> show ratings - Show rating data
+</li><li> show region - Show region parameters (Region Name, Region UUID, Location, URI, Owner ID, Flags).
+</li><li> show regions - Show regions data (Region Names, XLocation YLocation coordinates, Region Ports, Estate Names)
+</li></ul>
+<h3> <span class="mw-headline" id="Scene_Commands"> Scene Commands </span></h3>
+<ul><li> debug scene - Turn on scene debugging
+</li><li> rotate scene &lt;degrees&gt; - Rotates scene around 128,128 axis by x degrees where x=0-360.
+</li><li> scale scene &lt;factor&gt; - Scales all scene objects by a factor where original size =1.0.
+</li><li> translate scene &lt;x,y,z&gt; - Translate (move) the entire scene to a new coordinate. Useful for moving a scene to a different location on either a Mega or Variable region. 
+</li></ul>
+<p>(please back up your region before using any of these commands and be aware of possible floating point errors the more they are used.)
+</p>
+<h3> <span class="mw-headline" id="Script_Commands"> Script Commands </span></h3>
+<p>These currently only exist in git master OpenSimulator development code post the 0.7.2 release.
+</p>
+<ul><li> scripts resume [&lt;script-item-uuid&gt;] - Resumes all suspended scripts
+</li><li> scripts show [&lt;script-item-uuid&gt;] - Show script information. &lt;script-item-uuid&gt; option only exists from git master 82f0e19 (2012-01-14) onwards (post OpenSimulator 0.7.2).
+</li><li> scripts start [&lt;script-item-uuid&gt;] - Starts all stopped scripts
+</li><li> scripts stop [&lt;script-item-uuid&gt;] - Stops all running scripts
+</li><li> scripts suspend [&lt;script-item-uuid&gt;] - Suspends all running scripts
+</li></ul>
+<h3> <span class="mw-headline" id="Stats_Commands"> Stats Commands </span></h3>
+<ul><li> show stats - show useful statistical information for this server. See <a href="#Frame_Statistics_Values">Frame Statistics Values</a> below for more information.
+</li><li> stats show - a synonym for "show stats" (OpenSimulator dev code only post 19th March 2014).
+</li><li> stats record - record stats periodically to a separate log file.
+</li><li> stats save - save a snapshot of current stats to a file (OpenSimulator dev code only post 19th March 2014).
+</li></ul>
+<h3> <span class="mw-headline" id="Terrain_Commands"> Terrain Commands </span></h3>
+<p>Some of these may require a sim restart to show properly.
+</p>
+<ul><li> terrain load - Loads a terrain from a specified file. (see note1)
+</li><li> terrain load-tile - Loads a terrain from a section of a larger file.
+</li><li> terrain save - Saves the current heightmap to a specified file.
+</li><li> terrain save-tile - Saves the current heightmap to the larger file.
+</li><li> terrain fill - Fills the current heightmap with a specified value.
+</li><li> terrain elevate - Raises the current heightmap by the specified amount.
+</li><li> terrain lower - Lowers the current heightmap by the specified amount.
+</li><li> terrain multiply - Multiplies the heightmap by the value specified.
+</li><li> terrain bake - Saves the current terrain into the regions baked map.
+</li><li> terrain revert - Loads the baked map terrain into the regions heightmap.
+</li><li> terrain newbrushes - Enables experimental brushes which replace the standard terrain brushes.
+</li><li> terrain show - Shows terrain height at a given co-ordinate.
+</li><li> terrain stats - Shows some information about the regions heightmap for debugging purposes.
+</li><li> terrain effect - Runs a specified plugin effect
+</li><li> terrain flip - Flips the current terrain about the X or Y axis
+</li><li> terrain rescale - Rescales the current terrain to fit between the given min and max heights
+</li><li> terrain min - Sets the minimum terrain height to the specified value.
+</li><li> terrain max - Sets the maximum terrain height to the specified value.
+</li><li> terrain modify - Provides several area-of-effect terraforming commands.
+</li></ul>
+<p>Note1&#160;: If you have a sim with multiple regions and you want to set all regions on that sim to be from one larger image you can use 'terrain load &lt;file&gt; &lt;width in regions&gt; &lt;height in regions&gt; &lt;regionX&gt; &lt;regionY&gt; where regionX and regionY are the coordinates of the bottom-left region.
+</p>
+<h3> <span class="mw-headline" id="Tree_Commands"> Tree Commands </span></h3>
+<ul><li> tree active - Change activity state for the trees module
+</li><li> tree freeze - Freeze/Unfreeze activity for a defined copse
+</li><li> tree load - Load a copse definition from an xml file
+</li><li> tree plant - Start the planting on a copse
+</li><li> tree rate - Reset the tree update rate (mSec)
+</li><li> tree reload - Reload copse definitions from the in-scene trees
+</li><li> tree remove - Remove a copse definition and all its in-scene trees
+</li><li> tree statistics - Log statistics about the trees
+</li></ul>
+<h3> <span class="mw-headline" id="User_Commands"> User Commands </span></h3>
+<ul><li> alert &lt;message&gt; - send an in-world alert to everyone
+</li><li> alert-user &lt;first&gt; &lt;last&gt; &lt;message&gt; - send an an in-world alert to a specific user
+</li><li> bypass permissions &lt;true / false&gt; - Bypass in-world permission checks 
+</li><li> debug permissions - Turn on permissions debugging
+</li><li> force permissions - Force permissions on or off.
+</li><li> kick user &lt;first&gt; &lt;last&gt; [message]: - Kick a user off the simulator
+</li><li> login disable - Disable user entry to this simulator
+</li><li> login enable - Enable user entry to this simulator
+</li><li> login status - Show whether logins to this simulator are enabled or disabled
+</li><li> show users [full]- show info about currently connected users to this region. Without the 'full' option, only users actually on the region are shown. With the 'full' option child agents of users in neighbouring regions are also shown.
+</li><li> teleport user &lt;destination&gt; - Teleport a user on this simulator to a specific destination.  Currently only in OpenSimulator development code after the 0.7.3.1 release (commit bf0b817).
+</li></ul>
+<h3> <span class="mw-headline" id="Windlight.2FLightShare_Commands"> Windlight/<a href="/wiki/LightShare" title="LightShare">LightShare</a> Commands </span></h3>
+<ul><li> windlight load - Load windlight profile from the database and broadcast
+</li><li> windlight enable - Enable the windlight plugin
+</li><li> windlight disable - Disable the windlight plugin
+</li></ul>
+<h3> <span class="mw-headline" id="YEngine_Commands"> <a href="/wiki/YEngine" title="YEngine">YEngine</a> Commands </span></h3>
+<ul><li> yeng help
+</li><li> yeng reset -all | &lt;part-of-script-name&gt;
+</li><li> yeng resume - resume script processing
+</li><li> yeng suspend - suspend script processing
+</li><li> yeng ls -full -max=&lt;number&gt; -out=&lt;filename&gt; -queues -topcpu
+</li><li> yeng cvv - show compiler version value
+</li><li> yeng mvv [&lt;newvalue&gt;] - show migration version value
+</li><li> yeng tracecalls [yes | no]
+</li><li> yeng verbose [yes | no]
+</li><li> yeng pev -all | &lt;part-of-script-name&gt; &lt;event-name&gt; &lt;params...&gt;
+</li></ul>
+<h2> <span class="mw-headline" id="ROBUST_Service_Commands"> ROBUST Service Commands </span></h2>
+<p>These can also be accessed on the simulator command console itself in standalone mode.
+</p>
+<h3> <span class="mw-headline" id="Asset_Service"> Asset Service </span></h3>
+<ul><li> delete asset &lt;ID&gt; - Delete an asset from the database. Doesn't appear to be implemented.
+</li><li> dump asset &lt;ID&gt; - Dump an asset to the filesystem.  OpenSimulator 0.7.3 onwards.
+</li><li> show digest &lt;ID&gt; - Show summary information about an asset. From OpenSimulator 0.7.3 onwards this will be renamed to "show asset"
+</li></ul>
+<h3> <span class="mw-headline" id="Grid_Service"> Grid Service </span></h3>
+<ul><li> set region flags &lt;Region name&gt; &lt;flags&gt; - Set database flags for region
+</li><li> show region &lt;Region name&gt; - Show the details of a given region.  This command is renamed to "show region name" in development versions of OpenSimulator.
+</li></ul>
+<p>The following commands currently only exist in development versions of OpenSimulator (post 0.7.3.1).  These are currently found in the "Regions" help section.
+</p>
+<ul><li> deregister region id &lt;Region UUID&gt; - Deregister a region manually.  This can be helpful if a region was not properly removed due to bad simulator shutdown and the simulator has not since been restarted or its region configuration has been changed.
+</li><li> show region at &lt;x-coord&gt; &lt;y-coord&gt; - Show details on a region at the given co-ordinate.
+</li><li> show region name &lt;Region name&gt; - Show details on a region
+</li><li> show regions - Show details on all regions.  In standalone mode this version of the command is not currently available - the simulator version of "show regions" is used instead, which shows similar information.
+</li></ul>
+<h3> <span class="mw-headline" id="User_Service"> User Service </span></h3>
+<ul><li> create user [first] [last] [passw] [Email] [Primary UUID] [Model} - creates a new user
+</li></ul>
+<dl><dd>or just: create user - and server prompts for all data
+</dd><dd>
+</dd><dd>If UUID is nul or whitespace a UUID will be generated for you.
+</dd><dd>
+</dd><dd>Model is the "first lastname" of another user, that user's outfit will be cloned to the new user.
+</dd><dd>
+</dd></dl>
+<ul><li> reset user password[&lt;firstname&gt; [&lt;lastname&gt; [&lt;password&gt;]]] - This command <i>sets</i> a new password for a user and directly updates the database. It does not <i>reset</i> the password to a default or temporary value, as the term might suggest.
+</li><li> show account &lt;firstname&gt; &lt;lastname&gt; - show account details for the given user name (0.7.2-dev)
+</li></ul>
+<h3> <span class="mw-headline" id="Login_Service"> Login Service </span></h3>
+<ul><li> login level &lt;value&gt; - Set the miminim userlevel allowed to login (see <a href="/wiki/Userlevel" title="Userlevel">User Level</a>).
+</li><li> login reset - reset the login level to its default value.
+</li><li> login text &lt;text to print during the login&gt;
+</li><li> set user level &lt;firstname&gt; &lt;lastname&gt; &lt;level&gt; - Set UserLevel for the user, which determines whether a user has a god account or can login at all (0.7.2-dev) (see <a href="/wiki/Userlevel" title="Userlevel">User Level</a>).
+</li></ul>
+<h2> <span class="mw-headline" id="Details_of_Terrain_Module_Commands"> Details of Terrain Module Commands </span></h2>
+<h4> <span class="mw-headline" id="terrain_load"> terrain load </span></h4>
+<p>Loads a terrain from a specified file.
+</p><p>Parameters
+</p>
+<ul><li> filename (String)
+</li></ul>
+<p>	The file you wish to load from, the file extension determines the loader to be used. Supported extensions include: .r32 (RAW32) .f32 (RAW32) .ter (Terragen) .raw (LL/SL RAW) .jpg (JPEG) .jpeg (JPEG) .bmp (BMP) .png (PNG) .gif (GIF) .tif (TIFF) .tiff (TIFF)
+</p>
+<h4> <span class="mw-headline" id="terrain_load-tile"> terrain load-tile </span></h4>
+<p>Loads a terrain from a section of a larger file.
+</p><p>Parameters
+</p>
+<ul><li> filename (String)
+</li></ul>
+<p>	The file you wish to load from, the file extension determines the loader to be used. Supported extensions include: .r32 (RAW32) .f32 (RAW32) .ter (Terragen) .raw (LL/SL RAW) .jpg (JPEG) .jpeg (JPEG) .bmp (BMP) .png (PNG) .gif (GIF) .tif (TIFF) .tiff (TIFF)
+</p>
+<ul><li> file width (Integer)
+</li></ul>
+<p>	The width of the file in tiles
+</p>
+<ul><li> file height (Integer)
+</li></ul>
+<p>	The height of the file in tiles
+</p>
+<ul><li> minimum X tile (Integer)
+</li></ul>
+<p>	The X region coordinate of the first section on the file
+</p>
+<ul><li> minimum Y tile (Integer)
+</li></ul>
+<p>	The Y region coordinate of the first section on the file
+</p>
+<h4> <span class="mw-headline" id="terrain_save"> terrain save </span></h4>
+<p>Saves the current heightmap to a specified file.
+</p><p>Parameters
+</p>
+<ul><li> filename (String)
+</li></ul>
+<p>	The destination filename for your heightmap, the file extension determines the format to save in. Supported extensions include: .r32 (RAW32) .f32 (RAW32) .ter (Terragen) .raw (LL/SL RAW) .jpg (JPEG) .jpeg (JPEG) .bmp (BMP) .png (PNG) .gif (GIF) .tif (TIFF) .tiff (TIFF)
+</p>
+<h4> <span class="mw-headline" id="terrain_fill"> terrain fill </span></h4>
+<p>Fills the current heightmap with a specified value.
+</p><p>Parameters
+</p>
+<ul><li> value (Double)
+</li></ul>
+<p>	The numeric value of the height you wish to set your region to.
+</p>
+<h4> <span class="mw-headline" id="terrain_elevate"> terrain elevate </span></h4>
+<p>Raises the current heightmap by the specified amount.
+</p><p>Parameters
+</p>
+<ul><li> amount (Double)
+</li></ul>
+<h4> <span class="mw-headline" id="terrain_lower"> terrain lower </span></h4>
+<p>Lowers the current heightmap by the specified amount.
+</p><p>Parameters
+</p>
+<ul><li> amount (Double)
+</li></ul>
+<p>	The amount of height to remove from the terrain in meters.
+</p>
+<h4> <span class="mw-headline" id="terrain_multiply"> terrain multiply </span></h4>
+<p>Multiplies the heightmap by the value specified.
+</p><p>Parameters
+</p>
+<ul><li> value (Double)
+</li></ul>
+<p>	The value to multiply the heightmap by.
+</p>
+<h4> <span class="mw-headline" id="terrain_bake"> terrain bake </span></h4>
+<p>Saves the current terrain into the regions revert map.
+</p>
+<h4> <span class="mw-headline" id="terrain_revert"> terrain revert </span></h4>
+<p>Loads the revert map terrain into the regions heightmap.
+</p>
+<h4> <span class="mw-headline" id="terrain_newbrushes"> terrain newbrushes </span></h4>
+<p>Enables experimental brushes which replace the standard terrain brushes. WARNING: This is a debug setting and may be removed at any time.
+</p><p>Parameters
+</p>
+<ul><li> Enabled? (Boolean)
+</li></ul>
+<p>	true / false - Enable new brushes
+</p>
+<h4> <span class="mw-headline" id="terrain_stats"> terrain stats </span></h4>
+<p>Shows some information about the regions heightmap for debugging purposes.
+</p>
+<h4> <span class="mw-headline" id="terrain_effect"> terrain effect </span></h4>
+<p>Runs a specified plugin effect
+</p><p>Parameters
+</p>
+<ul><li> name (String)
+</li></ul>
+<p>	The plugin effect you wish to run, or 'list' to see all plugins
+</p>
+<h4> <span class="mw-headline" id="terrain_modify"> terrain modify </span></h4>
+<p>Allows area-of-effect and tapering with standard heightmap manipulations.
+</p><p>General command usage:
+</p>
+<dl><dd><i>terrain modify &lt;operation&gt; value [&lt;mask&gt;] [-taper=&lt;value2&gt;]</i>
+</dd></dl>
+<dl><dd>Parameters
+<ul><li> value: base value to use in applying operation
+</li><li> mask:
+<ul><li> -rec=x1,y1,dx[,dy] creates a rectangular mask based at x1,y1
+</li><li> -ell=x0,y0,rx[,ry] creates an elliptical mask centred at x0,y0
+</li></ul>
+</li><li> taper:
+<ul><li> rectangular masks taper as pyramids
+</li><li> elliptical masks taper as cones
+</li></ul>
+</li></ul>
+</dd></dl>
+<p><br />
+Terrain Manipulation (fill, min, max)
+</p>
+<dl><dd><ul><li> value represents target height (at centre of range)
+</li><li> value2 represents target height (at edges of range)
+</li></ul>
+</dd></dl>
+<p>Terrain Movement (raise, lower, noise)
+</p>
+<dl><dd><ul><li> value represents a delta amount (at centre of range)
+</li><li> value2 represents a delta amount (at edges of range)
+</li></ul>
+</dd></dl>
+<p>Terrain Smoothing (smooth)
+</p>
+<dl><dd>The smoothing operation is somewhat different than the others, as it does not deal with elevation values, but rather with strength values (in the range of 0.01 to 0.99).  The algorithm is simplistic in averaging the values around a point, and is implemented as follows:
+</dd></dl>
+<dl><dd>The "strength" parameter specifies how much of the result is from the original value ("strength" * map[x,y]).
+</dd><dd>The "taper" parameter specifies how much of the remainder is from the first ring surrounding the point (1.0 - "strength") * "taper". There are 8 elements in the first ring.
+</dd><dd>The remaining contribution is made from the second ring surrounding the point.  There are 16 elements in the second ring.
+</dd><dd>e.g.
+</dd><dd><i>terrain modify smooth 0.5 -taper=0.6</i>
+<ul><li> the original element will contribute 0.5 * map[x0,y0]
+</li><li> each element 1m from the point will contribute ((1-0.5)*0.6)/8 * map[x1,y1]
+</li><li> each element 2m from the point will contribute ((1-0.5)*0.4)/16 * map[x2,y2]
+</li></ul>
+</dd></dl>
+<p>Notes:
+</p>
+<dl><dd>The "taper" value may need to be exaggerated due to the integer math used in maps.
+</dd><dd>e.g. To create a 512x512 var island:
+</dd><dd><i>terrain modify min 30 -ell=256,256,240 -taper=-29</i>
+</dd></dl>
+<p>Example:
+</p>
+<dl><dd> <a rel="nofollow" class="external free" href="https://www.youtube.com/watch?v=pehyqr3H8I0">https://www.youtube.com/watch?v=pehyqr3H8I0</a> (dead link)
+</dd></dl>
+<h2> <span class="mw-headline" id="Details_of_Hypergrid_Commands"> Details of Hypergrid Commands </span></h2>
+<p>For full details and explanations of Hypergrid Commands, see the <a rel="nofollow" class="external text" href="http://opensimulator.org/wiki/Installing_and_Running_Hypergrid#Linking_regions_.28Optional.29">Linking Regions</a> sections of the <a rel="nofollow" class="external text" href="http://opensimulator.org/wiki/Installing_and_Running_Hypergrid">Installing and Running Hypergrid</a> page.
+</p><p><b>show hyperlinks</b> 
+</p><p>This command will show a list of all hypergrid linked regions.
+</p><p><b>link-region &lt;Xloc&gt; &lt;Yloc&gt; &lt;host&gt; &lt;port&gt; &lt;location-name&gt;</b>
+</p>
+<ul><li> Use Xloc and Yloc that make sense to your world, i.e. close to your regions, but not adjacent.
+</li><li> replace osl2.nac.uci.edu and 9006 with the domain name / ip address and the port of the region you want to link to
+</li></ul>
+<p>E.g. link-region 8998 8998 osl2.nac.uci.edu 9006 OSGrid Gateway
+</p><p><b>unlink-region &lt;local region name&gt;</b>
+</p><p>This command will unlink the specified hypergrid linked region - be sure to use the exact local name as reported by the "show hyperlinks" command.
+</p><p>link-mapping - Link a HyperGrid region. Not sure how this differs from link-mapping.
+</p>
+<h2> <span class="mw-headline" id="Frame_Statistics_Values"> Frame Statistics Values </span></h2>
+<p>The labels of the Frame Statistics values shown by the console command "show stats" are a bit cryptic. Here is a list of the meanings of these values:
+</p>
+<ul><li> Dilatn - time dilation
+</li><li> SimFPS - simulator frames per second
+</li><li> PhyFPS - physics frames per second
+</li><li> AgntUp - # of agent updates
+</li><li> RootAg - # of root agents
+</li><li> ChldAg - # of child agents
+</li><li> Prims - # of total prims
+</li><li> AtvPrm - # of active prims
+</li><li> AtvScr - # of active scripts
+</li><li> ScrLPS - # of script lines per second
+</li><li> PktsIn - # of in packets per second
+</li><li> PktOut - # of out packets per second
+</li><li> PendDl - # of pending downloads
+</li><li> PendUl - # of pending uploads
+</li><li> UnackB - # of unacknowledged bytes
+</li><li> TotlFt - total frame time
+</li><li> NetFt - net frame time
+</li><li> PhysFt - physics frame time
+</li><li> OthrFt - other frame time
+</li><li> AgntFt - agent frame time
+</li><li> ImgsFt - image frame time
+</li></ul>
+
+<!-- 
+NewPP limit report
+Preprocessor node count: 1096/1000000
+Post‐expand include size: 15406/2097152 bytes
+Template argument size: 3045/2097152 bytes
+Expensive parser function count: 53/100
+-->
+
+<!-- Saved in parser cache with key oslwiki-wiki_:pcache:idhash:1544-0!*!0!!en!2!* and timestamp 20261002013425 -->
+</div><div class="printfooter">
+Retrieved from "<a href="http://opensimulator.org/index.php?title=Server_Commands&amp;oldid=54822">http://opensimulator.org/index.php?title=Server_Commands&amp;oldid=54822</a>"</div>
+			<div id="catlinks"><div id='catlinks' class='catlinks'><div id="mw-normal-catlinks" class="mw-normal-catlinks"><a href="/wiki/Special:Categories" title="Special:Categories">Categories</a>: <ul><li><a href="/wiki/Category:Support" title="Category:Support">Support</a></li><li><a href="/wiki/Category:Help" title="Category:Help">Help</a></li><li><a href="/wiki/Category:Configuration" title="Category:Configuration">Configuration</a></li><li><a href="/wiki/Category:Getting_Started" title="Category:Getting Started">Getting Started</a></li><li><a href="/wiki/Category:Development" title="Category:Development">Development</a></li></ul></div></div></div>			<!-- end content -->
+			<div class="visualClear"></div>
+		</div>
+	</div>
+      </div>
+		</div>
+                <div id="osbadge">
+                  <img id="oslogo" src="/skins/osmonobook/images/headerLogo.png">
+                </div>
+		<div id="column-one">
+                  
+	<div class="portlet" id="p-personal">
+		<h5>Personal tools</h5>
+		<div class="pBody">
+			<ul>
+				<li id="pt-login"><a href="/index.php?title=Special:UserLogin&amp;returnto=Server+Commands"Array>Log in / create account</a></li>
+			</ul>
+		</div>
+	</div>
+<!--	<div class="portlet" id="p-logo">
+		<a style="background-image: url(/skins/common/images/wiki.png);" href="/wiki/Main_Page"Array></a>
+	</div> -->
+<script type="text/javascript"> if (window.isMSIE55) fixalpha(); </script>
+                <div class='portlet' id='p-General'>
+        <h5>General</h5>
+		<div class='pBody'>
+			<ul>
+				<li id="n-mainpage"><a href="/wiki/Main_Page"Array>Main Page</a></li>
+				<li id="n-News"><a href="/wiki/News"Array>News</a></li>
+			</ul>
+		</div>
+	</div>
+	        <div class='portlet' id='p-For_Administrators'>
+        <h5>For Administrators</h5>
+		<div class='pBody'>
+			<ul>
+				<li id="n-Admin-Home"><a href="/wiki/User_Documentation"Array>Admin Home</a></li>
+				<li id="n-Download"><a href="/wiki/Download"Array>download</a></li>
+				<li id="n-Running"><a href="/wiki/Dependencies"Array>Running</a></li>
+				<li id="n-Configuration"><a href="/wiki/Configuration"Array>Configuration</a></li>
+				<li id="n-Building"><a href="/wiki/Build_Instructions"Array>Building</a></li>
+				<li id="n-FAQ"><a href="/wiki/FAQ"Array>FAQ</a></li>
+				<li id="n-Related-Software"><a href="/wiki/Related_Software"Array>Related Software</a></li>
+				<li id="n-Support"><a href="/wiki/Support"Array>Support</a></li>
+				<li id="n-Report-a-Bug"><a href="http://opensimulator.org/mantis"Array>Report a Bug</a></li>
+			</ul>
+		</div>
+	</div>
+	        <div class='portlet' id='p-For_Developers'>
+        <h5>For Developers</h5>
+		<div class='pBody'>
+			<ul>
+				<li id="n-Dev-Home"><a href="/wiki/Development"Array>Dev Home</a></li>
+				<li id="n-Contributions-Policy"><a href="/wiki/Contributions_Policy"Array>Contributions Policy</a></li>
+				<li id="n-Bug-Tracking"><a href="http://opensimulator.org/mantis"Array>Bug Tracking</a></li>
+			</ul>
+		</div>
+	</div>
+	        <div class='portlet' id='p-For_Creators'>
+        <h5>For Creators</h5>
+		<div class='pBody'>
+			<ul>
+				<li id="n-Content-Creation"><a href="/wiki/Artist_Home"Array>Content Creation</a></li>
+				<li id="n-Scripting"><a href="/wiki/Scripting_Documentation"Array>Scripting</a></li>
+			</ul>
+		</div>
+	</div>
+	        <div class='portlet' id='p-For_Grid_Users'>
+        <h5>For Grid Users</h5>
+		<div class='pBody'>
+			<ul>
+				<li id="n-Connecting"><a href="/wiki/Connecting"Array>Connecting</a></li>
+				<li id="n-Grid-List"><a href="/wiki/Grid_List"Array>Grid List</a></li>
+				<li id="n-Screenshots"><a href="/wiki/Screenshots"Array>Screenshots</a></li>
+			</ul>
+		</div>
+	</div>
+	        <div class='portlet' id='p-Related_Links'>
+        <h5>Related Links</h5>
+		<div class='pBody'>
+			<ul>
+				<li id="n-Related-Software"><a href="/wiki/Related_Software"Array>Related Software</a></li>
+				<li id="n-Black-Duck"><a href="https://www.openhub.net/p/opensimulator"Array>Black Duck</a></li>
+			</ul>
+		</div>
+	</div>
+	        <div class='portlet' id='p-About_This_Wiki'>
+        <h5>About This Wiki</h5>
+		<div class='pBody'>
+			<ul>
+				<li id="n-recentchanges"><a href="/wiki/Special:RecentChanges"Array>Recent changes</a></li>
+			</ul>
+		</div>
+	</div>
+		<div id="p-search" class="portlet">
+          <h5><label for="searchInput">Search</label></h5>
+		<div id="searchBody" class="pBody">
+			<form action="/wiki/Special:Search" id="searchform"><div>
+				<input id="searchInput" name="search" type="text"Array value="" />
+				<input type='submit' name="go" class="searchButton" id="searchGoButton"	value="Go" />&nbsp;
+				<input type='submit' name="fulltext" class="searchButton" id="mw-searchButton" value="Search" />
+			</div></form>
+		</div>
+	</div>
+	<div class="portlet" id="p-tb">
+		<h5>Tools</h5>
+		<div class="pBody">
+			<ul>
+				<li id="t-whatlinkshere"><a href="/wiki/Special:WhatLinksHere/Server_Commands"Array>What links here</a></li>
+				<li id="t-recentchangeslinked"><a href="/wiki/Special:RecentChangesLinked/Server_Commands"Array>Related changes</a></li>
+<li id="t-specialpages"><a href="/wiki/Special:SpecialPages"Array>Special pages</a></li>
+				<li id="t-print"><a href="/index.php?title=Server_Commands&amp;printable=yes"Array>Printable version</a></li>				<li id="t-permalink"><a href="/index.php?title=Server_Commands&amp;oldid=54822"Array>Permanent link</a></li>			</ul>
+		</div>
+	</div>
+		</div><!-- end of the left (by default at least) column -->
+			<div class="visualClear"></div>
+			<div id="footer">
+				<div id="f-poweredbyico"><a href="https://cciedump.spoto.net/"><img src="/skins/common/images/poweredby_mediawiki_88x31.png" height="31" width="88" alt="Powered by spoto dumps review" /></a></div>
+				<div id="f-copyrightico"><a href="http://creativecommons.org/licenses/by-sa/2.5/"><img src="http://i.creativecommons.org/l/by-sa/2.5/88x31.png" alt="Attribution-Share Alike 2.5 " width="88" height="31" /></a></div>
+			<ul id="f-list">
+				<li id="lastmod"> This page was last modified on 19 March 2025, at 03:37.</li>
+				<li id="viewcount">This page has been accessed 851,561 times.</li>
+				<li id="copyright">Content is available under <a class="external" href="http://creativecommons.org/licenses/by-sa/2.5/">Attribution-Share Alike 2.5 </a> unless otherwise noted.</li>
+				<li id="privacy"><a href="/wiki/OpenSimulator:Privacy_policy" title="OpenSimulator:Privacy policy">Privacy policy</a></li>
+				<li id="about"><a href="/wiki/OpenSimulator:About" title="OpenSimulator:About">About OpenSimulator</a></li>
+				<li id="disclaimer"><a href="/wiki/OpenSimulator:General_disclaimer" title="OpenSimulator:General disclaimer">Disclaimers</a></li>
+			</ul>
+		</div>
+		
+	<script>if(window.mw){
+mw.loader.load(["mediawiki.user","mediawiki.page.ready","mediawiki.legacy.mwsuggest"], null, true);
+}</script>
+<script src="http://opensimulator.org/load.php?debug=false&amp;lang=en&amp;modules=site&amp;only=scripts&amp;skin=osmonobook&amp;*"></script>
+</div>
+<!-- Served in 0.293 secs. --><script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+var pageTracker = _gat._getTracker("UA-5842937-1");
+pageTracker._trackPageview();
+</script>
+</body></html>

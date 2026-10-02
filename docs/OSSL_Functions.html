@@ -1,0 +1,995 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" dir="ltr">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta name="generator" content="MediaWiki 1.19.9" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="search" type="application/opensearchdescription+xml" href="/opensearch_desc.php" title="OpenSimulator (en)" />
+<link rel="EditURI" type="application/rsd+xml" href="http://opensimulator.org/api.php?action=rsd" />
+<link rel="copyright" href="http://creativecommons.org/licenses/by-sa/2.5/" />
+<link rel="alternate" type="application/atom+xml" title="OpenSimulator Atom feed" href="/index.php?title=Special:RecentChanges&amp;feed=atom" />		<title>Category:OSSL Functions - OpenSimulator</title>
+		<style type="text/css" media="screen, projection">/*<![CDATA[*/
+			@import "/skins/common/shared.css?303";
+			@import "/skins/osmonobook/main.css?303";
+		/*]]>*/</style>
+		<link rel="stylesheet" type="text/css" media="print" href="/skins/common/commonPrint.css?303" />
+		<!--[if lt IE 5.5000]><style type="text/css">@import "/skins/osmonobook/IE50Fixes.css?303";</style><![endif]-->
+		<!--[if IE 5.5000]><style type="text/css">@import "/skins/osmonobook/IE55Fixes.css?303";</style><![endif]-->
+		<!--[if IE 6]><style type="text/css">@import "/skins/osmonobook/IE60Fixes.css?303";</style><![endif]-->
+		<!--[if IE 7]><style type="text/css">@import "/skins/osmonobook/IE70Fixes.css?303";</style><![endif]-->
+		<!--[if lt IE 7]><script type="text/javascript" src="/skins/common/IEFixes.js?303"></script>
+		<meta http-equiv="imagetoolbar" content="no" /><![endif]-->
+		
+		<script>if(window.mw){
+mw.config.set({"wgCanonicalNamespace":"Category","wgCanonicalSpecialPageName":false,"wgNamespaceNumber":14,"wgPageName":"Category:OSSL_Functions","wgTitle":"OSSL Functions","wgCurRevisionId":55112,"wgArticleId":2707,"wgIsArticle":true,"wgAction":"view","wgUserName":null,"wgUserGroups":["*"],"wgCategories":["Scripting","Scripts","OSSL"],"wgBreakFrames":false,"wgPageContentLanguage":"en","wgSeparatorTransformTable":["",""],"wgDigitTransformTable":["",""],"wgRelevantPageName":"Category:OSSL_Functions","wgRestrictionEdit":[],"wgRestrictionMove":[],"wgSearchNamespaces":[0]});
+}</script>                
+		<script type="text/javascript" src="/skins/common/wikibits.js?303"><!-- wikibits js --></script>
+		<!-- Head Scripts -->
+<script src="http://opensimulator.org/load.php?debug=false&amp;lang=en&amp;modules=startup&amp;only=scripts&amp;skin=osmonobook&amp;*"></script>
+<script>if(window.mw){
+mw.config.set({"wgCanonicalNamespace":"Category","wgCanonicalSpecialPageName":false,"wgNamespaceNumber":14,"wgPageName":"Category:OSSL_Functions","wgTitle":"OSSL Functions","wgCurRevisionId":55112,"wgArticleId":2707,"wgIsArticle":true,"wgAction":"view","wgUserName":null,"wgUserGroups":["*"],"wgCategories":["Scripting","Scripts","OSSL"],"wgBreakFrames":false,"wgPageContentLanguage":"en","wgSeparatorTransformTable":["",""],"wgDigitTransformTable":["",""],"wgRelevantPageName":"Category:OSSL_Functions","wgRestrictionEdit":[],"wgRestrictionMove":[],"wgSearchNamespaces":[0]});
+}</script><script>if(window.mw){
+mw.loader.implement("user.options",function($){mw.user.options.set({"ccmeonemails":0,"cols":80,"date":"default","diffonly":0,"disablemail":0,"disablesuggest":0,"editfont":"default","editondblclick":0,"editsection":1,"editsectiononrightclick":0,"enotifminoredits":0,"enotifrevealaddr":0,"enotifusertalkpages":1,"enotifwatchlistpages":0,"extendwatchlist":0,"externaldiff":0,"externaleditor":0,"fancysig":0,"forceeditsummary":0,"gender":"unknown","hideminor":0,"hidepatrolled":0,"highlightbroken":1,"imagesize":2,"justify":0,"math":1,"minordefault":0,"newpageshidepatrolled":0,"nocache":0,"noconvertlink":0,"norollbackdiff":0,"numberheadings":0,"previewonfirst":0,"previewontop":1,"quickbar":5,"rcdays":7,"rclimit":50,"rememberpassword":0,"rows":25,"searchlimit":20,"showhiddencats":0,"showjumplinks":1,"shownumberswatching":1,"showtoc":1,"showtoolbar":1,"skin":"osmonobook","stubthreshold":0,"thumbsize":2,"underline":2,"uselivepreview":0,"usenewrc":0,"watchcreations":0,"watchdefault":0,
+"watchdeletion":0,"watchlistdays":3,"watchlisthideanons":0,"watchlisthidebots":0,"watchlisthideliu":0,"watchlisthideminor":0,"watchlisthideown":0,"watchlisthidepatrolled":0,"watchmoves":0,"wllimit":250,"variant":"en","language":"en","searchNs0":true,"searchNs1":false,"searchNs2":false,"searchNs3":false,"searchNs4":false,"searchNs5":false,"searchNs6":false,"searchNs7":false,"searchNs8":false,"searchNs9":false,"searchNs10":false,"searchNs11":false,"searchNs12":false,"searchNs13":false,"searchNs14":false,"searchNs15":false});;},{},{});mw.loader.implement("user.tokens",function($){mw.user.tokens.set({"editToken":"+\\","watchToken":false});;},{},{});
+
+/* cache key: oslwiki-wiki_:resourceloader:filter:minify-js:7:230849de8b60da8a23d6b96c4e1e3f85 */
+}</script>
+<script>if(window.mw){
+mw.loader.load(["mediawiki.page.startup","mediawiki.legacy.wikibits","mediawiki.legacy.ajax"]);
+}</script>	</head>
+<body  class="mediawiki  ltr ns-14 ns-subject page-Category_OSSL_Functions">
+	<div id="globalWrapper">
+		<div id="column-content">
+	<div id="content-wrapper">
+	<div id="p-cactions" class="portlet">
+		<h5>Views</h5>
+		<div class="pBody">
+			<ul>
+                                                    <li id="ca-nstab-category" class="selected"><a href="/wiki/Category:OSSL_Functions"Array>Category</a></li>
+                                                    <li id="ca-talk"><a href="/wiki/Category_talk:OSSL_Functions"Array>Discussion</a></li>
+                                                    <li id="ca-viewsource"><a href="/index.php?title=Category:OSSL_Functions&amp;action=edit"Array>View source</a></li>
+                                                    <li id="ca-history"><a href="/index.php?title=Category:OSSL_Functions&amp;action=history"Array>History</a></li>
+                          			</ul>
+		</div>
+	</div>
+        <div id="content">
+		<a name="top" id="top"></a>
+				<h1 class="firstHeading">Category:OSSL Functions</h1>
+		<div id="bodyContent">
+			<h3 id="siteSub">From OpenSimulator</h3>
+			<div id="contentSub"></div>
+									<div id="jump-to-nav">Jump to: <a href="#column-one">navigation</a>, <a href="#searchInput">search</a></div>			<!-- start content -->
+			<div id="mw-content-text" lang="en" dir="ltr" class="mw-content-ltr"><div style="width:750px; margin-left:auto;margin-right:auto;padding:10px;border:0px solid #AAAAAA; height:60px;">
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/Main_Page" title="Main Page">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:Home.png" class="image" title="image page"><img alt="image page" src="/images/thumb/9/9a/Home.png/32px-Home.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/Main_Page" title="Main Page">Home</a></b></center></div>
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/Download" title="Download">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:Compfile.png" class="image" title="image page"><img alt="image page" src="/images/thumb/f/f1/Compfile.png/32px-Compfile.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/Download" title="Download">Download</a></b></center></div>
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/News" title="News">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:News.png" class="image" title="image page"><img alt="image page" src="/images/thumb/0/07/News.png/32px-News.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/News" title="News">News</a></b></center></div>
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/Support" title="Support">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:Edu_languages.png" class="image" title="image page"><img alt="image page" src="/images/thumb/d/d7/Edu_languages.png/32px-Edu_languages.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/Support" title="Support">Support</a></b></center></div>
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/User_Documentation" title="User Documentation">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:Package_system.png" class="image" title="image page"><img alt="image page" src="/images/thumb/f/fd/Package_system.png/32px-Package_system.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/User_Documentation" title="User Documentation">Admin</a></b></center></div>
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/Developer_Documentation" title="Developer Documentation">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:Openterm.png" class="image" title="image page"><img alt="image page" src="/images/thumb/2/23/Openterm.png/32px-Openterm.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/Developer_Documentation" title="Developer Documentation">Dev</a></b></center></div>
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/Media" title="Media" class="mw-redirect">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:Media.png" class="image" title="image page"><img alt="image page" src="/images/thumb/3/35/Media.png/32px-Media.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/Media" title="Media" class="mw-redirect">Screen Shots</a></b></center></div>
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/Grid_List" title="Grid List">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:Compfile.png" class="image" title="image page"><img alt="image page" src="/images/thumb/f/f1/Compfile.png/32px-Compfile.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/Grid_List" title="Grid List">Grid List</a></b></center></div>
+<div style="width:70px; float:left;"><center><div style="position: relative; width: 32px; height: 32px; overflow: hidden;"><div style="position: absolute; top: 0; left: 0; font-size: 200pt; width: 32px; height: 32px; overflow: hidden; line-height: 32px; z-index: 3;"><a href="/wiki/Bugs" title="Bugs">&#160;</a></div><div style="position: absolute; top: 0; left: 0; z-index: 2;"><a href="/wiki/File:Bug.png" class="image" title="image page"><img alt="image page" src="/images/thumb/7/7d/Bug.png/32px-Bug.png" width="32" height="32" /></a></div></div></center><center><b><a href="/wiki/Bugs" title="Bugs">Bugs</a></b></center></div>
+</div>
+<div class="LanguageLinks" style="margin: 1em 0;">
+<table style="width: 100%; clear: both; border: 1px solid #aaaaaa; border-collapse: collapse; padding: 0.2em; margin: 0; font-size: 85%; margin: 0 1px;">
+<tr valign="center" style="background: #EEF3E2">
+<td style="width: 25px; padding-left: 0.5em;"><a href="/wiki/File:Geographylogo.png" class="image" title="Languages"><img alt="Languages" src="/images/thumb/5/59/Geographylogo.png/25px-Geographylogo.png" width="25" height="25" /></a></td>
+<td style="width: 10px; white-space: nowrap; padding: 4px 1em 0 0.5em; border-right: 1px solid #aaaaaa;"><b>Languages:</b>&#160;</td>
+<td>
+<p><b><a href="/wiki/File:En.png" class="image"><img alt="En.png" src="/images/3/3b/En.png" width="22" height="15" /></a> <strong class="selflink">English</strong></b> <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>&#160;&#160;<span lang="de"><a href="/wiki/File:De.png" class="image"><img alt="De.png" src="/images/8/8f/De.png" width="22" height="15" /></a>&#160;<a href="/wiki/Category:OSSL_Functions/de" title="Category:OSSL Functions/de">Deutsch</a></span>
+<span></span><span></span>
+<span></span><span></span><span></span>
+<span></span><span></span><span></span><span></span><span></span><span></span>
+<span></span>
+<span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+<span></span><span></span><span></span>
+<span></span><span></span><span></span>
+<span></span><span></span><span></span>
+<span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+</p>
+</td>
+</tr>
+</table>
+</div>
+<p><br />
+</p>
+<div style="background-color:#FFA500; padding:10px; padding-bottom:5px; border: 1px #FF544F solid">
+<p>This information is relative to (almost) the last OpenSimulator Development version. In some cases it may not apply to older versions.
+</p>
+</div>
+<table id="toc" class="toc"><tr><td><div id="toctitle"><h2>Contents</h2></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#OSSL_function_permissions"><span class="tocnumber">1</span> <span class="toctext">OSSL function permissions</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="#osslDefaultEnable.ini"><span class="tocnumber">2</span> <span class="toctext">osslDefaultEnable.ini</span></a></li>
+<li class="toclevel-1 tocsection-3"><a href="#osslEnable.ini"><span class="tocnumber">3</span> <span class="toctext">osslEnable.ini</span></a>
+<ul>
+<li class="toclevel-2 tocsection-4"><a href="#Current_OSSL_Functions_Implemented"><span class="tocnumber">3.1</span> <span class="toctext">Current OSSL Functions Implemented</span></a>
+<ul>
+<li class="toclevel-3 tocsection-5"><a href="#Avatars"><span class="tocnumber">3.1.1</span> <span class="toctext">Avatars</span></a></li>
+<li class="toclevel-3 tocsection-6"><a href="#NPCs"><span class="tocnumber">3.1.2</span> <span class="toctext">NPCs</span></a></li>
+<li class="toclevel-3 tocsection-7"><a href="#Prim"><span class="tocnumber">3.1.3</span> <span class="toctext">Prim</span></a></li>
+<li class="toclevel-3 tocsection-8"><a href="#Prim_Drawing_.2F_Dynamic_Texture"><span class="tocnumber">3.1.4</span> <span class="toctext">Prim Drawing / Dynamic Texture</span></a></li>
+<li class="toclevel-3 tocsection-9"><a href="#Notecard"><span class="tocnumber">3.1.5</span> <span class="toctext">Notecard</span></a></li>
+<li class="toclevel-3 tocsection-10"><a href="#Sound"><span class="tocnumber">3.1.6</span> <span class="toctext">Sound</span></a></li>
+<li class="toclevel-3 tocsection-11"><a href="#HTTP"><span class="tocnumber">3.1.7</span> <span class="toctext">HTTP</span></a></li>
+<li class="toclevel-3 tocsection-12"><a href="#Parcel"><span class="tocnumber">3.1.8</span> <span class="toctext">Parcel</span></a></li>
+<li class="toclevel-3 tocsection-13"><a href="#Terrain"><span class="tocnumber">3.1.9</span> <span class="toctext">Terrain</span></a></li>
+<li class="toclevel-3 tocsection-14"><a href="#Region_.2F_Parcel_Environment"><span class="tocnumber">3.1.10</span> <span class="toctext">Region / Parcel Environment</span></a></li>
+<li class="toclevel-3 tocsection-15"><a href="#Grid_.2F_Region_Information"><span class="tocnumber">3.1.11</span> <span class="toctext">Grid / Region Information</span></a></li>
+<li class="toclevel-3 tocsection-16"><a href="#Administration"><span class="tocnumber">3.1.12</span> <span class="toctext">Administration</span></a></li>
+<li class="toclevel-3 tocsection-17"><a href="#Script"><span class="tocnumber">3.1.13</span> <span class="toctext">Script</span></a></li>
+<li class="toclevel-3 tocsection-18"><a href="#String_Manipulation"><span class="tocnumber">3.1.14</span> <span class="toctext">String Manipulation</span></a></li>
+<li class="toclevel-3 tocsection-19"><a href="#Misc"><span class="tocnumber">3.1.15</span> <span class="toctext">Misc</span></a></li>
+<li class="toclevel-3 tocsection-20"><a href="#Deprecated"><span class="tocnumber">3.1.16</span> <span class="toctext">Deprecated</span></a></li>
+</ul>
+</li>
+<li class="toclevel-2 tocsection-21"><a href="#See_Also"><span class="tocnumber">3.2</span> <span class="toctext">See Also</span></a></li>
+</ul>
+</li>
+</ul>
+</td></tr></table>
+<h2> <span class="mw-headline" id="OSSL_function_permissions"> OSSL function permissions </span></h2>
+<p>Several OSSL functions have execution permission control to prevent abusive or dangerous use.
+</p><p>This is controlled by files osslDefaultEnable.ini and osslEnable.ini, by default in folder bin/config-include<br />
+The use logic of these two files is identical to OpenSimDefaults.ini and OpenSim.ini
+</p><p>Older OpenSimulator versions only used file osslEnable.ini.<br />
+Some older OpenSimulator versions had checks for all OSSLfunctions.<br />
+That made no sense for many functions, so now many are always allowed wasting no time on useless checks.<br />
+</p><p>For details about these permissions, please read file OpenSimDefaults.ini
+</p>
+<h1> <span class="mw-headline" id="osslDefaultEnable.ini"> osslDefaultEnable.ini </span></h1>
+<p>This file contains the defaults for OSSL execution permissions set by OpenSimulator dev team.<br />
+Instead of changing defaults defined in code, the OpenSimulator dev team may decide to just make changes in this file.<br />
+This file was not present on older OpenSimulator versions.<br />
+If you need to change permissions, copy the respective entry to osslEnable.ini and modify there.<br />
+</p>
+<h1> <span class="mw-headline" id="osslEnable.ini"> osslEnable.ini </span></h1>
+<p>This file contains the local overrides for OSSL permissions.<br />
+It is read after osslDefaultEnable.ini, and any entry on it replaces the old one.<br />
+This file is not provided on code packages, an osslEnable.ini.example is.<br />
+At first time setup, you will need to copy the example file to osslEnable.ini and then edit it for your needs, using osslDefaults.ini as reference.<br />
+This was the only file used on older OpenSimulator versions.
+</p>
+<h2> <span class="mw-headline" id="Current_OSSL_Functions_Implemented"> Current OSSL Functions Implemented  </span></h2>
+<h3> <span class="mw-headline" id="Avatars"> Avatars </span></h3>
+<div>
+<table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color:transparent;table-layout:fixed;">
+
+<tr valign="top">
+<td><div style="margin-right:20px;">
+<ul><li> <a href="/wiki/OsAgentSaveAppearance" title="OsAgentSaveAppearance">osAgentSaveAppearance</a>
+</li><li> <a href="/wiki/OsAvatarName2Key" title="OsAvatarName2Key">osAvatarName2Key</a>
+</li><li> <a href="/wiki/OsAvatarPlayAnimation" title="OsAvatarPlayAnimation">osAvatarPlayAnimation</a> 
+</li><li> <a href="/wiki/OsAvatarStopAnimation" title="OsAvatarStopAnimation">osAvatarStopAnimation</a> 
+</li><li> <a href="/wiki/OsAvatarType" title="OsAvatarType">osAvatarType</a>
+</li><li> <a href="/wiki/OsCauseDamage" title="OsCauseDamage">osCauseDamage</a> 
+</li><li> <a href="/wiki/OsCauseHealing" title="OsCauseHealing">osCauseHealing</a>
+</li><li> <a href="/wiki/OsDetectedCountry" title="OsDetectedCountry">osDetectedCountry</a>
+</li><li> <a href="/wiki/OsDropAttachment" title="OsDropAttachment">osDropAttachment</a>
+</li><li> <a href="/wiki/OsDropAttachmentAt" title="OsDropAttachmentAt">osDropAttachmentAt</a>
+</li><li> <a href="/wiki/OsEjectFromGroup" title="OsEjectFromGroup">osEjectFromGroup</a>
+</li><li> <a href="/wiki/OsForceAttachToAvatar" title="OsForceAttachToAvatar">osForceAttachToAvatar</a>
+</li><li> <a href="/wiki/OsForceAttachToAvatarFromInventory" title="OsForceAttachToAvatarFromInventory">osForceAttachToAvatarFromInventory</a>
+</li><li> <a href="/wiki/OsForceAttachToOtherAvatarFromInventory" title="OsForceAttachToOtherAvatarFromInventory">osForceAttachToOtherAvatarFromInventory</a>
+</li><li> <a href="/wiki/OsForceDetachFromAvatar" title="OsForceDetachFromAvatar">osForceDetachFromAvatar</a>
+</li><li> <a href="/wiki/OsForceDropAttachment" title="OsForceDropAttachment">osForceDropAttachment</a>
+</li><li> <a href="/wiki/OsForceDropAttachmentAt" title="OsForceDropAttachmentAt">osForceDropAttachmentAt</a>
+</li><li> <a href="/wiki/OsForceOtherSit" title="OsForceOtherSit">osForceOtherSit</a>
+</li><li> <a href="/wiki/OsGetAgentIP" title="OsGetAgentIP">osGetAgentIP</a> 
+</li><li> <a href="/wiki/OsGetAgents" title="OsGetAgents">osGetAgents</a>
+</li></ul>
+</div>
+</td>
+<td><div style="margin-right: 20px;">
+<ul><li> <a href="/wiki/OsGetAgentCountry" title="OsGetAgentCountry">osGetAgentCountry</a>
+</li><li> <a href="/wiki/OsGetAvatarHomeURI" title="OsGetAvatarHomeURI">osGetAvatarHomeURI</a>
+</li><li> <a href="/wiki/OsGetAvatarList" title="OsGetAvatarList">osGetAvatarList</a> 
+</li><li> <a href="/wiki/OsGetGender" title="OsGetGender">osGetGender</a>
+</li><li> <a href="/wiki/OsGetHealRate" title="OsGetHealRate">osGetHealRate</a>
+</li><li> <a href="/wiki/OsGetHealth" title="OsGetHealth">osGetHealth</a>
+</li><li> <a href="/wiki/OsGetNumberOfAttachments" title="OsGetNumberOfAttachments">osGetNumberOfAttachments</a>
+</li><li> <a href="/wiki/OsInviteToGroup" title="OsInviteToGroup">osInviteToGroup</a>
+</li><li> <a href="/wiki/OsKickAvatar" title="OsKickAvatar">osKickAvatar</a>
+</li><li> <a href="/wiki/OsOwnerSaveAppearance" title="OsOwnerSaveAppearance">osOwnerSaveAppearance</a>
+</li><li> <a href="/wiki/OsSetHealRate" title="OsSetHealRate">osSetHealRate</a>
+</li><li> <a href="/wiki/OsSetHealth" title="OsSetHealth">osSetHealth</a>
+</li><li> <a href="/wiki/OsSetOwnerSpeed" title="OsSetOwnerSpeed">osSetOwnerSpeed</a>
+</li><li> <a href="/wiki/OsSetSpeed" title="OsSetSpeed">osSetSpeed</a>
+</li><li> <a href="/wiki/OsLocalTeleportAgent" title="OsLocalTeleportAgent">osLocalTeleportAgent</a>
+</li><li> <a href="/wiki/OsTeleportAgent" title="OsTeleportAgent">osTeleportAgent</a> 
+</li><li> <a href="/wiki/OsTeleportOwner" title="OsTeleportOwner">osTeleportOwner</a> 
+</li><li> <a href="/wiki/OsReplaceAgentEnvironment" title="OsReplaceAgentEnvironment">osReplaceAgentEnvironment</a>
+</li></ul>
+</div>
+</td></tr></table></div>
+<h3> <span class="mw-headline" id="NPCs"> NPCs </span></h3>
+<div>
+<table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color:transparent;table-layout:fixed;">
+
+<tr valign="top">
+<td><div style="margin-right:20px;">
+<ul><li> <a href="/wiki/OsIsNpc" title="OsIsNpc">osIsNpc</a>
+</li><li> <a href="/wiki/OsNpcCreate" title="OsNpcCreate">osNpcCreate</a>
+</li><li> <a href="/wiki/OsGetNpcList" title="OsGetNpcList">osGetNpcList</a>
+</li><li> <a href="/wiki/OsNpcGetPos" title="OsNpcGetPos">osNpcGetPos</a>
+</li><li> <a href="/wiki/OsNpcGetRot" title="OsNpcGetRot">osNpcGetRot</a>
+</li><li> <a href="/wiki/OsNpcGetOwner" title="OsNpcGetOwner">osNpcGetOwner</a>
+</li><li> <a href="/wiki/OsNpcLookAt" title="OsNpcLookAt">osNpcLookAt</a> <span style="border:1px solid; color:red; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="Experimental">&#160;EXP&#160;</span>
+</li><li> <a href="/wiki/OsNpcLoadAppearance" title="OsNpcLoadAppearance">osNpcLoadAppearance</a>
+</li><li> <a href="/wiki/OsNpcMoveTo" title="OsNpcMoveTo">osNpcMoveTo</a>
+</li><li> <a href="/wiki/OsNpcMoveToTarget" title="OsNpcMoveToTarget">osNpcMoveToTarget</a>
+</li><li> <a href="/wiki/OsNpcPlayAnimation" title="OsNpcPlayAnimation">osNpcPlayAnimation</a>
+</li><li> <a href="/wiki/OsNpcRemove" title="OsNpcRemove">osNpcRemove</a>
+</li><li> <a href="/wiki/OsNpcSaveAppearance" title="OsNpcSaveAppearance">osNpcSaveAppearance</a>
+</li></ul>
+</div>
+</td>
+<td><div style="margin-right: 20px;">
+<ul><li> <a href="/wiki/OsNpcSay" title="OsNpcSay">osNpcSay</a>
+</li><li> <a href="/wiki/OsNpcSayTo" title="OsNpcSayTo">osNpcSayTo</a>
+</li><li> <a href="/wiki/OsNpcSetProfileAbout" title="OsNpcSetProfileAbout">osNpcSetProfileAbout</a>
+</li><li> <a href="/wiki/OsNpcSetProfileImage" title="OsNpcSetProfileImage">osNpcSetProfileImage</a>
+</li><li> <a href="/wiki/OsNpcSetRot" title="OsNpcSetRot">osNpcSetRot</a>
+</li><li> <a href="/wiki/OsNpcShout" title="OsNpcShout">osNpcShout</a>
+</li><li> <a href="/wiki/OsNpcSit" title="OsNpcSit">osNpcSit</a>
+</li><li> <a href="/wiki/OsNpcStand" title="OsNpcStand">osNpcStand</a>
+</li><li> <a href="/wiki/OsNpcStopMoveToTarget" title="OsNpcStopMoveToTarget">osNpcStopMoveToTarget</a>
+</li><li> <a href="/wiki/OsNpcStopAnimation" title="OsNpcStopAnimation">osNpcStopAnimation</a>
+</li><li> <a href="/wiki/OsNpcTouch" title="OsNpcTouch">osNpcTouch</a>
+</li><li> <a href="/wiki/OsNpcWhisper" title="OsNpcWhisper">osNpcWhisper</a>
+</li></ul>
+</div>
+</td></tr></table></div>
+<h3> <span class="mw-headline" id="Prim"> Prim </span></h3>
+<div>
+<table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color:transparent;table-layout:fixed;">
+
+<tr valign="top">
+<td><div style="margin-right:20px;">
+<ul><li> <a href="/wiki/OsClearInertia" title="OsClearInertia">osClearInertia</a>
+</li><li> <a href="/wiki/OsClearObjectAnimations" title="OsClearObjectAnimations">osClearObjectAnimations</a>
+</li><li> <a href="/wiki/OsDie" title="OsDie">osDie</a>
+</li><li> <a href="/wiki/OsForceBreakAllLinks" title="OsForceBreakAllLinks">osForceBreakAllLinks</a>
+</li><li> <a href="/wiki/OsForceBreakLink" title="OsForceBreakLink">osForceBreakLink</a> 
+</li><li> <a href="/wiki/OsForceCreateLink" title="OsForceCreateLink">osForceCreateLink</a>
+</li><li> <a href="/wiki/OsGetInertiaData" title="OsGetInertiaData">osGetInertiaData</a>
+</li><li> <a href="/wiki/OsGetInventoryItemKey" title="OsGetInventoryItemKey">osGetInventoryItemKey</a>
+</li><li> <a href="/wiki/OsGetInventoryName" title="OsGetInventoryName">osGetInventoryName</a>
+</li><li> <a href="/wiki/OsGetInventoryNames" title="OsGetInventoryNames">osGetInventoryNames</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsGetInventoryItemKeys" title="OsGetInventoryItemKeys">osGetInventoryItemKeys</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsGetInventoryDesc" title="OsGetInventoryDesc">osGetInventoryDesc</a>
+</li><li> <a href="/wiki/OsGetInventoryLastOwner" title="OsGetInventoryLastOwner">osGetInventoryLastOwner</a>
+</li><li> <a href="/wiki/OsGetLinkInventoryName" title="OsGetLinkInventoryName">osGetLinkInventoryName</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsGetLinkInventoryNames" title="OsGetLinkInventoryNames">osGetLinkInventoryNames</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsGetInventoryItemKey" title="OsGetInventoryItemKey"> osGetLinkInventoryItemKey</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsGetInventoryItemKeys" title="OsGetInventoryItemKeys"> osGetLinkInventoryItemKeys</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/index.php?title=OsGetLinkInventoryItemKey&amp;action=edit&amp;redlink=1" class="new" title="OsGetLinkInventoryItemKey (page does not exist)">osGetLinkInventoryItemKey</a>
+</li><li> <a href="/index.php?title=OsGetLinkInventoryItemKeys&amp;action=edit&amp;redlink=1" class="new" title="OsGetLinkInventoryItemKeys (page does not exist)">osGetLinkInventoryItemKeys</a>
+</li><li> <a href="/wiki/OsGetLinkInventoryKey" title="OsGetLinkInventoryKey">osGetLinkInventoryKey</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/index.php?title=OsGetLinkInventoryKeys&amp;action=edit&amp;redlink=1" class="new" title="OsGetLinkInventoryKeys (page does not exist)">osGetLinkInventoryKeys</a>
+</li><li> <a href="/wiki/OsGetLinkInventoryDesc" title="OsGetLinkInventoryDesc">osGetLinkInventoryDesc</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsGiveLinkInventory" title="OsGiveLinkInventory">osGiveLinkInventory</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsGiveLinkInventoryList" title="OsGiveLinkInventoryList">osGiveLinkInventoryList</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsRemoveLinkInventory" title="OsRemoveLinkInventory">osRemoveLinkInventory</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsGetLastChangedEventKey" title="OsGetLastChangedEventKey">osGetLastChangedEventKey</a>
+</li><li> <a href="/wiki/OsGetLinkNumber" title="OsGetLinkNumber">osGetLinkNumber</a>
+</li><li> <a href="/index.php?title=OsGetLinkColor&amp;action=edit&amp;redlink=1" class="new" title="OsGetLinkColor (page does not exist)">osGetLinkColor</a>
+</li><li> <a href="/wiki/OsGetLinkPrimitiveParams" title="OsGetLinkPrimitiveParams">osGetLinkPrimitiveParams</a> 
+</li><li> <a href="/wiki/OsGetPrimitiveParams" title="OsGetPrimitiveParams">osGetPrimitiveParams</a> 
+</li></ul>
+</div>
+</td>
+<td><div style="margin-right: 20px;">
+<ul><li> <a href="/wiki/OsGetRezzingObject" title="OsGetRezzingObject">osGetRezzingObject</a>
+</li><li> <a href="/wiki/OsGetSitActiveRange" title="OsGetSitActiveRange">osGetSitActiveRange</a>
+</li><li> <a href="/wiki/OsGetLinkSitActiveRange" title="OsGetLinkSitActiveRange">osGetLinkSitActiveRange</a>
+</li><li> <a href="/wiki/OsGetSitTargetPos" title="OsGetSitTargetPos">osGetSitTargetPos</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsGetSitTargetRot" title="OsGetSitTargetRot">osGetSitTargetRot</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsGetStandTarget" title="OsGetStandTarget">osGetStandTarget</a>
+</li><li> <a href="/wiki/OsGetLinkStandTarget" title="OsGetLinkStandTarget">osGetLinkStandTarget</a>
+</li><li> <a href="/wiki/OsLinkParticleSystem" title="OsLinkParticleSystem">osLinkParticleSystem</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsMessageAttachments" title="OsMessageAttachments">osMessageAttachments</a>
+</li><li> <a href="/wiki/OsMessageObject" title="OsMessageObject">osMessageObject</a>
+</li><li> <a href="/wiki/OsParticleSystem" title="OsParticleSystem">osParticleSystem</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsSetInertia" title="OsSetInertia">osSetInertia</a>
+</li><li> <a href="/wiki/OsSetInertiaAsBox" title="OsSetInertiaAsBox">osSetInertiaAsBox</a>
+</li><li> <a href="/wiki/OsSetInertiaAsCylinder" title="OsSetInertiaAsCylinder">osSetInertiaAsCylinder</a>
+</li><li> <a href="/wiki/OsSetInertiaAsSphere" title="OsSetInertiaAsSphere">osSetInertiaAsSphere</a>
+</li><li> <a href="/wiki/OsSetPrimitiveParams" title="OsSetPrimitiveParams">osSetPrimitiveParams</a> 
+</li><li> <a href="/wiki/OsSetProjectionParams" title="OsSetProjectionParams">osSetProjectionParams</a>
+</li><li> <a href="/wiki/OsSetSitActiveRange" title="OsSetSitActiveRange">osSetSitActiveRange</a>
+</li><li> <a href="/wiki/OsSetLinkSitActiveRange" title="OsSetLinkSitActiveRange">osSetLinkSitActiveRange</a>
+</li><li> <a href="/wiki/OsSetStandTarget" title="OsSetStandTarget">osSetStandTarget</a>
+</li><li> <a href="/wiki/OsSetLinkStandTarget" title="OsSetLinkStandTarget">osSetLinkStandTarget</a>
+</li><li> <a href="/wiki/OsTeleportObject" title="OsTeleportObject">osTeleportObject</a>
+</li><li> <a href="/wiki/OsVolumeDetect" title="OsVolumeDetect">osVolumeDetect</a>
+</li><li> <a href="/wiki/OsGetPrimCount" title="OsGetPrimCount">osGetPrimCount</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsGetSittingAvatarsCount" title="OsGetSittingAvatarsCount">osGetSittingAvatarsCount</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li></ul>
+</div>
+</td></tr></table></div>
+<h3> <span class="mw-headline" id="Prim_Drawing_.2F_Dynamic_Texture"> Prim Drawing / Dynamic Texture </span></h3>
+<div>
+<table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color:transparent;table-layout:fixed;">
+
+<tr valign="top">
+<td><div style="margin-right:20px;">
+<ul><li> <a href="/wiki/OsDrawEllipse" title="OsDrawEllipse">osDrawEllipse</a>
+</li><li> <a href="/wiki/OsDrawFilledEllipse" title="OsDrawFilledEllipse">osDrawFilledEllipse</a>
+</li><li> <a href="/wiki/OsDrawFilledPolygon" title="OsDrawFilledPolygon">osDrawFilledPolygon</a>
+</li><li> <a href="/wiki/OsDrawFilledRectangle" title="OsDrawFilledRectangle">osDrawFilledRectangle</a>
+</li><li> <a href="/wiki/OsDrawImage" title="OsDrawImage">osDrawImage</a>
+</li><li> <a href="/wiki/OsDrawLine" title="OsDrawLine">osDrawLine</a>
+</li><li> <a href="/wiki/OsDrawPolygon" title="OsDrawPolygon">osDrawPolygon</a>
+</li><li> <a href="/wiki/OsDrawRectangle" title="OsDrawRectangle">osDrawRectangle</a>
+</li><li> <a href="/wiki/OsDrawResetTransform" title="OsDrawResetTransform">osDrawResetTransform</a>
+</li><li> <a href="/wiki/OsDrawRotationTransform" title="OsDrawRotationTransform">osDrawRotationTransform</a>
+</li><li> <a href="/wiki/OsDrawScaleTransform" title="OsDrawScaleTransform">osDrawScaleTransform</a>
+</li><li> <a href="/wiki/OsDrawText" title="OsDrawText">osDrawText</a>
+</li><li> <a href="/index.php?title=OsDrawTextText&amp;action=edit&amp;redlink=1" class="new" title="OsDrawTextText (page does not exist)">osDrawTextText</a>
+</li><li> <a href="/wiki/OsDrawTranslationTransform" title="OsDrawTranslationTransform">osDrawTranslationTransform</a>
+</li><li> <a href="/wiki/OsGetDrawStringSize" title="OsGetDrawStringSize">osGetDrawStringSize</a>
+</li></ul>
+</div>
+</td>
+<td><div style="margin-right: 20px;">
+<ul><li> <a href="/wiki/OsMovePen" title="OsMovePen">osMovePen</a>
+</li><li> <a href="/wiki/OsSetFontName" title="OsSetFontName">osSetFontName</a>
+</li><li> <a href="/wiki/OsSetFontSize" title="OsSetFontSize">osSetFontSize</a>
+</li><li> <a href="/wiki/OsSetPenCap" title="OsSetPenCap">osSetPenCap</a>
+</li><li> <a href="/wiki/OsSetPenColor" title="OsSetPenColor">osSetPenColor</a>
+</li><li> <a href="/wiki/OsSetPenSize" title="OsSetPenSize">osSetPenSize</a>
+</li><li> <a href="/wiki/OsSetDynamicTextureData" title="OsSetDynamicTextureData">osSetDynamicTextureData</a>
+</li><li> <a href="/wiki/OsSetDynamicTextureDataFace" title="OsSetDynamicTextureDataFace">osSetDynamicTextureDataFace</a>
+</li><li> <a href="/wiki/OsSetDynamicTextureDataBlend" title="OsSetDynamicTextureDataBlend">osSetDynamicTextureDataBlend</a>
+</li><li> <a href="/wiki/OsSetDynamicTextureDataBlendFace" title="OsSetDynamicTextureDataBlendFace">osSetDynamicTextureDataBlendFace</a> 
+</li><li> <a href="/wiki/OsSetDynamicTextureURL" title="OsSetDynamicTextureURL">osSetDynamicTextureURL</a>
+</li><li> <a href="/wiki/OsSetDynamicTextureURLBlend" title="OsSetDynamicTextureURLBlend">osSetDynamicTextureURLBlend</a>
+</li><li> <a href="/wiki/OsSetDynamicTextureURLBlendFace" title="OsSetDynamicTextureURLBlendFace">osSetDynamicTextureURLBlendFace</a>
+</li></ul>
+</div>
+</td></tr></table></div>
+<h3> <span class="mw-headline" id="Notecard"> Notecard </span></h3>
+<ul><li> <a href="/wiki/OsGetNotecard" title="OsGetNotecard">osGetNotecard</a> 
+</li><li> <a href="/wiki/OsGetNotecardLine" title="OsGetNotecardLine">osGetNotecardLine</a> 
+</li><li> <a href="/wiki/OsGetNumberOfNotecardLines" title="OsGetNumberOfNotecardLines">osGetNumberOfNotecardLines</a>
+</li><li> <a href="/wiki/OsMakeNotecard" title="OsMakeNotecard">osMakeNotecard</a>
+</li></ul>
+<h3> <span class="mw-headline" id="Sound"> Sound </span></h3>
+<div>
+<table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color:transparent;table-layout:fixed;">
+
+<tr valign="top">
+<td><div style="margin-right:20px;">
+<ul><li> <a href="/wiki/OsAdjustSoundVolume" title="OsAdjustSoundVolume">osAdjustSoundVolume</a>
+</li><li> <a href="/wiki/OsCollisionSound" title="OsCollisionSound">osCollisionSound</a>
+</li><li> <a href="/wiki/OsLoopSound" title="OsLoopSound">osLoopSound</a>
+</li><li> <a href="/wiki/OsLoopSoundMaster" title="OsLoopSoundMaster">osLoopSoundMaster</a>
+</li><li> <a href="/wiki/OsLoopSoundSlave" title="OsLoopSoundSlave">osLoopSoundSlave</a>
+</li><li> <a href="/wiki/OsPlaySound" title="OsPlaySound">osPlaySound</a>
+</li></ul>
+</div>
+</td>
+<td><div style="margin-right: 20px;">
+<ul><li> <a href="/wiki/OsPlaySoundSlave" title="OsPlaySoundSlave">osPlaySoundSlave</a>
+</li><li> <a href="/wiki/OsPreloadSound" title="OsPreloadSound">osPreloadSound</a>
+</li><li> <a href="/wiki/OsSetSoundRadius" title="OsSetSoundRadius">osSetSoundRadius</a>
+</li><li> <a href="/wiki/OsStopSound" title="OsStopSound">osStopSound</a>
+</li><li> <a href="/wiki/OsTriggerSound" title="OsTriggerSound">osTriggerSound</a>
+</li><li> <a href="/wiki/OsTriggerSoundLimited" title="OsTriggerSoundLimited">osTriggerSoundLimited</a>
+</li></ul>
+</div>
+</td></tr></table></div>
+<h3> <span class="mw-headline" id="HTTP"> HTTP </span></h3>
+<ul><li> <a href="/wiki/OsRequestSecureURL" title="OsRequestSecureURL">osRequestSecureURL</a>
+</li><li> <a href="/wiki/OsRequestURL" title="OsRequestURL">osRequestURL</a>
+</li><li> <a href="/wiki/OsSetContentType" title="OsSetContentType">osSetContentType</a>
+</li></ul>
+<h3> <span class="mw-headline" id="Parcel"> Parcel </span></h3>
+<div>
+<table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color:transparent;table-layout:fixed;">
+
+<tr valign="top">
+<td><div style="margin-right:20px;">
+<ul><li> <a href="/wiki/OsParcelJoin" title="OsParcelJoin">osParcelJoin</a> 
+</li><li> <a href="/wiki/OsParcelSubdivide" title="OsParcelSubdivide">osParcelSubdivide</a> 
+</li><li> <a href="/wiki/OsGetParcelDwell" title="OsGetParcelDwell">osGetParcelDwell</a>
+</li></ul>
+</div>
+</td>
+<td><div style="margin-right: 20px;">
+<ul><li> <a href="/wiki/OsSetParcelDetails" title="OsSetParcelDetails">osSetParcelDetails</a>
+</li><li> <a href="/wiki/OsGetParcelDetails" title="OsGetParcelDetails">osGetParcelDetails</a>
+</li><li> <a href="/wiki/OsGetParcelIDs" title="OsGetParcelIDs">osGetParcelIDs</a>
+</li><li> <a href="/wiki/OsGetParcelID" title="OsGetParcelID">osGetParcelID</a>
+</li></ul>
+</div>
+</td></tr></table></div>
+<h3> <span class="mw-headline" id="Terrain"> Terrain </span></h3>
+<div>
+<table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color:transparent;table-layout:fixed;">
+
+<tr valign="top">
+<td><div style="margin-right:20px;">
+<ul><li> <a href="/wiki/OsGetTerrainHeight" title="OsGetTerrainHeight">osGetTerrainHeight</a> 
+</li><li> <a href="/wiki/OsSetTerrainHeight" title="OsSetTerrainHeight">osSetTerrainHeight</a> 
+</li><li> <a href="/wiki/OsSetTerrainTexture" title="OsSetTerrainTexture">osSetTerrainTexture</a>
+</li></ul>
+</div>
+</td>
+<td><div style="margin-right: 20px;">
+<ul><li> <a href="/wiki/OsSetTerrainTextures" title="OsSetTerrainTextures">osSetTerrainTextures</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsSetTerrainTextureHeight" title="OsSetTerrainTextureHeight">osSetTerrainTextureHeight</a>
+</li><li> <a href="/wiki/OsTerrainFlush" title="OsTerrainFlush">osTerrainFlush</a>
+</li></ul>
+</div>
+</td></tr></table></div>
+<h3> <span class="mw-headline" id="Region_.2F_Parcel_Environment"> Region / Parcel Environment </span></h3>
+<div>
+<table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color:transparent;table-layout:fixed;">
+
+<tr valign="top">
+<td><div style="margin-right:20px;">
+<ul><li> <a href="/wiki/OsGetCurrentSunHour" title="OsGetCurrentSunHour">osGetCurrentSunHour</a> 
+</li><li> <a href="/wiki/OsGetApparentTime" title="OsGetApparentTime">osGetApparentTime</a>
+</li><li> <a href="/wiki/OsGetApparentTimeString" title="OsGetApparentTimeString">osGetApparentTimeString</a>
+</li><li> <a href="/wiki/OsGetApparentRegionTime" title="OsGetApparentRegionTime">osGetApparentRegionTime</a>
+</li><li> <a href="/wiki/OsGetApparentRegionTimeString" title="OsGetApparentRegionTimeString">osGetApparentRegionTimeString</a>
+</li><li> <a href="/wiki/OsGetWindParam" title="OsGetWindParam">osGetWindParam</a> 
+</li></ul>
+</div>
+</td>
+<td><div style="margin-right: 20px;">
+<ul><li> <a href="/wiki/OsSetRegionWaterHeight" title="OsSetRegionWaterHeight">osSetRegionWaterHeight</a> 
+</li><li> <a href="/wiki/OsSetWindParam" title="OsSetWindParam">osSetWindParam</a>
+</li><li> <a href="/wiki/OsWindActiveModelPluginName" title="OsWindActiveModelPluginName">osWindActiveModelPluginName</a>
+</li><li> <a href="/wiki/OsReplaceParcelEnvironment" title="OsReplaceParcelEnvironment">osReplaceParcelEnvironment</a>
+</li><li> <a href="/wiki/OsReplaceRegionEnvironment" title="OsReplaceRegionEnvironment">osReplaceRegionEnvironment</a>
+</li><li> <a href="/wiki/OsResetEnvironment" title="OsResetEnvironment">osResetEnvironment</a>
+</li></ul>
+</div>
+</td></tr></table></div>
+<h3> <span class="mw-headline" id="Grid_.2F_Region_Information"> Grid / Region Information </span></h3>
+<div>
+<table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color:transparent;table-layout:fixed;">
+
+<tr valign="top">
+<td><div style="margin-right:20px;">
+<ul><li> <a href="/wiki/OsCheckODE" title="OsCheckODE">osCheckODE</a>
+</li><li> <a href="/wiki/OsGetGridCustom" title="OsGetGridCustom">osGetGridCustom</a>
+</li><li> <a href="/wiki/OsGetGridGatekeeperURI" title="OsGetGridGatekeeperURI">osGetGridGatekeeperURI</a>
+</li><li> <a href="/wiki/OsGetGridHomeURI" title="OsGetGridHomeURI">osGetGridHomeURI</a>
+</li><li> <a href="/wiki/OsGetGridLoginURI" title="OsGetGridLoginURI">osGetGridLoginURI</a>
+</li><li> <a href="/wiki/OsGetGridName" title="OsGetGridName">osGetGridName</a> 
+</li><li> <a href="/wiki/OsGetGridNick" title="OsGetGridNick">osGetGridNick</a> 
+</li><li> <a href="/wiki/OsGetMapTexture" title="OsGetMapTexture">osGetMapTexture</a> 
+</li><li> <a href="/wiki/OsGetPhysicsEngineName" title="OsGetPhysicsEngineName">osGetPhysicsEngineName</a>
+</li><li> <a href="/wiki/OsGetPhysicsEngineType" title="OsGetPhysicsEngineType">osGetPhysicsEngineType</a>
+</li></ul>
+</div>
+</td>
+<td><div style="margin-right: 20px;">
+<ul><li> <a href="/wiki/OsGetRegionMapTexture" title="OsGetRegionMapTexture">osGetRegionMapTexture</a> 
+</li><li> <a href="/wiki/OsGetRegionSize" title="OsGetRegionSize">osGetRegionSize</a>
+</li><li> <a href="/wiki/OsGetRegionStats" title="OsGetRegionStats">osGetRegionStats</a> 
+</li><li> <a href="/wiki/OsGetScriptEngineName" title="OsGetScriptEngineName">osGetScriptEngineName</a> 
+</li><li> <a href="/wiki/OsGetSimulatorMemory" title="OsGetSimulatorMemory">osGetSimulatorMemory</a> 
+</li><li> <a href="/wiki/OsGetSimulatorMemoryKB" title="OsGetSimulatorMemoryKB">osGetSimulatorMemoryKB</a>
+</li><li> <a href="/wiki/OsGetSimulatorVersion" title="OsGetSimulatorVersion">osGetSimulatorVersion</a> 
+</li><li> <a href="/wiki/OsLoadedCreationDate" title="OsLoadedCreationDate">osLoadedCreationDate</a> 
+</li><li> <a href="/wiki/OsLoadedCreationID" title="OsLoadedCreationID">osLoadedCreationID</a> 
+</li><li> <a href="/wiki/OsLoadedCreationTime" title="OsLoadedCreationTime">osLoadedCreationTime</a> 
+</li></ul>
+</div>
+</td></tr></table></div>
+<h3> <span class="mw-headline" id="Administration"> Administration </span></h3>
+<ul><li> <a href="/wiki/OsConsoleCommand" title="OsConsoleCommand">osConsoleCommand</a> 
+</li><li> <a href="/wiki/OsRegionNotice" title="OsRegionNotice">osRegionNotice</a>
+</li><li> <a href="/wiki/OsRegionRestart" title="OsRegionRestart">osRegionRestart</a> 
+</li><li> <a href="/wiki/OsSetParcelMediaURL" title="OsSetParcelMediaURL">osSetParcelMediaURL</a> 
+</li><li> <a href="/wiki/OsSetParcelMusicURL" title="OsSetParcelMusicURL">osSetParcelMusicURL</a>
+</li><li> <a href="/wiki/OsSetParcelSIPAddress" title="OsSetParcelSIPAddress">osSetParcelSIPAddress</a>
+</li></ul>
+<h3> <span class="mw-headline" id="Script"> Script </span></h3>
+<ul><li><a href="/wiki/OsResetAllScripts" title="OsResetAllScripts">osResetAllScripts</a>
+</li></ul>
+<h3> <span class="mw-headline" id="String_Manipulation"> String Manipulation </span></h3>
+<div>
+<table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color:transparent;table-layout:fixed;">
+
+<tr valign="top">
+<td><div style="margin-right:20px;">
+<ul><li> <a href="/wiki/OsFormatString" title="OsFormatString">osFormatString</a>
+</li><li> <a href="/wiki/OsListenRegex" title="OsListenRegex">osListenRegex</a>
+</li><li> <a href="/wiki/OsMatchString" title="OsMatchString">osMatchString</a>
+</li><li> <a href="/wiki/OsRegexIsMatch" title="OsRegexIsMatch">osRegexIsMatch</a>
+</li><li> <a href="/wiki/OsReplaceString" title="OsReplaceString">osReplaceString</a>
+</li><li> <a href="/wiki/OsStringSubString" title="OsStringSubString">osStringSubString</a>
+</li></ul>
+</div>
+</td>
+<td><div style="margin-right: 20px;">
+<ul><li> <a href="/wiki/OsStringStartsWith" title="OsStringStartsWith">osStringStartsWith</a>
+</li><li> <a href="/wiki/OsStringEndsWith" title="OsStringEndsWith">osStringEndsWith</a>
+</li><li> <a href="/wiki/OsStringIndexOf" title="OsStringIndexOf">osStringIndexOf</a>
+</li><li> <a href="/wiki/OsStringLastIndexOf" title="OsStringLastIndexOf">osStringLastIndexOf</a>
+</li><li> <a href="/wiki/OsStringRemove" title="OsStringRemove">osStringRemove</a>
+</li><li> <a href="/wiki/OsStringReplace" title="OsStringReplace">osStringReplace</a>
+</li></ul>
+</div>
+</td></tr></table></div>
+<h3> <span class="mw-headline" id="Misc"> Misc </span></h3>
+<div>
+<table border="0" cellspacing="0" cellpadding="0" style="width: 100%; background-color:transparent;table-layout:fixed;">
+
+<tr valign="top">
+<td><div style="margin-right:20px;">
+<ul><li> <a href="/wiki/OsAESEncrypt" title="OsAESEncrypt">osAESEncrypt</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/index.php?title=OsAESDecrypt&amp;action=edit&amp;redlink=1" class="new" title="OsAESDecrypt (page does not exist)">osAESDecrypt</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsAESEncryptTo" title="OsAESEncryptTo">osAESEncryptTo</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/index.php?title=OsAESDecryptFrom&amp;action=edit&amp;redlink=1" class="new" title="OsAESDecryptFrom (page does not exist)">osAESDecryptFrom</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/wiki/OsAngleBetween" title="OsAngleBetween">osAngleBetween</a>
+</li><li> <a href="/wiki/OsApproxEquals" title="OsApproxEquals">osApproxEquals</a>
+</li><li> <a href="/wiki/OsGetPSTWallclock" title="OsGetPSTWallclock">osGetPSTWallclock</a>
+</li><li> <a href="/wiki/OsListAs*" title="OsListAs*">osListAs*</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li><li> <a href="/index.php?title=OsListAsFloat&amp;action=edit&amp;redlink=1" class="new" title="OsListAsFloat (page does not exist)">osListAsFloat</a>
+</li><li> <a href="/index.php?title=OsListAsInteger&amp;action=edit&amp;redlink=1" class="new" title="OsListAsInteger (page does not exist)">osListAsInteger</a>
+</li><li> <a href="/index.php?title=OsListAsRotation&amp;action=edit&amp;redlink=1" class="new" title="OsListAsRotation (page does not exist)">osListAsRotation</a>
+</li><li> <a href="/index.php?title=OsListAsString&amp;action=edit&amp;redlink=1" class="new" title="OsListAsString (page does not exist)">osListAsString</a>
+</li><li> <a href="/index.php?title=OsListAsVector&amp;action=edit&amp;redlink=1" class="new" title="OsListAsVector (page does not exist)">osListAsVector</a>
+</li><li> <a href="/index.php?title=OsListFindListNext&amp;action=edit&amp;redlink=1" class="new" title="OsListFindListNext (page does not exist)">osListFindListNext</a>
+</li><li> <a href="/index.php?title=OsOldList2ListStrided&amp;action=edit&amp;redlink=1" class="new" title="OsOldList2ListStrided (page does not exist)">osOldList2ListStrided</a>
+</li><li> <a href="/wiki/OsListSortInPlace" title="OsListSortInPlace">osListSortInPlace</a>
+</li><li> <a href="/wiki/OsListSortInPlaceStrided" title="OsListSortInPlaceStrided">osListSortInPlaceStrided</a> <span style="border:1px solid; color:green; font-weight:bold; border-radius:10px; -moz-border-radius:10px; -webkit-border-radius:10px; font-size:70%;" title="New">&#160;NEW!&#160;</span>
+</li></ul>
+</div>
+</td>
+<td><div style="margin-right: 20px;">
+<ul><li> <a href="/wiki/OsIsUUID" title="OsIsUUID">osIsUUID</a>
+</li><li> <a href="/wiki/OsIsNotValidNumber" title="OsIsNotValidNumber">osIsNotValidNumber</a>
+</li><li> <a href="/wiki/OsKey2Name" title="OsKey2Name">osKey2Name</a>
+</li><li> <a href="/wiki/OsMax" title="OsMax">osMax</a>
+</li><li> <a href="/wiki/OsMin" title="OsMin">osMin</a>
+</li><li> <a href="/wiki/OsRound" title="OsRound">osRound</a>
+</li><li> <a href="/wiki/OsSHA256" title="OsSHA256">osSHA256</a>
+</li><li> <a href="/wiki/OsSlerp" title="OsSlerp">osSlerp</a>
+</li><li> <a href="/index.php?title=OsTemperature2sRGB&amp;action=edit&amp;redlink=1" class="new" title="OsTemperature2sRGB (page does not exist)">osTemperature2sRGB</a>
+</li><li> <a href="/wiki/OsUnixTimeToTimestamp" title="OsUnixTimeToTimestamp">osUnixTimeToTimestamp</a> 
+</li><li> <a href="/wiki/OsVecDistSquare" title="OsVecDistSquare">osVecDistSquare</a>
+</li><li> <a href="/wiki/OsVecMagSquare" title="OsVecMagSquare">osVecMagSquare</a>
+</li></ul>
+</div>
+</td></tr></table></div>
+<h3> <span class="mw-headline" id="Deprecated"> Deprecated </span></h3>
+<ul><li> <a href="/wiki/OsParcelSetDetails" title="OsParcelSetDetails"><strike>osParcelSetDetails</strike></a> - Use <a href="/wiki/OsSetParcelDetails" title="OsSetParcelDetails">osSetParcelDetails</a> 
+</li><li> <a href="/wiki/OsSetPenColour" title="OsSetPenColour"><strike>osSetPenColour</strike></a> - Use <a href="/wiki/OsSetPenColor" title="OsSetPenColor">osSetPenColor</a> 
+</li><li> <a href="/wiki/OsSunGetParam" title="OsSunGetParam"><strike>osSunGetParam</strike></a> - Use <a href="/wiki/OsGetSunParam" title="OsGetSunParam">osGetSunParam</a> 
+</li><li> <a href="/wiki/OsSunSetParam" title="OsSunSetParam"><strike>osSunSetParam</strike></a> - Use <a href="/wiki/OsSetSunParam" title="OsSetSunParam">osSetSunParam</a> 
+</li><li> <a href="/wiki/OsTerrainGetHeight" title="OsTerrainGetHeight"><strike>osTerrainGetHeight</strike></a> - Use <a href="/wiki/OsGetTerrainHeight" title="OsGetTerrainHeight">osGetTerrainHeight</a> 
+</li><li> <a href="/wiki/OsTerrainSetHeight" title="OsTerrainSetHeight"><strike>osTerrainSetHeight</strike></a> - Use <a href="/wiki/OsSetTerrainHeight" title="OsSetTerrainHeight">osSetTerrainHeight</a>
+</li><li><strike>osWindParamGet</strike> - Use <a href="/wiki/OsGetWindParam" title="OsGetWindParam">osGetWindParam</a>
+</li><li><strike>osWindParamSet</strike> - Use <a href="/wiki/OsSetWindParam" title="OsSetWindParam">osSetWindParam</a>
+</li><li> <a href="/wiki/OsList2Double" title="OsList2Double"><strike>osList2Double</strike></a> - Use llList2Float
+</li><li> <a href="/index.php?title=OsListAs&amp;action=edit&amp;redlink=1" class="new" title="OsListAs (page does not exist)"><strike>osListAs</strike></a> - Use explicit variants <a href="/index.php?title=OsListAsFloat&amp;action=edit&amp;redlink=1" class="new" title="OsListAsFloat (page does not exist)">osListAsFloat</a>, <a href="/index.php?title=OsListAsInteger&amp;action=edit&amp;redlink=1" class="new" title="OsListAsInteger (page does not exist)">osListAsInteger</a>, <a href="/index.php?title=OsListAsRotation&amp;action=edit&amp;redlink=1" class="new" title="OsListAsRotation (page does not exist)">osListAsRotation</a>, <a href="/index.php?title=OsListAsString&amp;action=edit&amp;redlink=1" class="new" title="OsListAsString (page does not exist)">osListAsString</a>, <a href="/index.php?title=OsListAsVector&amp;action=edit&amp;redlink=1" class="new" title="OsListAsVector (page does not exist)">osListAsVector</a>
+</li><li> <a href="/wiki/OsGrantScriptPermissions" title="OsGrantScriptPermissions"><strike>osGrantScriptPermissions</strike></a> - Not in current <i>IOSSL_Api.cs</i> interface
+</li><li> <a href="/wiki/OsRevokeScriptPermissions" title="OsRevokeScriptPermissions"><strike>osRevokeScriptPermissions</strike></a> - Not in current <i>IOSSL_Api.cs</i> interface
+</li><li> <a href="/wiki/OsGetSunParam" title="OsGetSunParam">osGetSunParam</a>
+</li><li> <a href="/wiki/OsSetEstateSunSettings" title="OsSetEstateSunSettings">osSetEstateSunSettings</a>
+</li><li> <a href="/wiki/OsSetRegionSunSettings" title="OsSetRegionSunSettings">osSetRegionSunSettings</a>
+</li><li> <a href="/wiki/OsSetSunParam" title="OsSetSunParam">osSetSunParam</a>
+</li><li> <a href="/wiki/OsSetPrimFloatOnWater" title="OsSetPrimFloatOnWater">osSetPrimFloatOnWater</a>
+</li></ul>
+<h2> <span class="mw-headline" id="See_Also"> See Also  </span></h2>
+<ul><li> <a href="/wiki/OSSL_vs_LSL" title="OSSL vs LSL">LSL&amp;OSSL : Neighbour functions, similarities and differences</a> 
+</li><li> <a href="/wiki/Accessing_Prim_Properties" title="Accessing Prim Properties">LSL&amp;OSSL : Guide to prims addressing (by linknum, by uuid)</a>
+</li><li> <a href="/wiki/LSL_Status" title="LSL Status">LSL/OSSL Status Page</a> 
+</li><li>OSSL 
+<ul><li> <a href="/wiki/OSSL_Implemented" title="OSSL Implemented" class="mw-redirect">OSSL Implemented Functions</a> 
+</li><li> <a href="/wiki/OSSL_Constants" title="OSSL Constants">OSSL Constants</a> 
+</li><li> <a href="/wiki/OSSL_Status/Types" title="OSSL Status/Types">OSSL Types Status Page</a> 
+</li><li> <a href="/wiki/OSSL_Status/Events" title="OSSL Status/Events">OSSL Events Status Page</a> 
+</li></ul>
+</li></ul>
+<ul><li><ul><li> <a href="/wiki/Dynamic_textures" title="Dynamic textures">OSSL osDynamicTextures Functions Index Page</a>
+</li><li> <a href="/wiki/OSSL_TextureDrawing" title="OSSL TextureDrawing">OSSL TextureDrawing Extended Information</a>
+</li><li> <a href="/wiki/OSSLNPC" title="OSSLNPC">OSSL functions for working with NPCs</a>
+</li></ul>
+</li></ul>
+<ul><li><ul><li> <a href="/wiki/OSSL_Proposals" title="OSSL Proposals">OSSL Proposed Functions</a> 
+</li><li> <a href="/wiki/OSSL_Enabling_Functions" title="OSSL Enabling Functions">OSSL Enabling Functions</a> 
+</li><li> <a href="/wiki/OSSL_Standards" title="OSSL Standards">OSSL Standards</a>
+</li></ul>
+</li></ul>
+<ul><li> LS
+<ul><li> <a href="/wiki/LightShare#LightShare_Scripting" title="LightShare">LightShare Functions</a>
+</li></ul>
+</li></ul>
+<ul><li> MOD
+<ul><li> <a href="/wiki/OSSL_Script_Library/ModSendCommand" title="OSSL Script Library/ModSendCommand">modSendCommand()</a>
+</li><li> <a href="/wiki/OSSL_Script_Library/ModInvoke" title="OSSL Script Library/ModInvoke">Custom functions using modInvoke()</a>
+</li></ul>
+</li></ul>
+<ul><li> NPC
+<ul><li> <a href="/wiki/Appearance_Formats" title="Appearance Formats">Appearance Notecard Format</a>
+</li></ul>
+</li></ul>
+
+<!-- 
+NewPP limit report
+Preprocessor node count: 1465/1000000
+Post‐expand include size: 24058/2097152 bytes
+Template argument size: 547/2097152 bytes
+Expensive parser function count: 53/100
+-->
+
+<!-- Saved in parser cache with key oslwiki-wiki_:pcache:idhash:2707-0!*!0!!en!2!* and timestamp 20261002051142 -->
+<div lang="en" dir="ltr"><div id="mw-subcategories">
+<h2>Subcategories</h2>
+<p>This category has the following 11 subcategories, out of 11 total.
+</p><div lang="en" dir="ltr" class="mw-content-ltr"><table width="100%"><tr valign="top"><td width="33.3%"><h3>O</h3>
+<ul><li><a href="/wiki/Category:OSSL" title="Category:OSSL">OSSL</a></li>
+<li><a href="/wiki/Category:OSSL_functions_without_example" title="Category:OSSL functions without example">OSSL functions without example</a></li>
+<li><a href="/wiki/Category:OSSL_Functions/Deprecated" title="Category:OSSL Functions/Deprecated">OSSL Functions/Deprecated</a></li>
+<li><a href="/wiki/Category:OSSL_Functions/ThreatLevel:High" title="Category:OSSL Functions/ThreatLevel:High">OSSL Functions/ThreatLevel:High</a></li></ul></td>
+<td width="33.3%"><h3>O cont.</h3>
+<ul><li><a href="/wiki/Category:OSSL_Functions/ThreatLevel:Low" title="Category:OSSL Functions/ThreatLevel:Low">OSSL Functions/ThreatLevel:Low</a></li>
+<li><a href="/wiki/Category:OSSL_Functions/ThreatLevel:Moderate" title="Category:OSSL Functions/ThreatLevel:Moderate">OSSL Functions/ThreatLevel:Moderate</a></li>
+<li><a href="/wiki/Category:OSSL_Functions/ThreatLevel:None" title="Category:OSSL Functions/ThreatLevel:None">OSSL Functions/ThreatLevel:None</a></li>
+<li><a href="/wiki/Category:OSSL_Functions/ThreatLevel:Nuisance" title="Category:OSSL Functions/ThreatLevel:Nuisance">OSSL Functions/ThreatLevel:Nuisance</a></li></ul></td>
+<td width="33.3%"><h3>O cont.</h3>
+<ul><li><a href="/wiki/Category:OSSL_Functions/ThreatLevel:Severe" title="Category:OSSL Functions/ThreatLevel:Severe">OSSL Functions/ThreatLevel:Severe</a></li>
+<li><a href="/wiki/Category:OSSL_Functions/ThreatLevel:VeryHigh" title="Category:OSSL Functions/ThreatLevel:VeryHigh">OSSL Functions/ThreatLevel:VeryHigh</a></li>
+<li><a href="/wiki/Category:OSSL_Functions/ThreatLevel:VeryLow" title="Category:OSSL Functions/ThreatLevel:VeryLow">OSSL Functions/ThreatLevel:VeryLow</a></li></ul></td>
+</tr></table></div>
+</div><div id="mw-pages">
+<h2>Pages in category "OSSL Functions"</h2>
+<p>The following 200 pages are in this category, out of 258 total.
+</p>(previous 200) (<a href="/index.php?title=Category:OSSL_Functions&amp;pagefrom=OsSetFontSize#mw-pages" title="Category:OSSL Functions">next 200</a>)<div lang="en" dir="ltr" class="mw-content-ltr"><table width="100%"><tr valign="top"><td width="33.3%"><h3>G</h3>
+<ul><li><a href="/wiki/GlTF_PBR" title="GlTF PBR">GlTF PBR</a></li>
+<li><a href="/wiki/GlTF_PBR/de" title="GlTF PBR/de">GlTF PBR/de</a></li></ul><h3>L</h3>
+<ul><li><a href="/wiki/LSL_Status" title="LSL Status">LSL Status</a></li></ul><h3>O</h3>
+<ul><li><a href="/wiki/OsAddAgentToGroup" title="OsAddAgentToGroup">OsAddAgentToGroup</a></li>
+<li><a href="/wiki/OsAdjustSoundVolume" title="OsAdjustSoundVolume">OsAdjustSoundVolume</a></li>
+<li><a href="/wiki/OsAESEncrypt" title="OsAESEncrypt">OsAESEncrypt</a></li>
+<li><a href="/wiki/OsAESEncryptTo" title="OsAESEncryptTo">OsAESEncryptTo</a></li>
+<li><a href="/wiki/OsAgentSaveAppearance" title="OsAgentSaveAppearance">OsAgentSaveAppearance</a></li>
+<li><a href="/wiki/OsAngleBetween" title="OsAngleBetween">OsAngleBetween</a></li>
+<li><a href="/wiki/OsApproxEquals" title="OsApproxEquals">OsApproxEquals</a></li>
+<li><a href="/wiki/OsAvatarName2Key" title="OsAvatarName2Key">OsAvatarName2Key</a></li>
+<li><a href="/wiki/OsAvatarPlayAnimation" title="OsAvatarPlayAnimation">OsAvatarPlayAnimation</a></li>
+<li><a href="/wiki/OsAvatarStopAnimation" title="OsAvatarStopAnimation">OsAvatarStopAnimation</a></li>
+<li><a href="/wiki/OsAvatarType" title="OsAvatarType">OsAvatarType</a></li>
+<li><a href="/wiki/OsCauseDamage" title="OsCauseDamage">OsCauseDamage</a></li>
+<li><a href="/wiki/OsCauseHealing" title="OsCauseHealing">OsCauseHealing</a></li>
+<li><a href="/wiki/OsCheckODE" title="OsCheckODE">OsCheckODE</a></li>
+<li><a href="/wiki/OsClearInertia" title="OsClearInertia">OsClearInertia</a></li>
+<li><a href="/wiki/OsClearObjectAnimations" title="OsClearObjectAnimations">OsClearObjectAnimations</a></li>
+<li><a href="/wiki/OsCollisionSound" title="OsCollisionSound">OsCollisionSound</a></li>
+<li><a href="/wiki/OsConsoleCommand" title="OsConsoleCommand">OsConsoleCommand</a></li>
+<li><a href="/wiki/OsDetectedCountry" title="OsDetectedCountry">OsDetectedCountry</a></li>
+<li><a href="/wiki/OsDie" title="OsDie">OsDie</a></li>
+<li><a href="/wiki/OsDrawEllipse" title="OsDrawEllipse">OsDrawEllipse</a></li>
+<li><a href="/wiki/OsDrawFilledEllipse" title="OsDrawFilledEllipse">OsDrawFilledEllipse</a></li>
+<li><a href="/wiki/OsDrawFilledPolygon" title="OsDrawFilledPolygon">OsDrawFilledPolygon</a></li>
+<li><a href="/wiki/OsDrawFilledRectangle" title="OsDrawFilledRectangle">OsDrawFilledRectangle</a></li>
+<li><a href="/wiki/OsDrawImage" title="OsDrawImage">OsDrawImage</a></li>
+<li><a href="/wiki/OsDrawLine" title="OsDrawLine">OsDrawLine</a></li>
+<li><a href="/wiki/OsDrawPolygon" title="OsDrawPolygon">OsDrawPolygon</a></li>
+<li><a href="/wiki/OsDrawRectangle" title="OsDrawRectangle">OsDrawRectangle</a></li>
+<li><a href="/wiki/OsDrawResetTransform" title="OsDrawResetTransform">OsDrawResetTransform</a></li>
+<li><a href="/wiki/OsDrawRotationTransform" title="OsDrawRotationTransform">OsDrawRotationTransform</a></li>
+<li><a href="/wiki/OsDrawScaleTransform" title="OsDrawScaleTransform">OsDrawScaleTransform</a></li>
+<li><a href="/wiki/OsDrawText" title="OsDrawText">OsDrawText</a></li>
+<li><a href="/wiki/OsDrawTranslationTransform" title="OsDrawTranslationTransform">OsDrawTranslationTransform</a></li>
+<li><a href="/wiki/OsDropAttachment" title="OsDropAttachment">OsDropAttachment</a></li>
+<li><a href="/wiki/OsDropAttachmentAt" title="OsDropAttachmentAt">OsDropAttachmentAt</a></li>
+<li><a href="/wiki/OsEjectFromGroup" title="OsEjectFromGroup">OsEjectFromGroup</a></li>
+<li><a href="/wiki/OsForceAttachToAvatar" title="OsForceAttachToAvatar">OsForceAttachToAvatar</a></li>
+<li><a href="/wiki/OsForceAttachToAvatarFromInventory" title="OsForceAttachToAvatarFromInventory">OsForceAttachToAvatarFromInventory</a></li>
+<li><a href="/wiki/OsForceAttachToOtherAvatarFromInventory" title="OsForceAttachToOtherAvatarFromInventory">OsForceAttachToOtherAvatarFromInventory</a></li>
+<li><a href="/wiki/OsForceBreakAllLinks" title="OsForceBreakAllLinks">OsForceBreakAllLinks</a></li>
+<li><a href="/wiki/OsForceBreakLink" title="OsForceBreakLink">OsForceBreakLink</a></li>
+<li><a href="/wiki/OsForceCreateLink" title="OsForceCreateLink">OsForceCreateLink</a></li>
+<li><a href="/wiki/OsForceDetachFromAvatar" title="OsForceDetachFromAvatar">OsForceDetachFromAvatar</a></li>
+<li><a href="/wiki/OsForceDropAttachment" title="OsForceDropAttachment">OsForceDropAttachment</a></li>
+<li><a href="/wiki/OsForceDropAttachmentAt" title="OsForceDropAttachmentAt">OsForceDropAttachmentAt</a></li>
+<li><a href="/wiki/OsForceOtherSit" title="OsForceOtherSit">OsForceOtherSit</a></li>
+<li><a href="/wiki/OsFormatString" title="OsFormatString">OsFormatString</a></li>
+<li><a href="/wiki/OsGetAgentCountry" title="OsGetAgentCountry">OsGetAgentCountry</a></li>
+<li><a href="/wiki/OsGetAgentIP" title="OsGetAgentIP">OsGetAgentIP</a></li>
+<li><a href="/wiki/OsGetAgents" title="OsGetAgents">OsGetAgents</a></li>
+<li><a href="/wiki/OsGetApparentRegionTime" title="OsGetApparentRegionTime">OsGetApparentRegionTime</a></li>
+<li><a href="/wiki/OsGetApparentRegionTimeString" title="OsGetApparentRegionTimeString">OsGetApparentRegionTimeString</a></li>
+<li><a href="/wiki/OsGetApparentTime" title="OsGetApparentTime">OsGetApparentTime</a></li>
+<li><a href="/wiki/OsGetApparentTimeString" title="OsGetApparentTimeString">OsGetApparentTimeString</a></li>
+<li><a href="/wiki/OsGetAvatarHomeURI" title="OsGetAvatarHomeURI">OsGetAvatarHomeURI</a></li>
+<li><a href="/wiki/OsGetAvatarList" title="OsGetAvatarList">OsGetAvatarList</a></li>
+<li><a href="/wiki/OsGetCurrentSunHour" title="OsGetCurrentSunHour">OsGetCurrentSunHour</a></li>
+<li><a href="/wiki/OsGetDrawStringSize" title="OsGetDrawStringSize">OsGetDrawStringSize</a></li>
+<li><a href="/wiki/OsGetGender" title="OsGetGender">OsGetGender</a></li>
+<li><a href="/wiki/OsGetGridCustom" title="OsGetGridCustom">OsGetGridCustom</a></li>
+<li><a href="/wiki/OsGetGridGatekeeperURI" title="OsGetGridGatekeeperURI">OsGetGridGatekeeperURI</a></li>
+<li><a href="/wiki/OsGetGridHomeURI" title="OsGetGridHomeURI">OsGetGridHomeURI</a></li>
+<li><a href="/wiki/OsGetGridLoginURI" title="OsGetGridLoginURI">OsGetGridLoginURI</a></li>
+<li><a href="/wiki/OsGetGridName" title="OsGetGridName">OsGetGridName</a></li></ul></td>
+<td width="33.3%"><h3>O cont.</h3>
+<ul><li><a href="/wiki/OsGetGridNick" title="OsGetGridNick">OsGetGridNick</a></li>
+<li><a href="/wiki/OsGetHealRate" title="OsGetHealRate">OsGetHealRate</a></li>
+<li><a href="/wiki/OsGetHealth" title="OsGetHealth">OsGetHealth</a></li>
+<li><a href="/wiki/OsGetInertiaData" title="OsGetInertiaData">OsGetInertiaData</a></li>
+<li><a href="/wiki/OsGetInventoryDesc" title="OsGetInventoryDesc">OsGetInventoryDesc</a></li>
+<li><a href="/wiki/OsGetInventoryItemKey" title="OsGetInventoryItemKey">OsGetInventoryItemKey</a></li>
+<li><a href="/wiki/OsGetInventoryItemKeys" title="OsGetInventoryItemKeys">OsGetInventoryItemKeys</a></li>
+<li><a href="/wiki/OsGetInventoryLastOwner" title="OsGetInventoryLastOwner">OsGetInventoryLastOwner</a></li>
+<li><a href="/wiki/OsGetInventoryName" title="OsGetInventoryName">OsGetInventoryName</a></li>
+<li><a href="/wiki/OsGetInventoryNames" title="OsGetInventoryNames">OsGetInventoryNames</a></li>
+<li><a href="/wiki/OsGetLastChangedEventKey" title="OsGetLastChangedEventKey">OsGetLastChangedEventKey</a></li>
+<li><a href="/wiki/OsGetLinkInventoryDesc" title="OsGetLinkInventoryDesc">OsGetLinkInventoryDesc</a></li>
+<li><a href="/wiki/OsGetLinkInventoryKey" title="OsGetLinkInventoryKey">OsGetLinkInventoryKey</a></li>
+<li><a href="/wiki/OsGetLinkInventoryName" title="OsGetLinkInventoryName">OsGetLinkInventoryName</a></li>
+<li><a href="/wiki/OsGetLinkInventoryNames" title="OsGetLinkInventoryNames">OsGetLinkInventoryNames</a></li>
+<li><a href="/wiki/OsGetLinkNumber" title="OsGetLinkNumber">OsGetLinkNumber</a></li>
+<li><a href="/wiki/OsGetLinkPrimitiveParams" title="OsGetLinkPrimitiveParams">OsGetLinkPrimitiveParams</a></li>
+<li><a href="/wiki/OsGetLinkSitActiveRange" title="OsGetLinkSitActiveRange">OsGetLinkSitActiveRange</a></li>
+<li><a href="/wiki/OsGetLinkStandTarget" title="OsGetLinkStandTarget">OsGetLinkStandTarget</a></li>
+<li><a href="/wiki/OsGetMapTexture" title="OsGetMapTexture">OsGetMapTexture</a></li>
+<li><a href="/wiki/OsGetNotecard" title="OsGetNotecard">OsGetNotecard</a></li>
+<li><a href="/wiki/OsGetNotecardLine" title="OsGetNotecardLine">OsGetNotecardLine</a></li>
+<li><a href="/wiki/OsGetNpcList" title="OsGetNpcList">OsGetNpcList</a></li>
+<li><a href="/wiki/OsGetNumberOfAttachments" title="OsGetNumberOfAttachments">OsGetNumberOfAttachments</a></li>
+<li><a href="/wiki/OsGetNumberOfNotecardLines" title="OsGetNumberOfNotecardLines">OsGetNumberOfNotecardLines</a></li>
+<li><a href="/wiki/OsGetParcelDetails" title="OsGetParcelDetails">OsGetParcelDetails</a></li>
+<li><a href="/wiki/OsGetParcelDwell" title="OsGetParcelDwell">OsGetParcelDwell</a></li>
+<li><a href="/wiki/OsGetParcelID" title="OsGetParcelID">OsGetParcelID</a></li>
+<li><a href="/wiki/OsGetParcelIDs" title="OsGetParcelIDs">OsGetParcelIDs</a></li>
+<li><a href="/wiki/OsGetPhysicsEngineName" title="OsGetPhysicsEngineName">OsGetPhysicsEngineName</a></li>
+<li><a href="/wiki/OsGetPhysicsEngineType" title="OsGetPhysicsEngineType">OsGetPhysicsEngineType</a></li>
+<li><a href="/wiki/OsGetPrimCount" title="OsGetPrimCount">OsGetPrimCount</a></li>
+<li><a href="/wiki/OsGetPrimitiveParams" title="OsGetPrimitiveParams">OsGetPrimitiveParams</a></li>
+<li><a href="/wiki/OsGetPSTWallclock" title="OsGetPSTWallclock">OsGetPSTWallclock</a></li>
+<li><a href="/wiki/OsGetRegionMapTexture" title="OsGetRegionMapTexture">OsGetRegionMapTexture</a></li>
+<li><a href="/wiki/OsGetRegionSize" title="OsGetRegionSize">OsGetRegionSize</a></li>
+<li><a href="/wiki/OsGetRegionStats" title="OsGetRegionStats">OsGetRegionStats</a></li>
+<li><a href="/wiki/OsGetRezzingObject" title="OsGetRezzingObject">OsGetRezzingObject</a></li>
+<li><a href="/wiki/OsGetScriptEngineName" title="OsGetScriptEngineName">OsGetScriptEngineName</a></li>
+<li><a href="/wiki/OsGetSimulatorMemory" title="OsGetSimulatorMemory">OsGetSimulatorMemory</a></li>
+<li><a href="/wiki/OsGetSimulatorMemoryKB" title="OsGetSimulatorMemoryKB">OsGetSimulatorMemoryKB</a></li>
+<li><a href="/wiki/OsGetSimulatorVersion" title="OsGetSimulatorVersion">OsGetSimulatorVersion</a></li>
+<li><a href="/wiki/OsGetSitActiveRange" title="OsGetSitActiveRange">OsGetSitActiveRange</a></li>
+<li><a href="/wiki/OsGetSitTargetPos" title="OsGetSitTargetPos">OsGetSitTargetPos</a></li>
+<li><a href="/wiki/OsGetSitTargetRot" title="OsGetSitTargetRot">OsGetSitTargetRot</a></li>
+<li><a href="/wiki/OsGetSittingAvatarsCount" title="OsGetSittingAvatarsCount">OsGetSittingAvatarsCount</a></li>
+<li><a href="/wiki/OsGetStandTarget" title="OsGetStandTarget">OsGetStandTarget</a></li>
+<li><a href="/wiki/OsGetSunParam" title="OsGetSunParam">OsGetSunParam</a></li>
+<li><a href="/wiki/OsGetTerrainHeight" title="OsGetTerrainHeight">OsGetTerrainHeight</a></li>
+<li><a href="/wiki/OsGetWindParam" title="OsGetWindParam">OsGetWindParam</a></li>
+<li><a href="/wiki/OsGiveLinkInventory" title="OsGiveLinkInventory">OsGiveLinkInventory</a></li>
+<li><a href="/wiki/OsGiveLinkInventoryList" title="OsGiveLinkInventoryList">OsGiveLinkInventoryList</a></li>
+<li><a href="/wiki/OsGrantScriptPermissions" title="OsGrantScriptPermissions">OsGrantScriptPermissions</a></li>
+<li><a href="/wiki/OsInviteToGroup" title="OsInviteToGroup">OsInviteToGroup</a></li>
+<li><a href="/wiki/OsIsNotValidNumber" title="OsIsNotValidNumber">OsIsNotValidNumber</a></li>
+<li><a href="/wiki/OsIsNpc" title="OsIsNpc">OsIsNpc</a></li>
+<li><a href="/wiki/OsIsUUID" title="OsIsUUID">OsIsUUID</a></li>
+<li><a href="/wiki/OsKey2Name" title="OsKey2Name">OsKey2Name</a></li>
+<li><a href="/wiki/OsKickAvatar" title="OsKickAvatar">OsKickAvatar</a></li>
+<li><a href="/wiki/OsLinkParticleSystem" title="OsLinkParticleSystem">OsLinkParticleSystem</a></li>
+<li><a href="/wiki/OsList2Double" title="OsList2Double">OsList2Double</a></li>
+<li><a href="/wiki/OsListAs*" title="OsListAs*">OsListAs*</a></li>
+<li><a href="/wiki/OsListenRegex" title="OsListenRegex">OsListenRegex</a></li>
+<li><a href="/wiki/OsListSortInPlace" title="OsListSortInPlace">OsListSortInPlace</a></li>
+<li><a href="/wiki/OsListSortInPlaceStrided" title="OsListSortInPlaceStrided">OsListSortInPlaceStrided</a></li>
+<li><a href="/wiki/OsLoadedCreationDate" title="OsLoadedCreationDate">OsLoadedCreationDate</a></li>
+<li><a href="/wiki/OsLoadedCreationID" title="OsLoadedCreationID">OsLoadedCreationID</a></li></ul></td>
+<td width="33.3%"><h3>O cont.</h3>
+<ul><li><a href="/wiki/OsLoadedCreationTime" title="OsLoadedCreationTime">OsLoadedCreationTime</a></li>
+<li><a href="/wiki/OsLocalTeleportAgent" title="OsLocalTeleportAgent">OsLocalTeleportAgent</a></li>
+<li><a href="/wiki/OsLoopSound" title="OsLoopSound">OsLoopSound</a></li>
+<li><a href="/wiki/OsLoopSoundMaster" title="OsLoopSoundMaster">OsLoopSoundMaster</a></li>
+<li><a href="/wiki/OsLoopSoundSlave" title="OsLoopSoundSlave">OsLoopSoundSlave</a></li>
+<li><a href="/wiki/OsMakeNotecard" title="OsMakeNotecard">OsMakeNotecard</a></li>
+<li><a href="/wiki/OsMatchString" title="OsMatchString">OsMatchString</a></li>
+<li><a href="/wiki/OsMax" title="OsMax">OsMax</a></li>
+<li><a href="/wiki/OsMessageAttachments" title="OsMessageAttachments">OsMessageAttachments</a></li>
+<li><a href="/wiki/OsMessageObject" title="OsMessageObject">OsMessageObject</a></li>
+<li><a href="/wiki/OsMin" title="OsMin">OsMin</a></li>
+<li><a href="/wiki/OsMovePen" title="OsMovePen">OsMovePen</a></li>
+<li><a href="/wiki/OsNpcCreate" title="OsNpcCreate">OsNpcCreate</a></li>
+<li><a href="/wiki/OsNpcGetOwner" title="OsNpcGetOwner">OsNpcGetOwner</a></li>
+<li><a href="/wiki/OsNpcGetPos" title="OsNpcGetPos">OsNpcGetPos</a></li>
+<li><a href="/wiki/OsNpcGetRot" title="OsNpcGetRot">OsNpcGetRot</a></li>
+<li><a href="/wiki/OsNpcLoadAppearance" title="OsNpcLoadAppearance">OsNpcLoadAppearance</a></li>
+<li><a href="/wiki/OsNpcLookAt" title="OsNpcLookAt">OsNpcLookAt</a></li>
+<li><a href="/wiki/OsNpcMoveTo" title="OsNpcMoveTo">OsNpcMoveTo</a></li>
+<li><a href="/wiki/OsNpcMoveToTarget" title="OsNpcMoveToTarget">OsNpcMoveToTarget</a></li>
+<li><a href="/wiki/OsNpcPlayAnimation" title="OsNpcPlayAnimation">OsNpcPlayAnimation</a></li>
+<li><a href="/wiki/OsNpcRemove" title="OsNpcRemove">OsNpcRemove</a></li>
+<li><a href="/wiki/OsNpcSaveAppearance" title="OsNpcSaveAppearance">OsNpcSaveAppearance</a></li>
+<li><a href="/wiki/OsNpcSay" title="OsNpcSay">OsNpcSay</a></li>
+<li><a href="/wiki/OsNpcSayTo" title="OsNpcSayTo">OsNpcSayTo</a></li>
+<li><a href="/wiki/OsNpcSetProfileAbout" title="OsNpcSetProfileAbout">OsNpcSetProfileAbout</a></li>
+<li><a href="/wiki/OsNpcSetProfileImage" title="OsNpcSetProfileImage">OsNpcSetProfileImage</a></li>
+<li><a href="/wiki/OsNpcSetRot" title="OsNpcSetRot">OsNpcSetRot</a></li>
+<li><a href="/wiki/OsNpcShout" title="OsNpcShout">OsNpcShout</a></li>
+<li><a href="/wiki/OsNpcSit" title="OsNpcSit">OsNpcSit</a></li>
+<li><a href="/wiki/OsNpcStand" title="OsNpcStand">OsNpcStand</a></li>
+<li><a href="/wiki/OsNpcStopAnimation" title="OsNpcStopAnimation">OsNpcStopAnimation</a></li>
+<li><a href="/wiki/OsNpcStopMoveToTarget" title="OsNpcStopMoveToTarget">OsNpcStopMoveToTarget</a></li>
+<li><a href="/wiki/OsNpcTouch" title="OsNpcTouch">OsNpcTouch</a></li>
+<li><a href="/wiki/OsNpcWhisper" title="OsNpcWhisper">OsNpcWhisper</a></li>
+<li><a href="/wiki/OsOwnerSaveAppearance" title="OsOwnerSaveAppearance">OsOwnerSaveAppearance</a></li>
+<li><a href="/wiki/OsParcelJoin" title="OsParcelJoin">OsParcelJoin</a></li>
+<li><a href="/wiki/OsParcelSubdivide" title="OsParcelSubdivide">OsParcelSubdivide</a></li>
+<li><a href="/wiki/OsParticleSystem" title="OsParticleSystem">OsParticleSystem</a></li>
+<li><a href="/wiki/OsPlaySound" title="OsPlaySound">OsPlaySound</a></li>
+<li><a href="/wiki/OsPlaySoundSlave" title="OsPlaySoundSlave">OsPlaySoundSlave</a></li>
+<li><a href="/wiki/OsPreloadSound" title="OsPreloadSound">OsPreloadSound</a></li>
+<li><a href="/wiki/OsRegexIsMatch" title="OsRegexIsMatch">OsRegexIsMatch</a></li>
+<li><a href="/wiki/OsRegionNotice" title="OsRegionNotice">OsRegionNotice</a></li>
+<li><a href="/wiki/OsRegionRestart" title="OsRegionRestart">OsRegionRestart</a></li>
+<li><a href="/wiki/OsRemoveLinkInventory" title="OsRemoveLinkInventory">OsRemoveLinkInventory</a></li>
+<li><a href="/wiki/OsReplaceAgentEnvironment" title="OsReplaceAgentEnvironment">OsReplaceAgentEnvironment</a></li>
+<li><a href="/wiki/OsReplaceParcelEnvironment" title="OsReplaceParcelEnvironment">OsReplaceParcelEnvironment</a></li>
+<li><a href="/wiki/OsReplaceRegionEnvironment" title="OsReplaceRegionEnvironment">OsReplaceRegionEnvironment</a></li>
+<li><a href="/wiki/OsReplaceString" title="OsReplaceString">OsReplaceString</a></li>
+<li><a href="/wiki/OsRequestSecureURL" title="OsRequestSecureURL">OsRequestSecureURL</a></li>
+<li><a href="/wiki/OsRequestURL" title="OsRequestURL">OsRequestURL</a></li>
+<li><a href="/wiki/OsResetAllScripts" title="OsResetAllScripts">OsResetAllScripts</a></li>
+<li><a href="/wiki/OsResetEnvironment" title="OsResetEnvironment">OsResetEnvironment</a></li>
+<li><a href="/wiki/OsRevokeScriptPermissions" title="OsRevokeScriptPermissions">OsRevokeScriptPermissions</a></li>
+<li><a href="/wiki/OsRound" title="OsRound">OsRound</a></li>
+<li><a href="/wiki/OsSetContentType" title="OsSetContentType">OsSetContentType</a></li>
+<li><a href="/wiki/OsSetDynamicTextureData" title="OsSetDynamicTextureData">OsSetDynamicTextureData</a></li>
+<li><a href="/wiki/OsSetDynamicTextureDataBlend" title="OsSetDynamicTextureDataBlend">OsSetDynamicTextureDataBlend</a></li>
+<li><a href="/wiki/OsSetDynamicTextureDataBlendFace" title="OsSetDynamicTextureDataBlendFace">OsSetDynamicTextureDataBlendFace</a></li>
+<li><a href="/wiki/OsSetDynamicTextureDataFace" title="OsSetDynamicTextureDataFace">OsSetDynamicTextureDataFace</a></li>
+<li><a href="/wiki/OsSetDynamicTextureURL" title="OsSetDynamicTextureURL">OsSetDynamicTextureURL</a></li>
+<li><a href="/wiki/OsSetDynamicTextureURLBlend" title="OsSetDynamicTextureURLBlend">OsSetDynamicTextureURLBlend</a></li>
+<li><a href="/wiki/OsSetDynamicTextureURLBlendFace" title="OsSetDynamicTextureURLBlendFace">OsSetDynamicTextureURLBlendFace</a></li>
+<li><a href="/wiki/OsSetEstateSunSettings" title="OsSetEstateSunSettings">OsSetEstateSunSettings</a></li>
+<li><a href="/wiki/OsSetFontName" title="OsSetFontName">OsSetFontName</a></li></ul></td>
+</tr></table></div>(previous 200) (<a href="/index.php?title=Category:OSSL_Functions&amp;pagefrom=OsSetFontSize#mw-pages" title="Category:OSSL Functions">next 200</a>)
+</div></div></div><div class="printfooter">
+Retrieved from "<a href="http://opensimulator.org/index.php?title=Category:OSSL_Functions&amp;oldid=55112">http://opensimulator.org/index.php?title=Category:OSSL_Functions&amp;oldid=55112</a>"</div>
+			<div id="catlinks"><div id='catlinks' class='catlinks'><div id="mw-normal-catlinks" class="mw-normal-catlinks"><a href="/wiki/Special:Categories" title="Special:Categories">Categories</a>: <ul><li><a href="/wiki/Category:Scripting" title="Category:Scripting">Scripting</a></li><li><a href="/wiki/Category:Scripts" title="Category:Scripts">Scripts</a></li><li><a href="/wiki/Category:OSSL" title="Category:OSSL">OSSL</a></li></ul></div></div></div>			<!-- end content -->
+			<div class="visualClear"></div>
+		</div>
+	</div>
+      </div>
+		</div>
+                <div id="osbadge">
+                  <img id="oslogo" src="/skins/osmonobook/images/headerLogo.png">
+                </div>
+		<div id="column-one">
+                  
+	<div class="portlet" id="p-personal">
+		<h5>Personal tools</h5>
+		<div class="pBody">
+			<ul>
+				<li id="pt-login"><a href="/index.php?title=Special:UserLogin&amp;returnto=Category%3AOSSL+Functions"Array>Log in / create account</a></li>
+			</ul>
+		</div>
+	</div>
+<!--	<div class="portlet" id="p-logo">
+		<a style="background-image: url(/skins/common/images/wiki.png);" href="/wiki/Main_Page"Array></a>
+	</div> -->
+<script type="text/javascript"> if (window.isMSIE55) fixalpha(); </script>
+                <div class='portlet' id='p-General'>
+        <h5>General</h5>
+		<div class='pBody'>
+			<ul>
+				<li id="n-mainpage"><a href="/wiki/Main_Page"Array>Main Page</a></li>
+				<li id="n-News"><a href="/wiki/News"Array>News</a></li>
+			</ul>
+		</div>
+	</div>
+	        <div class='portlet' id='p-For_Administrators'>
+        <h5>For Administrators</h5>
+		<div class='pBody'>
+			<ul>
+				<li id="n-Admin-Home"><a href="/wiki/User_Documentation"Array>Admin Home</a></li>
+				<li id="n-Download"><a href="/wiki/Download"Array>download</a></li>
+				<li id="n-Running"><a href="/wiki/Dependencies"Array>Running</a></li>
+				<li id="n-Configuration"><a href="/wiki/Configuration"Array>Configuration</a></li>
+				<li id="n-Building"><a href="/wiki/Build_Instructions"Array>Building</a></li>
+				<li id="n-FAQ"><a href="/wiki/FAQ"Array>FAQ</a></li>
+				<li id="n-Related-Software"><a href="/wiki/Related_Software"Array>Related Software</a></li>
+				<li id="n-Support"><a href="/wiki/Support"Array>Support</a></li>
+				<li id="n-Report-a-Bug"><a href="http://opensimulator.org/mantis"Array>Report a Bug</a></li>
+			</ul>
+		</div>
+	</div>
+	        <div class='portlet' id='p-For_Developers'>
+        <h5>For Developers</h5>
+		<div class='pBody'>
+			<ul>
+				<li id="n-Dev-Home"><a href="/wiki/Development"Array>Dev Home</a></li>
+				<li id="n-Contributions-Policy"><a href="/wiki/Contributions_Policy"Array>Contributions Policy</a></li>
+				<li id="n-Bug-Tracking"><a href="http://opensimulator.org/mantis"Array>Bug Tracking</a></li>
+			</ul>
+		</div>
+	</div>
+	        <div class='portlet' id='p-For_Creators'>
+        <h5>For Creators</h5>
+		<div class='pBody'>
+			<ul>
+				<li id="n-Content-Creation"><a href="/wiki/Artist_Home"Array>Content Creation</a></li>
+				<li id="n-Scripting"><a href="/wiki/Scripting_Documentation"Array>Scripting</a></li>
+			</ul>
+		</div>
+	</div>
+	        <div class='portlet' id='p-For_Grid_Users'>
+        <h5>For Grid Users</h5>
+		<div class='pBody'>
+			<ul>
+				<li id="n-Connecting"><a href="/wiki/Connecting"Array>Connecting</a></li>
+				<li id="n-Grid-List"><a href="/wiki/Grid_List"Array>Grid List</a></li>
+				<li id="n-Screenshots"><a href="/wiki/Screenshots"Array>Screenshots</a></li>
+			</ul>
+		</div>
+	</div>
+	        <div class='portlet' id='p-Related_Links'>
+        <h5>Related Links</h5>
+		<div class='pBody'>
+			<ul>
+				<li id="n-Related-Software"><a href="/wiki/Related_Software"Array>Related Software</a></li>
+				<li id="n-Black-Duck"><a href="https://www.openhub.net/p/opensimulator"Array>Black Duck</a></li>
+			</ul>
+		</div>
+	</div>
+	        <div class='portlet' id='p-About_This_Wiki'>
+        <h5>About This Wiki</h5>
+		<div class='pBody'>
+			<ul>
+				<li id="n-recentchanges"><a href="/wiki/Special:RecentChanges"Array>Recent changes</a></li>
+			</ul>
+		</div>
+	</div>
+		<div id="p-search" class="portlet">
+          <h5><label for="searchInput">Search</label></h5>
+		<div id="searchBody" class="pBody">
+			<form action="/wiki/Special:Search" id="searchform"><div>
+				<input id="searchInput" name="search" type="text"Array value="" />
+				<input type='submit' name="go" class="searchButton" id="searchGoButton"	value="Go" />&nbsp;
+				<input type='submit' name="fulltext" class="searchButton" id="mw-searchButton" value="Search" />
+			</div></form>
+		</div>
+	</div>
+	<div class="portlet" id="p-tb">
+		<h5>Tools</h5>
+		<div class="pBody">
+			<ul>
+				<li id="t-whatlinkshere"><a href="/wiki/Special:WhatLinksHere/Category:OSSL_Functions"Array>What links here</a></li>
+				<li id="t-recentchangeslinked"><a href="/wiki/Special:RecentChangesLinked/Category:OSSL_Functions"Array>Related changes</a></li>
+<li id="t-specialpages"><a href="/wiki/Special:SpecialPages"Array>Special pages</a></li>
+				<li id="t-print"><a href="/index.php?title=Category:OSSL_Functions&amp;printable=yes"Array>Printable version</a></li>				<li id="t-permalink"><a href="/index.php?title=Category:OSSL_Functions&amp;oldid=55112"Array>Permanent link</a></li>			</ul>
+		</div>
+	</div>
+		</div><!-- end of the left (by default at least) column -->
+			<div class="visualClear"></div>
+			<div id="footer">
+				<div id="f-poweredbyico"><a href="https://cciedump.spoto.net/"><img src="/skins/common/images/poweredby_mediawiki_88x31.png" height="31" width="88" alt="Powered by spoto dumps review" /></a></div>
+				<div id="f-copyrightico"><a href="http://creativecommons.org/licenses/by-sa/2.5/"><img src="http://i.creativecommons.org/l/by-sa/2.5/88x31.png" alt="Attribution-Share Alike 2.5 " width="88" height="31" /></a></div>
+			<ul id="f-list">
+				<li id="lastmod"> This page was last modified on 29 April 2026, at 23:49.</li>
+				<li id="viewcount">This page has been accessed 895,093 times.</li>
+				<li id="copyright">Content is available under <a class="external" href="http://creativecommons.org/licenses/by-sa/2.5/">Attribution-Share Alike 2.5 </a> unless otherwise noted.</li>
+				<li id="privacy"><a href="/wiki/OpenSimulator:Privacy_policy" title="OpenSimulator:Privacy policy">Privacy policy</a></li>
+				<li id="about"><a href="/wiki/OpenSimulator:About" title="OpenSimulator:About">About OpenSimulator</a></li>
+				<li id="disclaimer"><a href="/wiki/OpenSimulator:General_disclaimer" title="OpenSimulator:General disclaimer">Disclaimers</a></li>
+			</ul>
+		</div>
+		
+	<script>if(window.mw){
+mw.loader.load(["mediawiki.user","mediawiki.page.ready","mediawiki.legacy.mwsuggest"], null, true);
+}</script>
+<script src="http://opensimulator.org/load.php?debug=false&amp;lang=en&amp;modules=site&amp;only=scripts&amp;skin=osmonobook&amp;*"></script>
+</div>
+<!-- Served in 0.170 secs. --><script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+var pageTracker = _gat._getTracker("UA-5842937-1");
+pageTracker._trackPageview();
+</script>
+</body></html>
