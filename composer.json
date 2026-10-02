@@ -22,7 +22,8 @@
     "ext-json": "*",
     "ext-mbstring": "*",
     "laravel/prompts": "^0.3.18",
-    "magicoli/opensim-helpers": "dev-opensim-kit"
+    "magicoli/opensim-helpers": "dev-opensim-kit",
+    "nubs/random-name-generator": "^2.2"
   },
   "require-dev": {
     "dealerdirect/phpcodesniffer-composer-installer": "^1.2",

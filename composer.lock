@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e5d17f089a1ebb24a241a2edea3f781f",
+    "content-hash": "fb1401046c613a9558cc16aa7135044d",
     "packages": [
         {
             "name": "laminas/laminas-escaper",
@@ -318,6 +318,59 @@
                 "source": "https://github.com/GuduleLapointe/opensim-rest-php/tree/opensim-kit"
             },
             "time": "2026-10-01T19:55:21+00:00"
+        },
+        {
+            "name": "nubs/random-name-generator",
+            "version": "v2.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/nubs/random-name-generator.git",
+                "reference": "50abf24519badc5795a43c831f1d2a1faa45cb77"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/nubs/random-name-generator/zipball/50abf24519badc5795a43c831f1d2a1faa45cb77",
+                "reference": "50abf24519badc5795a43c831f1d2a1faa45cb77",
+                "shasum": ""
+            },
+            "require": {
+                "php": "~5.6 || ~7.0 || ~8.0"
+            },
+            "require-dev": {
+                "cinam/randomizer": ">=1.1.1,<2.0",
+                "php-coveralls/php-coveralls": "~2.4",
+                "phpunit/phpunit": "^5.0 || ^6.5 || ^7.0 || ^9.0",
+                "squizlabs/php_codesniffer": "~2.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Nubs\\RandomNameGenerator\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Spencer Rinehart",
+                    "email": "anubis@overthemonkey.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "A library to create interesting, sometimes entertaining, random names.",
+            "keywords": [
+                "alliteration",
+                "generator",
+                "random",
+                "video game"
+            ],
+            "support": {
+                "issues": "https://github.com/nubs/random-name-generator/issues",
+                "source": "https://github.com/nubs/random-name-generator/tree/v2.2.0"
+            },
+            "time": "2021-01-12T13:46:08+00:00"
         },
         {
             "name": "phpxmlrpc/phpxmlrpc",
@@ -4853,5 +4906,5 @@
     "platform-overrides": {
         "php": "8.2.0"
     },
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.6.0"
 }

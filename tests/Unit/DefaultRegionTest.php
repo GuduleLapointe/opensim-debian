@@ -181,3 +181,17 @@ describe('The landing region of a grid', function () {
         expect($remote->missingRoles())->toBe([]);
     });
 });
+
+describe('A name to propose', function () {
+    test('is an adjective and a noun that begin the same, and a name the caller accepts', function () {
+        $name = OpenSim\Installer\Grid\RandomName::make(static fn(string $v): ?string => RegionName::problem($v));
+
+        expect($name)->toMatch('/^(\S+) (\S+)$/');
+        expect(RegionName::problem($name))->toBeNull();
+        expect(strtolower($name[0]))->toBe(strtolower(explode(' ', $name)[1][0]));
+    });
+
+    test('is empty when no name is accepted', function () {
+        expect(OpenSim\Installer\Grid\RandomName::make(static fn(string $v): ?string => 'no'))->toBe('');
+    });
+});

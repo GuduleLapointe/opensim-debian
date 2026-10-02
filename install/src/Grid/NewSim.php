@@ -696,6 +696,9 @@ final class NewSim
 
         // The first simulator of a grid has the name of its landing region, that is its first region
         $firstSim = !$grid->remote && SimState::names($grid->dir) === [];
+        $simNameProblem = static fn(string $v): ?string => preg_match('/^[A-Za-z0-9][A-Za-z0-9 _-]*$/', trim($v))
+            ? null
+            : 'Letters, digits, spaces, _ and - only.';
         if ($simName === null && $grid->needsLandingRegion()) {
             $this->ui->note(self::LANDING);
         }
@@ -704,10 +707,15 @@ final class NewSim
             trim(
                 $this->ui->text(
                     'Simulator name',
-                    $firstSim ? self::FIRST : '',
-                    static fn(string $v): ?string => preg_match('/^[A-Za-z0-9][A-Za-z0-9 _-]*$/', trim($v))
-                        ? null
-                        : 'Letters, digits, spaces, _ and - only.',
+                    $firstSim
+                        ? self::FIRST
+                        : RandomName::make(
+                            fn(string $v): ?string => $simNameProblem($v) ??
+                                (is_file("{$grid->dir}/sims/" . GridInfo::instanceName("{$grid->nick}_$v") . '.ini')
+                                    ? 'taken'
+                                    : null),
+                        ),
+                    $simNameProblem,
                 ),
             );
         $plan->slug = GridInfo::instanceName($grid->nick . '_' . $plan->simName);
@@ -1015,7 +1023,10 @@ final class NewSim
         if ($grid->needsLandingRegion()) {
             $this->ui->note(self::LANDING);
         }
-        $plan->regionName = trim($this->ui->text('Region name', $plan->simName, $name));
+        // The name of the simulator is the one of its first region; the next ones are not called the same
+        $first = (glob("{$plan->regionsDir()}/*.ini*") ?: []) === [];
+        $default = $first && $name($plan->simName) === null ? $plan->simName : RandomName::make($name);
+        $plan->regionName = trim($this->ui->text('Region name', $default, $name));
         $plan->regionRoles = $this->askRoles($grid);
         $plan->regionUuid = self::uuid();
         $plan->regionLocation = $this->askLocation($grid, $database);
