@@ -9,37 +9,35 @@
 - a new region is named in the database while its simulator is stopped, which costs a restart of the simulator (TODO in `Actions::nameParcels`): look for a better way to name its parcel
 - try to open ports if firewall is active
 
+## Critical improvements
+
+- bulk avatar creation (from a list provided by a third-party source; format to be defined, likely CSV or JSON). This is a genuine, long-awaited user request. This feature relies on the ability to use the current host configuration—unchanged—regardless of the installation method employed (with or without OpenSimKit).
+- add configuration import from Robust.ini or OpenSim.ini (standardized to OpenSimKit /etc/config, but without modifying the existing configuration) to enable bulk avatar creation on existing grids.
+- add opensim-helpers package and examples of configuration as alias/subfolder in caddy, nginx and apache2
+- add docker/podman installation support in setup
+- rename composer packages to match github account GuduleLapointe
+
 ## Next steps
 
+- add full import procedure for existing grids/simulators (normalized config + db + assets and other data)
 - write INSTALLATION.md, the detailed instructions the README refers to
-- localize the setup and the launcher with gettext (a requirement of the project), their messages are still English strings
 - add/update bash completion
 - build ready to use zip packages for simple download, added to the release assets alongside the source code and apt package
 - add simplified installation script, detecting the platform and installing with the appropriate method (zip package or apt package), with a one-line command like `curl -sSL https://raw.githubusercontent.com/GuduleLapointe/opensim-kit/refs/heads/master/install.sh | bash`
-- add opensim-helpers package and examples of configuration as alias/subfolder in caddy, nginx and apache2
 - add basic ready to use website
 - add ready to use default avatars
-- add configuration import from Robust.ini or OpenSim.ini (normalizing to OpenSimKit architecture)
-- add import procedure for existing grids/simulators
 - add default Inventory package
-- add docker/podman installation support in setup
 - add nat/port forwarding instructions or presets (with standard tools or third-party provides like ngrok, cloudflare...)
-- rename composer packages to match github account GuduleLapointe
+- make most opensim-tools features installation-agnostic (support both opensim-kit and custom/standard opensim installations) : `/etc/opensim/opensim.conf` becomes only a reference pointing to the user's actual core installation and configuration files location (e.g. `/opt/osgrid`, `~/diva`, `~/opensim/opensim-0.9.3.0/bin`...)
 
-## New features
+## Less urgent
 
-`opensim enable <instance>` and `opensim disable <instance>`
-
+- localize the setup and the launcher with gettext (a requirement of the project), their messages are still English strings
+- localize helpers
+- `opensim enable/disable <instance>`
 - Command-line equivalents of the setup menus, to enable or disable a grid, a simulator or a region from a script (the setup does it from its screens)
+- `opensim online`: show who's online
 
-`opensim online`
+## Could be great
 
-- Show who's on line
-
-Could be great
---------------
-
-- Memory/CPU usage monitoring.
-  Notify admin and/or restart Sim above given thresolds.
-  Thinking twice about previous notify thing: maybe it's better to let a
-  dedicated monitoring tool handle that.
+- Memory/CPU usage monitoring. Notify admin and/or restart Sim above given thresolds. Thinking twice about previous notify thing: maybe it's better to suggest a dedicated monitoring tool handle that.
