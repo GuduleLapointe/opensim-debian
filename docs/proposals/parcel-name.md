@@ -28,10 +28,11 @@ Next step when taking it up: try the OAR with a parcel only on a test region, wi
 
 ## Decided
 
+- The way is the OAR with the parcel only (`Grid/ParcelArchive`): the setup reads the parcel of the new region in the `land` table, writes it with the name of the region in an OAR, and loads it through the console (`change region`, `load oar --merge --force-parcels --skip-assets`). It then checks in the database that the name changed; if it did not, the restart offered at the end of the setup is the fallback, as before.
 - OSSL is part of the standard config of the simulators (an `[OSSL]` section in the config the setup writes: `AllowOSFunctions`, and `osSetParcelDetails` for the estate owner and managers only). Customizing it comes later.
-- The script is `share/region-init/init-region.lsl`, easy to find and to customize: a region initialization script is useful beyond the parcel name. It names the parcel after the region when it still has the default name, says so, and removes itself.
-- Still to do: how the script gets into a new region (an OAR with one prim, or rows in the region store), and removing the restart once it works. The restart stays until then.
+- `share/region-init/init-region.lsl` is kept as a script to customize, for the other things a new region may need at its start (music, media, flags). It is not delivered to new regions: that would be an OAR with an object, the same way as the parcel one.
+- Not tested against a real core yet: the options of `load oar`, the format of the parcel file (written from memory of the serializer of the core), and what the merge leaves of the objects and terrain.
 
 ## Now
 
-Keep the restart. The solution stays a stopgap until then.
+The restart stays as a fallback until the OAR is checked on a real region.

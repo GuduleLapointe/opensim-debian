@@ -355,8 +355,70 @@ final class NewSim
             $this->failed($plan, sprintf(_("Region %s did not register in the grid '%s'."), $plan->regionName, $grid->nick));
         }
         $this->giveHome($plan, $grid);
-        $this->needRestart($profile, $plan, 'added');
+        // A parcel that could not be named in the running region is named by the restart
+        if (!$this->nameParcelLive($plan)) {
+            $this->needRestart($profile, $plan, 'added');
+        }
         $this->ui->note(sprintf(_("Region %s is online."), $plan->regionName));
+    }
+
+    /**
+     * Name the parcel of a region after it, in the running simulator: an OAR with the parcel only is loaded
+     * through the console, which replaces the parcel without a restart. Checked in the database, where the
+     * simulator writes its land.
+     *
+     * @return bool whether the parcel has the name of the region
+     */
+    private function nameParcelLive(SimPlan $plan): bool
+    {
+        if (RegionName::problem($plan->regionName) !== null || !preg_match('/^[0-9a-fA-F-]{36}$/', $plan->regionUuid)) {
+            return false;
+        }
+        $db = new GridPlan();
+        $db->dbHost = $plan->dbHost;
+        $db->dbName = $plan->dbName;
+        $db->dbUser = $plan->dbUser;
+        $db->dbPass = $plan->dbPass;
+        $database = new Database($this->ui);
+        $uuid = $plan->regionUuid;
+        $named = static fn(): ?bool => ($rows = $database->select($db, "SELECT Name FROM land WHERE RegionUUID = '$uuid'")) === null
+            ? null
+            : $rows !== [] && !in_array('Your Parcel', $rows, true);
+
+        // The land of a new region is written when the region has started
+        $rows = [];
+        for ($try = 0; $try < 10; $try++) {
+            $rows = $database->select($db, ParcelArchive::query($uuid)) ?? [];
+            if ($rows !== []) {
+                break;
+            }
+            sleep(1);
+        }
+        if ($rows === []) {
+            return false;
+        }
+        $parcels = [];
+        foreach ($rows as $line) {
+            $row = explode("\t", $line);
+            $parcels[$row[0]] = ParcelArchive::parcel($row, $plan->regionName);
+        }
+
+        $path = sys_get_temp_dir() . '/' . $plan->slug . '-parcels-' . getmypid() . '.oar';
+        ParcelArchive::write($path, $parcels);
+        $sent = Console::send(
+            $plan->slug,
+            "change region \"{$plan->regionName}\"\nload oar --merge --force-parcels --skip-assets $path\n",
+        );
+        for ($try = 0; $sent && $try < 15 && $named() !== true; $try++) {
+            sleep(1);
+        }
+        $done = $sent && $named() === true;
+        // The simulator reads the file in its own time: kept until it has
+        if ($done) {
+            @unlink($path);
+        }
+
+        return $done;
     }
 
     /** Give the roles asked to the region in the Robust config of the grid. */

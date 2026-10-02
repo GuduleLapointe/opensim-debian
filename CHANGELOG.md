@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+- update the parcel of a region added to a running simulator is named after the region without a restart: the setup loads an OAR with the parcel only through the console and checks the database; the restart stays as the fallback when the name did not change
 - new OSSL is in the standard config of the simulators (an `[OSSL]` section, `osSetParcelDetails` for the estate owner and managers), and `share/region-init/init-region.lsl` is a region initialization script to customize, which names the parcel after the region; it is not delivered to new regions yet
 - new `opensim profile list|add|default|remove`: registers an install made by hand (`add NAME --core DIR [--etc DIR] [--data DIR]`, the config and data directories being the core one in an install by the book) so the tools follow its own directories; the default profile is only the default of new grids
 - new the setup is translatable: its messages are in English and go through gettext (domain `opensim-kit`), the language is the one of the environment (`LC_ALL`, `LANGUAGE`); the catalogue is `locales/opensim-kit.pot`, `locales/update-pot` refreshes it and the `.po` files, `packaging/build` compiles them; the bash scripts are not translated yet
