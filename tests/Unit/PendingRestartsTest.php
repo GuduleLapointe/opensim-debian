@@ -61,10 +61,14 @@ describe('Pending restarts', function () {
     test('are not left by an action that failed', function () {
         $profile = pending_profile();
         $ui = new RecordingUi([]);
+        // A region of that name is enabled already: the disabled one cannot take its place
+        $file = "{$profile['EtcRoot']}/Far.ini";
+        file_put_contents($file, "[Far]\n");
+        file_put_contents("$file.disabled", "[Far]\n");
 
         $done = (new Actions($ui))->perform(
             'region-enable',
-            ['file' => '/nonexistent/Far.ini.disabled', 'name' => 'Far', 'instance' => 'vonda_sim1'],
+            ['file' => "$file.disabled", 'name' => 'Far', 'instance' => 'vonda_sim1'],
             $profile,
         );
 

@@ -1,27 +1,18 @@
-# Roadmap as of 31/05/2019
+# Roadmap
 
 ## Fixes
 
-- "debug command not found" in os-helpers (ubuntu 24.04)
-
-```bash
-magic@ursull ~ $ opensim setup
-/usr/share/opensim-tools/libexec/os-helpers: line 761: debug: command not found
-/usr/share/opensim-tools/libexec/os-helpers: line 782: debug: command not found
-/usr/share/opensim-tools/libexec/os-helpers: line 810: debug: command not found
-/usr/share/opensim-tools/libexec/os-helpers: line 815: debug: command not found
-/usr/share/opensim-tools/libexec/os-helpers: line 849: debug: command not found
-```
-
-- discard PendingRestartsTest warning
-- README.md should include a brief installation guide, including apt package (recommended) or cloning the repository. Detailed instructions should be in INSTALLATION.md if relevant.
+- confirm on ubuntu 24.04 (ursull) that the kit runs with its own bash-tools: `debug: command not found` came from an outdated copy in composer global, found instead of the 1.0.4 one; bash-tools is now a non-dev dependency, bundled in the `opensim-tools` package and loaded first
 - dependencies packages must be added to the release assets in their own repositories
 - users created should have home set to DefaultRegion. Users get an error on login until they set home manually in the viewer
 - opensim status "down" count should not be displayed when none of the instances are down
+- a new region is named in the database while its simulator is stopped, which costs a restart of the simulator (TODO in `Actions::nameParcels`): look for a better way to name its parcel
 - try to open ports if firewall is active
 
 ## Next steps
 
+- write INSTALLATION.md, the detailed instructions the README refers to
+- localize the setup and the launcher with gettext (a requirement of the project), their messages are still English strings
 - add/update bash completion
 - build ready to use zip packages for simple download, added to the release assets alongside the source code and apt package
 - add simplified installation script, detecting the platform and installing with the appropriate method (zip package or apt package), with a one-line command like `curl -sSL https://raw.githubusercontent.com/GuduleLapointe/opensim-kit/refs/heads/master/install.sh | bash`
@@ -37,19 +28,9 @@ magic@ursull ~ $ opensim setup
 
 ## New features
 
-- try to open nat ports if behind a router
+`opensim enable <instance>` and `opensim disable <instance>`
 
-`newsimulator SimName`
-
-- create initial config for simulator SimName.
-- Will use general configs from Robust.
-- Will be placed in etc/simulators-available and enabled by default
-
-`opensim enable SimName`
-
-`opensim disable SimName`
-
-- Enable or disable instance
+- Command-line equivalents of the setup menus, to enable or disable a grid, a simulator or a region from a script (the setup does it from its screens)
 
 `opensim online`
 
