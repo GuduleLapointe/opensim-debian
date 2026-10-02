@@ -4,11 +4,7 @@ declare(strict_types=1);
 
 namespace OpenSim\Installer;
 
-use OpenSim\Installer\Grid\Database;
-use OpenSim\Installer\Grid\GridInfo;
-use OpenSim\Installer\Grid\GridPlan;
 use OpenSim\Installer\Grid\GridState;
-use OpenSim\Installer\Grid\RegionName;
 use OpenSim\Installer\Grid\RegionState;
 use OpenSim\Installer\Grid\SimState;
 use OpenSim\Installer\Import\RobustImporter;
@@ -115,7 +111,6 @@ final class Actions
             if ($running) {
                 $ok = System::run(System::arg($opensim) . " stop $now" . System::arg($instance)) === 0 && $ok;
             }
-            $this->nameParcels($etcRoot, $instance);
             if ($running) {
                 $ok = System::run(System::arg($opensim) . ' start ' . System::arg($instance)) === 0 && $ok;
             }
@@ -125,40 +120,5 @@ final class Actions
         }
 
         return $ok;
-    }
-
-    /**
-     * The land of a new region is one parcel the size of the region, that OpenSim names "Your
-     * Parcel": named after the region instead, in the database of the simulator, while it is
-     * stopped (a running region would write its own name back).
-     *
-     * TODO: look for a better way. OpenSim has no setting nor console command for the name of the
-     * default parcel, and a running region does not read its land again from the database, which
-     * costs a restart of the simulator.
-     */
-    private function nameParcels(string $etcRoot, string $instance): void
-    {
-        $ini = glob("$etcRoot/grids/*/sims/$instance.ini")[0] ?? null;
-        if ($ini === null) {
-            return;
-        }
-        $db = GridInfo::parse($ini);
-        $plan = new GridPlan();
-        $plan->dbHost = (string) ($db['dbHost'] ?? '');
-        $plan->dbName = (string) ($db['dbName'] ?? '');
-        $plan->dbUser = (string) ($db['dbUser'] ?? '');
-        $plan->dbPass = (string) ($db['dbPass'] ?? '');
-        $database = new Database($this->ui);
-
-        foreach (RegionState::list(dirname($ini) . "/$instance/regions") as $name => $region) {
-            $uuid = RegionState::values($region['file'])['RegionUUID'] ?? '';
-            if (!$region['enabled'] || !preg_match('/^[0-9a-fA-F-]{36}$/', $uuid) || RegionName::problem($name) !== null) {
-                continue;
-            }
-            $database->select(
-                $plan,
-                "UPDATE land SET Name = '$name' WHERE RegionUUID = '$uuid' AND Name = 'Your Parcel'",
-            );
-        }
     }
 }

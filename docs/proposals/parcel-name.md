@@ -28,12 +28,13 @@ Next step when taking it up: try the OAR with a parcel only on a test region, wi
 
 ## Decided
 
+- A region added to a running simulator needs no restart, and the setup asks for none: it writes the ini of the region and gives it to the console of the simulator (`create region NAME FILE`), which sees the simulator already has a config and does not add the region to the file of the first one.
+- The parcel keeps the name OpenSim gives it ("Your Parcel") until the object below does the job: no rename by the database, no restart, no OAR of the parcel (tried and removed).
 - OSSL is part of the standard config, with the defaults of the core: each grid has its own copies of `osslDefaultEnable.ini` and `osslEnable.ini` (`GridShared`), `AllowOSFunctions` is on, `osSetParcelDetails` is allowed to the owner of the estate and of the parcel unless the file says otherwise, and the simulators include them in an `[OSSL]` section. Customizing it comes later.
 - `share/region-init/init-region.lsl` needs nothing written for a region: it reads the name of the region and of its parcel itself (`llGetRegionName`, `llGetParcelDetails`) and renames the parcel when it still has the default name. It is the place to customize for what a new region needs at its start (music, media, flags).
-- The object holding it can be part of the library of the grid, the original staying available to the users, and a copy is rezzed in each new region, which does its job and goes. The grid has no avatar online to rez it, so a copy has to come in from outside: an OAR loaded with `load oar --merge`, which leaves the objects and the terrain of the region as they are, or rows in the region store. The OAR is the way, with the object made once in-world (a prim, the script, saved to `share/region-init/`).
-- Today: the parcel is named by an OAR with the parcel only (`Grid/ParcelArchive`, loaded through the console, checked in the database, the restart as the fallback), which works the same way without an object. The object replaces it when it is made and checked on a real core, and it can then do more than the name.
-- Not tested against a real core yet: the options of `load oar`, the format of the parcel file (from memory of the serializer of the core), and the rez of the object.
+- The object holding it is part of the library of the grid, the original staying available to the users, and a copy is rezzed in each new region, which does its job and goes. The grid has no avatar online to rez it, so a copy comes in from outside: an OAR loaded with `load oar --merge`, which leaves the objects and the terrain of the region as they are. The object is made once in-world (a prim, the script, saved to `share/region-init/`).
+- To check against a real core: the options of `load oar` ([Server Commands](http://opensimulator.org/wiki/Server_Commands)) and the rez of the object.
 
 ## Now
 
-The restart stays as a fallback until the OAR is checked on a real region.
+The object, then its delivery.
