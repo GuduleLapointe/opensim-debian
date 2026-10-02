@@ -23,7 +23,7 @@ final class Ini
 
     public static function load(string $path): self
     {
-        return new self(is_file($path) ? (string) file_get_contents($path) : '');
+        return new self(is_file($path) ? TextFile::read($path) : '');
     }
 
     /** Set key = value in section (uncommenting an existing commented key). */

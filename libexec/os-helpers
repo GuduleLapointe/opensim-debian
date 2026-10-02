@@ -303,7 +303,8 @@ osConsoleWait() {
 cleanupIni() {
 	[ "$1" ] || return
 	[ -f "$1" ] || return
-	cat "$1" | sed "s/^[[:blank:]]*//"
+	# OpenSim ships some of its files with Windows line endings
+	tr -d '\r' <"$1" | sed "s/^[[:blank:]]*//"
 }
 
 randomPassword() {

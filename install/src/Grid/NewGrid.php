@@ -9,6 +9,7 @@ use OpenSim\Installer\Elevated;
 use OpenSim\Installer\Ports;
 use OpenSim\Installer\SetupFailed;
 use OpenSim\Installer\System;
+use OpenSim\Installer\TextFile;
 use OpenSim\Installer\Ui\InstallerUi;
 
 /**
@@ -250,7 +251,8 @@ final class NewGrid
         foreach ($files as $file) {
             $dest = "{$plan->etcDirectory}/$file";
             if (is_file($dest)) {
-                continue; // keep local changes
+                TextFile::clean($dest); // local changes are kept, only the line endings are made Unix ones
+                continue;
             }
             $src = is_file("{$plan->binDir}/{$file}.example")
                 ? "{$plan->binDir}/{$file}.example"
@@ -259,7 +261,7 @@ final class NewGrid
                 continue;
             }
             @mkdir(dirname($dest), 0o755, true);
-            @copy($src, $dest);
+            TextFile::copy($src, $dest);
         }
         // Ready for the simulators that will join the grid
         (new GridShared())->prepare($plan->etcDirectory, $plan->binDir, $plan->enableHypergrid);

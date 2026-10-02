@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OpenSim\Installer\Grid;
 
+use OpenSim\Installer\TextFile;
+
 /**
  * The architecture files a grid shares between its simulators (its
  * config-include folder), made usable by simulators run from a read-only core.
@@ -34,13 +36,17 @@ final class GridShared
 
         foreach ([$architecture, 'GridCommon.ini', 'FlotsamCache.ini'] as $file) {
             $dest = "$dir/$file";
-            if (!is_file($dest)) {
+            if (is_file($dest)) {
+                if (TextFile::clean($dest)) {
+                    $written[] = $dest;
+                }
+            } else {
                 $source = $this->source($binDir, $file);
                 if ($source === null) {
                     continue;
                 }
                 @mkdir($dir, 0o755, true);
-                if (@copy($source, $dest)) {
+                if (TextFile::copy($source, $dest)) {
                     $written[] = $dest;
                 }
             }
