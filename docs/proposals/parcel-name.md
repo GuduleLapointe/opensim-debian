@@ -17,6 +17,15 @@ A problem for another day: the current way works (a restart offered when the set
    - The console may also run scripts (to explore: `script` commands of the region console, the `[XEngine]` options).
 2. **A patch upstream or a module of the kit** (like `opensimsearch` or `gloebit`), e.g. a setting `DefaultParcelName`: the clean fix, a project of its own; whether it is useful enough to maintain is for debate.
 
+## Explored (from memory of the core, to verify against the packaged core)
+
+- **The console cannot run LSL**: `command-script FILE` runs console commands, not scripts; the `scripts` and `xengine` commands of the region console only act on scripts already in objects (show, start, stop, suspend, resume), they neither compile nor install one. The other way round exists (`osConsoleCommand` from OSSL), which does not help here.
+- **pCampBot** logs virtual avatars in through libopenmetaverse and plays *behaviours* (physics, grab, sit, teleport, chat, create, inventory...). None edits a parcel, and rezzing a prim with a script from the inventory is not one either: it needs a new behaviour, so a patch of the core tools, not a configuration. Not worth it for a name.
+- **An OAR carrying only the parcel** looks the best lead: an OAR is a tar.gz with `archive.xml`, `landdata/*.xml` (one file per parcel: name, owner, bitmap, flags...), no object. `load oar --merge --force-parcels --skip-assets FILE` (to confirm: the exact options of the packaged core) would replace the parcel of a running region, without a restart. The kit already knows the parcel (the `land` table of the simulator), so it can write the OAR: same data, new name, a few lines of PHP (`PharData`). Open questions: what happens to the objects and terrain in merge mode (nothing expected), and whether the parcel owner has to exist (it does, it is the estate owner).
+- **A script in an object** (idea 1) is the heaviest: it needs an object in the region, so an OAR with a prim and its script, or rows written in the region store; and OSSL permissions for `osSetParcelDetails`. Only worth it if the script has to do more than the name.
+
+Next step when taking it up: try the OAR with a parcel only on a test region, with `--force-parcels`, and see whether the name changes live and survives a restart.
+
 ## Now
 
 Keep the restart. The solution stays a stopgap until then.
