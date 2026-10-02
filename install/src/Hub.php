@@ -93,8 +93,8 @@ final class Hub
     private function addGrid(): void
     {
         $choice = $this->ui->choose('Add a grid', [
-            'new' => 'A new grid, run from this machine',
-            'external' => 'A grid run elsewhere (its Robust is on another machine)',
+            'new' => 'Create grid on this machine',
+            'external' => 'Connect to an external grid',
             'back' => 'Back',
         ], 'new');
 
