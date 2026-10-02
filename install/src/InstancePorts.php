@@ -31,11 +31,13 @@ final class InstancePorts
         $expand = static function (string $value) use ($const): string {
             return (string) preg_replace_callback(
                 '/\$\{Const\|([A-Za-z0-9_]+)\}/',
-                static fn (array $m): string => (string) ($const[strtolower($m[1])] ?? ''),
+                static fn(array $m): string => (string) ($const[strtolower($m[1])] ?? ''),
                 $value,
             );
         };
-        $first = static fn (string $section, string $key): ?string => isset($values[$section][$key]) ? $expand($values[$section][$key]) : null;
+        $first = static fn(string $section, string $key): ?string => isset($values[$section][$key])
+            ? $expand($values[$section][$key])
+            : null;
 
         $uses = [];
         $add = static function (?string $port, string $proto, string $role, string $use) use (&$uses): void {
@@ -45,17 +47,31 @@ final class InstancePorts
         };
 
         // A console is a REST console when it has its port, a user and a password
-        $console = static function (string $section, string $portKey) use ($values, $expand, $text, &$uses, $add): void {
+        $console = static function (string $section, string $portKey) use (
+            $values,
+            $expand,
+            $text,
+            &$uses,
+            $add,
+        ): void {
             $port = isset($values[$section][$portKey]) ? $expand($values[$section][$portKey]) : null;
-            $enabled = $port !== null && ctype_digit($port) && (int) $port > 0
-                && !empty($values[$section]['consoleuser'] ?? '') && !empty($values[$section]['consolepass'] ?? '');
+            $enabled =
+                $port !== null &&
+                ctype_digit($port) &&
+                (int) $port > 0 &&
+                !empty($values[$section]['consoleuser'] ?? '') &&
+                !empty($values[$section]['consolepass'] ?? '');
             if ($enabled) {
                 $add($port, 'tcp', 'REST console (every right on the instance)', 'console');
 
                 return;
             }
             // Its port kept in the file, for when it is enabled
-            if ($port === null && preg_match('/^\s*;+\s*' . $portKey . '\s*=\s*"?(\d+)/mi', $text, $m) && (int) $m[1] > 0) {
+            if (
+                $port === null &&
+                preg_match('/^\s*;+\s*' . $portKey . '\s*=\s*"?(\d+)/mi', $text, $m) &&
+                (int) $m[1] > 0
+            ) {
                 $add($m[1], 'tcp', 'REST console (not enabled)', 'off');
             }
         };
@@ -76,7 +92,12 @@ final class InstancePorts
             $console('network', 'consoleport');
         } else {
             // A simulator
-            $add($first('network', 'http_listener_port'), 'tcp', 'HTTP of the simulator: viewers, grid, neighbours', 'public');
+            $add(
+                $first('network', 'http_listener_port'),
+                'tcp',
+                'HTTP of the simulator: viewers, grid, neighbours',
+                'public',
+            );
             $add($first('network', 'http_listener_sslport'), 'tcp', 'HTTPS of the simulator', 'public');
             $add($first('xmlrpc', 'xmlrpcport'), 'tcp', 'XML-RPC of the simulator (scripts)', 'public');
             $console('network', 'console_port');
@@ -94,7 +115,7 @@ final class InstancePorts
             }
         }
 
-        usort($uses, static fn (array $a, array $b): int => [$a['port'], $a['proto']] <=> [$b['port'], $b['proto']]);
+        usort($uses, static fn(array $a, array $b): int => [$a['port'], $a['proto']] <=> [$b['port'], $b['proto']]);
 
         return $uses;
     }

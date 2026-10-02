@@ -29,8 +29,8 @@ task('sim:enable', function () {
         return;
     }
 
-    $etc     = get('opensim_etc');
-    $simIni  = "$etc/opensim.d/$name.ini";
+    $etc = get('opensim_etc');
+    $simIni = "$etc/opensim.d/$name.ini";
     $enabled = "$etc/opensim.d/enabled";
 
     run("[ -f $simIni ] || { echo 'Config $simIni not found'; exit 1; }");
@@ -48,7 +48,7 @@ task('sim:disable', function () {
         return;
     }
 
-    $etc     = get('opensim_etc');
+    $etc = get('opensim_etc');
     $enabled = "$etc/opensim.d/enabled";
 
     run("rm -f $enabled/$name.ini");
@@ -57,11 +57,11 @@ task('sim:disable', function () {
 
 desc('List enabled simulators on remote host');
 task('sim:list', function () {
-    $etc     = get('opensim_etc');
+    $etc = get('opensim_etc');
     $enabled = "$etc/opensim.d/enabled";
 
     $result = run("ls -1 $enabled/*.ini 2>/dev/null | xargs -I{} basename {} .ini || echo '(none)'");
-    writeln("Enabled simulators on " . currentHost()->getAlias() . ":\n  $result");
+    writeln('Enabled simulators on ' . currentHost()->getAlias() . ":\n  $result");
 })->desc('List enabled simulators');
 
 // ── Systemd ───────────────────────────────────────────────────────────────────
@@ -74,12 +74,16 @@ task('services:reload', function () {
 
 desc('Restart opensim service (all enabled simulators)');
 task('services:restart', function () {
-    run('sudo systemctl restart opensim.service 2>/dev/null || sudo systemctl restart opensim@*.service 2>/dev/null || true');
+    run(
+        'sudo systemctl restart opensim.service 2>/dev/null || sudo systemctl restart opensim@*.service 2>/dev/null || true',
+    );
     writeln('  opensim restarted');
 })->desc('Restart opensim service');
 
 desc('Show opensim service status');
 task('services:status', function () {
-    $result = run('sudo systemctl status opensim.service 2>/dev/null || sudo systemctl status "opensim@*.service" 2>/dev/null || echo "No opensim service found"');
+    $result = run(
+        'sudo systemctl status opensim.service 2>/dev/null || sudo systemctl status "opensim@*.service" 2>/dev/null || echo "No opensim service found"',
+    );
     writeln($result);
 })->desc('Show opensim service status');

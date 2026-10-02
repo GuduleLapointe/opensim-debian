@@ -19,7 +19,11 @@ final class Console
     public static function send(string $instance, string $lines): bool
     {
         $opensim = dirname(__DIR__, 2) . '/bin/opensim';
-        $process = proc_open([$opensim, 'command', $instance, '-'], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        $process = proc_open(
+            [$opensim, 'command', $instance, '-'],
+            [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+            $pipes,
+        );
         if (!is_resource($process)) {
             return false;
         }

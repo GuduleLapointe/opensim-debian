@@ -48,7 +48,11 @@ final class RobustGrid
      */
     public static function hasRegion(string $host, int $port, string $name): ?bool
     {
-        $answer = self::ask($host, $port, ['METHOD' => 'get_region_by_name', 'SCOPEID' => self::NO_SCOPE, 'NAME' => $name]);
+        $answer = self::ask($host, $port, [
+            'METHOD' => 'get_region_by_name',
+            'SCOPEID' => self::NO_SCOPE,
+            'NAME' => $name,
+        ]);
 
         return $answer === null ? null : self::named($answer);
     }
@@ -100,13 +104,15 @@ final class RobustGrid
     /** The answer of the grid service to a request, null when it does not answer. */
     private static function ask(string $host, int $port, array $fields): ?string
     {
-        $context = stream_context_create(['http' => [
-            'method' => 'POST',
-            'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
-            'content' => http_build_query($fields),
-            'timeout' => 5,
-            'ignore_errors' => true,
-        ]]);
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'POST',
+                'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
+                'content' => http_build_query($fields),
+                'timeout' => 5,
+                'ignore_errors' => true,
+            ],
+        ]);
         $body = @file_get_contents("http://$host:$port/grid", false, $context);
 
         return $body === false || $body === '' ? null : $body;

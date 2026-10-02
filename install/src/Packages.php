@@ -11,9 +11,7 @@ use OpenSim\Installer\Ui\InstallerUi;
  */
 final class Packages
 {
-    public function __construct(private InstallerUi $ui)
-    {
-    }
+    public function __construct(private InstallerUi $ui) {}
 
     /** Install packages; returns the command exit code. */
     public function install(string ...$packages): int

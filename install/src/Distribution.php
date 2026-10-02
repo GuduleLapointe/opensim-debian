@@ -11,9 +11,7 @@ use OpenSim\Installer\Ui\InstallerUi;
  */
 final class Distribution
 {
-    public function __construct(private InstallerUi $ui)
-    {
-    }
+    public function __construct(private InstallerUi $ui) {}
 
     public function fetchAndExtract(Plan $plan): void
     {
@@ -23,9 +21,7 @@ final class Distribution
             $this->ui->note('Using previous download: ' . $tarball);
         } else {
             $this->ui->note('Downloading ' . $plan->tarball);
-            $code = System::run(
-                'curl -fSL ' . System::arg($plan->tarball) . ' -o ' . System::arg($tarball)
-            );
+            $code = System::run('curl -fSL ' . System::arg($plan->tarball) . ' -o ' . System::arg($tarball));
             if ($code !== 0 || !is_file($tarball)) {
                 $this->ui->error('Download failed: ' . $plan->tarball);
                 exit(1);
@@ -36,10 +32,13 @@ final class Distribution
         // straight into the chosen core directory, whatever its name. As root,
         // tar would keep the numeric owners of the tarball.
         $code = $this->ui->spin(
-            static fn (): int => System::run(
-                'tar xzf ' . System::arg($tarball) . ' --no-same-owner --strip-components=1 -C ' . System::arg($plan->coreDirectory)
+            static fn(): int => System::run(
+                'tar xzf ' .
+                    System::arg($tarball) .
+                    ' --no-same-owner --strip-components=1 -C ' .
+                    System::arg($plan->coreDirectory),
             ),
-            'Extracting ' . basename($tarball) . ' …'
+            'Extracting ' . basename($tarball) . ' …',
         );
         if ($code !== 0) {
             $this->ui->error('Extraction failed.');

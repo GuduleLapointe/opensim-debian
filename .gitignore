@@ -12,7 +12,7 @@ dev/*
 /lib/opensim/
 /lib/opensim*/
 /core/*
-/tmp/
+tmp/
 /opensim*/
 backups/
 .listing
@@ -31,3 +31,4 @@ vendor/
 .DS_Store
 .bashunit/
 .phpunit.cache/
+.zed/

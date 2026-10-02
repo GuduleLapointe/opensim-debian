@@ -28,9 +28,7 @@ use OpenSim\Installer\Ui\InstallerUi;
  */
 final class Hub
 {
-    public function __construct(private InstallerUi $ui)
-    {
-    }
+    public function __construct(private InstallerUi $ui) {}
 
     public function run(): void
     {
@@ -92,11 +90,15 @@ final class Hub
     /** A grid run from this machine, or one run elsewhere, of which only its simulators are set up here. */
     private function addGrid(): void
     {
-        $choice = $this->ui->choose('Add a grid', [
-            'new' => 'Create grid on this machine',
-            'external' => 'Connect to an external grid',
-            'back' => 'Back',
-        ], 'new');
+        $choice = $this->ui->choose(
+            'Add a grid',
+            [
+                'new' => 'Create grid on this machine',
+                'external' => 'Connect to an external grid',
+                'back' => 'Back',
+            ],
+            'new',
+        );
 
         match ($choice) {
             'new' => (new NewGrid($this->ui))->run(null),
@@ -126,7 +128,11 @@ final class Hub
             }
             $options['back'] = 'Back';
 
-            $choice = $this->ui->choose("Grid: $nick" . ($remote ? ' (Robust on another machine)' : ''), $options, $sims !== [] ? "sim:{$sims[0]}" : 'addsim');
+            $choice = $this->ui->choose(
+                "Grid: $nick" . ($remote ? ' (Robust on another machine)' : ''),
+                $options,
+                $sims !== [] ? "sim:{$sims[0]}" : 'addsim',
+            );
             if ($choice === 'back') {
                 return;
             }
@@ -204,22 +210,35 @@ final class Hub
                 return;
             }
 
-            $choice = $this->ui->choose("Region: $name", [
-                'reconfigure' => 'Reconfigure',
-                'toggle' => $region['enabled'] ? 'Disable' : 'Enable',
-                'back' => 'Back',
-            ], 'back');
+            $choice = $this->ui->choose(
+                "Region: $name",
+                [
+                    'reconfigure' => 'Reconfigure',
+                    'toggle' => $region['enabled'] ? 'Disable' : 'Enable',
+                    'back' => 'Back',
+                ],
+                'back',
+            );
 
             switch ($choice) {
                 case 'reconfigure':
                     (new NewSim($this->ui))->reconfigureRegion($nick, $this->simName($nick, $slug), $name);
                     break;
                 case 'toggle':
-                    $moved = $region['enabled'] ? RegionState::disable($region['file']) : RegionState::enable($region['file']);
+                    $moved = $region['enabled']
+                        ? RegionState::disable($region['file'])
+                        : RegionState::enable($region['file']);
                     if ($moved === null) {
-                        $this->ui->warn("Cannot " . ($region['enabled'] ? 'disable' : 'enable') . " $name (permission, or a region of that name is there already).");
+                        $this->ui->warn(
+                            'Cannot ' .
+                                ($region['enabled'] ? 'disable' : 'enable') .
+                                " $name (permission, or a region of that name is there already).",
+                        );
                     } else {
-                        $this->ui->note(($region['enabled'] ? 'Disabled' : 'Enabled') . " $name: the simulator takes it into account when it starts.");
+                        $this->ui->note(
+                            ($region['enabled'] ? 'Disabled' : 'Enabled') .
+                                " $name: the simulator takes it into account when it starts.",
+                        );
                     }
                     break;
                 default:

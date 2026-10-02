@@ -1,6 +1,5 @@
 #!/usr/bin/env php
 <?php
-
 declare(strict_types=1);
 
 /**
@@ -47,7 +46,7 @@ foreach (['robust' => 'robust.d', 'opensim' => 'opensim.d'] as $type => $folder)
     }
 }
 if ($instances === []) {
-    fwrite(STDERR, "ports: no enabled instance" . ($names !== [] ? ' of that name' : '') . "\n");
+    fwrite(STDERR, 'ports: no enabled instance' . ($names !== [] ? ' of that name' : '') . "\n");
     exit(1);
 }
 
@@ -85,9 +84,10 @@ switch ($mode) {
         break;
 
     default:
-        $line = static fn (array $cells): string => sprintf('%-22s %-8s %-6s %-5s %-8s %s', ...$cells);
+        $line = static fn(array $cells): string => sprintf('%-22s %-8s %-6s %-5s %-8s %s', ...$cells);
         echo $line(['INSTANCE', 'TYPE', 'PORT', 'PROTO', 'USE', 'FOR']), "\n";
         foreach ($rows as $row) {
             echo $line([$row['instance'], $row['type'], $row['port'], $row['proto'], $row['use'], $row['role']]), "\n";
         }
 }
+

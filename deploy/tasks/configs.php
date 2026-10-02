@@ -39,12 +39,12 @@ task('configs:push', function () {
         return;
     }
 
-    $host   = currentHost();
+    $host = currentHost();
     $labels = $host->get('labels', []);
-    $grid   = $labels['grid'] ?? 'staging';
-    $roles  = (array)($labels['roles'] ?? []);
+    $grid = $labels['grid'] ?? 'staging';
+    $roles = (array) ($labels['roles'] ?? []);
     $remote = $host->getRemoteUser() . '@' . $host->getHostname();
-    $etc    = get('opensim_etc');
+    $etc = get('opensim_etc');
 
     $gridDir = rtrim($repoLocal, '/') . "/grids/$grid";
 
@@ -64,14 +64,14 @@ task('configs:push', function () {
     if (in_array('robust', $roles) && is_dir("$gridDir/robust")) {
         run("mkdir -p $etc/robust.d");
         rsyncConfigsTo("$gridDir/robust/", "$remote:$etc/robust.d/");
-        writeln("  pushed robust config");
+        writeln('  pushed robust config');
     }
 
     // Simulator configs → etc/opensim.d/
     if ((in_array('simulator', $roles) || in_array('staging', $roles)) && is_dir("$gridDir/simulators")) {
         run("mkdir -p $etc/opensim.d");
         rsyncConfigsTo("$gridDir/simulators/", "$remote:$etc/opensim.d/");
-        writeln("  pushed simulator configs");
+        writeln('  pushed simulator configs');
     }
 })->desc('Push grid configs from private repo');
 
@@ -84,21 +84,22 @@ task('configs:pull', function () {
         return;
     }
 
-    runLocally("git -C " . escapeshellarg($repoLocal) . " pull --ff-only");
-    writeln("  configs repo updated");
+    runLocally('git -C ' . escapeshellarg($repoLocal) . ' pull --ff-only');
+    writeln('  configs repo updated');
 })->desc('Pull latest configs from private repo');
 
 // Pull then push
-task('configs:update', [
-    'configs:pull',
-    'configs:push',
-])->desc('Pull and push grid configs');
+task('configs:update', ['configs:pull', 'configs:push'])->desc('Pull and push grid configs');
 
 /**
  * Rsync config files only (*.ini, *.xml, *.conf) without deleting remote extras.
  */
 function rsyncConfigsTo(string $src, string $dest): void
 {
-    runLocally("rsync -az --include='*.ini' --include='*.xml' --include='*.conf' --include='*/' --exclude='*' "
-        . escapeshellarg($src) . ' ' . $dest);
+    runLocally(
+        "rsync -az --include='*.ini' --include='*.xml' --include='*.conf' --include='*/' --exclude='*' " .
+            escapeshellarg($src) .
+            ' ' .
+            $dest,
+    );
 }

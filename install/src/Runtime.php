@@ -19,9 +19,7 @@ final class Runtime
     private const DOTNET_THRESHOLD = '0.9.3.0';
     private const DOTNET_MAJOR = 8; // OpenSim 0.9.3.x targets .NET 8 (net8.0)
 
-    public function __construct(
-        private InstallerUi $ui,
-    ) {}
+    public function __construct(private InstallerUi $ui) {}
 
     public function gate(Plan $plan): void
     {
@@ -60,9 +58,10 @@ final class Runtime
             return;
         }
 
-        $msg = $installed !== []
-            ? 'Installed .NET (' . implode(', ', $installed) . ") is older than $major. "
-            : 'No .NET runtime is installed. ';
+        $msg =
+            $installed !== []
+                ? 'Installed .NET (' . implode(', ', $installed) . ") is older than $major. "
+                : 'No .NET runtime is installed. ';
         if ($this->ui->confirm($msg . "OpenSim {$plan->version} needs .NET $major. Install it now?", true)) {
             $plan->installRuntime = true;
         } else {
@@ -107,21 +106,33 @@ final class Runtime
     {
         // Install into the active dotnet root so the existing 'dotnet' finds it.
         [$code, $path] = System::capture('command -v dotnet');
-        $dir = ($code === 0 && trim($path) !== '')
-            ? dirname(realpath(trim($path)) ?: trim($path))
-            : (getenv('HOME') ?: '') . '/.dotnet';
+        $dir =
+            $code === 0 && trim($path) !== ''
+                ? dirname(realpath(trim($path)) ?: trim($path))
+                : (getenv('HOME') ?: '') . '/.dotnet';
         $sudo = is_writable($dir) ? '' : 'sudo ';
 
         $script = sys_get_temp_dir() . '/dotnet-install.sh';
-        if (System::run('curl -fsSL https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh -o ' . System::arg($script)) !== 0) {
+        if (
+            System::run(
+                'curl -fsSL https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh -o ' .
+                    System::arg($script),
+            ) !== 0
+        ) {
             $this->ui->error('Could not fetch dotnet-install.sh.');
             exit(1);
         }
 
         $this->ui->note("Installing .NET $major into $dir");
-        $code = System::run($sudo . 'bash ' . System::arg($script)
-            . ' --runtime dotnet --channel ' . System::arg("$major.0")
-            . ' --install-dir ' . System::arg($dir));
+        $code = System::run(
+            $sudo .
+                'bash ' .
+                System::arg($script) .
+                ' --runtime dotnet --channel ' .
+                System::arg("$major.0") .
+                ' --install-dir ' .
+                System::arg($dir),
+        );
         if ($code !== 0) {
             $this->ui->error(".NET $major installation failed.");
             exit(1);

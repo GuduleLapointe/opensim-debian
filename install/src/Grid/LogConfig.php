@@ -24,7 +24,11 @@ final class LogConfig
 
         // Point the file appenders at this grid's log files.
         $xml = (string) preg_replace('/(<file value=")[^"]*Robust\.log(")/i', '${1}' . $logBase . '.log${2}', $xml);
-        $xml = (string) preg_replace('/(<file value=")[^"]*RobustStats\.log(")/i', '${1}' . $logBase . '.Stats.log${2}', $xml);
+        $xml = (string) preg_replace(
+            '/(<file value=")[^"]*RobustStats\.log(")/i',
+            '${1}' . $logBase . '.Stats.log${2}',
+            $xml,
+        );
 
         $dest = $plan->etcDirectory . '/Robust.exe.config';
         @mkdir(dirname($dest), 0o755, true);

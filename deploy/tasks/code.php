@@ -22,17 +22,17 @@ set('local_src', __DIR__ . '/../..');
 
 desc('Deploy core module (bin, libexec, lib, share, etc templates)');
 task('deploy:core', function () {
-    $src     = get('local_src');
-    $bin     = get('opensim_bin');
+    $src = get('local_src');
+    $bin = get('opensim_bin');
     $libexec = get('opensim_libexec');
-    $lib     = get('opensim_lib');
-    $share   = get('opensim_share');
-    $etc     = get('opensim_etc');
-    $remote  = remoteTarget();
+    $lib = get('opensim_lib');
+    $share = get('opensim_share');
+    $etc = get('opensim_etc');
+    $remote = remoteTarget();
 
     // Single user-facing orchestrator
-    rsyncTo("$src/bin/opensim",      "$remote:$bin/opensim");
-    rsyncTo("$src/bin/nextfreeports","$remote:$bin/nextfreeports");
+    rsyncTo("$src/bin/opensim", "$remote:$bin/opensim");
+    rsyncTo("$src/bin/nextfreeports", "$remote:$bin/nextfreeports");
     rsyncTo("$src/bin/nextlocation", "$remote:$bin/nextlocation");
 
     // Helper executables (called by opensim, not directly by users)
@@ -42,10 +42,10 @@ task('deploy:core', function () {
     rsyncTo("$src/vendor/", "$remote:$lib/vendor/", '', ['--copy-links']);
 
     // Static data and system templates
-    rsyncTo("$src/share/systemd/",         "$remote:$share/systemd/");
-    rsyncTo("$src/share/mysql/",           "$remote:$share/mysql/");
-    rsyncTo("$src/share/bash_completion.d/","$remote:$share/bash_completion.d/");
-    rsyncTo("$src/share/cron.hourly/",     "$remote:$share/cron.hourly/");
+    rsyncTo("$src/share/systemd/", "$remote:$share/systemd/");
+    rsyncTo("$src/share/mysql/", "$remote:$share/mysql/");
+    rsyncTo("$src/share/bash_completion.d/", "$remote:$share/bash_completion.d/");
+    rsyncTo("$src/share/cron.hourly/", "$remote:$share/cron.hourly/");
 
     // Config templates (exclude instance configs and generated paths.conf)
     rsyncTo("$src/etc/", "$remote:$etc/", excludeFile('core'), [
@@ -60,22 +60,15 @@ task('deploy:core', function () {
 
 desc('Deploy OpenSim addon-modules (Gloebit, OMEconomy, OpenSimSearch…)');
 task('deploy:opensim-modules', function () {
-    $src    = get('local_src');
-    $core   = get('opensim_core');
+    $src = get('local_src');
+    $core = get('opensim_core');
     $remote = remoteTarget();
 
-    $moduleSources = [
-        'contrib/Gloebit',
-        'contrib/OMEconomy-Modules',
-        'contrib/OpenSimSearch',
-    ];
+    $moduleSources = ['contrib/Gloebit', 'contrib/OMEconomy-Modules', 'contrib/OpenSimSearch'];
 
     foreach ($moduleSources as $modSrc) {
         if (is_dir("$src/$modSrc")) {
-            rsyncTo(
-                "$src/$modSrc/",
-                "$remote:$core/addon-modules/" . basename($modSrc) . '/'
-            );
+            rsyncTo("$src/$modSrc/", "$remote:$core/addon-modules/" . basename($modSrc) . '/');
         }
     }
 })->desc('Deploy OpenSim addon-modules');
@@ -84,8 +77,8 @@ task('deploy:opensim-modules', function () {
 
 desc('Deploy web integrations (opensim-helpers, offline messages…)');
 task('deploy:web', function () {
-    $src    = get('local_src');
-    $lib    = get('opensim_lib');
+    $src = get('local_src');
+    $lib = get('opensim_lib');
     $remote = remoteTarget();
 
     if (is_dir("$src/vendor/magicoli/opensim-helpers")) {
@@ -110,10 +103,7 @@ task('deploy:all', function () {
 
 // Default `dep deploy` — write paths then deploy core
 desc('Deploy core module with layout paths');
-task('deploy', [
-    'layout:write-paths',
-    'deploy:core',
-]);
+task('deploy', ['layout:write-paths', 'deploy:core']);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -156,9 +146,9 @@ function rsyncTo(string $src, string $dest, string $exclude = '', array $extra =
  */
 function excludeFile(string $module): string
 {
-    $base     = __DIR__ . '/..';
+    $base = __DIR__ . '/..';
     $specific = "$base/modules/$module.exclude";
-    $default  = "$base/.rsync-exclude";
+    $default = "$base/.rsync-exclude";
 
     return file_exists($specific) ? $specific : $default;
 }

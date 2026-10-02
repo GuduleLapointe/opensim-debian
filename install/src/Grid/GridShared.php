@@ -46,18 +46,23 @@ final class GridShared
             }
         }
 
-        $written = array_merge($written, array_filter([
-            $this->patch("$dir/$architecture", [
-                '/^(\s*Include-Common\s*=\s*)"?config-include\/GridCommon\.ini"?/m' => '$1"' . $dir . '/GridCommon.ini"',
+        $written = array_merge(
+            $written,
+            array_filter([
+                $this->patch("$dir/$architecture", [
+                    '/^(\s*Include-Common\s*=\s*)"?config-include\/GridCommon\.ini"?/m' =>
+                        '$1"' . $dir . '/GridCommon.ini"',
+                ]),
+                $this->patch("$dir/GridCommon.ini", [
+                    '/^(\s*Include-Storage\s*=.*)$/m' => ';$1',
+                    '/^(\s*Include-FlotsamCache\s*=\s*)"?config-include\/FlotsamCache\.ini"?/m' =>
+                        '$1"' . $dir . '/FlotsamCache.ini"',
+                ]),
+                $this->patch("$dir/FlotsamCache.ini", [
+                    '/^(\s*CacheDirectory\s*=\s*)\.?\/?assetcache\s*$/m' => '$1"${Const|CacheDirectory}/assetcache"',
+                ]),
             ]),
-            $this->patch("$dir/GridCommon.ini", [
-                '/^(\s*Include-Storage\s*=.*)$/m' => ';$1',
-                '/^(\s*Include-FlotsamCache\s*=\s*)"?config-include\/FlotsamCache\.ini"?/m' => '$1"' . $dir . '/FlotsamCache.ini"',
-            ]),
-            $this->patch("$dir/FlotsamCache.ini", [
-                '/^(\s*CacheDirectory\s*=\s*)\.?\/?assetcache\s*$/m' => '$1"${Const|CacheDirectory}/assetcache"',
-            ]),
-        ]));
+        );
 
         return array_values(array_unique($written));
     }

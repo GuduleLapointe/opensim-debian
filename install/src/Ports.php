@@ -104,7 +104,13 @@ final class Ports
         $profile = (new Config())->profile();
         foreach (self::configFiles($profile['EtcRoot'] ?? '', $profile['DataRoot'] ?? '') as $file) {
             $text = (string) @file_get_contents($file);
-            if (preg_match_all('/^[\s;]*(?:InternalPort|PublicPort|PrivatePort|http_listener_port|http_listener_sslport|console_port|ConsolePort)\s*=\s*"?(\d+)/im', $text, $m)) {
+            if (
+                preg_match_all(
+                    '/^[\s;]*(?:InternalPort|PublicPort|PrivatePort|http_listener_port|http_listener_sslport|console_port|ConsolePort)\s*=\s*"?(\d+)/im',
+                    $text,
+                    $m,
+                )
+            ) {
                 foreach ($m[1] as $p) {
                     $ports[] = (int) $p;
                 }
@@ -130,7 +136,7 @@ final class Ports
                 continue;
             }
             $it = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS)
+                new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
             );
             foreach ($it as $file) {
                 $path = $file->getPathname();

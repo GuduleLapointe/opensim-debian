@@ -47,7 +47,7 @@ final class GridInfo
 
         $current = self::parse($robustIni);
         $conf = @parse_ini_file("$etcRoot/grids/$nick/$nick.conf", true, INI_SCANNER_RAW)['Grid'] ?? [];
-        $conf = array_map(static fn ($value): string => trim((string) $value, " \t\""), $conf);
+        $conf = array_map(static fn($value): string => trim((string) $value, " \t\""), $conf);
 
         $grid = new self();
         $grid->nick = $nick;
@@ -66,8 +66,8 @@ final class GridInfo
         $grid->dbName = $current['dbName'] ?? '';
         $grid->dbUser = $current['dbUser'] ?? 'opensim';
         $grid->dbPass = $current['dbPass'] ?? '';
-        $grid->dataDirectory = $conf['DataDirectory'] ?? (($profile['DataRoot'] ?? '') . "/$nick");
-        $grid->cacheDirectory = $conf['CacheDirectory'] ?? (($profile['CacheRoot'] ?? '') . "/$nick");
+        $grid->dataDirectory = $conf['DataDirectory'] ?? ($profile['DataRoot'] ?? '') . "/$nick";
+        $grid->cacheDirectory = $conf['CacheDirectory'] ?? ($profile['CacheRoot'] ?? '') . "/$nick";
         $grid->logsDirectory = $conf['LogsDirectory'] ?? ($profile['LogsRoot'] ?? '');
 
         return $grid;
@@ -87,18 +87,22 @@ final class GridInfo
     /** Whether the grid is only described here, its Robust being on another machine. */
     public static function isRemote(string $etcRoot, string $nick): bool
     {
-        return GridState::robustIni($etcRoot, $nick) === null && self::remoteValues("$etcRoot/grids/$nick/$nick.conf") !== null;
+        return GridState::robustIni($etcRoot, $nick) === null &&
+            self::remoteValues("$etcRoot/grids/$nick/$nick.conf") !== null;
     }
 
     /** @return array<string,string>|null the [Grid] of a description of a remote grid */
     private static function remoteValues(string $conf): ?array
     {
         $grid = @parse_ini_file($conf, true, INI_SCANNER_RAW)['Grid'] ?? null;
-        if (!is_array($grid) || !in_array(strtolower(trim((string) ($grid['Remote'] ?? ''))), ['true', '1', 'yes'], true)) {
+        if (
+            !is_array($grid) ||
+            !in_array(strtolower(trim((string) ($grid['Remote'] ?? ''))), ['true', '1', 'yes'], true)
+        ) {
             return null;
         }
 
-        return array_map(static fn ($value): string => trim((string) $value, " \t\""), $grid);
+        return array_map(static fn($value): string => trim((string) $value, " \t\""), $grid);
     }
 
     /** A remote grid, from its description. */
@@ -124,8 +128,8 @@ final class GridInfo
         $grid->dbHost = 'localhost';
         $grid->dbName = '';
         $grid->dbPass = '';
-        $grid->dataDirectory = $conf['DataDirectory'] ?? (($profile['DataRoot'] ?? '') . "/$nick");
-        $grid->cacheDirectory = $conf['CacheDirectory'] ?? (($profile['CacheRoot'] ?? '') . "/$nick");
+        $grid->dataDirectory = $conf['DataDirectory'] ?? ($profile['DataRoot'] ?? '') . "/$nick";
+        $grid->cacheDirectory = $conf['CacheDirectory'] ?? ($profile['CacheRoot'] ?? '') . "/$nick";
         $grid->logsDirectory = $conf['LogsDirectory'] ?? ($profile['LogsRoot'] ?? '');
 
         return $grid;
@@ -135,9 +139,16 @@ final class GridInfo
     public function describe(): array
     {
         return [
-            'nick' => $this->nick, 'name' => $this->name, 'slug' => $this->slug, 'baseHostname' => $this->baseHostname,
-            'publicPort' => $this->publicPort, 'privatePort' => $this->privatePort, 'hypergrid' => $this->hypergrid,
-            'dataDirectory' => $this->dataDirectory, 'cacheDirectory' => $this->cacheDirectory, 'logsDirectory' => $this->logsDirectory,
+            'nick' => $this->nick,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'baseHostname' => $this->baseHostname,
+            'publicPort' => $this->publicPort,
+            'privatePort' => $this->privatePort,
+            'hypergrid' => $this->hypergrid,
+            'dataDirectory' => $this->dataDirectory,
+            'cacheDirectory' => $this->cacheDirectory,
+            'logsDirectory' => $this->logsDirectory,
             'dir' => $this->dir,
         ];
     }
@@ -187,19 +198,31 @@ final class GridInfo
                 $current[$field] = $value;
             }
         }
-        foreach (['publicPort' => 'PublicPort', 'privatePort' => 'PrivatePort', 'httpPort' => 'http_listener_port'] as $field => $key) {
+        foreach (
+            ['publicPort' => 'PublicPort', 'privatePort' => 'PrivatePort', 'httpPort' => 'http_listener_port']
+            as $field => $key
+        ) {
             if (($port = $grab($key)) !== null && ctype_digit($port)) {
                 $current[$field] = (int) $port;
             }
         }
-        if (preg_match('/Data Source=([^;"\s]*);Database=([^;"\s]*);User ID=([^;"\s]*);Password=([^;"]*?);/i', $text, $m)) {
+        if (
+            preg_match(
+                '/Data Source=([^;"\s]*);Database=([^;"\s]*);User ID=([^;"\s]*);Password=([^;"]*?);/i',
+                $text,
+                $m,
+            )
+        ) {
             $current['dbHost'] = $m[1];
             $current['dbName'] = $m[2];
             $current['dbUser'] = $m[3];
             $current['dbPass'] = $m[4];
         }
         // The remote console, when the config has one (its port is ConsolePort in Robust, console_port in a simulator)
-        foreach (['consoleHost' => 'ConsoleHost', 'consoleUser' => 'ConsoleUser', 'consolePass' => 'ConsolePass'] as $field => $key) {
+        foreach (
+            ['consoleHost' => 'ConsoleHost', 'consoleUser' => 'ConsoleUser', 'consolePass' => 'ConsolePass']
+            as $field => $key
+        ) {
             $value = $grab($key);
             if ($value !== null && $value !== '') {
                 $current[$field] = $value;

@@ -20,7 +20,10 @@ if (!defined('OPENSIM_CONFIG_DIR')) {
         $home = posix_getpwuid(posix_geteuid())['dir'] ?? '';
     }
     $base = getenv('XDG_CONFIG_HOME');
-    define('OPENSIM_CONFIG_DIR', (($base !== false && $base !== '') ? $base : rtrim((string) $home, '/') . '/.config') . '/opensim-kit');
+    define(
+        'OPENSIM_CONFIG_DIR',
+        ($base !== false && $base !== '' ? $base : rtrim((string) $home, '/') . '/.config') . '/opensim-kit',
+    );
     unset($home, $base);
 }
 

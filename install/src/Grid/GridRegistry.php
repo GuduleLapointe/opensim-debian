@@ -16,9 +16,7 @@ namespace OpenSim\Installer\Grid;
  */
 final class GridRegistry
 {
-    public function __construct(private Database $database)
-    {
-    }
+    public function __construct(private Database $database) {}
 
     /**
      * The ports the registered regions use: their own (UDP, the one viewers
@@ -60,7 +58,10 @@ final class GridRegistry
     public function names(GridInfo $grid): array
     {
         $names = [];
-        $rows = $grid->dbName === '' ? null : $this->database->select($grid->databasePlan(), 'SELECT regionName FROM regions');
+        $rows =
+            $grid->dbName === ''
+                ? null
+                : $this->database->select($grid->databasePlan(), 'SELECT regionName FROM regions');
         foreach ($rows ?? [] as $row) {
             $names[strtolower(trim($row))] = true;
         }
@@ -95,7 +96,13 @@ final class GridRegistry
     public function locations(GridInfo $grid): array
     {
         $used = [];
-        $rows = $grid->dbName === '' ? null : $this->database->select($grid->databasePlan(), "SELECT CONCAT_WS(' ', locX DIV 256, locY DIV 256, sizeX DIV 256, sizeY DIV 256) FROM regions");
+        $rows =
+            $grid->dbName === ''
+                ? null
+                : $this->database->select(
+                    $grid->databasePlan(),
+                    "SELECT CONCAT_WS(' ', locX DIV 256, locY DIV 256, sizeX DIV 256, sizeY DIV 256) FROM regions",
+                );
         foreach ($rows ?? [] as $row) {
             $n = array_map('intval', preg_split('/\s+/', trim($row)) ?: []);
             if (count($n) === 4) {

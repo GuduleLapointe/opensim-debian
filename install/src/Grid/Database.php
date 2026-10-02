@@ -55,9 +55,7 @@ final class Database
     /** @var string why there is no administrator access */
     private string $adminReason = '';
 
-    public function __construct(private InstallerUi $ui)
-    {
-    }
+    public function __construct(private InstallerUi $ui) {}
 
     /** Keep the password of an account for the rest of the session. */
     public static function remember(string $host, string $user, string $password): void
@@ -93,9 +91,14 @@ final class Database
             // Without a database, any "Access denied for user" is a refused
             // login: 1045 for a wrong password, 1698 for an account that does
             // not exist (MariaDB), or that has another authentication
-            if (!in_array($this->errno($err), [1045, 1698], true) && stripos($err, 'Access denied for user') === false) {
+            if (
+                !in_array($this->errno($err), [1045, 1698], true) &&
+                stripos($err, 'Access denied for user') === false
+            ) {
                 $this->ui->error("Cannot reach the database server {$plan->dbHost}: " . trim($err));
-                $this->ui->error('OpenSim needs MySQL or MariaDB, on this machine (install default-mysql-server) or another one.');
+                $this->ui->error(
+                    'OpenSim needs MySQL or MariaDB, on this machine (install default-mysql-server) or another one.',
+                );
 
                 return self::RETRY;
             }
@@ -137,7 +140,9 @@ final class Database
         }
         [$code, $out] = $this->run($client, $plan, $plan->dbName, $sql);
 
-        return $code === 0 ? array_values(array_filter(explode("\n", $out), static fn (string $line): bool => $line !== '')) : null;
+        return $code === 0
+            ? array_values(array_filter(explode("\n", $out), static fn(string $line): bool => $line !== ''))
+            : null;
     }
 
     /** Login refused: wrong password, or no such account for this host. */
@@ -147,27 +152,39 @@ final class Database
         $hosts = $this->accountHosts($client, $plan);
 
         if ($hosts === null) {
-            $this->ui->error("Login refused for user {$plan->dbUser}: the password is wrong, or the account does not exist for '$host'. "
-                . "The administrator access to the server, to check, is not available ({$this->adminReason}).{$this->adminHint()}");
+            $this->ui->error(
+                "Login refused for user {$plan->dbUser}: the password is wrong, or the account does not exist for '$host'. " .
+                    "The administrator access to the server, to check, is not available ({$this->adminReason}).{$this->adminHint()}",
+            );
             $this->showCommands($plan, $host, true, true);
 
             return self::RETRY;
         }
         if (in_array($host, $hosts, true)) {
-            $this->ui->error("User '{$plan->dbUser}'@'$host' exists but the password is rejected: give the right password.");
+            $this->ui->error(
+                "User '{$plan->dbUser}'@'$host' exists but the password is rejected: give the right password.",
+            );
 
             return self::RETRY;
         }
 
-        $this->ui->warn($hosts === []
-            ? "User {$plan->dbUser} does not exist on {$plan->dbHost}."
-            : "User {$plan->dbUser} exists for " . implode(', ', $hosts) . ", not for '$host' (the host it connects from).");
+        $this->ui->warn(
+            $hosts === []
+                ? "User {$plan->dbUser} does not exist on {$plan->dbHost}."
+                : "User {$plan->dbUser} exists for " .
+                    implode(', ', $hosts) .
+                    ", not for '$host' (the host it connects from).",
+        );
         if (!$this->ui->confirm("Create user '{$plan->dbUser}'@'$host' on {$plan->dbHost}?", true)) {
             return self::RETRY;
         }
 
         $account = $this->quote($plan->dbUser) . '@' . $this->quote($host);
-        [$code, , $err] = $this->admin($client, $plan, "CREATE USER $account IDENTIFIED BY " . $this->quote($plan->dbPass));
+        [$code, , $err] = $this->admin(
+            $client,
+            $plan,
+            "CREATE USER $account IDENTIFIED BY " . $this->quote($plan->dbPass),
+        );
         if ($code !== 0) {
             return $this->failed('create the user', $err, $plan, $host, true, true);
         }
@@ -185,11 +202,15 @@ final class Database
     private function database(string $client, GridPlan $plan): int
     {
         $host = $this->accountHost($plan);
-        $this->ui->warn("User {$plan->dbUser} can connect to {$plan->dbHost}, but has no access to database {$plan->dbName}: it does not exist, or the user has no rights on it.");
+        $this->ui->warn(
+            "User {$plan->dbUser} can connect to {$plan->dbHost}, but has no access to database {$plan->dbName}: it does not exist, or the user has no rights on it.",
+        );
 
         $exists = $this->databaseExists($client, $plan);
         if ($exists === null) {
-            $this->ui->error("The administrator access to the server, to check or create it, is not available ({$this->adminReason}).{$this->adminHint()}");
+            $this->ui->error(
+                "The administrator access to the server, to check or create it, is not available ({$this->adminReason}).{$this->adminHint()}",
+            );
             $this->showCommands($plan, $host, false, true);
 
             return self::RETRY;
@@ -226,8 +247,14 @@ final class Database
     }
 
     /** A creation failed: the setup ends here, with what to run from an administrator account. */
-    private function failed(string $what, string $err, GridPlan $plan, string $host, bool $withUser, bool $withDatabase): int
-    {
+    private function failed(
+        string $what,
+        string $err,
+        GridPlan $plan,
+        string $host,
+        bool $withUser,
+        bool $withDatabase,
+    ): int {
         $this->ui->error("Could not $what: " . $this->errorLine($err));
         $this->showCommands($plan, $host, $withUser, $withDatabase);
 
@@ -246,7 +273,10 @@ final class Database
             $lines[] = "CREATE DATABASE `{$plan->dbName}` CHARACTER SET utf8;";
         }
         $lines[] = "GRANT ALL ON `{$plan->dbName}`.* TO $account;";
-        $this->ui->note("From an account with administrator rights on the database server, run what is missing:\n  " . implode("\n  ", $lines));
+        $this->ui->note(
+            "From an account with administrator rights on the database server, run what is missing:\n  " .
+                implode("\n  ", $lines),
+        );
     }
 
     /**
@@ -257,7 +287,11 @@ final class Database
      */
     private function accountHosts(string $client, GridPlan $plan): ?array
     {
-        [$code, $out] = $this->admin($client, $plan, 'SELECT Host FROM mysql.user WHERE User=' . $this->quote($plan->dbUser));
+        [$code, $out] = $this->admin(
+            $client,
+            $plan,
+            'SELECT Host FROM mysql.user WHERE User=' . $this->quote($plan->dbUser),
+        );
 
         return $code === 0 ? array_values(array_filter(array_map('trim', explode("\n", $out)))) : null;
     }
@@ -265,7 +299,11 @@ final class Database
     /** Whether the database exists, or null when it cannot be told. */
     private function databaseExists(string $client, GridPlan $plan): ?bool
     {
-        [$code, $out] = $this->admin($client, $plan, 'SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=' . $this->quote($plan->dbName));
+        [$code, $out] = $this->admin(
+            $client,
+            $plan,
+            'SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=' . $this->quote($plan->dbName),
+        );
 
         return $code === 0 ? trim($out) !== '' : null;
     }
@@ -334,7 +372,18 @@ final class Database
      */
     private function run(string $client, GridPlan $plan, ?string $database, string $sql = 'SELECT 1'): array
     {
-        $command = [$client, '--no-defaults', '-h', $plan->dbHost, '-u', $plan->dbUser, '--connect-timeout=5', '-BN', '-e', $sql];
+        $command = [
+            $client,
+            '--no-defaults',
+            '-h',
+            $plan->dbHost,
+            '-u',
+            $plan->dbUser,
+            '--connect-timeout=5',
+            '-BN',
+            '-e',
+            $sql,
+        ];
         if ($database !== null) {
             $command[] = $database;
         }
@@ -401,14 +450,20 @@ final class Database
     /** Ask for an administrator account until one logs in, or the user gives up. */
     private function askAdmin(string $client, GridPlan $plan): array|false
     {
-        $this->ui->note("Creating what is missing needs an administrator account of the database server {$plan->dbHost}, one that may create users and databases. "
-            . 'Its password is used for this setup only, kept in memory, never written.');
+        $this->ui->note(
+            "Creating what is missing needs an administrator account of the database server {$plan->dbHost}, one that may create users and databases. " .
+                'Its password is used for this setup only, kept in memory, never written.',
+        );
         if (!$this->ui->confirm("Enter the credentials of an administrator account of {$plan->dbHost}?", true)) {
             return false;
         }
 
         do {
-            $user = $this->ui->text('Administrator user', 'root', fn (string $value) => trim($value) === '' ? 'Required.' : null);
+            $user = $this->ui->text(
+                'Administrator user',
+                'root',
+                fn(string $value) => trim($value) === '' ? 'Required.' : null,
+            );
             $access = $this->explicitAccess($client, $plan->dbHost, $user, $this->ui->secret("Password of $user"));
             [$code, , $err] = $this->exec(array_merge($access['command'], ['-BN', '-e', 'SELECT 1']), $access['env']);
             if ($code === 0) {

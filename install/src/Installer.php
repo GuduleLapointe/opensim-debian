@@ -14,9 +14,7 @@ use OpenSim\Installer\Ui\InstallerUi;
  */
 final class Installer
 {
-    public function __construct(private InstallerUi $ui)
-    {
-    }
+    public function __construct(private InstallerUi $ui) {}
 
     public function run(): void
     {
@@ -25,7 +23,7 @@ final class Installer
 
         // --- Version selection ---
         $releases = new Releases();
-        $list = $ui->spin(static fn () => $releases->available(), 'Fetching the OpenSim release list…');
+        $list = $ui->spin(static fn() => $releases->available(), 'Fetching the OpenSim release list…');
         if ($list === []) {
             $ui->error('Could not retrieve the OpenSim release list (no network and no cache).');
 
@@ -35,8 +33,8 @@ final class Installer
         $options = [];
         $byVersion = [];
         foreach ($list as $release) {
-            $options[$release['version']] = 'opensim-' . $release['version']
-                . ($release['installed'] ? '  (installed)' : '');
+            $options[$release['version']] =
+                'opensim-' . $release['version'] . ($release['installed'] ? '  (installed)' : '');
             $byVersion[$release['version']] = $release;
         }
         $options['dev'] = 'Development version (unstable, built from source — not yet implemented)';
@@ -60,7 +58,9 @@ final class Installer
         (new Runtime($ui))->gate($plan);
 
         // --- Layout + locations ---
-        $absolute = static fn (string $v): ?string => str_starts_with($v, '/') ? null : 'Use an absolute path (starting with /).';
+        $absolute = static fn(string $v): ?string => str_starts_with($v, '/')
+            ? null
+            : 'Use an absolute path (starting with /).';
 
         $plan->layout = $ui->choose('Installation layout', Layout::LABELS, 'system');
         $plan->installPath = Layout::needsBase($plan->layout)
@@ -84,12 +84,16 @@ final class Installer
         $plan->profile = $ui->text(
             'Profile name',
             "opensim-{$plan->version}",
-            static fn (string $v): ?string => preg_match('/^[A-Za-z0-9._-]+$/', $v) ? null : 'Letters, digits, dot, dash and underscore only.',
+            static fn(string $v): ?string => preg_match('/^[A-Za-z0-9._-]+$/', $v)
+                ? null
+                : 'Letters, digits, dot, dash and underscore only.',
         );
 
         $current = (new Config())->defaultProfile();
-        $plan->makeDefault = $current === null || $current === $plan->profile
-            || $ui->confirm("Make '{$plan->profile}' the default install (current: $current)?", false);
+        $plan->makeDefault =
+            $current === null ||
+            $current === $plan->profile ||
+            $ui->confirm("Make '{$plan->profile}' the default install (current: $current)?", false);
 
         // --- Show the gathered plan ---
         $lines = [];
@@ -115,9 +119,17 @@ final class Installer
 
         $user = getenv('USER') ?: get_current_user();
         $dirs = [
-            $plan->etcRoot, "{$plan->etcRoot}/opensim.d", "{$plan->etcRoot}/robust.d", "{$plan->etcRoot}/grids",
-            $plan->sourcesDirectory, $plan->coreRoot, $plan->coreDirectory,
-            $plan->varRoot, $plan->logsRoot, $plan->cacheRoot, $plan->dataRoot,
+            $plan->etcRoot,
+            "{$plan->etcRoot}/opensim.d",
+            "{$plan->etcRoot}/robust.d",
+            "{$plan->etcRoot}/grids",
+            $plan->sourcesDirectory,
+            $plan->coreRoot,
+            $plan->coreDirectory,
+            $plan->varRoot,
+            $plan->logsRoot,
+            $plan->cacheRoot,
+            $plan->dataRoot,
         ];
         foreach (array_unique($dirs) as $dir) {
             if (!is_dir($dir)) {

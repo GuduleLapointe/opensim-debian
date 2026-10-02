@@ -22,12 +22,14 @@ final class Releases
     public function __construct(?array $coreRoots = null)
     {
         $home = getenv('HOME') ?: '';
-        $this->coreRoots = $coreRoots ?? array_filter([
-            '/usr/share/opensim',
-            '/usr/local/share/opensim',
-            $home !== '' ? "$home/opensim/core" : null,
-            dirname(__DIR__, 2) . '/core',
-        ]);
+        $this->coreRoots =
+            $coreRoots ??
+            array_filter([
+                '/usr/share/opensim',
+                '/usr/local/share/opensim',
+                $home !== '' ? "$home/opensim/core" : null,
+                dirname(__DIR__, 2) . '/core',
+            ]);
     }
 
     /**
@@ -41,14 +43,14 @@ final class Releases
         }
 
         preg_match_all('/href="(opensim-[0-9][^"]*\.tar\.gz)"/', $html, $m);
-        $tarballs = array_values(array_unique(
-            array_filter($m[1], static fn (string $f): bool => !str_contains($f, 'source'))
-        ));
+        $tarballs = array_values(
+            array_unique(array_filter($m[1], static fn(string $f): bool => !str_contains($f, 'source'))),
+        );
         rsort($tarballs); // newest first
 
         $releases = [];
         foreach ($tarballs as $tarball) {
-            $name = (string) preg_replace('/\.tar\.gz$/', '', $tarball);   // opensim-0.9.3.0
+            $name = (string) preg_replace('/\.tar\.gz$/', '', $tarball); // opensim-0.9.3.0
             $version = (string) preg_replace('/^opensim-/', '', $name);
             $releases[] = [
                 'version' => $version,
@@ -76,7 +78,7 @@ final class Releases
     {
         $cache = $this->cacheFile();
 
-        if (is_file($cache) && (time() - (int) filemtime($cache)) < self::TTL) {
+        if (is_file($cache) && time() - (int) filemtime($cache) < self::TTL) {
             return (string) file_get_contents($cache);
         }
 
@@ -94,7 +96,7 @@ final class Releases
 
     private function cacheFile(): string
     {
-        $base = getenv('XDG_CACHE_HOME') ?: (getenv('HOME') . '/.cache');
+        $base = getenv('XDG_CACHE_HOME') ?: getenv('HOME') . '/.cache';
 
         return "$base/opensim/releases.html";
     }

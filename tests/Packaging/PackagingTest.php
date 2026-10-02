@@ -8,16 +8,16 @@
  * run only when asked, on a host that has them.
  */
 
-$root     = dirname( __DIR__, 2 );
-$podman   = trim( (string) shell_exec( 'command -v podman' ) );
-$packages = glob( "$root/dist/*.deb" ) ?: array();
+$root = dirname(__DIR__, 2);
+$podman = trim((string) shell_exec('command -v podman'));
+$packages = glob("$root/dist/*.deb") ?: [];
 
-if ( ! getenv( 'PACKAGING' ) ) {
-	$skip = 'slow, set PACKAGING=1 to run them (podman and the packages of dist/)';
-} elseif ( ! $podman ) {
-	$skip = 'podman is not available on this machine, run the scripts of tests/Packaging where it is';
+if (!getenv('PACKAGING')) {
+    $skip = 'slow, set PACKAGING=1 to run them (podman and the packages of dist/)';
+} elseif (!$podman) {
+    $skip = 'podman is not available on this machine, run the scripts of tests/Packaging where it is';
 } else {
-	$skip = '';
+    $skip = '';
 }
 
 /**
@@ -26,40 +26,41 @@ if ( ! getenv( 'PACKAGING' ) ) {
  * @param array $command Script and arguments.
  * @return array Exit status, output.
  */
-function packaging_run( array $command ) {
-	$root    = dirname( __DIR__, 2 );
-	$process = proc_open( $command, array( 1 => array( 'pipe', 'w' ), 2 => array( 'redirect', 1 ) ), $pipes, $root );
-	$lines   = array();
-	while ( false !== ( $line = fgets( $pipes[1] ) ) ) {
-		$lines[] = rtrim( $line );
-	}
+function packaging_run(array $command)
+{
+    $root = dirname(__DIR__, 2);
+    $process = proc_open($command, [1 => ['pipe', 'w'], 2 => ['redirect', 1]], $pipes, $root);
+    $lines = [];
+    while (false !== ($line = fgets($pipes[1]))) {
+        $lines[] = rtrim($line);
+    }
 
-	return array( proc_close( $process ), implode( "\n", array_slice( $lines, -60 ) ) );
+    return [proc_close($process), implode("\n", array_slice($lines, -60))];
 }
 
-describe( 'Packaging', function () use ( $root, $skip, $packages ) {
-	$images = array(
-		'Debian 12'    => 'docker.io/library/debian:bookworm',
-		'Ubuntu 24.04' => 'docker.io/library/ubuntu:24.04',
-	);
+describe('Packaging', function () use ($root, $skip, $packages) {
+    $images = [
+        'Debian 12' => 'docker.io/library/debian:bookworm',
+        'Ubuntu 24.04' => 'docker.io/library/ubuntu:24.04',
+    ];
 
-	foreach ( $images as $name => $image ) {
-		test( "packages install and run on $name", function () use ( $root, $image ) {
-			[ $status, $output ] = packaging_run( array( "$root/tests/Packaging/run", $image ) );
+    foreach ($images as $name => $image) {
+        test("packages install and run on $name", function () use ($root, $image) {
+            [$status, $output] = packaging_run(["$root/tests/Packaging/run", $image]);
 
-			expect( $status, $output )->toBe( 0 );
-		} )->skip( '' !== $skip || ! $packages, $skip ?: 'no package in dist/, build them with apt-package' );
+            expect($status, $output)->toBe(0);
+        })->skip('' !== $skip || !$packages, $skip ?: 'no package in dist/, build them with apt-package');
 
-		test( "pest suites pass with the php of $name", function () use ( $root, $image ) {
-			[ $status, $output ] = packaging_run( array( "$root/tests/Packaging/distro-pest", $image ) );
+        test("pest suites pass with the php of $name", function () use ($root, $image) {
+            [$status, $output] = packaging_run(["$root/tests/Packaging/distro-pest", $image]);
 
-			expect( $status, $output )->toBe( 0 );
-		} )->skip( '' !== $skip, $skip );
-	}
+            expect($status, $output)->toBe(0);
+        })->skip('' !== $skip, $skip);
+    }
 
-	test( 'container image', function () use ( $root ) {
-		[ $status, $output ] = packaging_run( array( "$root/tests/Packaging/container-image" ) );
+    test('container image', function () use ($root) {
+        [$status, $output] = packaging_run(["$root/tests/Packaging/container-image"]);
 
-		expect( $status, $output )->toBe( 0 );
-	} )->skip( '' !== $skip || ! $packages, $skip ?: 'no package in dist/, build them with apt-package' );
-} );
+        expect($status, $output)->toBe(0);
+    })->skip('' !== $skip || !$packages, $skip ?: 'no package in dist/, build them with apt-package');
+});

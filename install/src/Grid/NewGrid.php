@@ -20,9 +20,7 @@ use OpenSim\Installer\Ui\InstallerUi;
  */
 final class NewGrid
 {
-    public function __construct(private InstallerUi $ui)
-    {
-    }
+    public function __construct(private InstallerUi $ui) {}
 
     public function run(?string $modifyNick = null): void
     {
@@ -76,7 +74,9 @@ final class NewGrid
         $this->write($plan, $profile);
 
         if ($modifyNick === null) {
-            $this->ui->note("Next: add a simulator. Its first region will be '{$plan->defaultRegion}', the default region of the grid: nobody can log in before it exists.");
+            $this->ui->note(
+                "Next: add a simulator. Its first region will be '{$plan->defaultRegion}', the default region of the grid: nobody can log in before it exists.",
+            );
         }
     }
 
@@ -96,7 +96,12 @@ final class NewGrid
             return;
         }
 
-        Elevated::run($this->ui, '--apply-grid', ['plan' => $plan->toArray(), 'profile' => $profile], $profile['SystemUser']);
+        Elevated::run(
+            $this->ui,
+            '--apply-grid',
+            ['plan' => $plan->toArray(), 'profile' => $profile],
+            $profile['SystemUser'],
+        );
     }
 
     /** The writing itself: run as the system user of the install, root, or the user of an install without one. */
@@ -141,12 +146,19 @@ final class NewGrid
      */
     private function giveToSystemUser(string $user, array $paths, bool $recursive): void
     {
-        if ($user === '' || !function_exists('posix_geteuid') || posix_geteuid() !== 0 || posix_getpwnam($user) === false) {
+        if (
+            $user === '' ||
+            !function_exists('posix_geteuid') ||
+            posix_geteuid() !== 0 ||
+            posix_getpwnam($user) === false
+        ) {
             return;
         }
         foreach ($paths as $path) {
             if (is_link($path) || file_exists($path)) {
-                System::run('chown -h' . ($recursive ? 'R' : '') . ' ' . System::arg($user) . ': ' . System::arg($path));
+                System::run(
+                    'chown -h' . ($recursive ? 'R' : '') . ' ' . System::arg($user) . ': ' . System::arg($path),
+                );
             }
         }
     }
@@ -172,9 +184,11 @@ final class NewGrid
             return;
         }
 
-        $this->ui->error($pending
-            ? "Grid '$nick' is configured but was not ready after two minutes. Try: $opensim -v start $nick"
-            : "Grid '$nick' is configured but did not start. Try: $opensim -v start $nick");
+        $this->ui->error(
+            $pending
+                ? "Grid '$nick' is configured but was not ready after two minutes. Try: $opensim -v start $nick"
+                : "Grid '$nick' is configured but did not start. Try: $opensim -v start $nick",
+        );
         $log = $plan->logsDirectory . '/' . $plan->gridSlug . '_robust.log';
         if (is_file($log)) {
             $this->ui->note('Recent log:');
@@ -187,12 +201,22 @@ final class NewGrid
     private function makeDirs(GridPlan $plan): void
     {
         $dirs = [
-            $plan->dataDirectory, "{$plan->dataDirectory}/fsassets", "{$plan->dataDirectory}/fsassets/data",
-            "{$plan->dataDirectory}/maptiles", "{$plan->dataDirectory}/registry",
-            $plan->cacheDirectory, "{$plan->cacheDirectory}/bakes", "{$plan->cacheDirectory}/fsassets",
-            "{$plan->cacheDirectory}/fsassets/tmp", "{$plan->cacheDirectory}/maptiles",
-            $plan->etcDirectory, "{$plan->etcDirectory}/assets", "{$plan->etcDirectory}/config-include",
-            "{$plan->etcDirectory}/sims", "{$plan->etcDirectory}/inventory", "{$plan->etcDirectory}/robust-include",
+            $plan->dataDirectory,
+            "{$plan->dataDirectory}/fsassets",
+            "{$plan->dataDirectory}/fsassets/data",
+            "{$plan->dataDirectory}/maptiles",
+            "{$plan->dataDirectory}/registry",
+            $plan->cacheDirectory,
+            "{$plan->cacheDirectory}/bakes",
+            "{$plan->cacheDirectory}/fsassets",
+            "{$plan->cacheDirectory}/fsassets/tmp",
+            "{$plan->cacheDirectory}/maptiles",
+            $plan->etcDirectory,
+            "{$plan->etcDirectory}/assets",
+            "{$plan->etcDirectory}/config-include",
+            "{$plan->etcDirectory}/sims",
+            "{$plan->etcDirectory}/inventory",
+            "{$plan->etcDirectory}/robust-include",
             $plan->logsDirectory,
         ];
         foreach ($dirs as $dir) {
@@ -215,9 +239,12 @@ final class NewGrid
     private function copyConfigInclude(GridPlan $plan): void
     {
         $files = [
-            'OpenSimDefaults.ini', 'OpenSim.ini',
-            'config-include/GridHypergrid.ini', 'config-include/GridCommon.ini',
-            'config-include/FlotsamCache.ini', 'config-include/osslDefaultEnable.ini',
+            'OpenSimDefaults.ini',
+            'OpenSim.ini',
+            'config-include/GridHypergrid.ini',
+            'config-include/GridCommon.ini',
+            'config-include/FlotsamCache.ini',
+            'config-include/osslDefaultEnable.ini',
             'config-include/osslEnable.ini',
         ];
         foreach ($files as $file) {
@@ -241,8 +268,8 @@ final class NewGrid
 
     private function gather(array $profile, ?string $modifyNick): ?GridPlan
     {
-        $required = static fn (string $v): ?string => trim($v) === '' ? 'This field is required.' : null;
-        $numeric = static fn (string $v): ?string => ctype_digit(trim($v)) ? null : 'Enter a port number.';
+        $required = static fn(string $v): ?string => trim($v) === '' ? 'This field is required.' : null;
+        $numeric = static fn(string $v): ?string => ctype_digit(trim($v)) ? null : 'Enter a port number.';
 
         $etcRoot = $profile['EtcRoot'];
 
@@ -289,17 +316,27 @@ final class NewGrid
         $plan->enableHypergrid = $this->ui->confirm('Enable Hypergrid?', $hgDefault);
 
         // The rule that places the regions: free blocks between them
-        $plan->regionSpacing = (int) $this->ui->text('Free blocks between regions (0: side by side)', '0', static fn (string $v): ?string => ctype_digit(trim($v)) && (int) $v <= 50 ? null : 'A number of blocks, 0 to 50.');
+        $plan->regionSpacing = (int) $this->ui->text(
+            'Free blocks between regions (0: side by side)',
+            '0',
+            static fn(string $v): ?string => ctype_digit(trim($v)) && (int) $v <= 50
+                ? null
+                : 'A number of blocks, 0 to 50.',
+        );
 
         // The region visitors arrive in, and fall back to: one is enough, the operator can make
         // several and separate the roles later. Robust gives its flags to a region when it registers
-        $plan->defaultRegion = trim($this->ui->text(
-            'Default region (where visitors arrive, and fall back to)',
-            $current['defaultRegion'] ?? 'Welcome',
-            static fn (string $v): ?string => RegionName::problem($v),
-        ));
+        $plan->defaultRegion = trim(
+            $this->ui->text(
+                'Default region (where visitors arrive, and fall back to)',
+                $current['defaultRegion'] ?? 'Welcome',
+                static fn(string $v): ?string => RegionName::problem($v),
+            ),
+        );
         if (isset($current['defaultRegion']) && $current['defaultRegion'] !== $plan->defaultRegion) {
-            $this->ui->note("The region '{$plan->defaultRegion}' gets its flags when it registers: restart its simulator to apply the change.");
+            $this->ui->note(
+                "The region '{$plan->defaultRegion}' gets its flags when it registers: restart its simulator to apply the change.",
+            );
         }
 
         // Core selection (multi-version aware).
@@ -310,7 +347,11 @@ final class NewGrid
 
             return null;
         }
-        $plan->coreDirectory = $this->ui->choose('OpenSim core to run this grid', $cores, $profile['CoreDirectory'] ?? null);
+        $plan->coreDirectory = $this->ui->choose(
+            'OpenSim core to run this grid',
+            $cores,
+            $profile['CoreDirectory'] ?? null,
+        );
         $plan->binDir = $plan->coreDirectory . '/bin';
 
         $defaultHost = $current['baseHostname'] ?? (trim(System::capture('hostname -f')[1]) ?: 'localhost');
@@ -318,8 +359,17 @@ final class NewGrid
         // The ports of an instance are a block of ten, the first free one (see Ports):
         // public ends with 2, private with 3, the console with 4
         $block = Ports::nextBlock(8000);
-        $plan->publicPort = (int) $this->ui->text('Public port', (string) ($current['publicPort'] ?? $block + 2), $numeric);
-        $plan->privatePort = (int) $this->ui->text('Private port', (string) ($current['privatePort'] ?? ($plan->publicPort % 10 === 2 ? $plan->publicPort + 1 : Ports::next($plan->publicPort + 1))), $numeric);
+        $plan->publicPort = (int) $this->ui->text(
+            'Public port',
+            (string) ($current['publicPort'] ?? $block + 2),
+            $numeric,
+        );
+        $plan->privatePort = (int) $this->ui->text(
+            'Private port',
+            (string) ($current['privatePort'] ??
+                ($plan->publicPort % 10 === 2 ? $plan->publicPort + 1 : Ports::next($plan->publicPort + 1))),
+            $numeric,
+        );
         $plan->webUrl = $this->ui->text('Web URL', $current['webUrl'] ?? "https://{$plan->baseHostname}", $required);
 
         $this->askConsole($plan, $current, $numeric);
@@ -328,9 +378,9 @@ final class NewGrid
         $foundPass = $current['dbPass'] ?? '';
         $this->askDatabase($plan, [
             'dbHost' => $current['dbHost'] ?? ($profile['DataSource'] ?? 'localhost'),
-            'dbName' => $current['dbName'] ?? (strtolower($nick) . '_robust'),
+            'dbName' => $current['dbName'] ?? strtolower($nick) . '_robust',
             'dbUser' => $current['dbUser'] ?? 'opensim',
-            'dbPass' => ($foundPass !== '' && $foundPass !== 'changeme') ? $foundPass : $this->randomPassword(),
+            'dbPass' => $foundPass !== '' && $foundPass !== 'changeme' ? $foundPass : $this->randomPassword(),
         ]);
 
         return $plan;
@@ -345,16 +395,24 @@ final class NewGrid
      */
     private function askConsole(GridPlan $plan, array $current, \Closure $numeric): void
     {
-        $plan->consoleMode = $this->ui->choose('Console of the grid', [
-            'rest' => 'Remote REST console (recommended)',
-            'screen' => 'Screen session (on this machine)',
-        ], isset($current['consoleUser']) || $current === [] ? 'rest' : 'screen');
+        $plan->consoleMode = $this->ui->choose(
+            'Console of the grid',
+            [
+                'rest' => 'Remote REST console (recommended)',
+                'screen' => 'Screen session (on this machine)',
+            ],
+            isset($current['consoleUser']) || $current === [] ? 'rest' : 'screen',
+        );
         if ($plan->consoleMode !== 'rest') {
             return;
         }
 
         $base = $plan->publicPort % 10 === 2 ? $plan->publicPort - 2 : 0;
-        $plan->consolePort = (int) $this->ui->text('Console port', (string) ($current['consolePort'] ?? ($base > 0 ? $base + 4 : Ports::next($plan->privatePort + 1))), $numeric);
+        $plan->consolePort = (int) $this->ui->text(
+            'Console port',
+            (string) ($current['consolePort'] ?? ($base > 0 ? $base + 4 : Ports::next($plan->privatePort + 1))),
+            $numeric,
+        );
         // As the helpers make theirs: 12 lower case letters, 32 letters and digits
         $plan->consoleHost = (string) ($current['consoleHost'] ?? $plan->baseHostname);
         $plan->consoleUser = (string) ($current['consoleUser'] ?? $this->randomLetters(12));
@@ -368,7 +426,7 @@ final class NewGrid
      */
     private function askDatabase(GridPlan $plan, array $defaults): void
     {
-        $required = static fn (string $v): ?string => trim($v) === '' ? 'This field is required.' : null;
+        $required = static fn(string $v): ?string => trim($v) === '' ? 'This field is required.' : null;
 
         $plan->dbHost = $this->ui->text('Database host', $defaults['dbHost'], $required);
         $plan->dbName = $this->ui->text('Database name', $defaults['dbName'], $required);
@@ -438,11 +496,15 @@ final class NewGrid
             "  Grid:        {$plan->gridName}  ({$plan->gridNick})",
             '  Hypergrid:   ' . ($plan->enableHypergrid ? 'yes' : 'no'),
             "  Default reg: {$plan->defaultRegion}",
-            '  Regions:     ' . ($plan->regionSpacing === 0 ? 'side by side' : "{$plan->regionSpacing} free block(s) between them"),
+            '  Regions:     ' .
+            ($plan->regionSpacing === 0 ? 'side by side' : "{$plan->regionSpacing} free block(s) between them"),
             "  Core:        {$plan->coreDirectory}",
             "  Hostname:    {$plan->baseHostname}",
             "  Ports:       public {$plan->publicPort} / private {$plan->privatePort}",
-            '  Console:     ' . ($plan->consoleMode === 'rest' ? "remote, port {$plan->consolePort}, user {$plan->consoleUser}" : 'screen session'),
+            '  Console:     ' .
+            ($plan->consoleMode === 'rest'
+                ? "remote, port {$plan->consolePort}, user {$plan->consoleUser}"
+                : 'screen session'),
             "  Web URL:     {$plan->webUrl}",
             "  Database:    {$plan->dbName} @ {$plan->dbHost} (user {$plan->dbUser})",
             "  Robust ini:  {$plan->robustIni()}",

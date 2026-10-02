@@ -43,7 +43,7 @@ final class Config
 
         $ini = parse_ini_file($path, true, INI_SCANNER_RAW) ?: [];
 
-        return array_values(array_filter(array_keys($ini), static fn (string $s): bool => $s !== 'Defaults'));
+        return array_values(array_filter(array_keys($ini), static fn(string $s): bool => $s !== 'Defaults'));
     }
 
     /** Switch the default profile (updates the pointer and mirrors its values). */
@@ -93,7 +93,7 @@ final class Config
         $name ??= $defaults['DefaultProfile'] ?? null;
         unset($defaults['DefaultProfile']);
 
-        $section = ($name !== null && isset($ini[$name])) ? $ini[$name] : [];
+        $section = $name !== null && isset($ini[$name]) ? $ini[$name] : [];
 
         return array_merge($defaults, $section);
     }

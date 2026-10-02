@@ -58,21 +58,12 @@ final class PromptsUi implements InstallerUi
 
     public function text(string $label, string $default = '', ?\Closure $validate = null, ?string $hint = null): string
     {
-        return text(
-            label: $label,
-            default: $default,
-            validate: $validate,
-            hint: $hint ?? '',
-        );
+        return text(label: $label, default: $default, validate: $validate, hint: $hint ?? '');
     }
 
     public function secret(string $label, ?\Closure $validate = null, ?string $hint = null): string
     {
-        return password(
-            label: $label,
-            validate: $validate,
-            hint: $hint ?? '',
-        );
+        return password(label: $label, validate: $validate, hint: $hint ?? '');
     }
 
     public function confirm(string $label, bool $default = true): bool

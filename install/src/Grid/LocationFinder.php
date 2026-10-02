@@ -100,8 +100,8 @@ final class LocationFinder
                 }
             }
         }
-        usort($offsets, static fn (array $a, array $b): int => [$a[0], $a[1]] <=> [$b[0], $b[1]]);
+        usort($offsets, static fn(array $a, array $b): int => [$a[0], $a[1]] <=> [$b[0], $b[1]]);
 
-        return array_map(static fn (array $o): array => [$o[2], $o[3]], $offsets);
+        return array_map(static fn(array $o): array => [$o[2], $o[3]], $offsets);
     }
 }

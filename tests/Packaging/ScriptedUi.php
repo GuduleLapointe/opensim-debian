@@ -21,15 +21,30 @@ final class ScriptedUi implements InstallerUi
         return null;
     }
 
-    public function intro(string $title): void { echo "== $title\n"; }
-    public function note(string $message): void { echo "note: $message\n"; }
-    public function warn(string $message): void { echo "warn: $message\n"; }
-    public function error(string $message): void { echo "error: $message\n"; }
-    public function outro(string $message): void { echo "$message\n"; }
+    public function intro(string $title): void
+    {
+        echo "== $title\n";
+    }
+    public function note(string $message): void
+    {
+        echo "note: $message\n";
+    }
+    public function warn(string $message): void
+    {
+        echo "warn: $message\n";
+    }
+    public function error(string $message): void
+    {
+        echo "error: $message\n";
+    }
+    public function outro(string $message): void
+    {
+        echo "$message\n";
+    }
 
     public function choose(string $label, array $options, ?string $default = null, ?string $hint = null): string
     {
-        $choice = $this->answer($label) ?? $default ?? array_key_first($options);
+        $choice = $this->answer($label) ?? ($default ?? array_key_first($options));
         echo "choose: $label -> $choice\n";
 
         return (string) $choice;

@@ -15,9 +15,7 @@ use OpenSim\Installer\Ui\InstallerUi;
  */
 final class GridAccounts
 {
-    public function __construct(private Database $database, private InstallerUi $ui)
-    {
-    }
+    public function __construct(private Database $database, private InstallerUi $ui) {}
 
     /** What a name of a person is made of: first and last name, as OpenSimulator has it. */
     public static function validName(string $name): bool

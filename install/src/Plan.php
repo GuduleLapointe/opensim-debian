@@ -14,13 +14,13 @@ final class Plan
     public string $tarball = '';
 
     // Runtime decision
-    public string $runtime = '';          // dotnet | mono
-    public bool $rollForward = false;     // run on a newer .NET without installing
-    public bool $installRuntime = false;  // install the runtime during apply
+    public string $runtime = ''; // dotnet | mono
+    public bool $rollForward = false; // run on a newer .NET without installing
+    public bool $installRuntime = false; // install the runtime during apply
     public ?int $dotnetMajor = null;
 
     // Locations
-    public string $layout = '';           // system | bundled | flat
+    public string $layout = ''; // system | bundled | flat
     public string $installPath = '';
     public string $coreRoot = '';
     public string $coreDirectory = '';
@@ -32,7 +32,7 @@ final class Plan
     public string $sourcesDirectory = '';
 
     // Profile
-    public string $profile = '';          // config section name
+    public string $profile = ''; // config section name
     public bool $makeDefault = true;
 
     /** @return array<string,string> human-readable summary */
@@ -40,8 +40,11 @@ final class Plan
     {
         $runtime = $this->runtime;
         if ($this->runtime === 'dotnet') {
-            $runtime .= ' (.NET ' . $this->dotnetMajor
-                . ($this->installRuntime ? ', will install' : ($this->rollForward ? ', roll-forward' : ', present')) . ')';
+            $runtime .=
+                ' (.NET ' .
+                $this->dotnetMajor .
+                ($this->installRuntime ? ', will install' : ($this->rollForward ? ', roll-forward' : ', present')) .
+                ')';
         } elseif ($this->installRuntime) {
             $runtime .= ' (will install)';
         }

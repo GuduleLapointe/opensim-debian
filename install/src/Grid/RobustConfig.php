@@ -41,7 +41,9 @@ final class RobustConfig
                 'PIDFile' => $this->q('${Const|CacheDirectory}/' . $plan->gridNick . '.pid'),
                 'RegistryLocation' => $this->q('${Const|DataDirectory}/registry'),
                 'ConfigDirectory' => $this->q('${Const|EtcDirectory}/robust-include'),
-                'ConsoleHistoryFile' => $this->q('${Const|LogsDirectory}/' . $plan->gridNick . '.RobustConsoleHistory.txt'),
+                'ConsoleHistoryFile' => $this->q(
+                    '${Const|LogsDirectory}/' . $plan->gridNick . '.RobustConsoleHistory.txt',
+                ),
             ],
             'DatabaseService' => [
                 'ConnectionString' => $this->q($plan->connectionString()),
@@ -52,7 +54,9 @@ final class RobustConfig
                 'AssetLoaderArgs' => $this->q('${Const|EtcDirectory}/assets/AssetSets.xml'),
             ],
             'GridService' => [
-                RegionName::configKey($plan->defaultRegion) => $this->q('DefaultRegion, DefaultHGRegion, FallbackRegion, Persistent'),
+                RegionName::configKey($plan->defaultRegion) => $this->q(
+                    'DefaultRegion, DefaultHGRegion, FallbackRegion, Persistent',
+                ),
                 'MapTileDirectory' => $this->q('${Const|CacheDirectory}/maptiles'),
             ],
             'LibraryService' => [
@@ -86,12 +90,14 @@ final class RobustConfig
 
         // The remote console, every right on Robust through its port
         if ($plan->consoleMode === 'rest' && $plan->consolePort > 0) {
-            $ini->merge(['Network' => [
-                'ConsoleHost' => $this->q($plan->consoleHost),
-                'ConsoleUser' => $this->q($plan->consoleUser),
-                'ConsolePass' => $this->q($plan->consolePass),
-                'ConsolePort' => (string) $plan->consolePort,
-            ]]);
+            $ini->merge([
+                'Network' => [
+                    'ConsoleHost' => $this->q($plan->consoleHost),
+                    'ConsoleUser' => $this->q($plan->consoleUser),
+                    'ConsolePass' => $this->q($plan->consolePass),
+                    'ConsolePort' => (string) $plan->consolePort,
+                ],
+            ]);
         }
 
         // Enable user profiles (connector + service).

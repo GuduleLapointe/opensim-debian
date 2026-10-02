@@ -13,7 +13,9 @@ final class RegionName
     /** The reason a name is refused, null when it is fine. */
     public static function problem(string $name): ?string
     {
-        return preg_match('/^[A-Za-z0-9][A-Za-z0-9 ._-]{0,49}$/', trim($name)) === 1 ? null : 'Letters, digits, spaces, . _ and - only.';
+        return preg_match('/^[A-Za-z0-9][A-Za-z0-9 ._-]{0,49}$/', trim($name)) === 1
+            ? null
+            : 'Letters, digits, spaces, . _ and - only.';
     }
 
     /** The key of [GridService] giving the flags of a region: Robust looks for its name with the spaces replaced by underscores. */
@@ -36,7 +38,7 @@ final class RegionName
      */
     public static function isIn(string $name, array $known): bool
     {
-        $same = static fn (string $value): string => strtolower(str_replace(' ', '_', trim($value)));
+        $same = static fn(string $value): string => strtolower(str_replace(' ', '_', trim($value)));
         $wanted = $same($name);
         foreach (array_keys($known) as $other) {
             if ($same((string) $other) === $wanted) {
