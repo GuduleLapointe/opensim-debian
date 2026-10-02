@@ -75,6 +75,39 @@ describe('opensim next port', function () {
     });
 });
 
+describe('opensim next port, what takes a port', function () {
+    test('is an instance, not the defaults OpenSim ships', function () {
+        $home = next_home();
+        $grid = dirname($home) . '/etc/grids/alpha';
+        mkdir("$grid/config-include");
+        file_put_contents(
+            "$grid/OpenSimDefaults.ini",
+            "[Network]\n    http_listener_port = 19000\n    http_listener_sslport = 19001\n",
+        );
+        file_put_contents("$grid/config-include/GridCommon.ini", "[Network]\n    PublicPort = 19002\n");
+
+        [, $output] = next_run(['port', '19000', '3'], $home);
+
+        expect(array_map('intval', explode("\n", $output)))->toBe([19000, 19001, 19002]);
+    });
+
+    test('is a simulator of the grid, whatever the port it announces', function () {
+        $home = next_home();
+        file_put_contents(
+            dirname($home) . '/etc/grids/alpha/sims/alpha_sim1.ini',
+            "[Network]\n    http_listener_port = 19000\n",
+        );
+        file_put_contents(
+            dirname($home) . '/etc/grids/alpha/sims/alpha_sim1/regions/Sim1.ini',
+            "[Sim1]\nInternalPort = 19002\n",
+        );
+
+        [, $output] = next_run(['port', '19000', '3'], $home);
+
+        expect(array_map('intval', explode("\n", $output)))->toBe([19001, 19003, 19004]);
+    });
+});
+
 describe('opensim next location', function () {
     test('gives the free place nearest to the one asked, turning from the east', function () {
         [$status, $output] = next_run(['location', 'alpha'], next_home());

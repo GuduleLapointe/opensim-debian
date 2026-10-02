@@ -149,13 +149,28 @@ final class Ports
             );
             foreach ($it as $file) {
                 $path = $file->getPathname();
-                if ($file->isFile() && str_ends_with($path, '.ini') && !str_contains($path, '#')) {
+                if (
+                    $file->isFile() &&
+                    str_ends_with($path, '.ini') &&
+                    !str_contains($path, '#') &&
+                    !self::isDefaults($path)
+                ) {
                     $files[] = $path;
                 }
             }
         }
 
         return $files;
+    }
+
+    /**
+     * Whether a file is a copy of what OpenSim ships, which describes no instance: its
+     * OpenSimDefaults.ini sets http_listener_port = 9000 for the simulator nobody configured.
+     */
+    private static function isDefaults(string $path): bool
+    {
+        return in_array(basename($path), ['OpenSim.ini', 'OpenSimDefaults.ini'], true) ||
+            str_contains($path, '/config-include/');
     }
 
     /** @return list<int> ports currently bound, from netstat (BSD '.port' and Linux ':port') */
