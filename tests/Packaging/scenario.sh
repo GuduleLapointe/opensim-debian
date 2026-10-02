@@ -244,6 +244,11 @@ regionuuid=$(grep -m1 '^RegionUUID' $regionfile)
 (cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=Sim1 TEST_RECONFIGURE_REGION=Sim1North TEST_LOCATION=1000,1001 runuser -u opensim -- php /test/newsim.php >/tmp/region3.out 2>&1
     echo "exit code: $?" >>/tmp/region3.out)
 check "a region is reconfigured in place, its UUID kept" "grep -q 'exit code: 0' /tmp/region3.out && grep -q '^Location = 1000,1001' $regionfile && [ \"\$(grep -m1 '^RegionUUID' $regionfile)\" = '$regionuuid' ]"
+# The next free place and port follow the rules of the setup: the place nearest to the first one of the grid,
+# with both the places the registry has and the ones the region files have (Sim1North is registered at
+# 1001,1000 until its simulator restarts, its file says 1000,1001)
+check "opensim next location gives the free place nearest to the first one" "[ \"\$(opensim next location testgrid)\" = 999,1000 ]"
+check "opensim next port gives a free port" "[ \"\$(opensim next port 9100)\" = 9100 ]"
 # The ports of an instance are a block of ten, the same on any machine: Robust
 # 8002 public and 8003 private; the first simulator 8012 public, 8014 for its
 # console (kept, not enabled), its regions from 8015, in UDP
