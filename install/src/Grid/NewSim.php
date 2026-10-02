@@ -696,7 +696,11 @@ final class NewSim
 
         // The first simulator of a grid has the name of its landing region, that is its first region
         $firstSim = !$grid->remote && SimState::names($grid->dir) === [];
-        $simNameProblem = static fn(string $v): ?string => preg_match('/^[A-Za-z0-9][A-Za-z0-9 _-]*$/', trim($v))
+        // An accent is not refused, it is transliterated (Noël becomes Noel)
+        $simNameProblem = static fn(string $v): ?string => preg_match(
+            '/^[A-Za-z0-9][A-Za-z0-9 _-]*$/',
+            trim(Slug::ascii($v)),
+        )
             ? null
             : 'Letters, digits, spaces, _ and - only.';
         if ($simName === null && $grid->needsLandingRegion()) {
@@ -704,7 +708,8 @@ final class NewSim
         }
         $plan->simName =
             $simName ??
-            trim(
+            Slug::ascii(
+                trim(
                 $this->ui->text(
                     'Simulator name',
                     $firstSim
@@ -717,6 +722,7 @@ final class NewSim
                         ),
                     $simNameProblem,
                 ),
+            ),
             );
         $plan->slug = GridInfo::instanceName($grid->nick . '_' . $plan->simName);
 
@@ -1005,6 +1011,7 @@ final class NewSim
         // A region name is unique in the grid: the same name registered twice stops the simulator
         $taken = (new GridRegistry($database))->names($grid);
         $name = static function (string $v) use ($taken, $grid): ?string {
+            $v = Slug::ascii($v); // an accent is not refused, it is transliterated (Noël becomes Noel)
             if (($problem = RegionName::problem($v)) !== null) {
                 return $problem;
             }
@@ -1026,7 +1033,7 @@ final class NewSim
         // The name of the simulator is the one of its first region; the next ones are not called the same
         $first = (glob("{$plan->regionsDir()}/*.ini*") ?: []) === [];
         $default = $first && $name($plan->simName) === null ? $plan->simName : RandomName::make($name);
-        $plan->regionName = trim($this->ui->text('Region name', $default, $name));
+        $plan->regionName = Slug::ascii(trim($this->ui->text('Region name', $default, $name)));
         $plan->regionRoles = $this->askRoles($grid);
         $plan->regionUuid = self::uuid();
         $plan->regionLocation = $this->askLocation($grid, $database);

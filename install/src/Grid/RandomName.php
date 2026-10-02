@@ -13,8 +13,8 @@ use Nubs\RandomNameGenerator\Alliteration;
 final class RandomName
 {
     /**
-     * A name the caller accepts: the words come from lists that have a hyphen or an accent, which
-     * not every name takes. Empty when none was found, the caller proposes nothing then.
+     * A name the caller accepts (not taken, for instance), transliterated to ASCII: the words come
+     * from lists that have an accent. Empty when none was found, the caller proposes nothing then.
      *
      * @param \Closure(string):?string $problem returns why a name is refused, null when it is fine
      */
@@ -22,7 +22,7 @@ final class RandomName
     {
         $generator = new Alliteration();
         for ($i = 0; $i < 50; $i++) {
-            $name = $generator->getName();
+            $name = Slug::ascii($generator->getName());
             if ($problem($name) === null) {
                 return $name;
             }

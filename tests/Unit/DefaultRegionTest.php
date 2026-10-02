@@ -191,6 +191,13 @@ describe('A name to propose', function () {
         expect(strtolower($name[0]))->toBe(strtolower(explode(' ', $name)[1][0]));
     });
 
+    test('is transliterated, so an accent is not a reason to refuse it', function () {
+        expect(OpenSim\Installer\Grid\Slug::ascii('Joyeux Noël'))->toBe('Joyeux Noel');
+
+        $name = OpenSim\Installer\Grid\RandomName::make(static fn(string $v): ?string => null);
+        expect($name)->toMatch('/^[\x20-\x7e]+$/');
+    });
+
     test('is empty when no name is accepted', function () {
         expect(OpenSim\Installer\Grid\RandomName::make(static fn(string $v): ?string => 'no'))->toBe('');
     });
