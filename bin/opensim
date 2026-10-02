@@ -40,12 +40,23 @@ if [ "${1:-}" = "next" ]; then
 	exec php "$BASEDIR/libexec/next.php" "$@"
 fi
 
+# The web side of a grid (helpers, URLs, snippets for the web server): as the caller
+if [ "${1:-}" = "web" ]; then
+	shift
+	exec php "$BASEDIR/libexec/web.php" "$@"
+fi
+
 # Before the helpers, which answer -h
 USAGE="opensim [-hvq] <command> [instance...]"
 HELP="
 opensim <start|stop [now]|restart [now]> [instance1] [instance2] [...]
 opensim status
 opensim setup           create or modify grids and simulators (setup wizard)
+opensim web [show|check] [--grid NICK]
+opensim web snippet <caddy|nginx|apache> [--grid NICK]
+                        the helpers of a grid (economy, search, offline messages):
+                        where they are served, what answers, and what the web
+                        server needs to serve them
 opensim <enable|disable> <instance> [instance2] [...]
                         enable or disable a grid or a simulator
 opensim rest --url http://HOST:PORT --user USER (-- <command> | - | --repl)

@@ -11,6 +11,9 @@ use OpenSim\Installer\SetupFailed;
 use OpenSim\Installer\System;
 use OpenSim\Installer\TextFile;
 use OpenSim\Installer\Ui\InstallerUi;
+use OpenSim\Installer\Web\HelpersConfig;
+use OpenSim\Installer\Web\Services;
+use OpenSim\Installer\Web\Snippets;
 
 /**
  * Configure (or reconfigure) one grid on top of an installed framework.
@@ -110,6 +113,7 @@ final class NewGrid
         $conf = (new GridConf())->write($plan);
         $this->ui->note("Wrote $conf");
         $this->writeRobust($plan);
+        $this->writeHelpers($plan);
         $this->copyConfigInclude($plan);
 
         $logConfig = (new LogConfig())->write($plan);
@@ -234,6 +238,42 @@ final class NewGrid
         $this->ui->note("Wrote $path");
     }
 
+    /**
+     * The helpers.ini of the grid: what opensim-helpers needs, so the web server does not have to read the Robust
+     * config. What the operator changed in it is kept. Readable by the group of the web server when this process
+     * can give it, else by everybody who can reach the folder of the grid.
+     */
+    private function writeHelpers(GridPlan $plan): void
+    {
+        if (!$plan->helpers) {
+            return;
+        }
+        $path = HelpersConfig::path($plan->gridDir);
+        $text = HelpersConfig::render(
+            is_file($path) ? TextFile::read($path) : '',
+            [
+                'gridName' => $plan->gridName,
+                'loginUri' => "http://{$plan->baseHostname}:{$plan->publicPort}",
+                'webUrl' => $plan->webUrl,
+                'mailSender' => '',
+                'dbHost' => $plan->dbHost,
+                'dbName' => $plan->dbName,
+                'dbUser' => $plan->dbUser,
+                'dbPass' => $plan->dbPass,
+            ],
+            $plan->helpersPath,
+        );
+        file_put_contents($path, $text);
+        $group = function_exists('posix_getgrnam') ? posix_getgrnam('www-data') : false;
+        if ($group !== false && @chgrp($path, $group['gid'])) {
+            chmod($path, 0o640);
+        } else {
+            chmod($path, 0o644);
+            $this->ui->warn("$path holds the database password and is readable by every user of this machine: give it to the group of your web server (chgrp, then chmod 640).");
+        }
+        $this->ui->note("Wrote $path");
+    }
+
     private function copyConfigInclude(GridPlan $plan): void
     {
         $files = [
@@ -355,6 +395,7 @@ final class NewGrid
             $numeric,
         );
         $plan->webUrl = $this->ui->text('Web URL', $current['webUrl'] ?? "https://{$plan->baseHostname}", $required);
+        $this->askHelpers($plan, $gridDir);
 
         $this->askConsole($plan, $current, $numeric);
 
@@ -368,6 +409,33 @@ final class NewGrid
         ]);
 
         return $plan;
+    }
+
+    /**
+     * The helpers of the grid: the economy, the search and the offline messages the viewers use, served by the web
+     * site with opensim-helpers (see `opensim web`). Where they are on the web site is the operator's choice, the
+     * paths of each service too (helpers.ini).
+     */
+    private function askHelpers(GridPlan $plan, string $gridDir): void
+    {
+        $existing = HelpersConfig::read($gridDir);
+        $plan->helpers = $this->ui->confirm(
+            'Serve the economy, search and offline messages of the grid with opensim-helpers?',
+            $existing !== [] || is_dir(Snippets::WEBROOT),
+        );
+        if (!$plan->helpers) {
+            return;
+        }
+        $plan->helpersUrls = $existing['Urls'] ?? [];
+        $plan->helpersPath = Services::normalize(
+            $this->ui->text(
+                'Path of the helpers on the web site',
+                $existing['Helpers']['path'] ?? HelpersConfig::DEFAULT_PATH,
+                static fn(string $v): ?string => preg_match('#^/?[A-Za-z0-9._/-]*$#', trim($v))
+                    ? null
+                    : 'A path such as /helpers.',
+            ),
+        );
     }
 
     /**
@@ -489,6 +557,7 @@ final class NewGrid
                 ? "remote, port {$plan->consolePort}, user {$plan->consoleUser}"
                 : 'screen session'),
             "  Web URL:     {$plan->webUrl}",
+            '  Helpers:     ' . ($plan->helpers ? "served at {$plan->webUrl}{$plan->helpersPath}" : 'not served by this web site'),
             "  Database:    {$plan->dbName} @ {$plan->dbHost} (user {$plan->dbUser})",
             "  Robust ini:  {$plan->robustIni()}",
             "  Grid dir:    {$plan->etcDirectory}",

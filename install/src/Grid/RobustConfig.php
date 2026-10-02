@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OpenSim\Installer\Grid;
 
 use OpenSim\Installer\Ini;
+use OpenSim\Installer\Web\Services;
 
 /**
  * Generates a grid's Robust.HG.ini by overlaying our settings onto the
@@ -75,6 +76,14 @@ final class RobustConfig
                 'BaseDirectory' => $this->q('${Const|CacheDirectory}/bakes'),
             ],
         ]);
+
+        // What the viewers are told of the services of the helpers, at the path the grid has chosen
+        if ($plan->helpers) {
+            $services = new Services($plan->helpersPath, $plan->helpersUrls);
+            foreach (Services::GRID_INFO as $key => $service) {
+                $ini->set('GridInfoService', $key, $this->q('${Const|WebURL}' . $services->path($service)));
+            }
+        }
 
         if ($plan->enableHypergrid) {
             $ini->merge([
