@@ -713,8 +713,8 @@ final class NewSim
         // A region name is unique in the grid: the same name registered twice stops the simulator
         $taken = (new GridRegistry($database))->names($grid);
         $name = static function (string $v) use ($taken, $grid): ?string {
-            if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9 ._-]{0,49}$/', trim($v))) {
-                return 'Letters, digits, spaces, . _ and - only.';
+            if (($problem = RegionName::problem($v)) !== null) {
+                return $problem;
             }
             if (isset($taken[strtolower(trim($v))]) || ($grid->remote && RobustGrid::hasRegion($grid->baseHostname, $grid->privatePort, trim($v)) === true)) {
                 return 'The grid has a region of this name already.';
@@ -724,7 +724,14 @@ final class NewSim
         };
         $numeric = static fn (string $v): ?string => ctype_digit(trim($v)) ? null : 'Enter a port number.';
 
-        $plan->regionName = trim($this->ui->text('Region name', $plan->simName, $name));
+        // The default region of a grid run from this machine is the first one created: until it
+        // exists nobody can log in. Its name is the grid's to give (changed in the grid setup)
+        if ($grid->defaultRegionDue($taken)) {
+            $plan->regionName = $grid->defaultRegion;
+            $this->ui->note("This region is the default region of the grid, '{$plan->regionName}': it comes first, nobody can log in without it. Another name is set in the setup of the grid.");
+        } else {
+            $plan->regionName = trim($this->ui->text('Region name', $plan->simName, $name));
+        }
         $plan->regionUuid = self::uuid();
         $plan->regionLocation = $this->askLocation($grid, $database);
         $plan->regionPort = (int) $this->ui->text('Region port', (string) $this->nextRegionPort($plan, $grid, $database), $numeric);

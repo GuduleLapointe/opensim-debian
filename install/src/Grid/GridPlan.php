@@ -15,6 +15,8 @@ final class GridPlan
     public bool $enableHypergrid = true;
     /** Free blocks the regions of the grid leave between them (0: side by side). */
     public int $regionSpacing = 0;
+    /** The region visitors arrive in, and fall back to: one name for the three flags (DefaultRegion, DefaultHGRegion, FallbackRegion). */
+    public string $defaultRegion = 'Welcome';
 
     // Selected core (multi-version aware).
     public string $coreDirectory = '';

@@ -52,7 +52,7 @@ final class RobustConfig
                 'AssetLoaderArgs' => $this->q('${Const|EtcDirectory}/assets/AssetSets.xml'),
             ],
             'GridService' => [
-                'Region_Welcome' => $this->q('DefaultRegion, DefaultHGRegion, FallbackRegion, Persistent'),
+                RegionName::configKey($plan->defaultRegion) => $this->q('DefaultRegion, DefaultHGRegion, FallbackRegion, Persistent'),
                 'MapTileDirectory' => $this->q('${Const|CacheDirectory}/maptiles'),
             ],
             'LibraryService' => [

@@ -16,6 +16,8 @@ final class GridInfo
     public bool $hypergrid = true;
     /** Free blocks the regions leave between them, the rule of the grid (a grid only described here follows the default one). */
     public int $regionSpacing = 0;
+    /** The region visitors arrive in (the one the Robust config flags as default); empty when the grid has none, or is described only. */
+    public string $defaultRegion = '';
     public string $dir = '';
     public string $robustIni = '';
     public string $coreDirectory = '';
@@ -55,6 +57,7 @@ final class GridInfo
         $grid->name = $current['gridName'] ?? ($conf['GridName'] ?? ucfirst($nick));
         $grid->slug = $conf['slug'] ?? Slug::slug($grid->name);
         $grid->regionSpacing = ctype_digit($conf['RegionSpacing'] ?? '') ? (int) $conf['RegionSpacing'] : 0;
+        $grid->defaultRegion = (string) ($current['defaultRegion'] ?? '');
         $grid->coreDirectory = $conf['CoreDirectory'] ?? ($profile['CoreDirectory'] ?? '');
         $grid->baseHostname = $current['baseHostname'] ?? 'localhost';
         $grid->publicPort = $current['publicPort'] ?? 8002;
@@ -68,6 +71,17 @@ final class GridInfo
         $grid->logsDirectory = $conf['LogsDirectory'] ?? ($profile['LogsRoot'] ?? '');
 
         return $grid;
+    }
+
+    /**
+     * Whether the default region of a grid run from this machine still has to be created, which
+     * comes before any other region: until it exists nobody can log in.
+     *
+     * @param array<string,mixed> $known the names of the regions of the grid, as keys
+     */
+    public function defaultRegionDue(array $known): bool
+    {
+        return !$this->remote && $this->defaultRegion !== '' && !RegionName::isIn($this->defaultRegion, $known);
     }
 
     /** Whether the grid is only described here, its Robust being on another machine. */
@@ -193,6 +207,10 @@ final class GridInfo
         }
         if (($port = $grab('ConsolePort') ?? $grab('console_port')) !== null && ctype_digit($port) && (int) $port > 0) {
             $current['consolePort'] = (int) $port;
+        }
+        // The region flagged as the default one: Region_<Name> = "DefaultRegion, ..."
+        if (preg_match('/^\s*(Region_[^\s=]+)\s*=\s*"?[^"\n]*\bDefaultRegion\b[^"\n]*"?\s*$/im', $text, $m)) {
+            $current['defaultRegion'] = RegionName::fromConfigKey($m[1]);
         }
         foreach (['estateName' => 'DefaultEstateName', 'estateOwner' => 'DefaultEstateOwnerName'] as $field => $key) {
             $value = $grab($key);

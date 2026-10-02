@@ -74,6 +74,10 @@ final class NewGrid
         $plan->start = $plan->enable && $this->ui->confirm("Start grid '{$plan->gridNick}' now?", true);
 
         $this->write($plan, $profile);
+
+        if ($modifyNick === null) {
+            $this->ui->note("Next: add a simulator. Its first region will be '{$plan->defaultRegion}', the default region of the grid: nobody can log in before it exists.");
+        }
     }
 
     /**
@@ -287,6 +291,17 @@ final class NewGrid
         // The rule that places the regions: free blocks between them
         $plan->regionSpacing = (int) $this->ui->text('Free blocks between regions (0: side by side)', '0', static fn (string $v): ?string => ctype_digit(trim($v)) && (int) $v <= 50 ? null : 'A number of blocks, 0 to 50.');
 
+        // The region visitors arrive in, and fall back to: one is enough, the operator can make
+        // several and separate the roles later. Robust gives its flags to a region when it registers
+        $plan->defaultRegion = trim($this->ui->text(
+            'Default region (where visitors arrive, and fall back to)',
+            $current['defaultRegion'] ?? 'Welcome',
+            static fn (string $v): ?string => RegionName::problem($v),
+        ));
+        if (isset($current['defaultRegion']) && $current['defaultRegion'] !== $plan->defaultRegion) {
+            $this->ui->note("The region '{$plan->defaultRegion}' gets its flags when it registers: restart its simulator to apply the change.");
+        }
+
         // Core selection (multi-version aware).
         $coreRoot = $profile['CoreRoot'] ?? '';
         $cores = Cores::list($coreRoot);
@@ -422,6 +437,7 @@ final class NewGrid
         $lines = [
             "  Grid:        {$plan->gridName}  ({$plan->gridNick})",
             '  Hypergrid:   ' . ($plan->enableHypergrid ? 'yes' : 'no'),
+            "  Default reg: {$plan->defaultRegion}",
             '  Regions:     ' . ($plan->regionSpacing === 0 ? 'side by side' : "{$plan->regionSpacing} free block(s) between them"),
             "  Core:        {$plan->coreDirectory}",
             "  Hostname:    {$plan->baseHostname}",
