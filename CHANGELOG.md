@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+- fix `opensim status` counts the instances down only when there are some
 - fix the scripts use the bash-tools the kit has (its own copy, then the package, the `PATH` last): an older copy found first in the `PATH` (composer global) stopped them with `debug: command not found`; a copy that is too old is refused with a message
 
 ### 3.0.0-beta.2

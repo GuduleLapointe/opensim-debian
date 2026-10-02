@@ -645,6 +645,19 @@ cleanpath() {
 	echo $newpath
 }
 
+# The summary line of the status: the instances down only when there are some. Args: up, down, stats
+statusLine() {
+	local up=$1 down=$2 stats=$3 line
+	if [ -t 1 ]; then
+		line=$(printf "\033[32m%s up\033[0m" "$up")
+		[ "$down" -gt 0 ] && line="$line$(printf ", \033[31m%s down\033[0m" "$down")"
+	else
+		line="$up up"
+		[ "$down" -gt 0 ] && line="$line, $down down"
+	fi
+	printf "%s - %s\n" "$line" "$stats"
+}
+
 status() {
 	# Get running process data
 	{
@@ -696,11 +709,7 @@ status() {
         printf "cpu %.1f%% - mem %.1f%% - rss %d", cpu, mem, rss
     }' $TMP.ps_raw)
 
-	if [ -t 1 ]; then
-		printf "\033[32m%s up\033[0m, \033[31m%s down\033[0m - %s\n" "$up" "$down" "$stats"
-	else
-		printf "%s up, %s down - %s\n" "$up" "$down" "$stats"
-	fi
+	statusLine "$up" "$down" "$stats"
 }
 
 B="[[:blank:]]*"
