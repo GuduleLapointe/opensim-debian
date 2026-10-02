@@ -2,6 +2,34 @@
 
 echo ":$PATH:" | grep -q ":/opt/opensim/bin:" || export PATH="$PATH:/opt/opensim/bin"
 
+# The etc folders to look in (OPENSIM_ETC_DIRS overrides them)
+_opensim_etc()
+{
+  echo ${OPENSIM_ETC_DIRS:-/etc/opensim /opt/opensim/etc}
+}
+
+# The instances: the enabled ones (the links of robust.d and opensim.d), or with "all" the grids and
+# simulators the setup made, enabled or not. Names as the launcher knows them: lower case.
+_opensim_instances()
+{
+  local etc file
+  for etc in $(_opensim_etc); do
+    if [ "$1" = all ]; then
+      for file in "$etc"/grids/*/Robust*.ini "$etc"/grids/*/sims/*.ini; do
+        [ -f "$file" ] || continue
+        case $file in
+          */sims/*) basename "$file" .ini ;;
+          *) basename "$(dirname "$file")" ;;
+        esac
+      done
+    else
+      for file in "$etc"/*.d/*.ini; do
+        [ -e "$file" ] && basename "$file" .ini
+      done
+    fi
+  done | tr '[:upper:]' '[:lower:]' | sort -u
+}
+
 _opensim()
 {
   local cur
@@ -9,13 +37,26 @@ _opensim()
   cur=${COMP_WORDS[COMP_CWORD]}
   case $COMP_CWORD in
     1)
-    COMPREPLY=( $(compgen -W "start stop restart status help" -- "$cur") )
+      COMPREPLY=( $(compgen -W "start stop restart status setup enable disable console screen command rest ports next install-dotnet help" -- "$cur") )
       ;;
     *)
       case ${COMP_WORDS[1]} in
-        start|stop|restart)
-        COMPREPLY=( $(compgen -W "$(for folder in $(ls -d /etc/opensim/*.d /opt/opensim/etc/*.d); do cd $folder/; ls *.ini | cut -d . -f 1; done 2>/dev/null | tr [:upper:] [:lower:] | sort -u)" -- "$cur" -W) )
-        ;;
+        start)
+          COMPREPLY=( $(compgen -W "$(_opensim_instances)" -- "$cur") )
+          ;;
+        stop|restart)
+          COMPREPLY=( $(compgen -W "$([ "$COMP_CWORD" = 2 ] && echo now) $(_opensim_instances)" -- "$cur") )
+          ;;
+        enable|disable)
+          COMPREPLY=( $(compgen -W "$(_opensim_instances all)" -- "$cur") )
+          ;;
+        console|screen|command|ports)
+          [ "$COMP_CWORD" = 2 ] || [ "${COMP_WORDS[1]}" = ports ] &&
+            COMPREPLY=( $(compgen -W "$([ "${COMP_WORDS[1]}" = ports ] && echo '--publish --ufw') $(_opensim_instances)" -- "$cur") )
+          ;;
+        next)
+          [ "$COMP_CWORD" = 2 ] && COMPREPLY=( $(compgen -W "port location" -- "$cur") )
+          ;;
       esac
       ;;
   esac

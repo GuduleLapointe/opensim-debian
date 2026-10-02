@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+- update the bash completion of `opensim` knows every command (`setup`, `enable`, `disable`, `console`, `command`, `ports`, `next`, `stop now`...) and proposes the instances: the enabled ones, or every grid and simulator for `enable` and `disable`
 - new `opensim enable <instance>` and `opensim disable <instance>` enable or disable a grid or a simulator from the command line, as the menus of the setup do
 - fix `opensim status` counts the instances down only when there are some
 - fix the scripts use the bash-tools the kit has (its own copy, then the package, the `PATH` last): an older copy found first in the `PATH` (composer global) stopped them with `debug: command not found`; a copy that is too old is refused with a message
