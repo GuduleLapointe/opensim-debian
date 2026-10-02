@@ -77,6 +77,7 @@ mysql -e "CREATE DATABASE testgrid_robust; CREATE USER opensim@localhost IDENTIF
     GRANT ALL ON testgrid_robust.* TO opensim@localhost;"
 (cd /var/lib/opensim && TEST_DEFAULT_REGION=Sim1 runuser -u opensim -- php /test/newgrid.php | tail -1)
 check "grid enabled" "[ -L /etc/opensim/robust.d/testgrid.ini ]"
+check "no file of the grid has Windows line endings, which the files of the core have" "[ -z \"\$(grep -rlI \"\$(printf '\\r')\" /etc/opensim/grids/testgrid)\" ]"
 
 # The database, as the setup checks it (see Grid/Database.php). As opensim,
 # who has no administrator access to the database server: what cannot be
