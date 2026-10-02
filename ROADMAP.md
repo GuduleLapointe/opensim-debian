@@ -2,6 +2,17 @@
 
 ## Fixes
 
+- "debug command not found" in os-helpers (ubuntu 24.04)
+
+```bash
+magic@ursull ~ $ opensim setup
+/usr/share/opensim-tools/libexec/os-helpers: line 761: debug: command not found
+/usr/share/opensim-tools/libexec/os-helpers: line 782: debug: command not found
+/usr/share/opensim-tools/libexec/os-helpers: line 810: debug: command not found
+/usr/share/opensim-tools/libexec/os-helpers: line 815: debug: command not found
+/usr/share/opensim-tools/libexec/os-helpers: line 849: debug: command not found
+```
+
 - discard PendingRestartsTest warning
 - README.md should include a brief installation guide, including apt package (recommended) or cloning the repository. Detailed instructions should be in INSTALLATION.md if relevant.
 - dependencies packages must be added to the release assets in their own repositories
@@ -11,6 +22,7 @@
 
 ## Next steps
 
+- add/update bash completion
 - build ready to use zip packages for simple download, added to the release assets alongside the source code and apt package
 - add simplified installation script, detecting the platform and installing with the appropriate method (zip package or apt package), with a one-line command like `curl -sSL https://raw.githubusercontent.com/GuduleLapointe/opensim-kit/refs/heads/master/install.sh | bash`
 - add opensim-helpers package and examples of configuration as alias/subfolder in caddy, nginx and apache2
@@ -21,6 +33,7 @@
 - add default Inventory package
 - add docker/podman installation support in setup
 - add nat/port forwarding instructions or presets (with standard tools or third-party provides like ngrok, cloudflare...)
+- rename composer packages to match github account GuduleLapointe
 
 ## New features
 
