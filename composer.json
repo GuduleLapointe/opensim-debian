@@ -23,12 +23,12 @@
         "ext-mbstring": "*",
         "laravel/prompts": "^0.3.18",
         "magicoli/opensim-helpers": "^3.0.0-beta.1",
-        "nubs/random-name-generator": "^2.2"
+        "nubs/random-name-generator": "^2.2",
+        "magicoli/bash-tools": "^1.0.4"
     },
     "require-dev": {
         "dealerdirect/phpcodesniffer-composer-installer": "^1.2",
         "deployer/deployer": "^7.3",
-        "magicoli/bash-tools": "^1.0.4",
         "magicoli/pest-failure-summary": "^1.0",
         "pestphp/pest": "^3.0",
         "phpcompatibility/php-compatibility": "dev-develop",
