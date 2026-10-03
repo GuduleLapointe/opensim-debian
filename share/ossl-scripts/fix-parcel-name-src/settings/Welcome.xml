@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-16"?>
+<RegionSettings>
+  <General>
+    <AllowDamage>False</AllowDamage>
+    <AllowLandResell>True</AllowLandResell>
+    <AllowLandJoinDivide>True</AllowLandJoinDivide>
+    <BlockFly>False</BlockFly>
+    <BlockLandShowInSearch>False</BlockLandShowInSearch>
+    <BlockTerraform>False</BlockTerraform>
+    <DisableCollisions>False</DisableCollisions>
+    <DisablePhysics>False</DisablePhysics>
+    <DisableScripts>False</DisableScripts>
+    <MaturityRating>0</MaturityRating>
+    <RestrictPushing>False</RestrictPushing>
+    <AgentLimit>40</AgentLimit>
+    <ObjectBonus>1</ObjectBonus>
+  </General>
+  <GroundTextures>
+    <Texture1>b8d3965a-ad78-bf43-699b-bff8eca6c975</Texture1>
+    <Texture2>abb783e6-3e93-26c0-248a-247666855da3</Texture2>
+    <Texture3>179cdabd-398a-9b6b-1391-4dc333ba321f</Texture3>
+    <Texture4>beb169c7-11ea-fff2-efe5-0f24dc881df2</Texture4>
+    <PBR1>b8d3965a-ad78-bf43-699b-bff8eca6c975</PBR1>
+    <PBR2>abb783e6-3e93-26c0-248a-247666855da3</PBR2>
+    <PBR3>179cdabd-398a-9b6b-1391-4dc333ba321f</PBR3>
+    <PBR4>beb169c7-11ea-fff2-efe5-0f24dc881df2</PBR4>
+    <ElevationLowSW>10</ElevationLowSW>
+    <ElevationLowNW>10</ElevationLowNW>
+    <ElevationLowSE>10</ElevationLowSE>
+    <ElevationLowNE>10</ElevationLowNE>
+    <ElevationHighSW>60</ElevationHighSW>
+    <ElevationHighNW>60</ElevationHighNW>
+    <ElevationHighSE>60</ElevationHighSE>
+    <ElevationHighNE>60</ElevationHighNE>
+  </GroundTextures>
+  <Terrain>
+    <WaterHeight>20</WaterHeight>
+    <TerrainRaiseLimit>100</TerrainRaiseLimit>
+    <TerrainLowerLimit>-100</TerrainLowerLimit>
+    <UseEstateSun>True</UseEstateSun>
+    <FixedSun>False</FixedSun>
+    <SunPosition>0</SunPosition>
+  </Terrain>
+  <Telehub />
+  <Estate>
+    <AllowDirectTeleport>True</AllowDirectTeleport>
+    <AllowEnvironmentOverride>False</AllowEnvironmentOverride>
+  </Estate>
+</RegionSettings>
