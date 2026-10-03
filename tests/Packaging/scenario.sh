@@ -323,7 +323,8 @@ opensim start testgrid >/dev/null 2>&1
 pid=$(robust_pid)
 
 ts upgrade
-apt_q install --reinstall $tools "$core"
+# --allow-downgrades: apt treats a file of the version a repository has too, but another build of it, as a downgrade
+apt_q install --reinstall --allow-downgrades $tools "$core"
 check "Robust not restarted" "[ '$(robust_pid)' = '$pid' ]"
 check "the simulator not restarted" "[ '$(sim_pid)' = '$sim' ]"
 
