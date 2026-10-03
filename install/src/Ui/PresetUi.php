@@ -12,6 +12,12 @@ namespace OpenSim\Installer\Ui;
  * in English, or any part of it), else by the interface behind when its label is one of those to ask (the
  * plan to accept, the credentials of the database administrator...), else by its default. An answer the
  * question refuses (its validation) is asked again by the interface behind, with this answer as the default.
+ *
+ * With $prefill, the table is only what the questions propose: every question is asked by the interface behind,
+ * with the answer of the table as its default (the way to go through what a setup chose, to edit it).
+ *
+ * The plan to accept ("Apply this configuration") is offered as Continue or Edit config; Edit config is EditConfig.
+ * When the user tries the database again after a failure, its settings are asked.
  */
 final class PresetUi implements InstallerUi
 {
@@ -28,7 +34,11 @@ final class PresetUi implements InstallerUi
         private InstallerUi $inner,
         private array $answers,
         private array $ask = [],
+        private bool $prefill = false,
     ) {}
+
+    /** Set when a failure of the database is tried again: its settings are asked, not answered */
+    private bool $retrying = false;
 
     public function intro(string $title): void
     {
@@ -71,10 +81,12 @@ final class PresetUi implements InstallerUi
         // A list is the choices to try in turn (an account that exists, else the one to make)
         foreach (is_array($preset) ? $preset : [$preset] as $candidate) {
             if (is_string($candidate) && isset($options[$candidate])) {
-                return $this->took($label, $candidate);
+                return $this->prefill
+                    ? $this->inner->choose($label, $options, $candidate, $hint)
+                    : $this->took($label, $candidate);
             }
         }
-        if ($this->asked($label) || $preset !== null) {
+        if ($this->asked($label) || $preset !== null || $this->prefill) {
             return $this->inner->choose($label, $options, $default, $hint);
         }
 
@@ -86,11 +98,12 @@ final class PresetUi implements InstallerUi
         $preset = $this->preset($label);
         if ($preset !== null) {
             $keys = is_array($preset) ? array_map('strval', $preset) : array_values(array_filter(explode(',', (string) $preset)));
+            $keys = array_values(array_filter($keys, static fn(string $k): bool => isset($options[$k])));
 
-            return array_values(array_filter($keys, static fn(string $k): bool => isset($options[$k])));
+            return $this->prefill ? $this->inner->checklist($label, $options, $keys, $hint) : $keys;
         }
 
-        return $this->asked($label) ? $this->inner->checklist($label, $options, $defaults, $hint) : $defaults;
+        return $this->asked($label) || $this->prefill ? $this->inner->checklist($label, $options, $defaults, $hint) : $defaults;
     }
 
     public function text(string $label, string $default = '', ?\Closure $validate = null, ?string $hint = null): string
@@ -98,13 +111,13 @@ final class PresetUi implements InstallerUi
         $preset = $this->preset($label);
         if ($preset !== null && !is_array($preset)) {
             $value = (string) (is_bool($preset) ? ($preset ? 'true' : 'false') : $preset);
-            if ($validate === null || $validate($value) === null) {
+            if (!$this->prefill && !$this->asked($label) && ($validate === null || $validate($value) === null)) {
                 return $this->took($label, $value);
             }
 
             return $this->inner->text($label, $value, $validate, $hint);
         }
-        if ($this->asked($label)) {
+        if ($this->asked($label) || $this->prefill) {
             return $this->inner->text($label, $default, $validate, $hint);
         }
         // The default of a question the user is not asked, which the question would refuse, is asked after all
@@ -118,7 +131,7 @@ final class PresetUi implements InstallerUi
     public function secret(string $label, ?\Closure $validate = null, ?string $hint = null): string
     {
         $preset = $this->preset($label);
-        if (is_string($preset) && ($validate === null || $validate($preset) === null)) {
+        if (is_string($preset) && !$this->asked($label) && ($validate === null || $validate($preset) === null)) {
             return $this->took($label, $preset, true);
         }
 
@@ -130,15 +143,35 @@ final class PresetUi implements InstallerUi
 
     public function confirm(string $label, bool $default = true): bool
     {
+        // The plan: what the setup is going to do is shown, to go on or to edit it
+        if (!$this->prefill && $this->asked($label) && (str_contains($label, 'Apply this configuration') || str_contains($label, _('Apply this configuration')))) {
+            if ($this->inner->choose($label, ['yes' => _('Continue'), 'no' => _('Edit config')], 'yes') !== 'yes') {
+                throw new EditConfig();
+            }
+
+            return true;
+        }
+
         $preset = $this->preset($label);
         if ($preset !== null) {
             $value = is_bool($preset) ? $preset : in_array(strtolower((string) $preset), ['1', 'true', 'yes', 'y'], true);
+            if ($this->prefill) {
+                return $this->inner->confirm($label, $value);
+            }
             $this->took($label, $value ? 'yes' : 'no');
 
             return $value;
         }
 
-        return $this->asked($label) ? $this->inner->confirm($label, $default) : $default;
+        if ($this->asked($label) || $this->prefill) {
+            $answer = $this->inner->confirm($label, $default);
+            // The database did not work and the user tries again: its settings are asked
+            $this->retrying = $this->retrying || ($answer && str_contains($label, 'Try again'));
+
+            return $answer;
+        }
+
+        return $default;
     }
 
     /** @return string|bool|list<string>|null */
@@ -155,6 +188,9 @@ final class PresetUi implements InstallerUi
 
     private function asked(string $label): bool
     {
+        if ($this->retrying && str_starts_with($label, 'Database ')) {
+            return true;
+        }
         foreach ($this->ask as $match) {
             if (self::matches($label, $match)) {
                 return true;

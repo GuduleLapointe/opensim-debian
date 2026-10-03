@@ -350,7 +350,7 @@ final class NewGrid
             $current = $existing !== null ? $this->parseExisting($existing) : [];
             $name = $this->ui->text(_('Grid name'), $current['gridName'] ?? ucfirst($nick), $required);
         } else {
-            $name = $this->ui->text(_('Grid name'), $this->defaultName(), $required);
+            $name = $this->ui->text(_('Grid name'), self::defaultName(), $required);
             $nick = $this->ui->text(_('Grid nick (snake_case)'), Slug::nick($name), $required);
             $gridDir = "$etcRoot/grids/$nick";
             $existing = $this->findExisting($gridDir);
@@ -408,14 +408,13 @@ final class NewGrid
         );
         $plan->binDir = $plan->coreDirectory . '/bin';
 
-        $defaultHost = $current['baseHostname'] ?? (trim(System::capture('hostname -f')[1]) ?: 'localhost');
+        $defaultHost = $current['baseHostname'] ?? self::defaultHost();
         $plan->baseHostname = $this->ui->text(_('Base hostname'), $defaultHost, $required);
         // The ports of an instance are a block of ten, the first free one (see Ports):
         // public ends with 2, private with 3, the console with 4
-        $block = Ports::nextBlock(8000);
         $plan->publicPort = (int) $this->ui->text(
             _('Public port'),
-            (string) ($current['publicPort'] ?? $block + 2),
+            (string) ($current['publicPort'] ?? self::defaultPublicPort()),
             $numeric,
         );
         $plan->privatePort = (int) $this->ui->text(
@@ -537,7 +536,20 @@ final class NewGrid
     }
 
     /** Default grid name: the short hostname, capitalised (amy.magiiic.com -> Amy). */
-    private function defaultName(): string
+    /** The host name a grid is proposed: the one of the machine. */
+    public static function defaultHost(): string
+    {
+        return trim(System::capture('hostname -f')[1]) ?: 'localhost';
+    }
+
+    /** The public port a grid is proposed: the one of the first block of ten ports that is free, ending with 2. */
+    public static function defaultPublicPort(): int
+    {
+        return Ports::nextBlock(8000) + 2;
+    }
+
+    /** The name a grid is proposed: the one of the machine. */
+    public static function defaultName(): string
     {
         [, $host] = System::capture('hostname -s');
         $short = trim($host);

@@ -26,15 +26,19 @@ final class SetupRunner
     /** The questions the user still answers when asked to (the plan to accept, the administrator of the database). */
     public const ASK = ['Apply this configuration', 'Enter the credentials', 'Administrator user', 'Password of ', 'Try again'];
 
+    /** The grid this run made, when it made one: what is left to edit when the setup is given up after it */
+    public ?string $madeGrid = null;
+
     public function __construct(private InstallerUi $ui) {}
 
     /**
      * @param array<string,mixed> $data  a setup (SetupFile::parse)
      * @param list<string> $ask  the questions still asked of the user (self::ASK for the quick setup)
      * @param string $resultFile  where the passwords made for the accounts of the list are written
+     * @param bool $prefill  every question is asked, the file giving the answers proposed (to edit a setup)
      * @return ?array{0:string,1:string} the nick of the grid, the instance of its last simulator; null when abandoned
      */
-    public function run(array $data, array $ask = [], string $resultFile = ''): ?array
+    public function run(array $data, array $ask = [], string $resultFile = '', bool $prefill = false): ?array
     {
         $profile = (new Config())->profile();
         $etcRoot = (string) ($profile['EtcRoot'] ?? '');
@@ -47,10 +51,11 @@ final class SetupRunner
 
                 throw new SetupFailed('grid exists');
             }
-            $nick = (new NewGrid(new PresetUi($this->ui, $answers, $ask)))->run(null);
+            $nick = (new NewGrid(new PresetUi($this->ui, $answers, $ask, $prefill)))->run(null);
             if ($nick === null) {
                 return null;
             }
+            $this->madeGrid = $nick;
         } elseif ($nick === '') {
             // No grid in the file: the simulators join the only grid there is
             $grids = array_map('basename', glob("$etcRoot/grids/*", GLOB_ONLYDIR) ?: []);
@@ -78,13 +83,13 @@ final class SetupRunner
 
         $last = null;
         foreach ($data['simulators'] ?? [] as $i => $sim) {
-            $made = (new NewSim(new PresetUi($this->ui, SetupFile::simAnswers($data, $i) + ['Grid of the simulator' => $nick], $ask)))->run($nick);
+            $made = (new NewSim(new PresetUi($this->ui, SetupFile::simAnswers($data, $i) + ['Grid of the simulator' => $nick], $ask, $prefill)))->run($nick);
             if ($made === null) {
                 return null;
             }
             $last = $made;
             foreach (array_slice($sim['regions'] ?? [], 1, null, true) as $j => $_) {
-                (new NewSim(new PresetUi($this->ui, SetupFile::regionAnswers($data, $i, $j), $ask)))->addRegion($made[0], $this->simName($made));
+                (new NewSim(new PresetUi($this->ui, SetupFile::regionAnswers($data, $i, $j), $ask, $prefill)))->addRegion($made[0], $this->simName($made));
             }
         }
 

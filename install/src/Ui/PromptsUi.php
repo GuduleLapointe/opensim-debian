@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OpenSim\Installer\Ui;
 
 use OpenSim\Installer\Ui\Prompts\ConfirmPrompt;
+use OpenSim\Installer\Ui\Prompts\FormPrompt;
 use OpenSim\Installer\Ui\Prompts\MultiSelectPrompt;
 use OpenSim\Installer\Ui\Prompts\PasswordPrompt;
 use OpenSim\Installer\Ui\Prompts\SelectPrompt;
@@ -24,8 +25,6 @@ use function Laravel\Prompts\warning;
  */
 final class PromptsUi implements InstallerUi
 {
-    use AsksForms;
-
     public function intro(string $title): void
     {
         intro($title);
@@ -82,6 +81,11 @@ final class PromptsUi implements InstallerUi
     public function secret(string $label, ?\Closure $validate = null, ?string $hint = null): string
     {
         return (new PasswordPrompt(label: $label, validate: $validate, hint: $hint ?? ''))->prompt();
+    }
+
+    public function form(array $fields, string $title = ''): array
+    {
+        return (new FormPrompt($title !== '' ? $title : ' ', $fields))->prompt();
     }
 
     public function confirm(string $label, bool $default = true): bool

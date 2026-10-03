@@ -15,7 +15,7 @@ trait AsksForms
      * @param list<array{key:string,label:string,type?:string,default?:string,required?:bool,validate?:?\Closure,hint?:string}> $fields
      * @return array<string,string>
      */
-    public function form(array $fields): array
+    public function form(array $fields, string $title = ''): array
     {
         $values = [];
         foreach ($fields as $field) {

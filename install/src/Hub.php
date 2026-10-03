@@ -14,6 +14,7 @@ use OpenSim\Installer\Grid\SimState;
 use OpenSim\Installer\Setup\QuickSetup;
 use OpenSim\Installer\Setup\SetupRunner;
 use OpenSim\Installer\Ui\Back;
+use OpenSim\Installer\Ui\EditConfig;
 use OpenSim\Installer\Ui\InstallerUi;
 use OpenSim\Installer\Ui\Quit;
 
@@ -184,8 +185,8 @@ final class Hub
         $choice = $this->ui->choose(
             _('Add a grid'),
             [
-                'quick' => _('Quick setup (recommended): a grid and its first region, the usual settings'),
-                'new' => _('Advanced setup: a grid on this machine, every setting'),
+                'quick' => _('Quick setup'),
+                'new' => _('Advanced setup'),
                 'external' => _('Connect to an external grid'),
                 'back' => _('Back'),
                 'quit' => _('Quit'),
@@ -224,16 +225,19 @@ final class Hub
      */
     private function quickSetup(): ?array
     {
-        $quick = new QuickSetup($this->ui);
-        $data = $quick->ask();
-        $made = (new SetupRunner($this->ui))->run($data, SetupRunner::ASK);
-        if ($made !== null || !$this->ui->confirm(_('Go through the advanced setup instead?'), true)) {
-            return $made;
+        $data = (new QuickSetup($this->ui))->ask();
+        $runner = new SetupRunner($this->ui);
+        try {
+            return $runner->run($data, SetupRunner::ASK);
+        } catch (EditConfig) {
+            // Every question again, with what was typed and what the setup chose as the answers proposed; a grid
+            // that is made already is the one the simulator joins
+            if ($runner->madeGrid !== null) {
+                $data['grid'] = ['nick' => $runner->madeGrid];
+            }
+
+            return (new SetupRunner($this->ui))->run($data, [], '', true);
         }
-
-        $nick = (new NewGrid($this->ui))->run(null);
-
-        return $nick === null ? null : (new NewSim($this->ui))->run($nick);
     }
 
     /**
@@ -249,11 +253,11 @@ final class Hub
         $this->ui->note(
             sprintf(_("Your grid %s is ready, nothing more is needed."), $this->ui->entity($grid !== null && $grid->name !== '' ? $grid->name : $nick))
             . ($grid !== null && !$grid->remote ? "\n" . sprintf(_('Login URI: %s'), "http://{$grid->baseHostname}:{$grid->publicPort}") : '')
-            . "\n" . _('You can quit now, or go on to add regions and simulators.'),
+            . "\n" . _('You can finish now, or continue to add regions and simulators and change settings.'),
         );
         $choice = $this->ui->choose(
             _('Setup'),
-            ['quit' => _('Finish: quit the setup'), 'more' => _('Go on: add regions and simulators, change settings')],
+            ['quit' => _('Finish setup'), 'more' => _('Continue setup')],
             'quit',
         );
 
