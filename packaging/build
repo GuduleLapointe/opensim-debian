@@ -92,11 +92,11 @@ if wants opensim-tools; then
     fi
 
     # The archives of the scripts (share/ossl-scripts/<name>-src, laid out as their content) are made here, with
-    # the engine, and their sources are left out
+    # the engine; the sources stay beside them, to change a script and make its archive again
+    # (opensim oar pack)
     for src in "$BUILD"/share/ossl-scripts/*-src; do
         [[ -d "$src" ]] || continue
         php "$BUILD/libexec/oar.php" pack "$src" >/dev/null
-        rm -rf "$src"
     done
 
     # Installed read-only for everyone but root, whatever the local umask

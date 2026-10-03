@@ -144,9 +144,12 @@ final class NewGrid
         if ($plan->helpers) {
             $this->ui->note(
                 sprintf(
-                    _("Web site: the helpers are in %s, the placeholder site in /usr/share/opensim-web/html (when the opensim-web package is installed). The configuration for your web server is in %s/web: caddy.conf, nginx.conf, apache.conf, to include in the site of the grid (opensim web snippet <caddy|nginx|apache> --grid %s writes it again)."),
+                    _("Web site: the helpers are in %s, the placeholder site in /usr/share/opensim-web/html (when the opensim-web package is installed). The configuration for your web server is in %s/web: %s.caddyfile, %s-nginx.conf, %s-apache.conf, to include in the site of the grid (opensim web snippet <caddy|nginx|apache> --grid %s writes it again)."),
                     Snippets::WEBROOT,
                     $plan->gridDir,
+                    $plan->gridNick,
+                    $plan->gridNick,
+                    $plan->gridNick,
                     $plan->gridNick,
                 ),
             );
@@ -291,12 +294,14 @@ final class NewGrid
         $webDir = "{$plan->gridDir}/web";
         is_dir($webDir) || mkdir($webDir, 0o755, true);
         $services = new Services($plan->helpersPath, $plan->helpersUrls);
+        // Named for the grid and the server, with the extension the editors know
+        $names = ['caddy' => "{$plan->gridNick}.caddyfile", 'nginx' => "{$plan->gridNick}-nginx.conf", 'apache' => "{$plan->gridNick}-apache.conf"];
         foreach (Snippets::SERVERS as $server) {
-            $file = "$webDir/$server.conf";
+            $file = "$webDir/{$names[$server]}";
             file_put_contents($file, Snippets::render($server, $plan->gridNick, $services));
             chmod($file, 0o644);
         }
-        $this->ui->note(sprintf(_('Wrote the web server examples in %s (caddy.conf, nginx.conf, apache.conf)'), $webDir));
+        $this->ui->note(sprintf(_('Wrote the web server examples in %s'), $webDir));
     }
 
     private function copyConfigInclude(GridPlan $plan): void

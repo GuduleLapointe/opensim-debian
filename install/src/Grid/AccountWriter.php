@@ -103,15 +103,6 @@ final class AccountWriter
         return md5(md5($password) . ':' . $salt);
     }
 
-    /**
-     * The salt of an account whose hash comes without one: made from the name, so that a file only needs the
-     * hash. (Robust takes any salt: the one it finds beside the hash is used to check the password.)
-     */
-    public static function nameSalt(string $first, string $last): string
-    {
-        return md5('opensim-kit:' . strtolower(trim($first) . ' ' . trim($last)));
-    }
-
     /** A value of a statement, quoted: backslashes and quotes escaped, nothing else can end the string. */
     public static function quote(string $value): string
     {
