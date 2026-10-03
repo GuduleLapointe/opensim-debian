@@ -37,3 +37,4 @@ vendor/
 .zed/
 !**/.keep
 *.mo
+/share/ossl-scripts/*.oar

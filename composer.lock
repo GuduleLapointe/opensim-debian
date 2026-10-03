@@ -183,12 +183,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/GuduleLapointe/opensim-engine.git",
-                "reference": "b1d6b0ebea31b9467ea286526a2f8aff6f12296a"
+                "reference": "7b49f4e5906f05352d891fcb265cdda24b724e54"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/GuduleLapointe/opensim-engine/zipball/b1d6b0ebea31b9467ea286526a2f8aff6f12296a",
-                "reference": "b1d6b0ebea31b9467ea286526a2f8aff6f12296a",
+                "url": "https://api.github.com/repos/GuduleLapointe/opensim-engine/zipball/7b49f4e5906f05352d891fcb265cdda24b724e54",
+                "reference": "7b49f4e5906f05352d891fcb265cdda24b724e54",
                 "shasum": ""
             },
             "require": {
@@ -226,7 +226,8 @@
                     "OpenSim\\Engine\\": "src/"
                 },
                 "classmap": [
-                    "class-kit.php"
+                    "class-kit.php",
+                    "class-oar.php"
                 ]
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -244,7 +245,7 @@
                 "issues": "https://github.com/GuduleLapointe/opensim-engine/issues",
                 "source": "https://github.com/GuduleLapointe/opensim-engine/tree/opensim-kit"
             },
-            "time": "2026-10-02T20:21:39+00:00"
+            "time": "2026-10-03T06:28:24+00:00"
         },
         {
             "name": "magicoli/opensim-helpers",

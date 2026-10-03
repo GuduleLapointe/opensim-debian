@@ -360,6 +360,33 @@ final class NewSim
     }
 
     /**
+     * The archive of the initialization object: the one the package has, else (a checkout of the
+     * repository) made from its sources, which the simulator, running as another user, must read.
+     */
+    private function initArchive(): ?string
+    {
+        $dir = dirname(__DIR__, 3) . '/share/ossl-scripts';
+        if (is_file("$dir/fix-parcel-name.oar")) {
+            return "$dir/fix-parcel-name.oar";
+        }
+        if (!is_file("$dir/fix-parcel-name-src/archive.xml")) {
+            return null;
+        }
+        defined('OPENSIM_ENGINE') || define('OPENSIM_ENGINE', true);
+        $archive = sys_get_temp_dir() . '/opensim-kit-fix-parcel-name-' . getmypid() . '.oar';
+        try {
+            \OpenSim_Oar::pack("$dir/fix-parcel-name-src", $archive);
+        } catch (\RuntimeException $e) {
+            $this->ui->warn($e->getMessage());
+
+            return null;
+        }
+        chmod($archive, 0o644);
+
+        return $archive;
+    }
+
+    /**
      * What a new region gets once it runs: the object of share/ossl-scripts, loaded through the console of the
      * simulator, its script names the parcel after the region. --merge leaves the terrain, the parcels and the
      * objects of the region alone; the objects of the archive go to the estate owner, and to the middle of the
@@ -369,8 +396,8 @@ final class NewSim
      */
     private function initRegion(SimPlan $plan): void
     {
-        $archive = dirname(__DIR__, 3) . '/share/ossl-scripts/fix-parcel-name.oar';
-        if (!is_file($archive) || RegionName::problem($plan->regionName) !== null) {
+        $archive = $this->initArchive();
+        if ($archive === null || RegionName::problem($plan->regionName) !== null) {
             return;
         }
         $shift = (int) ($plan->regionSize / 2) - 128;

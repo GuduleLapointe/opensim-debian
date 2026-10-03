@@ -52,6 +52,12 @@ if [ "${1:-}" = "profile" ]; then
 	exec php "$BASEDIR/libexec/profile.php" "$@"
 fi
 
+# OpenSimulator archives (pack, info, check, unpack): as the caller
+if [ "${1:-}" = "oar" ]; then
+	shift
+	exec php "$BASEDIR/libexec/oar.php" "$@"
+fi
+
 # The accounts of a grid (a list made directly in its database): as the caller
 if [ "${1:-}" = "users" ]; then
 	shift
@@ -79,6 +85,9 @@ opensim import sim FILE --grid NICK [--name NAME] [--core DIR] [--apply]
 opensim profile list|add|default|remove
                         the installs the tools know about: add NAME --core DIR
                         [--etc DIR] [--data DIR] registers an install made by hand
+opensim oar pack|info|check|unpack
+                        OpenSimulator archives: pack makes one from a folder,
+                        info and check read it, unpack extracts it
 opensim users import FILE [--grid NICK] [--apply]
                         make the accounts of a list (CSV or JSON) in the database
                         of a grid; without --apply, tells what would be made
