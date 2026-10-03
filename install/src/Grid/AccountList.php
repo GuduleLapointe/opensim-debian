@@ -32,9 +32,10 @@ final class AccountList
             $email = trim((string) ($row['email'] ?? ''));
             $problem = null;
             $hash = strtolower(trim((string) ($row['password_hash'] ?? '')));
-            $salt = trim((string) ($row['password_salt'] ?? ''));
+            // A hash from another grid comes with its salt; one made by this setup has the salt of the name
+            $salt = trim((string) ($row['password_salt'] ?? '')) ?: ($hash !== '' ? AccountWriter::nameSalt($first, $last) : '');
             if ($hash !== '' && (preg_match('/^[0-9a-f]{32}$/', $hash) !== 1 || preg_match('/^[0-9a-zA-Z]{1,64}$/', $salt) !== 1)) {
-                $problem = 'password_hash is the 32 hexadecimal characters Robust keeps, with its password_salt';
+                $problem = 'password_hash is the 32 hexadecimal characters Robust keeps (and its password_salt, when it was not made by this setup)';
             } elseif (!GridAccounts::validName("$first $last")) {
                 $problem = "name \"$first $last\" must be a first and a last name of letters, digits, . _ and -";
             } elseif ($email !== '' && preg_match('/^[^\s\'"\\\;]+@[^\s\'"\\\;]+$/', $email) !== 1) {

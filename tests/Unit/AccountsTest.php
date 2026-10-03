@@ -220,4 +220,15 @@ describe('A password kept as Robust keeps it', function () {
 
         expect($sql)->toContain("'$hash', 'abc123'")->not->toContain('randomsalt');
     });
+
+    it('needs no salt when the hash was made by the setup: it is made from the name', function () {
+        $salt = AccountWriter::nameSalt('Ann', 'Lee');
+        $hash = AccountWriter::passwordHash('secret', $salt);
+        $list = AccountList::parse((string) json_encode([['first' => 'Ann', 'last' => 'Lee', 'password_hash' => $hash]]), 'json');
+
+        expect($list['errors'])->toBe([])
+            ->and($list['accounts'][0]['password_salt'])->toBe($salt)
+            ->and($salt)->toBe(AccountWriter::nameSalt(' ann ', 'LEE'))
+            ->and($salt)->not->toBe(AccountWriter::nameSalt('Bob', 'Roe'));
+    });
 });

@@ -144,8 +144,9 @@ final class NewGrid
         if ($plan->helpers) {
             $this->ui->note(
                 sprintf(
-                    _("Web site: the helpers are in %s, the placeholder site in /usr/share/opensim-web/html (when the opensim-web package is installed). The configuration for your web server (Caddy, nginx or Apache): opensim web snippet <caddy|nginx|apache> --grid %s"),
+                    _("Web site: the helpers are in %s, the placeholder site in /usr/share/opensim-web/html (when the opensim-web package is installed). The configuration for your web server is in %s/web: caddy.conf, nginx.conf, apache.conf, to include in the site of the grid (opensim web snippet <caddy|nginx|apache> --grid %s writes it again)."),
                     Snippets::WEBROOT,
+                    $plan->gridDir,
                     $plan->gridNick,
                 ),
             );
@@ -285,6 +286,17 @@ final class NewGrid
             $this->ui->warn(sprintf(_("%s holds the database password and is readable by every user of this machine: give it to the group of your web server (chgrp, then chmod 640)."), $path));
         }
         $this->ui->note(sprintf(_("Wrote %s"), $path));
+
+        // The configuration of the web server for this grid, one file for each server, to include in its site
+        $webDir = "{$plan->gridDir}/web";
+        is_dir($webDir) || mkdir($webDir, 0o755, true);
+        $services = new Services($plan->helpersPath, $plan->helpersUrls);
+        foreach (Snippets::SERVERS as $server) {
+            $file = "$webDir/$server.conf";
+            file_put_contents($file, Snippets::render($server, $plan->gridNick, $services));
+            chmod($file, 0o644);
+        }
+        $this->ui->note(sprintf(_('Wrote the web server examples in %s (caddy.conf, nginx.conf, apache.conf)'), $webDir));
     }
 
     private function copyConfigInclude(GridPlan $plan): void

@@ -2,7 +2,8 @@
 
 ### Unreleased
 
-- new accounts can be given with their password hashed, as Robust keeps it (`password_hash` and `password_salt`, in a list for `opensim users import` or in a setup file), and are written as they are; the setup file the setup keeps for a grid has the password of the owner hashed, not in clear (the password of the database has to stay in clear)
+- new the setup writes the configuration of the web server for the grid, `caddy.conf`, `nginx.conf` and `apache.conf`, in its folder (`/etc/opensim/grids/<grid>/web/`), and says where they are
+- new accounts can be given with their password hashed, as Robust keeps it (`password_hash`, in a list for `opensim users import` or in a setup file; `password_salt` only for a hash that comes from another grid, the salt of the ones made here is made from the name), and are written as they are; the setup file the setup keeps for a grid has the password of the owner hashed, not in clear (the password of the database has to stay in clear)
 - new quick setup: `Add grid` proposes it first, one form (name of the grid, owner with password and optional email, database user and password) instead of a screen for each, then the plan with the default settings to accept (the advanced setup, with every question, is one answer away); once the grid and its first region are made, the setup says so, with the login URI, and proposes to finish
 - new `opensim setup --file FILE` makes a setup described in a JSON or YAML file (grid, owner, simulators and regions, accounts in the format of the bulk import), `--check` only reads it, and `opensim users import` takes the accounts of the same file; the setup of a grid is kept in `setup.json` in its folder, to make it again (example: `share/examples/setup.yaml`)
 - fix the account of the owner is made when it has no email: the console asks for the email, which the setup did not answer

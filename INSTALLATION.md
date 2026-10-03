@@ -45,7 +45,7 @@ opensim web check                 # which ones answer
 opensim web snippet caddy         # what the web server needs: caddy, nginx or apache
 ```
 
-Include the snippet in the site of the grid (it names the grid to the helpers, aliases the paths you chose and denies what is not for the web); the config of your web server is not touched.
+The setup writes them for the grid, one file for each server, in `/etc/opensim/grids/<grid>/web/` (`caddy.conf`, `nginx.conf`, `apache.conf`); `opensim web snippet` writes them again after a change. Include the one of your server in the site of the grid (it names the grid to the helpers, aliases the paths you chose and denies what is not for the web); the config of your web server is not touched.
 
 Create a grid with the setup wizard, then start it. The quick setup is what to choose first: one form (the name of the grid, its owner with a password and an optional email, the user and password of the database), the usual settings for everything else, which are shown before anything is written. The advanced setup asks every question.
 

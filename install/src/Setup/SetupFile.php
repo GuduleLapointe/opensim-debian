@@ -18,13 +18,14 @@ use Symfony\Component\Yaml\Yaml;
  *   grid:        name, nick, hostname, web_url, hypergrid, helpers, helpers_path, public_port, private_port,
  *                console (rest|screen), console_port, enable, start,
  *                database: host, name, user, password, admin_user, admin_password
- *   owner:       name (First Last), password or password_hash and password_salt (as Robust keeps them),
+ *   owner:       name (First Last), password or password_hash (the hash Robust keeps, with password_salt
+ *                when it comes from another grid),
  *                email (optional): the account that owns the estate
  *   simulators:  a list of: name, http_port, console, estate: name, owner, database: (as the grid's),
  *                regions: a list of: name, location (x,y), port, roles (DefaultRegion, DefaultHGRegion, FallbackRegion,
  *                or default, default_hg, fallback)
  *   users:       a list of: first, last, email (optional), password (made when empty) or password_hash
- *                and password_salt (written as they are)
+ *                (and password_salt, for a hash that comes from another grid), written as they are
  *
  * Only the grid name, and the database user and password, are required to make a grid: the rest has the default
  * of the setup. Without a grid name, the simulators join the grid of the `nick` (or the only one there is), and
@@ -160,7 +161,7 @@ final class SetupFile
             }
             // The password, or its hash and salt as Robust keeps them (what the setup writes in its own file)
             $hashed = preg_match('/^[0-9a-f]{32}$/i', (string) ($owner['password_hash'] ?? '')) === 1
-                && preg_match('/^[0-9a-zA-Z]{1,64}$/', (string) ($owner['password_salt'] ?? '')) === 1;
+                && preg_match('/^[0-9a-zA-Z]{0,64}$/', (string) ($owner['password_salt'] ?? '')) === 1;
             if (!$hashed && strlen((string) ($owner['password'] ?? '')) < 6) {
                 $problems[] = 'owner.password has at least 6 characters (or owner.password_hash and owner.password_salt)';
             }
@@ -323,12 +324,12 @@ final class SetupFile
         }
         $data['simulators'] = array_values($sims);
         if ($plan->createOwner && $plan->estateOwner !== '') {
-            // The password is kept as Robust keeps it, hashed: the file does not tell it
-            $salt = md5(random_bytes(16));
+            // The password is kept hashed: the file does not tell it, and needs nothing more than the hash to
+            // make the account again (its salt is made from its name, see AccountWriter::nameSalt)
+            [$first, $last] = array_pad(explode(' ', trim($plan->estateOwner), 2), 2, '');
             $data['owner'] = array_filter([
                 'name' => $plan->estateOwner,
-                'password_hash' => AccountWriter::passwordHash($plan->ownerPassword, $salt),
-                'password_salt' => $salt,
+                'password_hash' => AccountWriter::passwordHash($plan->ownerPassword, AccountWriter::nameSalt($first, $last)),
                 'email' => $plan->ownerEmail,
             ], static fn(string $v): bool => $v !== '');
         }
