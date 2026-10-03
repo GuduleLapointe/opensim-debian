@@ -23,7 +23,7 @@
 
 set -e
 
-URL=http://opensimulator.org/dist
+URL=${OPENSIM_DIST_URL:-http://opensimulator.org/dist}
 SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:8.0
 
 packages=" ${*:-$(cd packaging && ls *.yaml | sed 's/\.yaml$//' | tr '\n' ' ')} "
