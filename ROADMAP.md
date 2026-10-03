@@ -11,7 +11,7 @@
 - [x] the simulators of a grid with helpers know where `offline.php` (`[Messaging]`) and `register.php` (`DATA_SRV_MISearch` of `[DataSnapshot]`) are
 - [x] the message of the day: `[LoginService] MessageUrl` is a URL whose text is shown at login (read by Robust when it starts, `WelcomeMessage` when it cannot be), found in the code of the core (`LLLoginService`); `motd.php` of opensim-helpers serves the `motd` of `helpers.ini`
 - [x] the destination guide is `guide.php` of the helpers, `DestinationGuide` of the Robust config points to it
-- [ ] the search page of the web site: opensim-helpers has the search backend (`includes/search.php`, `class-search.php` of the engine, behind `query.php`) but the setup found no script that is a page; find which one it is, and write the `search` URL of `[GridInfoService]` when it exists
+- [ ] the search page of the web site: not in opensim-helpers (no branch has a page, only the backend behind `query.php`), it is probably in the WordPress plugin; find out where it reads from, so that it finds what `parser.php` indexes, and write the `search` URL of `[GridInfoService]` when it exists
 - [ ] run again the packaging scenario beyond the upgrade step (the development build, removal, purge) and with the real `apt-package`: only the packages built by hand with nfpm were tested; run it with docker as well as podman
 - [ ] try the web server examples written by the setup (`<grid>.caddyfile`, `<grid>-nginx.conf`, `<grid>-apache.conf`) on a real Caddy, nginx and Apache
 
@@ -41,7 +41,7 @@
   - [ ] a grid follows the profile of its own install, the default profile is only the default of the new grids
   - [ ] the system user to run the instances as is per profile, not only `SystemUser` of `[Defaults]`
   - [ ] the setup offers to register an install (the core menu), and no script assumes `/etc/opensim`, `/var/lib/opensim` or `/usr/share/opensim` (review, one fix per file, with a test)
-- [ ] test the OpenSimSearch module from end to end with a parcel shown in search: checked with the current helpers (the sim registers on `register.php`, `parser.php` fetches its snapshot, `query.php` answers), what is left is a parcel with "show in search" set, which a viewer does for now (the snapshot of a new region has no parcel)
+- [ ] test the OpenSimSearch module from end to end with a parcel shown in search: the chain works up to the snapshot (the sim registers on `register.php`, `parser.php` fetches it, `query.php` answers); a new region has no searchable parcel, the flag is `ShowDirectory` = 4096 in `Flags` of the `land` table of the simulator, to set in the test then check that `query.php` finds the parcel
 - [ ] add to the README of opensim-helpers (and of the engine) a short section on how to use them with the OpenSim kit
 - [ ] install instructions in the README of `lsl-ossl-zed` (rust, clone, `zed: install dev extension`, the prebuilt LSP binaries only cover Linux x86_64 and macOS)
 
