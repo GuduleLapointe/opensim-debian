@@ -8,27 +8,29 @@
 // Named by OpenSim when the region has no land data yet
 string DEFAULT_PARCEL_NAME = "Your Parcel";
 
-init()
+setParcelName()
 {
     // The parcel the object is on, wherever it is: the object is rezzed at the landing point of the region
     vector pos = llGetPos();
-    list current = llGetParcelDetails(pos, [PARCEL_DETAILS_NAME]);
-    if (llList2String(current, 0) == DEFAULT_PARCEL_NAME)
+    string currentName = llList2String(llGetParcelDetails(pos, [PARCEL_DETAILS_NAME]), 0);
+    if (currentName == DEFAULT_PARCEL_NAME)
     {
+        llOwnerSay("Renaming parcel \"" + DEFAULT_PARCEL_NAME + "\" as \"" + llGetRegionName() + "\"");
         osSetParcelDetails(pos, [PARCEL_DETAILS_NAME, llGetRegionName()]);
+    } else {
+        llOwnerSay("\"" + currentName + "\" is a beautiful name, keep it.");
     }
-
-    // Add your own region setup here
 }
 
 default
 {
     state_entry()
     {
-        init();
-        llOwnerSay("Region initialized");
+        setParcelName();
+        llOwnerSay("Parcel name setup completed.");
         // The object has done its job: the copy rezzed in the region goes, the original stays in the library
-        // Disabled for debugging purpose
+
+        // llDie commented out for debugging purpose
         // llDie();
     }
 }
