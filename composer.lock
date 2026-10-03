@@ -253,12 +253,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/GuduleLapointe/opensim-helpers.git",
-                "reference": "a5eae34e480e59169790186b95b7ba309cd107f6"
+                "reference": "e3c1592c99b470e15a7a207411a5ff8c70bc4412"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/GuduleLapointe/opensim-helpers/zipball/a5eae34e480e59169790186b95b7ba309cd107f6",
-                "reference": "a5eae34e480e59169790186b95b7ba309cd107f6",
+                "url": "https://api.github.com/repos/GuduleLapointe/opensim-helpers/zipball/e3c1592c99b470e15a7a207411a5ff8c70bc4412",
+                "reference": "e3c1592c99b470e15a7a207411a5ff8c70bc4412",
                 "shasum": ""
             },
             "require": {
@@ -321,7 +321,7 @@
                     "type": "open_collective"
                 }
             ],
-            "time": "2026-10-02T20:20:37+00:00"
+            "time": "2026-10-03T06:53:57+00:00"
         },
         {
             "name": "magicoli/opensim-rest-php",
