@@ -43,7 +43,7 @@ quits() { cat /var/log/opensim/testgrid_robust*.log 2>/dev/null | grep -c '\[CON
 state() { echo "   [Robust: $(robust_pid), simulator: $(sim_pid)] $*"; }
 # The simulator of the grid made by the wizard, and its region
 sim_pid() { pgrep -f "^dotnet .*OpenSim.dll -inifile=/etc/opensim/opensim.d/testgrid_sim1.ini" | head -1; }
-sim_registered() { grep -c 'Region Sim1 .* registered at 1000,1000' /var/log/opensim/testgrid_sim1.log 2>/dev/null; }
+sim_registered() { grep -c 'Region Sim1 .* registered at 8002,8002' /var/log/opensim/testgrid_sim1.log 2>/dev/null; }
 robust_state() { echo "   Robust pid: $(robust_pid || true), clean shutdowns: $(quits)"; }
 profile() { grep -q '^\[opensim-0.9.3.0\]' /etc/opensim/opensim.conf 2>/dev/null; }
 
@@ -237,7 +237,7 @@ owner_password='Pa ss^w0rd\z'
     echo "exit code: $?" >>/tmp/sim1.out)
 check "the simulator wizard ends well, the region is online" "grep -q 'exit code: 0' /tmp/sim1.out &&
     grep -q 'region Sim1 is online' /tmp/sim1.out && [ -n '$(sim_pid)' ]"
-check "the region is registered in the grid" "[ \"\$(mysql -BN -e \"SELECT CONCAT(locX DIV 256, ',', locY DIV 256) FROM testgrid_robust.regions WHERE regionName='Sim1'\")\" = 1000,1000 ]"
+check "the region is registered in the grid" "[ \"\$(mysql -BN -e \"SELECT CONCAT(locX DIV 256, ',', locY DIV 256) FROM testgrid_robust.regions WHERE regionName='Sim1'\")\" = 8002,8002 ]"
 # The simulator wizard gives the roles of the default region (not the fallback one, which is not checked by default)
 # to the first region, the one that lets visitors in: without it a login fails with "destination not found"
 check "the simulator knows where the offline messages and the search index of the grid are" "grep -q '^OfflineMessageURL = \"https://localhost/helpers/offline.php\"' /etc/opensim/grids/testgrid/sims/testgrid_sim1.ini &&
@@ -271,7 +271,7 @@ sim=$(sim_pid)
 (cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=Sim1 TEST_ADD_REGION=Sim1North runuser -u opensim -- php /test/newsim.php >/tmp/region2.out 2>&1
     echo "exit code: $?" >>/tmp/region2.out)
 check "a region is added to the running simulator, and online" "grep -q 'exit code: 0' /tmp/region2.out && grep -q 'Region Sim1North is online' /tmp/region2.out &&
-    [ \"\$(mysql -BN -e \"SELECT CONCAT(locX DIV 256, ',', locY DIV 256) FROM testgrid_robust.regions WHERE regionName='Sim1North'\")\" = 1001,1000 ] && [ '$(sim_pid)' = '$sim' ]"
+    [ \"\$(mysql -BN -e \"SELECT CONCAT(locX DIV 256, ',', locY DIV 256) FROM testgrid_robust.regions WHERE regionName='Sim1North'\")\" = 8003,8002 ] && [ '$(sim_pid)' = '$sim' ]"
 check "the parcel of the new region is named after it by the object of the setup, without a restart" "grep -q 'Parcel of region Sim1North is named Sim1North' /tmp/region2.out &&
     [ \"\$(mysql -BN -e \"SELECT Name FROM testgrid_sim1.land WHERE RegionUUID = (SELECT uuid FROM testgrid_robust.regions WHERE regionName='Sim1North')\")\" = Sim1North ]"
 (cd /var/lib/opensim && TEST_GRID=testgrid runuser -u opensim -- php /test/account.php >/tmp/account.out 2>&1; echo "exit code: $?" >>/tmp/account.out)
@@ -298,13 +298,13 @@ rm -f users-result-*.csv /tmp/users-result-*.csv
 # A region that exists is changed in place: its place, not its identity
 regionfile=/etc/opensim/grids/testgrid/sims/testgrid_sim1/regions/Sim1North.ini
 regionuuid=$(grep -m1 '^RegionUUID' $regionfile)
-(cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=Sim1 TEST_RECONFIGURE_REGION=Sim1North TEST_LOCATION=1000,1001 runuser -u opensim -- php /test/newsim.php >/tmp/region3.out 2>&1
+(cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=Sim1 TEST_RECONFIGURE_REGION=Sim1North TEST_LOCATION=8002,8003 runuser -u opensim -- php /test/newsim.php >/tmp/region3.out 2>&1
     echo "exit code: $?" >>/tmp/region3.out)
-check "a region is reconfigured in place, its UUID kept" "grep -q 'exit code: 0' /tmp/region3.out && grep -q '^Location = 1000,1001' $regionfile && [ \"\$(grep -m1 '^RegionUUID' $regionfile)\" = '$regionuuid' ]"
+check "a region is reconfigured in place, its UUID kept" "grep -q 'exit code: 0' /tmp/region3.out && grep -q '^Location = 8002,8003' $regionfile && [ \"\$(grep -m1 '^RegionUUID' $regionfile)\" = '$regionuuid' ]"
 # The next free place and port follow the rules of the setup: the place nearest to the first one of the grid,
 # with both the places the registry has and the ones the region files have (Sim1North is registered at
-# 1001,1000 until its simulator restarts, its file says 1000,1001)
-check "opensim next location gives the free place nearest to the first one" "[ \"\$(opensim next testgrid location)\" = 999,1000 ]"
+# 8003,8002 until its simulator restarts, its file says 8002,8003)
+check "opensim next location gives the free place nearest to the first one" "[ \"\$(opensim next testgrid location)\" = 8001,8002 ]"
 check "opensim next port gives a free port" "[ \"\$(opensim next port 9100)\" = 9100 ]"
 # The ports of an instance are a block of ten, the same on any machine: Robust
 # 8002 public and 8003 private; the first simulator 9000, 9004 for its console
@@ -418,7 +418,7 @@ wait_check 90 "its region registered in the grid, from its own block of ports" f
 # Asked to Robust over HTTP, the wizard puts it next to the others, not on one of them
 far_placed() {
     [ "$(mysql -BN -e "SELECT COUNT(*) FROM testgrid_robust.regions WHERE locX DIV 256 = (SELECT locX DIV 256 FROM testgrid_robust.regions WHERE regionName='Far') AND locY DIV 256 = (SELECT locY DIV 256 FROM testgrid_robust.regions WHERE regionName='Far')")" = 1 ] &&
-        [ "$(mysql -BN -e "SELECT COUNT(*) FROM testgrid_robust.regions WHERE regionName='Far' AND ABS(CAST(locX DIV 256 AS SIGNED) - 1000) <= 3 AND ABS(CAST(locY DIV 256 AS SIGNED) - 1000) <= 3")" = 1 ]
+        [ "$(mysql -BN -e "SELECT COUNT(*) FROM testgrid_robust.regions WHERE regionName='Far' AND ABS(CAST(locX DIV 256 AS SIGNED) - 8002) <= 3 AND ABS(CAST(locY DIV 256 AS SIGNED) - 8002) <= 3")" = 1 ]
 }
 check "its place is free, next to the regions of the grid it asked Robust about" far_placed
 opensim stop now elsewhere_far >/dev/null 2>&1

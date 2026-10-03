@@ -66,7 +66,7 @@ final class SimPlan
     public bool $createRegion = true;
     public string $regionName = '';
     public string $regionUuid = '';
-    public string $regionLocation = '1000,1000';
+    public string $regionLocation = '';
     public int $regionPort = 9001;
     public int $regionSize = 256;
 

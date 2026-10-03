@@ -16,8 +16,16 @@ namespace OpenSim\Installer\Grid;
  */
 final class LocationFinder
 {
-    /** The first place of a grid. */
-    public const FIRST = [1000, 1000];
+    /**
+     * The first place of a grid: its public port, on both axes (8002 gives 8002,8002), so that the
+     * grids of a machine do not start at the same place, which a teleport between them refuses.
+     *
+     * @return array{0:int,1:int}
+     */
+    public static function first(int $publicPort): array
+    {
+        return [$publicPort, $publicPort];
+    }
 
     /** The key of a place. */
     public static function key(int $x, int $y): string

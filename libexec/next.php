@@ -10,7 +10,7 @@ declare(strict_types=1);
  *       COUNT free ports from MIN (default 9010), none of them in a config file,
  *       bound on this machine, or given with -e
  *   opensim next GRID location [X,Y] [COUNT] [-e X,Y]
- *       COUNT free places nearest to X,Y (default 1000,1000) in the grid, by its
+ *       COUNT free places nearest to X,Y (default: the public port of the grid, twice) in the grid, by its
  *       rule (the free blocks it leaves between its regions); the places given
  *       with -e are taken
  *
@@ -89,7 +89,7 @@ if ($what === 'port') {
 }
 
 $nick = $args[0] ?? '';
-$wish = isset($args[1]) ? LocationFinder::parse($args[1]) : LocationFinder::FIRST;
+$wish = isset($args[1]) ? LocationFinder::parse($args[1]) : [];
 $count = $number($args[2] ?? null, 1);
 if ($nick === '' || $wish === null || $count < 1 || count($args) > 3) {
     usage('a grid, then a place as x,y and a number');
@@ -101,6 +101,7 @@ if ($grid === null) {
     exit(1);
 }
 
+$wish = $wish ?: LocationFinder::first($grid->publicPort);
 $known = (new GridRegistry(new Database(new QuietUi())))->locations($grid);
 foreach ($exclude as $place) {
     if (($taken = LocationFinder::parse($place)) === null) {

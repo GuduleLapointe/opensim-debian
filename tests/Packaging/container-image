@@ -113,7 +113,7 @@ run_app --read-only --tmpfs /tmp --tmpfs /var/cache/opensim:rw,mode=1777 --cap-d
     --security-opt no-new-privileges --pids-limit 600
 check "the instances run" "up 120"
 check "nothing can be written in the system" "! inapp sh -c 'touch /usr/share/opensim/x 2>/dev/null || touch /usr/bin/x 2>/dev/null'"
-region_registered() { [ "$(registered)" = 1 ] && inapp sh -c 'grep -a "registered at 1000,1000" /var/log/opensim/testgrid_sim1.log | tail -1' | grep -q .; }
+region_registered() { [ "$(registered)" = 1 ] && inapp sh -c 'grep -a "registered at 8002,8002" /var/log/opensim/testgrid_sim1.log | tail -1' | grep -q .; }
 wait_check 120 "the region is online again" region_registered
 
 ts "done: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"

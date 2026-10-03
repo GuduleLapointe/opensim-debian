@@ -110,7 +110,7 @@ describe('opensim next port, what takes a port', function () {
 
 describe('opensim next location', function () {
     test('gives the free place nearest to the one asked, turning from the east', function () {
-        [$status, $output] = next_run(['location', 'alpha'], next_home());
+        [$status, $output] = next_run(['location', 'alpha', '1000,1000'], next_home());
 
         expect($status)->toBe(0);
         expect($output)->toBe('1001,1000');
@@ -123,13 +123,13 @@ describe('opensim next location', function () {
     });
 
     test('keeps the free blocks the grid leaves between its regions', function () {
-        [, $output] = next_run(['location', 'alpha'], next_home(1));
+        [, $output] = next_run(['location', 'alpha', '1000,1000'], next_home(1));
 
         expect($output)->toBe('1002,1000');
     });
 
     test('takes the places given with -e as taken', function () {
-        [, $output] = next_run(['location', '-e', '1001,1000', 'alpha'], next_home());
+        [, $output] = next_run(['location', '-e', '1001,1000', 'alpha', '1000,1000'], next_home());
 
         expect($output)->toBe('999,1000');
     });
@@ -139,5 +139,11 @@ describe('opensim next location', function () {
 
         expect($status)->toBe(1);
         expect($errors)->toContain("no grid named 'nosuchgrid'");
+    });
+});
+
+describe('opensim next location default', function () {
+    test('starts from the public port of the grid, on both axes', function () {
+        expect(OpenSim\Installer\Grid\LocationFinder::first(8012))->toBe([8012, 8012]);
     });
 });

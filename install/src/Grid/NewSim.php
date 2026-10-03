@@ -1156,15 +1156,15 @@ final class NewSim
             unset($known[$ignored]);
         }
         $validate = static fn(string $v): ?string => LocationFinder::parse($v) === null
-            ? 'Use x,y (e.g. 1000,1000).'
+            ? 'Use x,y (e.g. 8002,8002).'
             : null;
 
         while (true) {
             // The place proposed is the first free one from the first place of a grid, not always the same
-            $first = $current ?? implode(',', $this->freePlace($grid, $known, ...LocationFinder::FIRST));
+            $first = $current ?? implode(',', $this->freePlace($grid, $known, ...LocationFinder::first($grid->publicPort)));
             [$x, $y] =
                 LocationFinder::parse($this->ui->text(_('Region location (x,y)'), $first, $validate)) ??
-                LocationFinder::FIRST;
+                LocationFinder::first($grid->publicPort);
             [$freeX, $freeY] = $this->freePlace($grid, $known, $x, $y, $ignored);
             if ($freeX === $x && $freeY === $y) {
                 return "$x,$y";
