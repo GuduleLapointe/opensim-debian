@@ -81,8 +81,8 @@ final class GridShared
 
     /**
      * OSSL is part of the standard config: the functions are on, with the permissions of the defaults of the
-     * core, plus the one the region initialization script needs (osSetParcelDetails, for the owner of the
-     * estate and of the parcel) unless the file already says what it is.
+     * core (osSetParcelDetails, which the region initialization script needs, is for the owner and the
+     * managers of the estate).
      *
      * @return ?string the path when written
      */
@@ -95,9 +95,6 @@ final class GridShared
         $before = $ini->toString();
         if ($ini->get('OSSL', 'AllowOSFunctions') !== 'true') {
             $ini->set('OSSL', 'AllowOSFunctions', 'true');
-        }
-        if ($ini->get('OSSL', 'Allow_osSetParcelDetails') === null) {
-            $ini->set('OSSL', 'Allow_osSetParcelDetails', 'ESTATE_OWNER,PARCEL_OWNER');
         }
         if ($ini->toString() === $before) {
             return null;

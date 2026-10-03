@@ -21,7 +21,7 @@ it('has an initialization script to customize, using the functions the config al
     expect($script)->toContain('osSetParcelDetails')->toContain('PARCEL_DETAILS_NAME');
 });
 
-it('enables OSSL in the config of a grid, with what the initialization script needs', function () {
+it('enables OSSL in the config of a grid, with the permissions of the defaults', function () {
     $bin = sys_get_temp_dir() . '/ossl-' . uniqid();
     mkdir("$bin/config-include", 0777, true);
     file_put_contents("$bin/config-include/osslDefaultEnable.ini", "[OSSL]\n    Include-osslEnable = \"config-include/osslEnable.ini\"\n");
@@ -33,5 +33,5 @@ it('enables OSSL in the config of a grid, with what the initialization script ne
     $enable = OpenSim\Installer\Ini::load("$grid/config-include/osslEnable.ini");
     expect($default)->toContain("\"$grid/config-include/osslEnable.ini\"")
         ->and($enable->get('OSSL', 'AllowOSFunctions'))->toBe('true')
-        ->and($enable->get('OSSL', 'Allow_osSetParcelDetails'))->toBe('ESTATE_OWNER,PARCEL_OWNER');
+        ->and($enable->get('OSSL', 'Allow_osSetParcelDetails'))->toBeNull();
 });
