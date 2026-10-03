@@ -109,7 +109,7 @@ final class AccountWriter
      */
     public static function nameSalt(string $first, string $last): string
     {
-        return md5('opensim-kit:' . strtolower(trim("$first $last")));
+        return md5('opensim-kit:' . strtolower(trim($first) . ' ' . trim($last)));
     }
 
     /** A value of a statement, quoted: backslashes and quotes escaped, nothing else can end the string. */
