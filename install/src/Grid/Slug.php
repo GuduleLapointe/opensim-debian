@@ -11,26 +11,26 @@ namespace OpenSim\Installer\Grid;
 final class Slug
 {
     /**
-     * Nick: TitleCased, alphanumerics only (e.g. "Olivier's grid" -> "OliviersGrid").
+     * Nick: snake_case, lowercase letters, digits and underscores, the words kept apart so that
+     * "The Rapist" (the_rapist) is not "Therapist" (therapist) (e.g. "Olivier's grid" -> "oliviers_grid").
      */
     public static function nick(string $name): string
     {
-        $ascii = self::ascii($name);
-        $title = ucwords(strtolower($ascii));
-
-        return preg_replace('/[^A-Za-z0-9]/', '', $title) ?? '';
+        return self::slug($name);
     }
 
     /**
-     * Slug: lowercase, ASCII, non-alphanumerics collapsed to single hyphens
-     * (e.g. "Olivier's grid" -> "olivier-s-grid").
+     * Slug: the same, snake_case. An apostrophe is dropped, not a separator (so "Olivier's"
+     * is "oliviers"), any other run of characters is one underscore.
      */
     public static function slug(string $name): string
     {
-        $ascii = strtolower(self::ascii($name));
-        $slug = preg_replace('/[^a-z0-9]+/', '-', $ascii) ?? '';
+        // A name written in camel case keeps its words apart too (OliviersGrid)
+        $ascii = strtolower((string) preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', self::ascii($name)));
+        $ascii = str_replace(["'", "\u{2019}"], '', $ascii);
+        $slug = preg_replace('/[^a-z0-9]+/', '_', $ascii) ?? '';
 
-        return trim($slug, '-');
+        return trim($slug, '_');
     }
 
     /** Transliterate to ASCII (intl when available, iconv as a fallback): "Joyeux Noël" -> "Joyeux Noel". */

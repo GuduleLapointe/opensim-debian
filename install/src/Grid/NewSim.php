@@ -666,7 +666,7 @@ final class NewSim
         $nick = (string) preg_replace(
             '/[^A-Za-z0-9]/',
             '',
-            $this->ui->text(_('Grid nick (alphanumeric)'), $said['gridnick'] ?? Slug::nick($name), $required),
+            $this->ui->text(_('Grid nick (snake_case)'), $said['gridnick'] ?? Slug::nick($name), $required),
         );
         if ($nick === '') {
             $nick = Slug::nick($name);

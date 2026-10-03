@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+- update the nick of a grid and the names of the instances are snake_case, the words kept apart (`the_rapist`, not `therapist`): names that only differ by their spaces no longer give the same instance
 - new `opensim oar pack|info|check|unpack` works with OpenSimulator archives, with the `OpenSim_Oar` class of the engine; the archive of the naming object is made from its sources (`share/ossl-scripts/fix-parcel-name-src`) when the package is built, or by the setup when it runs from a checkout, so it is no longer kept in the repository (and no longer depends on the tar of the machine: the one of macOS makes archives OpenSimulator does not read)
 - fix a region added to a simulator no longer asks for its restart: the console takes it, and the parcel is no longer renamed by a restart (the object of `share/ossl-scripts` does it)
 - fix `opensim stop` counts down to the shutdown (`Stopping sim in 120s`), not to the next warning to the users

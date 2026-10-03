@@ -170,10 +170,10 @@ final class GridInfo
         return self::instanceName($this->nick);
     }
 
-    /** The name the launcher gives an instance, from its config file name. */
+    /** The name the launcher gives an instance: snake_case, the words kept apart (see Slug). */
     public static function instanceName(string $name): string
     {
-        return (string) preg_replace('/[^a-z0-9_]/', '', strtolower($name));
+        return Slug::slug($name);
     }
 
     /** The grid's own database settings, to ask questions of it. */

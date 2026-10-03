@@ -321,7 +321,7 @@ final class NewGrid
             $name = $this->ui->text(_('Grid name'), $current['gridName'] ?? ucfirst($nick), $required);
         } else {
             $name = $this->ui->text(_('Grid name'), $this->defaultName(), $required);
-            $nick = $this->ui->text(_('Grid nick (alphanumeric)'), Slug::nick($name), $required);
+            $nick = $this->ui->text(_('Grid nick (snake_case)'), Slug::nick($name), $required);
             $gridDir = "$etcRoot/grids/$nick";
             $existing = $this->findExisting($gridDir);
             $current = [];
