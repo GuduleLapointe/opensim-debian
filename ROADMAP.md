@@ -2,40 +2,56 @@
 
 ## Fixes
 
-- confirm on ubuntu 24.04 (ursull), with the next package and an outdated bash-tools left in composer global, that `opensim setup` no longer ends with `debug: command not found` (the scripts now load the bash-tools of the kit before the one of the `PATH`, see `libexec/load-helpers`)
-- dependencies packages must be added to the release assets in their own repositories
-- opensim status "down" count should not be displayed when none of the instances are down
-- a new region is named in the database while its simulator is stopped, which costs a restart of the simulator (TODO in `Actions::nameParcels`): look for a better way to name its parcel
-- try to open ports if firewall is active
+- [ ] confirm on ubuntu 24.04 (ursull), with the next package and an outdated bash-tools left in composer global, that `opensim setup` no longer ends with `debug: command not found` (the scripts now load the bash-tools of the kit before the one of the `PATH`, see `libexec/load-helpers`)
+- [ ] dependencies packages must be added to the release assets in their own repositories
+- [x] opensim status "down" count should not be displayed when none of the instances are down
+- [x] a new region is named after itself without a restart of the simulator (the object of `share/ossl-scripts`, loaded through the console)
+- [ ] try to open ports if firewall is active (`opensim ports --ufw` only tells the rules)
+- [ ] check `opensim stop` on a simulator with an NPC in it: the real users are counted from `show users`, the NPCs (`NPC Root`) are skipped, but only the format was checked on a real core, not an NPC
+- [ ] the `[Messaging] OfflineMessageURL` of the simulators is not written yet: the setup does not tell the simulators where `offline.php` is
+- [ ] the message of the day: there is no script for it in opensim-helpers, and the format a viewer expects is still to find out
+- [ ] the search page of the web site (the `search` of `[GridInfoService]`) is another script than `query.php` and is not in opensim-helpers yet; the setup does not write it until it is
+- [ ] run again the packaging scenario beyond the upgrade step (the development build, removal, purge) and with the real `apt-package`: only the packages built by hand with nfpm were tested; run it with docker as well as podman
+- [ ] try the web server examples written by the setup (`<grid>.caddyfile`, `<grid>-nginx.conf`, `<grid>-apache.conf`) on a real Caddy, nginx and Apache
 
 ## Critical improvements
 
-- bulk avatar creation (from a list provided by a third-party source; format to be defined, likely CSV or JSON). This is a genuine, long-awaited user request. This feature relies on the ability to use the current host configuration—unchanged—regardless of the installation method employed (with or without OpenSimKit).
-- test `opensim import` on real grids (the config of a grid or of a simulator, a setup file, a list of accounts: what works, what is missing)
-- add opensim-helpers package and examples of configuration as alias/subfolder in caddy, nginx and apache2
-- add docker/podman installation support in setup
-- rename composer packages to match github account GuduleLapointe
+- [x] bulk avatar creation (from a list provided by a third-party source: CSV, JSON or YAML), directly in the database, as `opensim import [grid] FILE --users`; relies on the install the profile gives, with or without the kit
+- [ ] try the accounts made in the database with a viewer (login, inventory, default outfit) on a test grid, and check the numbers of the system folders (`Settings` 56 and `Material` 57) against the core
+- [ ] test `opensim import` on real grids (the config of a grid or of a simulator, a setup file, a list of accounts: what works, what is missing)
+- [x] add opensim-helpers package and examples of configuration as alias/subfolder in caddy, nginx and apache2
+- [ ] add docker/podman installation support in setup
+- [ ] rename composer packages to match github account GuduleLapointe
+- [ ] parcel naming object: make it part of the library of the grid too (the original stays available to the users, a copy is rezzed in each new region), and let the operator choose what a new region gets at its start (name of the parcel, music, media, flags: the script is the place for it)
+- [ ] OSSL: the standard config enables the functions with the defaults of the core; let the operator customize them (which functions, for whom)
 
 ## Next steps
 
-- add full import procedure for existing grids/simulators (normalized config + db + assets and other data)
-- add/update bash completion
-- build ready to use zip packages for simple download, added to the release assets alongside the source code and apt package
-- add simplified installation script, detecting the platform and installing with the appropriate method (zip package or apt package), with a one-line command like `curl -sSL https://raw.githubusercontent.com/GuduleLapointe/opensim-kit/refs/heads/master/install.sh | bash`
-- add basic ready to use website
-- add ready to use default avatars
-- add default Inventory package
-- add nat/port forwarding instructions or presets (with standard tools or third-party provides like ngrok, cloudflare...)
-- make most opensim-tools features installation-agnostic (support both opensim-kit and custom/standard opensim installations) : `/etc/opensim/opensim.conf` becomes only a reference pointing to the user's actual core installation and configuration files location (e.g. `/opt/osgrid`, `~/diva`, `~/opensim/opensim-0.9.3.0/bin`...)
-
-- test the OpenSimSearch module from end to end again (a region registers, is indexed and found) with the `opensim-helpers` package once it exists: the test written for the former `opensim-manfredaabye-helpers` package is gone with it
+- [ ] add full import procedure for existing grids/simulators: the config is imported (`opensim import`), the database, the assets and the other data are not
+- [x] add/update bash completion
+- [ ] build ready to use zip packages for simple download, added to the release assets alongside the source code and apt package
+- [ ] add simplified installation script, detecting the platform and installing with the appropriate method (zip package or apt package), with a one-line command like `curl -sSL https://raw.githubusercontent.com/GuduleLapointe/opensim-kit/refs/heads/master/install.sh | bash`
+- [x] add basic ready to use website (the placeholder site of the `opensim-web` package)
+- [ ] add ready to use default avatars
+- [ ] add default Inventory package
+- [ ] add nat/port forwarding instructions or presets (with standard tools or third-party provides like ngrok, cloudflare...)
+- [ ] make most opensim-tools features installation-agnostic (support both opensim-kit and custom/standard opensim installations): `/etc/opensim/opensim.conf` becomes only a reference pointing to the user's actual core installation and configuration files location (e.g. `/opt/osgrid`, `~/diva`, `~/opensim/opensim-0.9.3.0/bin`...)
+  - [x] `opensim profile list|add|default|remove` registers an install made by hand (core, config and data directories)
+  - [ ] a grid follows the profile of its own install, the default profile is only the default of the new grids
+  - [ ] the system user to run the instances as is per profile, not only `SystemUser` of `[Defaults]`
+  - [ ] the setup offers to register an install (the core menu), and no script assumes `/etc/opensim`, `/var/lib/opensim` or `/usr/share/opensim` (review, one fix per file, with a test)
+- [ ] test the OpenSimSearch module from end to end again (a region registers, is indexed and found) with the `opensim-helpers` package: the test written for the former `opensim-manfredaabye-helpers` package is gone with it
+- [ ] add to the README of opensim-helpers (and of the engine) a short section on how to use them with the OpenSim kit
+- [ ] install instructions in the README of `lsl-ossl-zed` (rust, clone, `zed: install dev extension`, the prebuilt LSP binaries only cover Linux x86_64 and macOS)
 
 ## Less urgent
 
-- localize the setup and the launcher with gettext (a requirement of the project), their messages are still English strings
-- localize helpers
-- `opensim online`: show who's online
+- [x] localize the setup with gettext (a requirement of the project): the messages of the PHP setup are translatable (`locales/`, `locales/update-pot`)
+- [ ] localize the launcher and the bash scripts with gettext
+- [ ] a first translation of the setup (`locales/fr.po`)
+- [ ] localize helpers
+- [ ] `opensim online`: show who's online
 
 ## Could be great
 
-- Memory/CPU usage monitoring. Notify admin and/or restart Sim above given thresolds. Thinking twice about previous notify thing: maybe it's better to suggest a dedicated monitoring tool handle that.
+- [ ] Memory/CPU usage monitoring. Notify admin and/or restart Sim above given thresholds. Thinking twice about previous notify thing: maybe it's better to suggest a dedicated monitoring tool handle that.
