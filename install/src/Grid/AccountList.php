@@ -11,7 +11,7 @@ namespace OpenSim\Installer\Grid;
 final class AccountList
 {
     /**
-     * @return array{accounts:list<array{first:string,last:string,email:string,password:string,line:int}>,errors:list<string>}
+     * @return array{accounts:list<array{first:string,last:string,email:string,password:string,password_hash:string,password_salt:string,line:int}>,errors:list<string>}
      */
     public static function parse(string $text, ?string $format = null): array
     {
@@ -31,7 +31,11 @@ final class AccountList
             $last = trim((string) ($row['last'] ?? ''));
             $email = trim((string) ($row['email'] ?? ''));
             $problem = null;
-            if (!GridAccounts::validName("$first $last")) {
+            $hash = strtolower(trim((string) ($row['password_hash'] ?? '')));
+            $salt = trim((string) ($row['password_salt'] ?? ''));
+            if ($hash !== '' && (preg_match('/^[0-9a-f]{32}$/', $hash) !== 1 || preg_match('/^[0-9a-zA-Z]{1,64}$/', $salt) !== 1)) {
+                $problem = 'password_hash is the 32 hexadecimal characters Robust keeps, with its password_salt';
+            } elseif (!GridAccounts::validName("$first $last")) {
                 $problem = "name \"$first $last\" must be a first and a last name of letters, digits, . _ and -";
             } elseif ($email !== '' && preg_match('/^[^\s\'"\\\;]+@[^\s\'"\\\;]+$/', $email) !== 1) {
                 $problem = "email \"$email\" is not an address";
@@ -48,6 +52,9 @@ final class AccountList
                 'last' => $last,
                 'email' => $email,
                 'password' => (string) ($row['password'] ?? ''),
+                // The password as Robust keeps it: given instead of the password, it is written as it is
+                'password_hash' => $hash,
+                'password_salt' => $salt,
                 'line' => $line,
             ];
         }
@@ -139,6 +146,8 @@ final class AccountList
             'last', 'lastname', 'surname' => 'last',
             'email', 'mail' => 'email',
             'password', 'pass', 'pwd' => 'password',
+            'passwordhash', 'hash' => 'password_hash',
+            'passwordsalt', 'salt' => 'password_salt',
             default => strtolower(trim($key)),
         };
     }

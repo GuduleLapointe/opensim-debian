@@ -440,8 +440,16 @@ final class NewGrid
             return;
         }
         $plan->helpersUrls = $existing['Urls'] ?? [];
-        // The path is not asked for now: what the grid already has, else /helpers
-        $plan->helpersPath = Services::normalize($existing['Helpers']['path'] ?? HelpersConfig::DEFAULT_PATH);
+        // The URL of the web site is given, the path after it is the choice of the operator
+        $plan->helpersPath = Services::normalize(
+            $this->ui->text(
+                sprintf(_('Helpers path, after %s'), rtrim($plan->webUrl, '/')),
+                $existing['Helpers']['path'] ?? HelpersConfig::DEFAULT_PATH,
+                static fn(string $v): ?string => preg_match('#^/?[A-Za-z0-9._/-]*$#', trim($v))
+                    ? null
+                    : _('A path such as /helpers.'),
+            ),
+        );
         $this->ui->note(
             sprintf(_('Helpers URL: %s (the viewers add the name of the script)'), rtrim($plan->webUrl, '/') . $plan->helpersPath),
         );

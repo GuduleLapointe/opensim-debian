@@ -112,7 +112,9 @@ it('keeps what the setup did, to make it again', function () {
     $data = SetupFile::withSim($data, $more);
 
     expect($data['grid']['database']['name'])->toBe('test_grid_robust')
-        ->and($data['owner'])->toBe(['name' => 'Jane Doe', 'password' => 'hunter22'])
+        ->and($data['owner']['name'])->toBe('Jane Doe')
+        ->and($data['owner'])->not->toHaveKey('password')
+        ->and($data['owner']['password_hash'])->toBe(OpenSim\Installer\Grid\AccountWriter::passwordHash('hunter22', $data['owner']['password_salt']))
         ->and(array_column($data['simulators'][0]['regions'], 'name'))->toBe(['Welcome', 'Second'])
         ->and(count($data['simulators']))->toBe(1)
         // a region added later, which knows nothing of the database, does not erase it

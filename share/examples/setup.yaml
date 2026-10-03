@@ -11,6 +11,7 @@ grid:
   # web_url: https://play.example.org
   # hypergrid: true
   # helpers: true            # economy and search served by opensim-helpers
+  # helpers_path: /helpers   # after the web URL
   database:
     user: opensim
     password: change-me

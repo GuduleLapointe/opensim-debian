@@ -16,7 +16,7 @@ it('enables OSSL for the owner of the estate in the config of a simulator', func
 });
 
 it('has an initialization script to customize, using the functions the config allows', function () {
-    $script = file_get_contents(dirname(__DIR__, 2) . '/share/ossl-scripts/fix-parcel-name.lsl');
+    $script = file_get_contents(dirname(__DIR__, 2) . '/share/ossl-scripts/fix-parcel-name-src/assets/14280bc4-6d8f-4d8f-839c-da2ab87e918b_script.lsl');
 
     expect($script)->toContain('osSetParcelDetails')->toContain('PARCEL_DETAILS_NAME');
 });

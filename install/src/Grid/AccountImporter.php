@@ -68,7 +68,10 @@ final class AccountImporter
                 $results[] = $row;
                 continue;
             }
-            if ($row['password'] === '') {
+            $hash = ($account['password_hash'] ?? '') !== ''
+                ? ['hash' => $account['password_hash'], 'salt' => $account['password_salt'] ?? '']
+                : null;
+            if ($row['password'] === '' && $hash === null) {
                 $row['password'] = self::password();
                 $row['generated'] = true;
             }
@@ -79,7 +82,7 @@ final class AccountImporter
                 continue;
             }
 
-            $statements = $this->writer->statements($row['first'], $row['last'], $row['email'], $row['password'], $homeId);
+            $statements = $this->writer->statements($row['first'], $row['last'], $row['email'], $row['password'], $homeId, $hash);
             if (($this->query)($plan, $statements['sql']) === null) {
                 $row['status'] = self::FAILED;
                 $row['detail'] = 'the database refused it, nothing was written for this account';

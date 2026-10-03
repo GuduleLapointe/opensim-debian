@@ -113,6 +113,8 @@ final class AccountWriter
      * The statements that make an account, in one transaction.
      *
      * @param ?string $homeRegionId the default region of the grid, home of the account, when it has one
+     * @param ?string $hash the hash of the password and its salt, as Robust keeps them (an account that is
+     *                      moved from a grid or from a file): then the password is not needed
      * @return array{id:string,sql:string} the id of the account and the statements
      */
     public function statements(
@@ -121,11 +123,13 @@ final class AccountWriter
         string $email,
         string $password,
         ?string $homeRegionId = null,
+        ?array $hash = null,
     ): array {
         $q = [self::class, 'quote'];
         $id = ($this->uuid)();
         $now = ($this->now)();
-        $salt = ($this->salt)();
+        $salt = $hash !== null ? $hash['salt'] : ($this->salt)();
+        $passwordHash = $hash !== null ? $hash['hash'] : self::passwordHash($password, $salt);
         $sql = ['START TRANSACTION'];
 
         $sql[] =
@@ -146,7 +150,7 @@ final class AccountWriter
             ')';
         $sql[] =
             'INSERT INTO auth (UUID, passwordHash, passwordSalt, webLoginKey, accountType) VALUES (' .
-            implode(', ', [$q($id), $q(self::passwordHash($password, $salt)), $q($salt), $q(self::ZERO), $q('UserAccount')]) .
+            implode(', ', [$q($id), $q($passwordHash), $q($salt), $q(self::ZERO), $q('UserAccount')]) .
             ')';
         if ($homeRegionId !== null) {
             $sql[] = GridAccounts::homeSql($id, $homeRegionId);

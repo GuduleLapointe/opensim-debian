@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OpenSim\Installer\Setup;
 
 use OpenSim\Installer\Grid\AccountList;
+use OpenSim\Installer\Grid\AccountWriter;
 use OpenSim\Installer\Grid\GridAccounts;
 use OpenSim\Installer\Grid\GridPlan;
 use OpenSim\Installer\Grid\SimPlan;
@@ -14,14 +15,16 @@ use Symfony\Component\Yaml\Yaml;
  * A setup in a file (JSON or YAML): the grid, its simulators and regions, the owner, and the accounts
  * to make, in the format of the bulk import (`opensim users import` reads the `users` of this file).
  *
- *   grid:        name, nick, hostname, web_url, hypergrid, helpers, public_port, private_port,
+ *   grid:        name, nick, hostname, web_url, hypergrid, helpers, helpers_path, public_port, private_port,
  *                console (rest|screen), console_port, enable, start,
  *                database: host, name, user, password, admin_user, admin_password
- *   owner:       name (First Last), password, email (optional): the account that owns the estate
+ *   owner:       name (First Last), password or password_hash and password_salt (as Robust keeps them),
+ *                email (optional): the account that owns the estate
  *   simulators:  a list of: name, http_port, console, estate: name, owner, database: (as the grid's),
  *                regions: a list of: name, location (x,y), port, roles (DefaultRegion, DefaultHGRegion, FallbackRegion,
  *                or default, default_hg, fallback)
- *   users:       a list of: first, last, email (optional), password (made when empty)
+ *   users:       a list of: first, last, email (optional), password (made when empty) or password_hash
+ *                and password_salt (written as they are)
  *
  * Only the grid name, and the database user and password, are required to make a grid: the rest has the default
  * of the setup. Without a grid name, the simulators join the grid of the `nick` (or the only one there is), and
@@ -40,6 +43,7 @@ final class SetupFile
         'Web URL' => 'grid.web_url',
         'Enable Hypergrid?' => 'grid.hypergrid',
         'Serve the economy and the search' => 'grid.helpers',
+        'Helpers path' => 'grid.helpers_path',
         'Public port' => 'grid.public_port',
         'Private port' => 'grid.private_port',
         'Console of the grid' => 'grid.console',
@@ -154,8 +158,11 @@ final class SetupFile
             if (!GridAccounts::validName(trim((string) ($owner['name'] ?? '')))) {
                 $problems[] = 'owner.name is a first and a last name, e.g. Jane Doe';
             }
-            if (strlen((string) ($owner['password'] ?? '')) < 6) {
-                $problems[] = 'owner.password has at least 6 characters';
+            // The password, or its hash and salt as Robust keeps them (what the setup writes in its own file)
+            $hashed = preg_match('/^[0-9a-f]{32}$/i', (string) ($owner['password_hash'] ?? '')) === 1
+                && preg_match('/^[0-9a-zA-Z]{1,64}$/', (string) ($owner['password_salt'] ?? '')) === 1;
+            if (!$hashed && strlen((string) ($owner['password'] ?? '')) < 6) {
+                $problems[] = 'owner.password has at least 6 characters (or owner.password_hash and owner.password_salt)';
             }
             $email = trim((string) ($owner['email'] ?? ''));
             if ($email !== '' && !preg_match('/^[^\s"\'\\\\]+@[^\s"\'\\\\]+$/', $email)) {
@@ -258,6 +265,7 @@ final class SetupFile
             'web_url' => $plan->webUrl,
             'hypergrid' => $plan->enableHypergrid,
             'helpers' => $plan->helpers,
+            'helpers_path' => $plan->helpersPath,
             'public_port' => $plan->publicPort,
             'private_port' => $plan->privatePort,
             'console' => $plan->consoleMode,
@@ -315,9 +323,12 @@ final class SetupFile
         }
         $data['simulators'] = array_values($sims);
         if ($plan->createOwner && $plan->estateOwner !== '') {
+            // The password is kept as Robust keeps it, hashed: the file does not tell it
+            $salt = md5(random_bytes(16));
             $data['owner'] = array_filter([
                 'name' => $plan->estateOwner,
-                'password' => $plan->ownerPassword,
+                'password_hash' => AccountWriter::passwordHash($plan->ownerPassword, $salt),
+                'password_salt' => $salt,
                 'email' => $plan->ownerEmail,
             ], static fn(string $v): bool => $v !== '');
         }

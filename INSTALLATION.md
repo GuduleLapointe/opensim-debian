@@ -37,7 +37,7 @@ OpenSimulator 0.9.3 needs the .NET 8 runtime and the native library `libgdiplus`
 sudo opensim install-dotnet
 ```
 
-The setup asks whether the economy and the search of the grid are served by opensim-helpers, and shows their URL, `{web URL}/helpers` (the viewers add the name of the script). The economy of the grid is that URL, the in-world search is `query.php` under it (`SearchURL` of Robust). A path other than `/helpers`, or a path of its own for a script (`/search`, `/guide`...), is set in the `helpers.ini` of the grid, not asked.
+The setup asks whether the economy and the search of the grid are served by opensim-helpers, and asks for their path after the web URL (`/helpers` by default): the URL of the helpers is `{web URL}{path}` (the viewers add the name of the script). The economy of the grid is that URL, the in-world search is `query.php` under it (`SearchURL` of Robust). A path of its own for a script (`/search`, `/guide`...) is set in the `helpers.ini` of the grid.
 
 ```bash
 opensim web                       # where the services are
@@ -54,7 +54,7 @@ opensim setup
 sudo systemctl start opensim
 ```
 
-The keys of a terminal work in the wizard: `Escape` gives up the screen and goes back to the menu it came from, `Ctrl-Q` leaves the setup from anywhere, `Ctrl-U` clears the line (a password too), `Ctrl-W` the word before the cursor.
+The keys of a terminal work in the wizard: `Escape` gives up the screen and goes back to the menu it came from, `Ctrl-Q` leaves the setup from anywhere, and the editing keys of readline work in texts and passwords: `Ctrl-U`, `Ctrl-K`, `Ctrl-W` and `Alt-D` cut (a password too), `Ctrl-Y` pastes, `Ctrl-A`, `Ctrl-E`, `Alt-B`, `Alt-F` and the arrows move, `Ctrl-D` and `Ctrl-T` edit.
 
 A setup can also be described in a file, JSON or YAML (the example is `share/examples/setup.yaml`, in `/usr/share/opensim-tools/share/examples/`): the grid, its owner, its simulators and regions, and the accounts to make, in the format of the bulk import. `opensim setup --file setup.yaml` makes it, with the questions of the wizard answered from the file (`--check` only reads it); `opensim users import setup.yaml` makes only its accounts. What the wizard does is kept in the folder of the grid, `setup.json` (readable by its owner only, it holds the passwords), to make the same grid again.
 

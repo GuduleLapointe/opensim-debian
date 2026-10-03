@@ -62,6 +62,20 @@ final class SetupRunner
             }
         }
 
+        // An owner whose password is given hashed is made in the database, as the accounts of a list are: the
+        // console of Robust makes accounts from a password
+        $owner = $data['owner'] ?? null;
+        if (is_array($owner) && ($owner['password_hash'] ?? '') !== '' && ($owner['password'] ?? '') === '') {
+            [$first, $lastName] = array_pad(explode(' ', trim((string) $owner['name']), 2), 2, '');
+            $this->users($profile, $nick, [[
+                'first' => $first,
+                'last' => $lastName,
+                'email' => (string) ($owner['email'] ?? ''),
+                'password_hash' => (string) $owner['password_hash'],
+                'password_salt' => (string) ($owner['password_salt'] ?? ''),
+            ]], $resultFile);
+        }
+
         $last = null;
         foreach ($data['simulators'] ?? [] as $i => $sim) {
             $made = (new NewSim(new PresetUi($this->ui, SetupFile::simAnswers($data, $i) + ['Grid of the simulator' => $nick], $ask)))->run($nick);
