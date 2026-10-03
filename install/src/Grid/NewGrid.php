@@ -391,8 +391,20 @@ final class NewGrid
             $current = $existing !== null ? $this->parseExisting($existing) : [];
             $name = $this->ui->text(_('Grid name'), $current['gridName'] ?? ucfirst($nick), $required);
         } else {
-            $name = $this->ui->text(_('Grid name'), self::defaultName(), $required);
-            $nick = $this->ui->text(_('Grid nick (snake_case)'), Slug::nick($name), $required);
+            $defaultName = self::defaultName();
+            $v = $this->ui->form([
+                ['key' => 'name', 'label' => _('Grid name'), 'default' => $defaultName, 'validate' => $required],
+                [
+                    'key' => 'nick',
+                    'label' => _('Grid nick (snake_case)'),
+                    'default' => Slug::nick($defaultName),
+                    'hint' => _('Names its folder, its database and its instances'),
+                    'validate' => $required,
+                ],
+            ], _('Grid'));
+            $name = $v['name'];
+            // A nick left as proposed follows the name
+            $nick = $v['nick'] === Slug::nick($defaultName) ? Slug::nick($name) : $v['nick'];
             $gridDir = "$etcRoot/grids/$nick";
             $existing = $this->findExisting($gridDir);
             $current = [];
@@ -450,21 +462,25 @@ final class NewGrid
         $plan->binDir = $plan->coreDirectory . '/bin';
 
         $defaultHost = $current['baseHostname'] ?? self::defaultHost();
-        $plan->baseHostname = $this->ui->text(_('Base hostname'), $defaultHost, $required);
+        $defaultPublic = (int) ($current['publicPort'] ?? self::defaultPublicPort());
         // The ports of an instance are a block of ten, the first free one (see Ports):
         // public ends with 2, private with 3, the console with 4
-        $plan->publicPort = (int) $this->ui->text(
-            _('Public port'),
-            (string) ($current['publicPort'] ?? self::defaultPublicPort()),
-            $numeric,
-        );
-        $plan->privatePort = (int) $this->ui->text(
-            _('Private port'),
-            (string) ($current['privatePort'] ??
-                ($plan->publicPort % 10 === 2 ? $plan->publicPort + 1 : Ports::next($plan->publicPort + 1))),
-            $numeric,
-        );
-        $plan->webUrl = $this->ui->text(_('Web URL'), $current['webUrl'] ?? "https://{$plan->baseHostname}", $required);
+        $defaultPrivate = (int) ($current['privatePort'] ??
+            ($defaultPublic % 10 === 2 ? $defaultPublic + 1 : Ports::next($defaultPublic + 1)));
+        $defaultWeb = $current['webUrl'] ?? "https://$defaultHost";
+        $v = $this->ui->form([
+            ['key' => 'host', 'label' => _('Base hostname'), 'default' => $defaultHost, 'validate' => $required],
+            ['key' => 'public', 'label' => _('Public port'), 'default' => (string) $defaultPublic, 'validate' => $numeric],
+            ['key' => 'private', 'label' => _('Private port'), 'default' => (string) $defaultPrivate, 'validate' => $numeric],
+            ['key' => 'web', 'label' => _('Web URL'), 'default' => $defaultWeb, 'validate' => $required],
+        ], _('Network'));
+        $plan->baseHostname = $v['host'];
+        $plan->publicPort = (int) $v['public'];
+        // What was left as proposed follows what was changed
+        $plan->privatePort = (int) $v['private'] === $defaultPrivate && (int) $v['public'] !== $defaultPublic
+            ? ($plan->publicPort % 10 === 2 ? $plan->publicPort + 1 : Ports::next($plan->publicPort + 1))
+            : (int) $v['private'];
+        $plan->webUrl = $v['web'] === $defaultWeb && $v['host'] !== $defaultHost ? "https://{$plan->baseHostname}" : $v['web'];
         $this->askHelpers($plan, $gridDir);
 
         $this->askConsole($plan, $current, $numeric);
@@ -554,13 +570,16 @@ final class NewGrid
     {
         $required = static fn(string $v): ?string => trim($v) === '' ? 'This field is required.' : null;
 
-        $plan->dbHost = $this->ui->text(_('Database host'), $defaults['dbHost'], $required);
-        $plan->dbName = $this->ui->text(_('Database name'), $defaults['dbName'], $required);
-        $plan->dbUser = $this->ui->text(_('Database user'), $defaults['dbUser'], $required);
         // An account keeps its password for the whole session, entered or
         // generated once: an attempt started again proposes the same one
-        $password = Database::recall($plan->dbHost, $plan->dbUser) ?? $defaults['dbPass'];
-        $plan->dbPass = $this->ui->text(_('Database password'), $password, $required);
+        $password = Database::recall($defaults['dbHost'], $defaults['dbUser']) ?? $defaults['dbPass'];
+        $v = $this->ui->form([
+            ['key' => 'host', 'label' => _('Database host'), 'default' => $defaults['dbHost'], 'validate' => $required],
+            ['key' => 'name', 'label' => _('Database name'), 'default' => $defaults['dbName'], 'validate' => $required],
+            ['key' => 'user', 'label' => _('Database user'), 'default' => $defaults['dbUser'], 'validate' => $required],
+            ['key' => 'pass', 'label' => _('Database password'), 'default' => $password, 'validate' => $required],
+        ], _('Database'));
+        [$plan->dbHost, $plan->dbName, $plan->dbUser, $plan->dbPass] = [$v['host'], $v['name'], $v['user'], $v['pass']];
         Database::remember($plan->dbHost, $plan->dbUser, $plan->dbPass);
     }
 

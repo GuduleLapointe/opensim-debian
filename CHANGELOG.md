@@ -2,6 +2,9 @@
 
 ### Unreleased
 
+- update the first region of a grid goes to its public port on both axes (8002 gives 8002,8002) instead of 1000,1000: two grids of a machine no longer start at the same place, which a teleport between them refuses
+- update the advanced setup groups the related questions on one screen like the quick one: the grid and its nick, the network (host, ports, web URL), the database, the HTTP port and public address of a simulator
+- fix the search index of a simulator carries the name of its grid (`gridname` of `[DataSnapshot]`), not OSGrid
 - update `opensim import [grid] FILE [--grid] [--simulator] [--users]` is the one command that brings a file into the install, and tells what the file is: the config of a grid (a Robust ini) or of a simulator (an OpenSim ini) that was not made by the kit, a setup file (JSON or YAML: the grid, its simulators and regions, its accounts), or a list of accounts (CSV, JSON or YAML); everything the file holds, or only what `--grid`, `--simulator` or `--users` ask for; nothing is made without `--apply`; it replaces `opensim import robust|sim`, `opensim users import` and `opensim setup --file`
 - update the quick setup shows one plan for the grid and its first simulator, and makes nothing until it is accepted (Continue), or edited (Edit config)
 - update the commands have one structure: `opensim <command> <instance> [action] [options]`, the instance (a grid or a simulator) right after the command: `opensim web <grid> [show|check|snippet <server>]`, `opensim next <grid> location [X,Y]`, as `start`, `console`, `command` and `enable` already are; the old order of those still works, the help and the completion show the new one, and the help groups the commands (instances, grids, this machine)

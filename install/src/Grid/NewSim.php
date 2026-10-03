@@ -859,24 +859,27 @@ final class NewSim
         // console is x4, the regions take the others
         $foreign = (new GridRegistry($database))->ports($grid) ?? [];
         $block = Ports::nextBlock(Ports::simulatorsFrom($grid->publicPort), $foreign);
-        $plan->httpPort = (int) $this->ui->text(
-            _('Simulator HTTP port'),
-            (string) ($current['httpPort'] ?? $block),
-            $numeric,
-        );
-        $base = Ports::simulatorBlock($plan->httpPort);
-        $plan->consolePort = $base !== null ? $base + 4 : 0;
-
         // What the regions announce as their address, the viewers connect to it: the
         // public name of this machine. SYSTEMIP is the address of its first interface,
         // which is not the one of the world behind a NAT or in a container.
-        $plan->externalHost = trim(
-            $this->ui->text(
-                _('Public address of this machine, for the regions (SYSTEMIP: its first interface)'),
-                $current['externalHost'] ?? 'SYSTEMIP',
-                static fn(string $v): ?string => trim($v) === '' ? 'This field is required.' : null,
-            ),
-        );
+        $v = $this->ui->form([
+            [
+                'key' => 'port',
+                'label' => _('Simulator HTTP port'),
+                'default' => (string) ($current['httpPort'] ?? $block),
+                'validate' => $numeric,
+            ],
+            [
+                'key' => 'host',
+                'label' => _('Public address of this machine'),
+                'default' => $current['externalHost'] ?? 'SYSTEMIP',
+                'hint' => _('What the regions announce to the viewers (SYSTEMIP: the first interface)'),
+            ],
+        ], _('Simulator'));
+        $plan->httpPort = (int) $v['port'];
+        $base = Ports::simulatorBlock($plan->httpPort);
+        $plan->consolePort = $base !== null ? $base + 4 : 0;
+        $plan->externalHost = trim($v['host']);
 
         $this->askConsole($plan, $current);
 
@@ -982,12 +985,15 @@ final class NewSim
             'dbPass' => $plan->dbPass,
         ];
 
-        $plan->dbHost = $this->ui->text(_('Database host'), $defaults['dbHost'], $required);
-        $plan->dbName = $this->ui->text(_('Database name'), $defaults['dbName'], $required);
-        $plan->dbUser = $this->ui->text(_('Database user'), $defaults['dbUser'], $required);
         // An account keeps its password for the whole session: the one of the grid's account is proposed
-        $password = Database::recall($plan->dbHost, $plan->dbUser) ?? $defaults['dbPass'];
-        $plan->dbPass = $this->ui->text(_('Database password'), $password, $required);
+        $password = Database::recall($defaults['dbHost'], $defaults['dbUser']) ?? $defaults['dbPass'];
+        $v = $this->ui->form([
+            ['key' => 'host', 'label' => _('Database host'), 'default' => $defaults['dbHost']],
+            ['key' => 'name', 'label' => _('Database name'), 'default' => $defaults['dbName']],
+            ['key' => 'user', 'label' => _('Database user'), 'default' => $defaults['dbUser']],
+            ['key' => 'pass', 'label' => _('Database password'), 'default' => $password],
+        ], _('Database'));
+        [$plan->dbHost, $plan->dbName, $plan->dbUser, $plan->dbPass] = [$v['host'], $v['name'], $v['user'], $v['pass']];
         Database::remember($plan->dbHost, $plan->dbUser, $plan->dbPass);
     }
 
