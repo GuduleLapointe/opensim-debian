@@ -2,6 +2,10 @@
 
 ### Unreleased
 
+- new quick setup: `Add grid` proposes it first, one form (name of the grid, owner with password and optional email, database user and password) instead of a screen for each, then the plan with the default settings to accept (the advanced setup, with every question, is one answer away); once the grid and its first region are made, the setup says so, with the login URI, and proposes to finish
+- new `opensim setup --file FILE` makes a setup described in a JSON or YAML file (grid, owner, simulators and regions, accounts in the format of the bulk import), `--check` only reads it, and `opensim users import` takes the accounts of the same file; the setup of a grid is kept in `setup.json` in its folder, to make it again (example: `share/examples/setup.yaml`)
+- fix the account of the owner is made when it has no email: the console asks for the email, which the setup did not answer
+- update the economy told to the viewers is the path of the helpers (they add `currency.php`), the search is the `SearchURL` of the login service (`query.php`), and no `message` URL is written: `offline.php` is not the message of the day
 - new the shortcuts of a terminal in the setup: Escape gives up the screen and goes back to the menu it came from, Ctrl-Q leaves the setup from anywhere, Ctrl-U clears the line (a password too), Ctrl-W the word before the cursor
 - update the email of the first account is optional (OpenSimulator does not need one), the setup shows the URL of the helpers instead of asking for their path, and says where the configuration for the web server is when the grid is made
 - update the nick of a grid and the names of the instances are snake_case, the words kept apart (`the_rapist`, not `therapist`): names that only differ by their spaces no longer give the same instance

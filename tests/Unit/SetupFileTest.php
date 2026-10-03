@@ -99,6 +99,8 @@ it('keeps what the setup did, to make it again', function () {
     $sim->simName = 'Welcome';
     $sim->regionName = 'Welcome';
     $sim->estateOwner = 'Jane Doe';
+    $sim->dbName = 'welcome_db';
+    $sim->estateName = 'Test Estate';
     $sim->createOwner = true;
     $sim->ownerPassword = 'hunter22';
     $data = SetupFile::withSim($data, $sim);
@@ -106,12 +108,16 @@ it('keeps what the setup did, to make it again', function () {
     $more = new SimPlan();
     $more->simName = 'Welcome';
     $more->regionName = 'Second';
+    $more->dbUser = '';
     $data = SetupFile::withSim($data, $more);
 
     expect($data['grid']['database']['name'])->toBe('test_grid_robust')
         ->and($data['owner'])->toBe(['name' => 'Jane Doe', 'password' => 'hunter22'])
         ->and(array_column($data['simulators'][0]['regions'], 'name'))->toBe(['Welcome', 'Second'])
-        ->and(count($data['simulators']))->toBe(1);
+        ->and(count($data['simulators']))->toBe(1)
+        // a region added later, which knows nothing of the database, does not erase it
+        ->and($data['simulators'][0]['database']['name'])->toBe('welcome_db')
+        ->and($data['simulators'][0]['estate'])->toBe(['name' => 'Test Estate', 'owner' => 'Jane Doe']);
     // and what it kept is a setup that reads
     expect(SetupFile::problems($data))->toBe([]);
 });

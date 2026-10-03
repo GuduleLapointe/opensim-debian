@@ -294,17 +294,19 @@ final class SetupFile
             ], static fn($v): bool => $v !== null);
         }
 
+        // What the plan does not say (a region added later knows nothing of the database) is not erased
+        $sim = self::compact($sim);
         $sims = $data['simulators'] ?? [];
         $found = false;
         foreach ($sims as $k => $existing) {
             if (($existing['name'] ?? '') === $plan->simName) {
                 // A region added later is kept with the ones this simulator already had
                 $regions = $existing['regions'] ?? [];
-                foreach ($sim['regions'] as $region) {
+                foreach ($sim['regions'] ?? [] as $region) {
                     $regions = array_values(array_filter($regions, static fn(array $r): bool => ($r['name'] ?? '') !== $region['name']));
                     $regions[] = $region;
                 }
-                $sims[$k] = ['regions' => $regions] + $sim;
+                $sims[$k] = ['regions' => $regions] + array_replace_recursive($existing, $sim);
                 $found = true;
             }
         }
@@ -343,6 +345,26 @@ final class SetupFile
         if ($written !== false) {
             chmod($path, 0o600);
         }
+    }
+
+    /**
+     * Without what is empty, at any depth.
+     *
+     * @param array<string,mixed> $values
+     * @return array<string,mixed>
+     */
+    private static function compact(array $values): array
+    {
+        foreach ($values as $key => $value) {
+            if (is_array($value) && !array_is_list($value)) {
+                $values[$key] = self::compact($value);
+            }
+            if ($values[$key] === '' || $values[$key] === []) {
+                unset($values[$key]);
+            }
+        }
+
+        return $values;
     }
 
     /** @param array<string,mixed> $data */

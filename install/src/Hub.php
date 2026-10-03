@@ -247,7 +247,7 @@ final class Hub
         $profile = (new Config())->profile();
         $grid = GridInfo::load($profile, $nick);
         $this->ui->note(
-            sprintf(_("Your grid %s is ready, nothing more is needed."), $this->ui->entity($nick))
+            sprintf(_("Your grid %s is ready, nothing more is needed."), $this->ui->entity($grid !== null && $grid->name !== '' ? $grid->name : $nick))
             . ($grid !== null && !$grid->remote ? "\n" . sprintf(_('Login URI: %s'), "http://{$grid->baseHostname}:{$grid->publicPort}") : '')
             . "\n" . _('You can quit now, or go on to add regions and simulators.'),
         );

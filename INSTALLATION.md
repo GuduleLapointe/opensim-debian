@@ -37,7 +37,7 @@ OpenSimulator 0.9.3 needs the .NET 8 runtime and the native library `libgdiplus`
 sudo opensim install-dotnet
 ```
 
-The setup asks whether the grid's economy, search and offline messages are served by opensim-helpers, and where: `/helpers` by default, any path you already use (`/helper`, `/search`, `/guide`...) can be chosen, in the setup or in the `helpers.ini` of the grid. Then:
+The setup asks whether the economy and the search of the grid are served by opensim-helpers, and shows their URL, `{web URL}/helpers` (the viewers add the name of the script). The economy of the grid is that URL, the in-world search is `query.php` under it (`SearchURL` of Robust). A path other than `/helpers`, or a path of its own for a script (`/search`, `/guide`...), is set in the `helpers.ini` of the grid, not asked.
 
 ```bash
 opensim web                       # where the services are
@@ -47,12 +47,16 @@ opensim web snippet caddy         # what the web server needs: caddy, nginx or a
 
 Include the snippet in the site of the grid (it names the grid to the helpers, aliases the paths you chose and denies what is not for the web); the config of your web server is not touched.
 
-Create a grid with the setup wizard, then start it:
+Create a grid with the setup wizard, then start it. The quick setup is what to choose first: one form (the name of the grid, its owner with a password and an optional email, the user and password of the database), the usual settings for everything else, which are shown before anything is written. The advanced setup asks every question.
 
 ```bash
 opensim setup
 sudo systemctl start opensim
 ```
+
+The keys of a terminal work in the wizard: `Escape` gives up the screen and goes back to the menu it came from, `Ctrl-Q` leaves the setup from anywhere, `Ctrl-U` clears the line (a password too), `Ctrl-W` the word before the cursor.
+
+A setup can also be described in a file, JSON or YAML (the example is `share/examples/setup.yaml`, in `/usr/share/opensim-tools/share/examples/`): the grid, its owner, its simulators and regions, and the accounts to make, in the format of the bulk import. `opensim setup --file setup.yaml` makes it, with the questions of the wizard answered from the file (`--check` only reads it); `opensim users import setup.yaml` makes only its accounts. What the wizard does is kept in the folder of the grid, `setup.json` (readable by its owner only, it holds the passwords), to make the same grid again.
 
 The wizard goes one level deeper at a time (the core, the grids, a grid, a simulator, a region), and every screen ends with `Back` and `Quit`. Once the grid is made it lands on its screen, ready to add a simulator (`Add simulator`): it has its own database and its first region, and the owner of its estate is an account of the grid, chosen or created on the way (in the console of Robust, which is started for that if needed). The wizard writes the config of the simulator in `/etc/opensim/grids/<grid>/sims/`, links it into `/etc/opensim/opensim.d`, starts it and checks that its region is online in the grid. The first simulator and its first region are called `Welcome` unless you choose another name, and the region is the one visitors arrive in (the default region of the grid): without one nobody can log in. More regions are added from the screen of the simulator (`Add region`), through its console when it runs; what has to restart (a new region, whose parcel is named after it, or a region moved, enabled or disabled) is listed, and the wizard offers to restart it when you quit. `opensim enable <instance>` and `opensim disable <instance>` do from the command line what the screens do.
 
