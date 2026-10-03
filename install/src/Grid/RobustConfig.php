@@ -63,6 +63,8 @@ final class RobustConfig
             ],
             'LoginService' => [
                 'DestinationGuide' => $this->q('${Const|WebURL}/guide'),
+                // Shown to the user when logging in (<USERNAME> is replaced by the name of the avatar)
+                'WelcomeMessage' => $this->q("Welcome to {$plan->gridName}, <USERNAME>!"),
             ],
             'MapImageService' => [
                 'TilesStoragePath' => $this->q('${Const|DataDirectory}/maptiles'),
@@ -84,6 +86,10 @@ final class RobustConfig
             $ini->set('GridInfoService', 'economy', $this->q('${Const|WebURL}' . $services->base()));
             // The search of the viewer, in-world, is the query script (not a page of the web site)
             $ini->set('LoginService', 'SearchURL', $this->q('${Const|WebURL}' . $services->path('search')));
+            // The destination guide of the viewers is the one of the helpers
+            $ini->set('LoginService', 'DestinationGuide', $this->q('${Const|WebURL}' . $services->path('guide')));
+            // The message of the day: the text of motd.php, read when Robust starts (WelcomeMessage when it cannot be)
+            $ini->set('LoginService', 'MessageUrl', $this->q('${Const|WebURL}' . $services->path('motd')));
         }
 
         if ($plan->enableHypergrid) {

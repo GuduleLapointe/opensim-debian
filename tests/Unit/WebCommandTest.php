@@ -139,6 +139,10 @@ describe('Robust config with the helpers', function () {
         // The economy is the path of the helpers, the viewer adds the script; the search API is the query script
         expect($ini)->toContain('economy = "${Const|WebURL}/helper"');
         expect($ini)->toContain('SearchURL = "${Const|WebURL}/search"');
+        // The guide and the message of the day are the helpers' too; the message has a text when they cannot be reached
+        expect($ini)->toContain('DestinationGuide = "${Const|WebURL}/helper/guide.php"');
+        expect($ini)->toContain('MessageUrl = "${Const|WebURL}/helper/motd.php"');
+        expect($ini)->toContain('WelcomeMessage = "Welcome to ');
         expect($ini)->not->toContain('currency.php');
         expect($ini)->not->toContain('message = ');
     });

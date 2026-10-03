@@ -108,6 +108,8 @@ final class HelpersConfig
             ;; grid already use another one (e.g. /helper). The web server needs the same path (opensim web snippet).
             path = "$path"
             ;; mail_sender = "no-reply@example.org"
+            ;; The message of the day shown at login (motd.php, read by Robust when it starts; <USERNAME> is the avatar)
+            ;; motd = "Welcome to My Grid, <USERNAME>!"
             ;; events_url = "https://2do.directory/events"
             ;; currency_provider = "gloebit"
             ;; currency_use_moneyserver = false
@@ -117,6 +119,7 @@ final class HelpersConfig
             ;; the script of the helpers (opensim web snippet writes the aliases).
             ;; search = "/search"
             ;; guide = "/guide"
+            ;; motd = "/motd"
             ;; currency = "/helper/currency.php"
             ;; register = "/helper/register.php"
             ;; offline = "/helper/offline.php"

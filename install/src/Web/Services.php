@@ -20,6 +20,7 @@ final class Services
         'offline' => 'offline.php',
         'currency' => 'currency.php',
         'guide' => 'guide.php',
+        'motd' => 'motd.php',
         'landtool' => 'landtool.php',
         'parser' => 'parser.php',
         'eventsparser' => 'eventsparser.php',
