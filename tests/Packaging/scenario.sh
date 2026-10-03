@@ -268,6 +268,8 @@ sim=$(sim_pid)
     echo "exit code: $?" >>/tmp/region2.out)
 check "a region is added to the running simulator, and online" "grep -q 'exit code: 0' /tmp/region2.out && grep -q 'Region Sim1North is online' /tmp/region2.out &&
     [ \"\$(mysql -BN -e \"SELECT CONCAT(locX DIV 256, ',', locY DIV 256) FROM testgrid_robust.regions WHERE regionName='Sim1North'\")\" = 1001,1000 ] && [ '$(sim_pid)' = '$sim' ]"
+check "the parcel of the new region is named after it by the object of the setup, without a restart" "grep -q 'Parcel of region Sim1North is named Sim1North' /tmp/region2.out &&
+    [ \"\$(mysql -BN -e \"SELECT Name FROM testgrid_sim1.land WHERE RegionUUID = (SELECT uuid FROM testgrid_robust.regions WHERE regionName='Sim1North')\")\" = Sim1North ]"
 (cd /var/lib/opensim && TEST_GRID=testgrid runuser -u opensim -- php /test/account.php >/tmp/account.out 2>&1; echo "exit code: $?" >>/tmp/account.out)
 check "an account made after the default region has it as home" "grep -q 'exit code: 0' /tmp/account.out && home_is_default Later User"
 # Accounts made from a list, directly in the database (no console): their inventory, their password, their home

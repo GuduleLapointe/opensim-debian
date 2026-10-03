@@ -355,7 +355,55 @@ final class NewSim
             $this->failed($plan, sprintf(_("Region %s did not register in the grid '%s'."), $plan->regionName, $grid->nick));
         }
         $this->giveHome($plan, $grid);
+        $this->initRegion($plan);
         $this->ui->note(sprintf(_("Region %s is online."), $plan->regionName));
+    }
+
+    /**
+     * What a new region gets once it runs: the object of share/ossl-scripts, loaded through the console of the
+     * simulator, its script names the parcel after the region. --merge leaves the terrain, the parcels and the
+     * objects of the region alone; the objects of the archive go to the estate owner, and to the middle of the
+     * region (the archive was saved with the object in the middle of a 256 m one).
+     *
+     * Not fatal: a region without it is a region whose parcel is named "Your Parcel".
+     */
+    private function initRegion(SimPlan $plan): void
+    {
+        $archive = dirname(__DIR__, 3) . '/share/ossl-scripts/fix-parcel-name.oar';
+        if (!is_file($archive) || RegionName::problem($plan->regionName) !== null) {
+            return;
+        }
+        $shift = (int) ($plan->regionSize / 2) - 128;
+        $sent = Console::send(
+            $plan->slug,
+            "change region \"{$plan->regionName}\"\n"
+            . "load oar --merge --default-user \"{$plan->estateOwner}\" --displacement \"<$shift,$shift,0>\" $archive\n",
+        );
+        if (!$sent) {
+            $this->ui->warn(sprintf(_("The simulator did not take the initialization of region %s."), $plan->regionName));
+
+            return;
+        }
+
+        // The database of the simulator, as its config says (a region added to a simulator knows no more)
+        $conf = GridInfo::parse($plan->iniPath());
+        $db = new GridPlan();
+        $db->dbHost = (string) ($conf['dbHost'] ?? $plan->dbHost);
+        $db->dbName = (string) ($conf['dbName'] ?? $plan->dbName);
+        $db->dbUser = (string) ($conf['dbUser'] ?? $plan->dbUser);
+        $db->dbPass = (string) ($conf['dbPass'] ?? $plan->dbPass);
+        $database = new Database($this->ui);
+        $uuid = $plan->regionUuid;
+        for ($try = 0; $try < 30; $try++) {
+            $names = $database->select($db, "SELECT Name FROM land WHERE RegionUUID = '$uuid'") ?? [];
+            if ($names !== [] && !in_array('Your Parcel', $names, true)) {
+                $this->ui->note(sprintf(_('Parcel of region %s is named %s.'), $plan->regionName, implode(', ', $names)));
+
+                return;
+            }
+            sleep(1);
+        }
+        $this->ui->warn(sprintf(_('The parcel of region %s is not named yet: its initialization object may still be starting.'), $plan->regionName));
     }
 
     /** Give the roles asked to the region in the Robust config of the grid. */
@@ -440,6 +488,7 @@ final class NewSim
             }
             if ($plan->createRegion) {
                 $this->giveHome($plan, $grid);
+                $this->initRegion($plan);
             }
             $this->ui->note(
                 !$plan->createRegion
