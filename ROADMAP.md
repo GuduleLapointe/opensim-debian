@@ -9,8 +9,9 @@
 - [ ] try to open ports if firewall is active (`opensim ports --ufw` only tells the rules)
 - [ ] check `opensim stop` on a simulator with an NPC in it: the real users are counted from `show users`, the NPCs (`NPC Root`) are skipped, but only the format was checked on a real core, not an NPC
 - [ ] the `[Messaging] OfflineMessageURL` of the simulators is not written yet: the setup does not tell the simulators where `offline.php` is
-- [ ] the message of the day: there is no script for it in opensim-helpers, and the format a viewer expects is still to find out
-- [ ] the search page of the web site (the `search` of `[GridInfoService]`) is another script than `query.php` and is not in opensim-helpers yet; the setup does not write it until it is
+- [x] the message of the day: `[LoginService] MessageUrl` is a URL whose text is shown at login (read by Robust when it starts, `WelcomeMessage` when it cannot be), found in the code of the core (`LLLoginService`); `motd.php` of opensim-helpers serves the `motd` of `helpers.ini`
+- [x] the destination guide is `guide.php` of the helpers, `DestinationGuide` of the Robust config points to it
+- [ ] the search page of the web site: opensim-helpers has the search backend (`includes/search.php`, `class-search.php` of the engine, behind `query.php`) but the setup found no script that is a page; find which one it is, and write the `search` URL of `[GridInfoService]` when it exists
 - [ ] run again the packaging scenario beyond the upgrade step (the development build, removal, purge) and with the real `apt-package`: only the packages built by hand with nfpm were tested; run it with docker as well as podman
 - [ ] try the web server examples written by the setup (`<grid>.caddyfile`, `<grid>-nginx.conf`, `<grid>-apache.conf`) on a real Caddy, nginx and Apache
 
