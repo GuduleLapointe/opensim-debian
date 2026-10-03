@@ -41,7 +41,7 @@
   - [ ] a grid follows the profile of its own install, the default profile is only the default of the new grids
   - [ ] the system user to run the instances as is per profile, not only `SystemUser` of `[Defaults]`
   - [ ] the setup offers to register an install (the core menu), and no script assumes `/etc/opensim`, `/var/lib/opensim` or `/usr/share/opensim` (review, one fix per file, with a test)
-- [ ] test the OpenSimSearch module from end to end again (a region registers, is indexed and found) with the `opensim-helpers` package: the test written for the former `opensim-manfredaabye-helpers` package is gone with it
+- [ ] test the OpenSimSearch module from end to end with a parcel shown in search: checked with the current helpers (the sim registers on `register.php`, `parser.php` fetches its snapshot, `query.php` answers), what is left is a parcel with "show in search" set, which a viewer does for now (the snapshot of a new region has no parcel)
 - [ ] add to the README of opensim-helpers (and of the engine) a short section on how to use them with the OpenSim kit
 - [ ] install instructions in the README of `lsl-ossl-zed` (rust, clone, `zed: install dev extension`, the prebuilt LSP binaries only cover Linux x86_64 and macOS)
 
