@@ -47,7 +47,8 @@ it('tells a simulator where the offline messages and the search index of the gri
     expect($ini['Messaging']['OfflineMessageURL'])->toBe('https://play.example.org/helpers/offline.php')
         ->and($ini['Messaging']['OfflineMessageModule'])->toBe('OfflineMessageModule')
         ->and($ini['DataSnapshot']['DATA_SRV_MISearch'])->toBe('https://play.example.org/helpers/register.php')
-        ->and($ini['DataSnapshot']['index_sims'])->toBe('true');
+        ->and($ini['DataSnapshot']['index_sims'])->toBe('true')
+        ->and($ini['DataSnapshot']['gridname'])->toBe('Test');
 });
 
 it('writes nothing of them for a grid without helpers', function () {
