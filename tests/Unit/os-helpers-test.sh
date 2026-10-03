@@ -70,13 +70,31 @@ function test_oscountdown_goes_to_the_end_when_the_check_fails() {
 }
 
 function test_oscountrealusers_ignores_npcs_and_children() {
-    eval "$(sed -n '/^osCountRealUsers()/,/^}/p' "$ROOT/libexec/os-helpers")"
-    OSIM_REST_INI=x
-    osRest() {
-        printf 'Agents connected: 3\n\nName Type Agent ID\nAnn Lee Root 1\nBob NPC Root 2\nCy Child 3\nDee Root 4\n'
-    }
+	eval "$(sed -n '/^osCountRealUsers()/,/^}/p' "$ROOT/libexec/os-helpers")"
+	OSIM_REST_INI=x
+	osRest() {
+		cat <<'OUT'
 
-    assert_equals '2' "$(osCountRealUsers)"
+Root agents in region Sim1: 3 (root 3, child 1)
+Firstname        Lastname         Agent ID                              Type        Position
+Ann              Lee              11111111-2222-3333-4444-555555555555  Root        <1, 2, 3>
+Bob              NPC              11111111-2222-3333-4444-555555555556  NPC Root    <1, 2, 3>
+Cy               Child            11111111-2222-3333-4444-555555555557  Child       <1, 2, 3>
+
+Root agents in region Sim2: 1 (root 1, child 0)
+Dee              Roe              11111111-2222-3333-4444-555555555558  Root        <1, 2, 3>
+OUT
+	}
+
+	assert_equals '2' "$(osCountRealUsers)"
+}
+
+function test_oscountrealusers_is_zero_for_empty_regions() {
+	eval "$(sed -n '/^osCountRealUsers()/,/^}/p' "$ROOT/libexec/os-helpers")"
+	OSIM_REST_INI=x
+	osRest() { printf '\nRoot agents in region Sim1: 0 (root 0, child 0)\n'; }
+
+	assert_equals '0' "$(osCountRealUsers)"
 }
 
 function test_oscountrealusers_does_not_guess_without_a_list() {

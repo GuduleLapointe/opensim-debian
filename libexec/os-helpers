@@ -264,17 +264,18 @@ osCountdown() {
 	osStepEnd
 }
 
-# The real users in the regions of the simulator being stopped (simName, its
-# remote console in OSIM_REST_INI): NPCs and child agents are not counted. Says
+# The real users in the regions of the simulator being stopped (its remote console
+# is OSIM_REST_INI), from `show users`: NPCs and child agents are not counted. Says
 # nothing, and fails, when it cannot tell: only a remote console gives an answer,
 # and one that has the list of users in it.
 osCountRealUsers() {
 	local out
 	[ -n "${OSIM_REST_INI:-}" ] || return 1
 	out=$(osRest --ini "$OSIM_REST_INI" -- "show users" 2>/dev/null) || return 1
-	# The list has a header, even when it is empty: no header, no answer
-	printf '%s\n' "$out" | grep -qiE 'agents|^ *name ' || return 1
-	printf '%s\n' "$out" | grep -iE '(^|[[:space:]])root([[:space:]]|$)' | grep -viE 'npc' | wc -l
+	# Each region says how many agents it has, even none: no such line, no answer. The rows of the list tell
+	# the type of each one (Root, Child, NPC Root, NPC Child): the real users are the Root ones
+	printf '%s\n' "$out" | grep -q '^Root agents in region ' || return 1
+	printf '%s\n' "$out" | grep -cE '[0-9a-f]{8}-[0-9a-f-]{27}[[:space:]]+Root([[:space:]]|$)' || true
 }
 
 # Succeeds when the simulator is known to have no real user left
