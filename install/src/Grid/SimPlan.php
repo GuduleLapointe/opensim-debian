@@ -51,6 +51,10 @@ final class SimPlan
     public string $logsDirectory = '';
 
     // Its estate, whose owner is an account of the grid.
+    /** The helpers of the grid the simulator tells its offline messages and its data to (empty without helpers) */
+    public string $offlineUrl = '';
+    public string $registerUrl = '';
+
     public string $estateName = '';
     public string $estateOwner = '';
     /** The owner does not exist yet: the account to create in the grid. */

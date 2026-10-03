@@ -888,6 +888,10 @@ final class NewSim
             'dbPass' => $current['dbPass'] ?? ($grid->dbPass !== '' ? $grid->dbPass : self::password(20)),
         ]);
 
+        // The helpers of the grid, when it has some: offline messages and the search index
+        $plan->offlineUrl = $grid->helperUrl('offline');
+        $plan->registerUrl = $grid->helperUrl('register');
+
         $plan->estateName = trim(
             $this->ui->text(_('Estate name'), $current['estateName'] ?? "{$grid->name} Estate", $required),
         );

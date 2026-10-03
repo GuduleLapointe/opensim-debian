@@ -35,6 +35,12 @@ final class GridInfo
     public bool $remote = false;
     /** A grid that is only planned, not made yet (the quick setup plans its first simulator before making anything). */
     public bool $planned = false;
+    /** The helpers of the grid, when it has some: where they are on its web site (see helperUrl()). */
+    public string $webUrl = '';
+    public bool $helpers = false;
+    public string $helpersPath = '/helpers';
+    /** @var array<string,string> */
+    public array $helpersUrls = [];
 
     /**
      * @param array<string,mixed> $profile the install profile (Config::profile())
@@ -98,8 +104,29 @@ final class GridInfo
         $grid->dataDirectory = $plan->dataDirectory;
         $grid->cacheDirectory = $plan->cacheDirectory;
         $grid->logsDirectory = $plan->logsDirectory;
+        $grid->helpers = $plan->helpers;
+        $grid->webUrl = $plan->webUrl;
+        $grid->helpersPath = $plan->helpersPath;
+        $grid->helpersUrls = $plan->helpersUrls;
 
         return $grid;
+    }
+
+    /**
+     * The address of a service of the helpers (offline, register, search...), empty when the grid has none.
+     */
+    public function helperUrl(string $service): string
+    {
+        if ($this->planned) {
+            return $this->helpers ? (new \OpenSim\Installer\Web\Services($this->helpersPath, $this->helpersUrls))->url($this->webUrl, $service) : '';
+        }
+        $ini = \OpenSim\Installer\Web\HelpersConfig::read($this->dir);
+        $webUrl = $ini['Helpers']['web_url'] ?? '';
+        if ($webUrl === '') {
+            return '';
+        }
+
+        return \OpenSim\Installer\Web\HelpersConfig::services($this->dir)->url($webUrl, $service);
     }
 
     /**

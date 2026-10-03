@@ -35,3 +35,26 @@ it('enables OSSL in the config of a grid, with the permissions of the defaults',
         ->and($enable->get('OSSL', 'AllowOSFunctions'))->toBe('true')
         ->and($enable->get('OSSL', 'Allow_osSetParcelDetails'))->toBeNull();
 });
+
+it('tells a simulator where the offline messages and the search index of the grid are', function () {
+    $plan = new SimPlan();
+    $plan->simName = 'Alpha';
+    $plan->gridName = 'Test';
+    $plan->offlineUrl = 'https://play.example.org/helpers/offline.php';
+    $plan->registerUrl = 'https://play.example.org/helpers/register.php';
+    $ini = parse_ini_string((new SimConfig())->render($plan), true, INI_SCANNER_RAW);
+
+    expect($ini['Messaging']['OfflineMessageURL'])->toBe('https://play.example.org/helpers/offline.php')
+        ->and($ini['Messaging']['OfflineMessageModule'])->toBe('OfflineMessageModule')
+        ->and($ini['DataSnapshot']['DATA_SRV_MISearch'])->toBe('https://play.example.org/helpers/register.php')
+        ->and($ini['DataSnapshot']['index_sims'])->toBe('true');
+});
+
+it('writes nothing of them for a grid without helpers', function () {
+    $plan = new SimPlan();
+    $plan->simName = 'Alpha';
+    $plan->gridName = 'Test';
+    $ini = parse_ini_string((new SimConfig())->render($plan), true, INI_SCANNER_RAW);
+
+    expect($ini)->not->toHaveKey('Messaging')->and($ini['DataSnapshot'])->not->toHaveKey('DATA_SRV_MISearch');
+});
