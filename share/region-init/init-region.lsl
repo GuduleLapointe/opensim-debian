@@ -11,12 +11,11 @@ string DEFAULT_PARCEL_NAME = "Your Parcel";
 init()
 {
     // The land of a new region is one parcel the size of the region: any point of it will do
-    vector center = <llGetRegionSizeX() / 2.0, llGetRegionSizeY() / 2.0, 0.0>;
-
-    list current = llGetParcelDetails(center, [PARCEL_DETAILS_NAME]);
+    vector pos = llGetPos();
+    list current = llGetParcelDetails(pos, [PARCEL_DETAILS_NAME]);
     if (llList2String(current, 0) == DEFAULT_PARCEL_NAME)
     {
-        osSetParcelDetails(center, [PARCEL_DETAILS_NAME, llGetRegionName()]);
+        osSetParcelDetails(pos, [PARCEL_DETAILS_NAME, llGetRegionName()]);
     }
 
     // Add your own region setup here
@@ -29,6 +28,7 @@ default
         init();
         llOwnerSay("Region initialized");
         // The object has done its job: the copy rezzed in the region goes, the original stays in the library
-        llDie();
+        // Disabled for debugging purpose
+        // llDie();
     }
 }
