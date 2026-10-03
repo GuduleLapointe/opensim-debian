@@ -24,7 +24,7 @@ The table and column names are the ones of the migrations (`OpenSim/Data/MySQL/R
 
 ## Proposed
 
-- `opensim users import <file> [--grid NICK]`, one account per line or entry; CSV (`first,last,email,password`, header line) and JSON (a list of objects with the same keys), the extension tells.
+- `opensim import [grid] <file> --users`, one account per line or entry; CSV (`first,last,email,password`, header line) and JSON (a list of objects with the same keys), the extension tells.
 - No password given: one is generated, written in a result file (mode 600), never on the screen.
 - A **dry run** by default (what would be created, the names taken, the errors), `--apply` to write; one transaction per account, so a failure leaves nothing half made; the result is a table (created, skipped, failed, why) and the file for whoever sent the list.
 - Reuses the database class of the setup (`Database`, the credentials of the grid), the code that knows the schema in one place (`Grid\GridAccounts`).

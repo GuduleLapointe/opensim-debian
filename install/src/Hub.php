@@ -226,16 +226,11 @@ final class Hub
     private function quickSetup(): ?array
     {
         $data = (new QuickSetup($this->ui))->ask();
-        $runner = new SetupRunner($this->ui);
         try {
-            return $runner->run($data, SetupRunner::ASK);
+            return (new SetupRunner($this->ui))->runQuick($data);
         } catch (EditConfig) {
-            // Every question again, with what was typed and what the setup chose as the answers proposed; a grid
-            // that is made already is the one the simulator joins
-            if ($runner->madeGrid !== null) {
-                $data['grid'] = ['nick' => $runner->madeGrid];
-            }
-
+            // Nothing is written yet: every question again, with what was typed and what the setup chose as the
+            // answers proposed
             return (new SetupRunner($this->ui))->run($data, [], '', true);
         }
     }

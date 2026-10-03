@@ -276,8 +276,8 @@ check "the parcel of the new region is named after it by the object of the setup
 check "an account made after the default region has it as home" "grep -q 'exit code: 0' /tmp/account.out && home_is_default Later User"
 # Accounts made from a list, directly in the database (no console): their inventory, their password, their home
 printf 'first,last,email,password\nBulk,One,one@example.org,bulkpw1\nBulk,Two,,\n' >/tmp/bulk.csv
-(cd /tmp && runuser -u opensim -- opensim users import /tmp/bulk.csv >/tmp/bulk-dry.out 2>&1; echo "exit code: $?" >>/tmp/bulk-dry.out
-    runuser -u opensim -- opensim users import /tmp/bulk.csv --apply --result /tmp/bulk-result.csv >/tmp/bulk.out 2>&1; echo "exit code: $?" >>/tmp/bulk.out)
+(cd /tmp && runuser -u opensim -- opensim import testgrid /tmp/bulk.csv >/tmp/bulk-dry.out 2>&1; echo "exit code: $?" >>/tmp/bulk-dry.out
+    runuser -u opensim -- opensim import testgrid /tmp/bulk.csv --apply --result /tmp/bulk-result.csv >/tmp/bulk.out 2>&1; echo "exit code: $?" >>/tmp/bulk.out)
 check "a list is checked first, and nothing is written without --apply" "grep -q 'would create' /tmp/bulk-dry.out && grep -q 'Nothing was written' /tmp/bulk-dry.out"
 check "the accounts of the list are made in the database, with their inventory" "grep -q 'exit code: 0' /tmp/bulk.out &&
     [ \"\$(mysql -BN -e \"SELECT COUNT(*) FROM testgrid_robust.UserAccounts WHERE FirstName='Bulk'\")\" = 2 ] &&
@@ -289,7 +289,7 @@ check "the password of a listed account is kept as Robust keeps it" "[ -n '$bulk
     [ '$bulk_hash' = \"\$(printf '%s:%s' \"\$(printf %s bulkpw1 | md5sum | cut -d' ' -f1)\" '$bulk_salt' | md5sum | cut -d' ' -f1)\" ]"
 check "a listed account has the default region as home" "home_is_default Bulk One"
 check "the result is private, and holds the passwords made here, not the ones given" "[ \"\$(stat -c %a /tmp/bulk-result.csv)\" = 600 ] && ! grep -q bulkpw1 /tmp/bulk-result.csv && grep -q '^Bulk,Two' /tmp/bulk-result.csv"
-(cd /tmp && runuser -u opensim -- opensim users import /tmp/bulk.csv --apply >/tmp/bulk-again.out 2>&1)
+(cd /tmp && runuser -u opensim -- opensim import testgrid /tmp/bulk.csv --apply >/tmp/bulk-again.out 2>&1)
 check "an account that exists is skipped" "grep -q 'exists' /tmp/bulk-again.out && [ \"\$(mysql -BN -e \"SELECT COUNT(*) FROM testgrid_robust.UserAccounts WHERE FirstName='Bulk'\")\" = 2 ]"
 rm -f users-result-*.csv /tmp/users-result-*.csv
 

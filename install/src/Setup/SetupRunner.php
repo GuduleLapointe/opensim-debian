@@ -13,6 +13,7 @@ use OpenSim\Installer\Grid\NewGrid;
 use OpenSim\Installer\Grid\NewSim;
 use OpenSim\Installer\Grid\SimConfig;
 use OpenSim\Installer\SetupFailed;
+use OpenSim\Installer\Ui\EditConfig;
 use OpenSim\Installer\Ui\InstallerUi;
 use OpenSim\Installer\Ui\PresetUi;
 
@@ -24,12 +25,44 @@ use OpenSim\Installer\Ui\PresetUi;
 final class SetupRunner
 {
     /** The questions the user still answers when asked to (the plan to accept, the administrator of the database). */
-    public const ASK = ['Apply this configuration', 'Enter the credentials', 'Administrator user', 'Password of ', 'Try again'];
-
-    /** The grid this run made, when it made one: what is left to edit when the setup is given up after it */
-    public ?string $madeGrid = null;
+    public const ASK = ['Enter the credentials', 'Administrator user', 'Password of ', 'Try again'];
 
     public function __construct(private InstallerUi $ui) {}
+
+    /**
+     * The quick setup: the plan of the grid and of its first simulator are made first, shown together, and nothing
+     * is written until the user accepts them (or edits them: EditConfig).
+     *
+     * @param array<string,mixed> $data  a setup (SetupFile::parse): a grid to make, its owner, one simulator
+     * @return ?array{0:string,1:string} the nick of the grid, the instance of its simulator; null when abandoned
+     * @throws EditConfig when the user does not accept the plan and wants to edit it
+     */
+    public function runQuick(array $data): ?array
+    {
+        $gridUi = new PresetUi($this->ui, SetupFile::gridAnswers($data), self::ASK);
+        $prepared = (new NewGrid($gridUi))->prepare();
+        if ($prepared === null) {
+            return null;
+        }
+        [$gridPlan, $profile] = $prepared;
+
+        // The first simulator is planned for the grid as it will be: its ports, its database, its first region
+        $simUi = new PresetUi($this->ui, SetupFile::simAnswers($data, 0), self::ASK);
+        $simPlan = (new NewSim($simUi))->prepare(GridInfo::fromPlan($gridPlan), $profile);
+        if ($simPlan === null) {
+            return null;
+        }
+
+        $this->ui->note((new NewGrid($gridUi))->describe($gridPlan) . "\n\n" . (new NewSim($simUi))->describe($simPlan));
+        if ($this->ui->choose(_('Apply this configuration?'), ['yes' => _('Continue'), 'no' => _('Edit config')], 'yes') !== 'yes') {
+            throw new EditConfig();
+        }
+
+        $nick = (new NewGrid($gridUi))->complete($gridPlan, $profile, true);
+        $grid = $nick === null ? null : GridInfo::load($profile, $nick);
+
+        return $grid === null ? null : (new NewSim($simUi))->complete($simPlan, $grid, $profile, true);
+    }
 
     /**
      * @param array<string,mixed> $data  a setup (SetupFile::parse)
@@ -55,7 +88,6 @@ final class SetupRunner
             if ($nick === null) {
                 return null;
             }
-            $this->madeGrid = $nick;
         } elseif ($nick === '') {
             // No grid in the file: the simulators join the only grid there is
             $grids = array_map('basename', glob("$etcRoot/grids/*", GLOB_ONLYDIR) ?: []);

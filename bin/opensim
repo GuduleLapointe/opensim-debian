@@ -40,7 +40,8 @@ if [ "${1:-}" = "next" ]; then
 	exec php "$BASEDIR/libexec/next.php" "$@"
 fi
 
-# The configuration of a grid not made by the kit, ported: as the caller (it writes through the system user)
+# What a file holds (a grid not made by the kit, a setup, accounts) brought into the install: as the caller (it writes
+# through the system user)
 if [ "${1:-}" = "import" ]; then
 	shift
 	exec php "$BASEDIR/libexec/import.php" "$@"
@@ -56,12 +57,6 @@ fi
 if [ "${1:-}" = "oar" ]; then
 	shift
 	exec php "$BASEDIR/libexec/oar.php" "$@"
-fi
-
-# The accounts of a grid (a list made directly in its database): as the caller
-if [ "${1:-}" = "users" ]; then
-	shift
-	exec php "$BASEDIR/libexec/users.php" "$@"
 fi
 
 # The web side of a grid (helpers, URLs, snippets for the web server): as the caller
@@ -93,19 +88,15 @@ opensim ports [instance...] [--publish|--ufw]
                         --ufw the rules of the firewall
 
 Grids
-opensim setup [--file FILE [--check]]
-                        create or modify grids and simulators (setup wizard), or
-                        make a setup described in a JSON or YAML file
-opensim import [nick] robust FILE [--core DIR] [--apply]
-opensim import <grid> sim FILE [--name NAME] [--core DIR] [--apply]
-                        port the configuration of a grid or of a simulator not
-                        made by the kit (its files are not changed); without
-                        --apply, tells what would be written and which settings
-                        of the original are kept
-opensim users [grid] import FILE [--apply]
-                        make the accounts of a list (CSV, JSON or YAML) in the
-                        database of a grid; without --apply, tells what would
-                        be made
+opensim setup           create or modify grids and simulators (setup wizard)
+opensim import [grid] FILE [--grid] [--simulator] [--users] [--apply]
+                        bring what a file holds into the install: the config of
+                        a grid or of a simulator not made by the kit (its files
+                        are not changed), a setup file (JSON or YAML: the grid,
+                        its simulators and regions, its accounts), or a list of
+                        accounts (CSV, JSON or YAML). Everything the file holds,
+                        or only what --grid, --simulator or --users ask for;
+                        without --apply, tells what would be made
 opensim web [grid] [show|check]
 opensim web [grid] snippet <caddy|nginx|apache>
                         the helpers of a grid (economy, search): where they are

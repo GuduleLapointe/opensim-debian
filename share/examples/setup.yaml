@@ -1,6 +1,6 @@
-# A setup in a file: opensim setup --file setup.yaml (JSON works too).
-# --check only reads it. The setup of a grid is kept in its folder (setup.json, for its owner only),
-# which makes the same grid again.
+# A setup in a file: opensim import setup.yaml --apply (JSON works too); without --apply, the command
+# tells what it would make. --grid, --simulator and --users restrict it to a part of the file.
+# The setup of a grid is kept in its folder (setup.json, for its owner only), which makes the same grid again.
 #
 # Only the name of the grid and the user and password of its database are required.
 # Everything else has the default of the setup.
@@ -30,8 +30,8 @@ simulators:
         roles: [default, default_hg]   # DefaultRegion, DefaultHGRegion, FallbackRegion
       # - { name: Beach, location: "1001,1000", port: 9003 }
 
-# The accounts to make, in the format of the bulk import (opensim users import reads this list
-# from the file as well). A password left out is made, and written in the result file.
+# The accounts to make, in the format of the bulk import (opensim import accounts.csv --users makes
+# a list like this one alone). A password left out is made, and written in the result file.
 users:
   - { first: Bob, last: Roe, password: pw-for-bob }
   - { first: Cy, last: Doe, email: cy@example.org }

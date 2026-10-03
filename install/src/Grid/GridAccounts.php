@@ -31,6 +31,10 @@ final class GridAccounts
      */
     public function names(GridInfo $grid): ?array
     {
+        if ($grid->planned) {
+            return []; // not made yet: no account
+        }
+
         return $this->database->select(
             $grid->databasePlan(),
             "SELECT CONCAT(FirstName, ' ', LastName) FROM UserAccounts WHERE NOT (FirstName = 'GRID' AND LastName = 'SERVICES') ORDER BY Created",

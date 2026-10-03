@@ -33,6 +33,8 @@ final class GridInfo
     public string $logsDirectory = '';
     /** A grid whose Robust is on another machine: only described here, to join it. */
     public bool $remote = false;
+    /** A grid that is only planned, not made yet (the quick setup plans its first simulator before making anything). */
+    public bool $planned = false;
 
     /**
      * @param array<string,mixed> $profile the install profile (Config::profile())
@@ -69,6 +71,33 @@ final class GridInfo
         $grid->dataDirectory = $conf['DataDirectory'] ?? ($profile['DataRoot'] ?? '') . "/$nick";
         $grid->cacheDirectory = $conf['CacheDirectory'] ?? ($profile['CacheRoot'] ?? '') . "/$nick";
         $grid->logsDirectory = $conf['LogsDirectory'] ?? ($profile['LogsRoot'] ?? '');
+
+        return $grid;
+    }
+
+    /** A grid that is planned, to plan its simulator before it is made: nothing of it is on disk or in the database yet. */
+    public static function fromPlan(GridPlan $plan): self
+    {
+        $grid = new self();
+        $grid->planned = true;
+        $grid->nick = $plan->gridNick;
+        $grid->name = $plan->gridName;
+        $grid->slug = $plan->gridSlug;
+        $grid->dir = $plan->gridDir;
+        $grid->robustIni = $plan->robustIni();
+        $grid->hypergrid = $plan->enableHypergrid;
+        $grid->regionSpacing = $plan->regionSpacing;
+        $grid->coreDirectory = $plan->coreDirectory;
+        $grid->baseHostname = $plan->baseHostname;
+        $grid->publicPort = $plan->publicPort;
+        $grid->privatePort = $plan->privatePort;
+        $grid->dbHost = $plan->dbHost;
+        $grid->dbName = $plan->dbName;
+        $grid->dbUser = $plan->dbUser;
+        $grid->dbPass = $plan->dbPass;
+        $grid->dataDirectory = $plan->dataDirectory;
+        $grid->cacheDirectory = $plan->cacheDirectory;
+        $grid->logsDirectory = $plan->logsDirectory;
 
         return $grid;
     }

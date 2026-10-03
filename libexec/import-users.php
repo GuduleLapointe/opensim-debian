@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 /**
- * opensim users: the accounts of a grid.
+ * The accounts of a list, made in the database of a grid. Run by `opensim import` (libexec/import.php), which is
+ * the command: this is its worker for a list of accounts.
  *
  *   opensim users [GRID] import FILE [--apply] [--keep-going] [--result FILE] [--format csv|json|yaml]
  *
@@ -87,7 +88,7 @@ $grid = $options['grid'] === '' ? null : GridInfo::load($profile, $options['grid
 if ($grid === null || $grid->remote || $grid->dbName === '') {
     fail(
         $options['grid'] === ''
-            ? 'say which grid: opensim users <grid> import ... (' . implode(', ', $grids) . ')'
+            ? 'say which grid: opensim import <grid> FILE ... (' . implode(', ', $grids) . ')'
             : "no grid {$options['grid']} on this machine, with a database to write to",
         2,
     );

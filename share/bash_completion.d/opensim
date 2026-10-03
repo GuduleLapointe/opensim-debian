@@ -48,7 +48,7 @@ _opensim()
   cur=${COMP_WORDS[COMP_CWORD]}
   case $COMP_CWORD in
     1)
-      COMPREPLY=( $(compgen -W "start stop restart status setup enable disable console screen command rest ports next web users import install-dotnet help" -- "$cur") )
+      COMPREPLY=( $(compgen -W "start stop restart status setup enable disable console screen command rest ports next web import install-dotnet help" -- "$cur") )
       ;;
     *)
       case ${COMP_WORDS[1]} in
@@ -75,30 +75,12 @@ _opensim()
           esac
           ;;
         import)
-          # opensim import [NICK] robust|sim FILE: the grid first
-          case ${COMP_WORDS[2]} in
-            robust|sim) [ "$COMP_CWORD" -gt 2 ] && COMPREPLY=( $(compgen -f -W "--core --name --apply" -- "$cur") ) ;;
-            *)
-              case $COMP_CWORD in
-                2) COMPREPLY=( $(compgen -W "robust sim $(_opensim_grids)" -- "$cur") ) ;;
-                3) COMPREPLY=( $(compgen -W "robust sim" -- "$cur") ) ;;
-                *) COMPREPLY=( $(compgen -f -W "--core --name --apply" -- "$cur") ) ;;
-              esac
-              ;;
-          esac
-          ;;
-        users)
-          # opensim users [GRID] import FILE
-          case ${COMP_WORDS[2]} in
-            import) [ "$COMP_CWORD" -gt 2 ] && COMPREPLY=( $(compgen -f -W "--apply --keep-going --result --format" -- "$cur") ) ;;
-            *)
-              case $COMP_CWORD in
-                2) COMPREPLY=( $(compgen -W "import $(_opensim_grids)" -- "$cur") ) ;;
-                3) COMPREPLY=( $(compgen -W "import" -- "$cur") ) ;;
-                *) COMPREPLY=( $(compgen -f -W "--apply --keep-going --result --format" -- "$cur") ) ;;
-              esac
-              ;;
-          esac
+          # opensim import [GRID] FILE [--grid] [--simulator] [--users] [--apply]
+          if [ "$COMP_CWORD" = 2 ]; then
+            COMPREPLY=( $(compgen -f -W "$(_opensim_grids)" -- "$cur") )
+          else
+            COMPREPLY=( $(compgen -f -W "--grid --simulator --users --apply --core --name --keep-going --result --format" -- "$cur") )
+          fi
           ;;
         web)
           # opensim web [GRID] [show|check|snippet SERVER]

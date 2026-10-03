@@ -26,7 +26,7 @@ final class GridRegistry
      */
     public function ports(GridInfo $grid): ?array
     {
-        if ($grid->dbName === '') {
+        if ($grid->dbName === '' || $grid->planned) {
             return null; // a grid of another machine: its database is not ours to read
         }
         $rows = $this->database->select($grid->databasePlan(), 'SELECT serverPort, serverURI FROM regions');
@@ -59,7 +59,7 @@ final class GridRegistry
     {
         $names = [];
         $rows =
-            $grid->dbName === ''
+            $grid->dbName === '' || $grid->planned
                 ? null
                 : $this->database->select($grid->databasePlan(), 'SELECT regionName FROM regions');
         foreach ($rows ?? [] as $row) {
@@ -97,7 +97,7 @@ final class GridRegistry
     {
         $used = [];
         $rows =
-            $grid->dbName === ''
+            $grid->dbName === '' || $grid->planned
                 ? null
                 : $this->database->select(
                     $grid->databasePlan(),

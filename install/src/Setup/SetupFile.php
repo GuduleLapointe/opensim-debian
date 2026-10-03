@@ -13,7 +13,7 @@ use Symfony\Component\Yaml\Yaml;
 
 /**
  * A setup in a file (JSON or YAML): the grid, its simulators and regions, the owner, and the accounts
- * to make, in the format of the bulk import (`opensim users import` reads the `users` of this file).
+ * to make, in the format of the bulk import (`opensim import FILE --users` reads the `users` of this file).
  *
  *   grid:        name, nick, hostname, web_url, hypergrid, helpers, helpers_path, public_port, private_port,
  *                console (rest|screen), console_port, enable, start,
@@ -339,7 +339,7 @@ final class SetupFile
 
     /**
      * Keep what a setup did in the setup file of the grid (`setup.json`, only for its owner: it holds the
-     * passwords), to make the same grid again: `opensim setup --file`.
+     * passwords), to make the same grid again: `opensim import setup.json --apply`.
      *
      * @param \Closure(array<string,mixed>):array<string,mixed> $update  the file as it is, the file it becomes
      */

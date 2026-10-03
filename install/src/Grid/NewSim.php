@@ -52,11 +52,40 @@ final class NewSim
             return null;
         }
 
-        $database = new Database($this->ui);
-        $plan = $this->gather($grid, $profile, $database, $simName);
+        $plan = $this->gather($grid, $profile, new Database($this->ui), $simName);
         if ($plan === null) {
             return null;
         }
+
+        return $this->complete($plan, $grid, $profile, false);
+    }
+
+    /**
+     * The questions of a simulator and of its first region, nothing is made. The grid can be one that is only planned
+     * (GridInfo::fromPlan): the plan of the simulator is then shown with the one of the grid (the quick setup).
+     */
+    public function prepare(GridInfo $grid, array $profile, ?string $simName = null): ?SimPlan
+    {
+        return $this->gather($grid, $profile, new Database($this->ui), $simName);
+    }
+
+    /** What the plan will do, as the setup shows it. */
+    public function describe(SimPlan $plan): string
+    {
+        return $this->planText($plan);
+    }
+
+    /**
+     * Make the simulator of a plan: its database, then the files and the instance. The plan is shown and has to be
+     * accepted, unless it was already ($accepted).
+     *
+     * @param array<string,mixed> $profile
+     * @return ?array{0:string,1:string} the grid and the instance of the simulator configured, null when nothing was
+     */
+    public function complete(SimPlan $plan, GridInfo $grid, array $profile, bool $accepted): ?array
+    {
+        $etcRoot = $profile['EtcRoot'] ?? '';
+        $database = new Database($this->ui);
 
         // Nothing is written before the database of the simulator works
         $check = $plan->databasePlan();
@@ -75,11 +104,13 @@ final class NewSim
             $check = $plan->databasePlan();
         }
 
-        $this->showPlan($plan);
-        if (!$this->ui->confirm(sprintf(_("Apply this configuration to simulator '%s'?"), $plan->simName), true)) {
-            $this->ui->note(_('Aborted — nothing changed.'));
+        if (!$accepted) {
+            $this->showPlan($plan);
+            if (!$this->ui->confirm(sprintf(_("Apply this configuration to simulator '%s'?"), $plan->simName), true)) {
+                $this->ui->note(_('Aborted — nothing changed.'));
 
-            return null;
+                return null;
+            }
         }
 
         // A simulator already linked may run, with users in it: restarting it warns them, and takes two minutes
@@ -1184,6 +1215,11 @@ final class NewSim
 
     private function showPlan(SimPlan $plan): void
     {
+        $this->ui->note($this->planText($plan));
+    }
+
+    private function planText(SimPlan $plan): string
+    {
         $lines = [
             "  Simulator:   {$plan->simName}  ({$plan->slug})",
             "  Grid:        {$plan->gridName}  ({$plan->gridNick})",
@@ -1204,6 +1240,6 @@ final class NewSim
             }
         }
         $lines[] = "  Config:      {$plan->iniPath()}";
-        $this->ui->note(_('Simulator plan:') . "\n" . implode("\n", $lines));
+        return _('Simulator plan:') . "\n" . implode("\n", $lines);
     }
 }

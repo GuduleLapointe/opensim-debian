@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use OpenSim\Installer\Setup\QuickSetup;
 use OpenSim\Installer\Ui\AsksForms;
-use OpenSim\Installer\Ui\EditConfig;
 use OpenSim\Installer\Ui\InstallerUi;
 use OpenSim\Installer\Ui\PresetUi;
 
@@ -67,18 +66,6 @@ function askingUi(array $answers): AskingUi
 {
     return new AskingUi($answers);
 }
-
-it('offers the plan as Continue or Edit config', function () {
-    $inner = askingUi(['yes']);
-    $ui = new PresetUi($inner, [], ['Apply this configuration']);
-
-    expect($ui->confirm("Apply this configuration to grid 'x'?"))->toBeTrue()
-        ->and($inner->asked[0][2])->toBe(['yes', 'no']);
-
-    $inner = askingUi(['no']);
-    expect(fn() => (new PresetUi($inner, [], ['Apply this configuration']))->confirm("Apply this configuration to grid 'x'?"))
-        ->toThrow(EditConfig::class);
-});
 
 it('does not ask the plan of a setup from a file', function () {
     $inner = askingUi([]);

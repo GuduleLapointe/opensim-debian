@@ -16,7 +16,6 @@ namespace OpenSim\Installer\Ui;
  * With $prefill, the table is only what the questions propose: every question is asked by the interface behind,
  * with the answer of the table as its default (the way to go through what a setup chose, to edit it).
  *
- * The plan to accept ("Apply this configuration") is offered as Continue or Edit config; Edit config is EditConfig.
  * When the user tries the database again after a failure, its settings are asked.
  */
 final class PresetUi implements InstallerUi
@@ -143,15 +142,6 @@ final class PresetUi implements InstallerUi
 
     public function confirm(string $label, bool $default = true): bool
     {
-        // The plan: what the setup is going to do is shown, to go on or to edit it
-        if (!$this->prefill && $this->asked($label) && (str_contains($label, 'Apply this configuration') || str_contains($label, _('Apply this configuration')))) {
-            if ($this->inner->choose($label, ['yes' => _('Continue'), 'no' => _('Edit config')], 'yes') !== 'yes') {
-                throw new EditConfig();
-            }
-
-            return true;
-        }
-
         $preset = $this->preset($label);
         if ($preset !== null) {
             $value = is_bool($preset) ? $preset : in_array(strtolower((string) $preset), ['1', 'true', 'yes', 'y'], true);

@@ -42,6 +42,45 @@ final class NewGrid
             return null; // abandoned
         }
 
+        return $this->complete($plan, $profile, false);
+    }
+
+    /**
+     * The questions of the setup, nothing is made: the plan, to show and to accept with the one of the first
+     * simulator (the quick setup), then complete().
+     *
+     * @return ?array{0:GridPlan,1:array<string,mixed>} the plan and the install profile, null when abandoned
+     */
+    public function prepare(?string $modifyNick = null): ?array
+    {
+        $profile = (new Config())->profile();
+        if ($profile === [] || ($profile['EtcRoot'] ?? '') === '') {
+            $this->ui->error(_('No installed framework found. Install an OpenSim core first.'));
+
+            return null;
+        }
+        $plan = $this->gather($profile, $modifyNick);
+
+        return $plan === null ? null : [$plan, $profile];
+    }
+
+    /**
+     * What the plan will do, as the setup shows it.
+     */
+    public function describe(GridPlan $plan): string
+    {
+        return $this->planText($plan);
+    }
+
+    /**
+     * Make the grid of a plan: the database, then the files and the instance. The plan is shown and has to be
+     * accepted, unless it was already ($accepted).
+     *
+     * @param array<string,mixed> $profile
+     * @return ?string the nick of the grid configured, null when nothing was
+     */
+    public function complete(GridPlan $plan, array $profile, bool $accepted): ?string
+    {
         // Nothing is written before the database is known to work. A problem of
         // access leaves the error on screen with one line to try again (the
         // settings can be changed); a creation that failed ends the setup.
@@ -65,11 +104,13 @@ final class NewGrid
             ]);
         }
 
-        $this->showPlan($plan);
-        if (!$this->ui->confirm(sprintf(_("Apply this configuration to grid '%s'?"), $plan->gridNick), true)) {
-            $this->ui->note(_('Aborted — nothing changed.'));
+        if (!$accepted) {
+            $this->showPlan($plan);
+            if (!$this->ui->confirm(sprintf(_("Apply this configuration to grid '%s'?"), $plan->gridNick), true)) {
+                $this->ui->note(_('Aborted — nothing changed.'));
 
-            return null;
+                return null;
+            }
         }
 
         // What to do once written is asked here, while the user is at the
@@ -122,7 +163,7 @@ final class NewGrid
             $this->ui->note(sprintf(_("Wrote %s"), $logConfig));
         }
 
-        // What was asked is kept, to make the same grid again from a file (opensim setup --file)
+        // What was asked is kept, to make the same grid again from a file (opensim import)
         SetupFile::record($plan->gridDir, static fn(array $data): array => SetupFile::withGrid($data, $plan));
 
         $systemUser = $profile['SystemUser'] ?? '';
@@ -590,6 +631,11 @@ final class NewGrid
 
     private function showPlan(GridPlan $plan): void
     {
+        $this->ui->note($this->planText($plan));
+    }
+
+    private function planText(GridPlan $plan): string
+    {
         $lines = [
             "  Grid:        {$plan->gridName}  ({$plan->gridNick})",
             '  Hypergrid:   ' . ($plan->enableHypergrid ? 'yes' : 'no'),
@@ -608,6 +654,6 @@ final class NewGrid
             "  Robust ini:  {$plan->robustIni()}",
             "  Grid dir:    {$plan->etcDirectory}",
         ];
-        $this->ui->note(_('Grid plan:') . "\n" . implode("\n", $lines));
+        return _('Grid plan:') . "\n" . implode("\n", $lines);
     }
 }

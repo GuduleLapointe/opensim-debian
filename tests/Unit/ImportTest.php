@@ -201,11 +201,11 @@ function import_run(array $arguments, string $original): array
     return [proc_close($process), $output, $errors, $root];
 }
 
-describe('opensim import robust', function () {
+describe('opensim import, the config of a grid', function () {
     $original = "[Const]\n BaseHostname = \"old.example.org\"\n PublicPort = 8002\n PrivatePort = 8003\n[DatabaseService]\n ConnectionString = \"Data Source=localhost;Database=old_robust;User ID=oldrobust;Password=pw;\"\n[GridInfoService]\n gridname = \"Old World\"\n gridnick = \"oldworld\"\n[GridService]\n MaxRegionSize = 1024\n[AssetService]\n BaseDirectory = \"./fsassets/data\"\n SpoolDirectory = \"./tmp\"\n";
 
     test('tells the plan and the settings it keeps, and writes nothing without --apply', function () use ($original) {
-        [$status, $output, , $root] = import_run(['robust', '@OLD@/Robust.HG.ini'], $original);
+        [$status, $output, , $root] = import_run(['@OLD@/Robust.HG.ini'], $original);
 
         expect($status)->toBe(0);
         expect($output)->toContain('Grid Old World (oldworld)');
@@ -217,7 +217,7 @@ describe('opensim import robust', function () {
     });
 
     test('writes the grid of the kit with the settings of the original in it, and leaves the original alone', function () use ($original) {
-        [$status, $output, $errors, $root] = import_run(['robust', '@OLD@/Robust.HG.ini', '--apply'], $original);
+        [$status, $output, $errors, $root] = import_run(['@OLD@/Robust.HG.ini', '--apply'], $original);
 
         expect($errors)->toBe('');
         expect($status)->toBe(0);
@@ -231,9 +231,9 @@ describe('opensim import robust', function () {
     });
 
     test('refuses a grid that is already configured', function () use ($original) {
-        [, , , $root] = import_run(['robust', '@OLD@/Robust.HG.ini', '--apply'], $original);
+        [, , , $root] = import_run(['@OLD@/Robust.HG.ini', '--apply'], $original);
         $again = proc_open(
-            [PHP_BINARY, dirname(__DIR__, 2) . '/libexec/import.php', 'robust', "$root/old/bin/Robust.HG.ini"],
+            [PHP_BINARY, dirname(__DIR__, 2) . '/libexec/import.php', "$root/old/bin/Robust.HG.ini"],
             [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
             $pipes,
             dirname(__DIR__, 2),
@@ -302,16 +302,16 @@ describe('The plan of an imported simulator', function () {
     });
 });
 
-describe('opensim import sim', function () {
+describe('opensim import, the config of a simulator', function () {
     test('writes the simulator in the grid, its regions copied with their UUID, the settings of the original in it', function () {
         $robust = "[Const]\n BaseHostname = \"old.example.org\"\n PublicPort = 8002\n PrivatePort = 8003\n[DatabaseService]\n ConnectionString = \"Data Source=localhost;Database=old_robust;User ID=oldrobust;Password=pw;\"\n[GridInfoService]\n gridname = \"Old World\"\n gridnick = \"oldworld\"\n";
-        [$status, , $errors, $root] = import_run(['robust', '@OLD@/Robust.HG.ini', '--apply'], $robust);
+        [$status, , $errors, $root] = import_run(['@OLD@/Robust.HG.ini', '--apply'], $robust);
         expect($status)->toBe(0, $errors);
 
         $sim = import_sim_tree();
         $code = dirname(__DIR__, 2);
         $process = proc_open(
-            [PHP_BINARY, "$code/libexec/import.php", 'sim', $sim, '--grid', 'oldworld', '--apply'],
+            [PHP_BINARY, "$code/libexec/import.php", 'oldworld', $sim, '--apply'],
             [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
             $pipes,
             $code,
@@ -330,5 +330,61 @@ describe('opensim import sim', function () {
         expect(file_exists("$root/etc/grids/oldworld/sims/oldworld_sim1.import-report.txt"))->toBeTrue();
         expect(is_link("$root/etc/opensim.d/oldworld_sim1.ini"))->toBeFalse();
         expect($output)->toContain('Written:');
+    });
+});
+
+/** Run `opensim import` with a file of the given content. */
+function import_file(string $name, string $content, array $arguments = []): array
+{
+    $dir = sys_get_temp_dir() . '/import-file-' . bin2hex(random_bytes(4));
+    mkdir($dir);
+    file_put_contents("$dir/$name", $content);
+    $code = dirname(__DIR__, 2);
+    $process = proc_open(
+        [PHP_BINARY, "$code/libexec/import.php", ...array_map(static fn(string $a): string => str_replace('@FILE@', "$dir/$name", $a), $arguments)],
+        [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+        $pipes,
+        $code,
+        ['HOME' => "$dir/home", 'PATH' => getenv('PATH')],
+    );
+    $output = (string) stream_get_contents($pipes[1]);
+    $errors = trim((string) stream_get_contents($pipes[2]));
+
+    return [proc_close($process), $output, $errors];
+}
+
+describe('opensim import, a setup file', function () {
+    $setup = "grid: { name: My Grid, database: { user: a, password: b } }\nowner: { name: Jane Doe, password: hunter22 }\nsimulators:\n  - regions: [ { name: One }, { name: Two } ]\nusers:\n  - { first: Bob, last: Roe, password: pw123456 }\n";
+
+    test('tells everything it holds, and makes nothing without --apply', function () use ($setup) {
+        [$status, $output] = import_file('setup.yaml', $setup, ['@FILE@']);
+
+        expect($status)->toBe(0)
+            ->and($output)->toContain('the grid My Grid')->toContain('1 simulator(s) with 2 region(s)')
+            ->toContain('1 account(s)')->toContain('Nothing was made');
+    });
+
+    test('is restricted to what is asked: --users', function () use ($setup) {
+        [, $output] = import_file('setup.yaml', $setup, ['@FILE@', '--users']);
+
+        expect($output)->toContain('1 account(s)')->not->toContain('the grid')->not->toContain('simulator');
+    });
+
+    test('is restricted to the grid and its simulators: --grid --simulator', function () use ($setup) {
+        [, $output] = import_file('setup.yaml', $setup, ['@FILE@', '--grid', '--simulator']);
+
+        expect($output)->toContain('the grid My Grid')->toContain('simulator(s)')->not->toContain('account(s)');
+    });
+
+    test('says when what is asked is not in the file', function () {
+        [$status, , $errors] = import_file('accounts.json', '[{"first":"Bob","last":"Roe"}]', ['@FILE@', '--grid']);
+
+        expect($status)->toBe(2)->and($errors)->toContain('nothing to import');
+    });
+
+    test('says what is wrong in the setup', function () {
+        [$status, , $errors] = import_file('setup.yaml', "grid:\n  name: X\n", ['@FILE@']);
+
+        expect($status)->toBe(2)->and($errors)->toContain('grid.database.user is required');
     });
 });
