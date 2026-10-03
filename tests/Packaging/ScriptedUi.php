@@ -7,6 +7,8 @@ use OpenSim\Installer\Ui\InstallerUi;
 
 final class ScriptedUi implements InstallerUi
 {
+    use \OpenSim\Installer\Ui\AsksForms;
+
     /** @param array<string,string|bool> $answers label substring => answer */
     public function __construct(private array $answers) {}
 

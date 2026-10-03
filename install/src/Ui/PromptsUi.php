@@ -4,24 +4,28 @@ declare(strict_types=1);
 
 namespace OpenSim\Installer\Ui;
 
-use function Laravel\Prompts\confirm;
+use OpenSim\Installer\Ui\Prompts\ConfirmPrompt;
+use OpenSim\Installer\Ui\Prompts\MultiSelectPrompt;
+use OpenSim\Installer\Ui\Prompts\PasswordPrompt;
+use OpenSim\Installer\Ui\Prompts\SelectPrompt;
+use OpenSim\Installer\Ui\Prompts\TextPrompt;
+
 use function Laravel\Prompts\error;
 use function Laravel\Prompts\intro;
-use function Laravel\Prompts\multiselect;
 use function Laravel\Prompts\note;
 use function Laravel\Prompts\outro;
-use function Laravel\Prompts\password;
-use function Laravel\Prompts\select;
 use function Laravel\Prompts\spin;
-use function Laravel\Prompts\text;
 use function Laravel\Prompts\warning;
 
 /**
  * Text/CLI frontend built on Laravel Prompts (arrow-key selection, inline
- * validation, spinners).
+ * validation, spinners), with the shortcuts of a terminal: Escape gives up the screen
+ * (Back), Ctrl-Q leaves the setup (Quit), Ctrl-U and Ctrl-W erase in a text.
  */
 final class PromptsUi implements InstallerUi
 {
+    use AsksForms;
+
     public function intro(string $title): void
     {
         intro($title);
@@ -54,35 +58,35 @@ final class PromptsUi implements InstallerUi
 
     public function choose(string $label, array $options, ?string $default = null, ?string $hint = null): string
     {
-        return (string) select(
+        return (string) (new SelectPrompt(
             label: $label,
             options: $options,
             default: $default ?? array_key_first($options),
             hint: $hint ?? '',
-        );
+        ))->prompt();
     }
 
     public function checklist(string $label, array $options, array $defaults = [], ?string $hint = null): array
     {
         return array_map(
             'strval',
-            multiselect(label: $label, options: $options, default: $defaults, required: false, hint: $hint ?? ''),
+            (new MultiSelectPrompt(label: $label, options: $options, default: $defaults, required: false, hint: $hint ?? ''))->prompt(),
         );
     }
 
     public function text(string $label, string $default = '', ?\Closure $validate = null, ?string $hint = null): string
     {
-        return text(label: $label, default: $default, validate: $validate, hint: $hint ?? '');
+        return (new TextPrompt(label: $label, default: $default, validate: $validate, hint: $hint ?? ''))->prompt();
     }
 
     public function secret(string $label, ?\Closure $validate = null, ?string $hint = null): string
     {
-        return password(label: $label, validate: $validate, hint: $hint ?? '');
+        return (new PasswordPrompt(label: $label, validate: $validate, hint: $hint ?? ''))->prompt();
     }
 
     public function confirm(string $label, bool $default = true): bool
     {
-        return confirm(label: $label, default: $default);
+        return (new ConfirmPrompt(label: $label, default: $default))->prompt();
     }
 
     public function spin(\Closure $callback, string $message): mixed

@@ -57,6 +57,15 @@ interface InstallerUi
      */
     public function secret(string $label, ?\Closure $validate = null, ?string $hint = null): string;
 
+    /**
+     * Several fields in one go, shown together at the end to be accepted or corrected.
+     *
+     * @param list<array{key:string,label:string,type?:string,default?:string,required?:bool,validate?:?\Closure,hint?:string}> $fields
+     *        type: text (default) or secret; required: true unless said otherwise
+     * @return array<string,string>  the value of each field, by key
+     */
+    public function form(array $fields): array;
+
     public function confirm(string $label, bool $default = true): bool;
 
     /**

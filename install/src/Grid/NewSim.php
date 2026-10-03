@@ -1021,11 +1021,12 @@ final class NewSim
         );
         $plan->ownerEmail = trim(
             $this->ui->text(
-                _('Email of the new account'),
+                _('Email of the new account (optional)'),
                 '',
-                static fn(string $v): ?string => preg_match('/^[^\s"\'\\\\]+@[^\s"\'\\\\]+$/', trim($v))
+                // OpenSimulator does not need one, no more than the setup
+                static fn(string $v): ?string => trim($v) === '' || preg_match('/^[^\s"\'\\\\]+@[^\s"\'\\\\]+$/', trim($v))
                     ? null
-                    : _('An email address.'),
+                    : _('An email address, or nothing.'),
             ),
         );
 

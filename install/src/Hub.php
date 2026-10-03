@@ -11,7 +11,9 @@ use OpenSim\Installer\Grid\NewSim;
 use OpenSim\Installer\Grid\RegionState;
 use OpenSim\Installer\Grid\SimConfig;
 use OpenSim\Installer\Grid\SimState;
+use OpenSim\Installer\Ui\Back;
 use OpenSim\Installer\Ui\InstallerUi;
+use OpenSim\Installer\Ui\Quit;
 
 /**
  * Setup hub: screens one level deeper each time, from the home to a region:
@@ -53,18 +55,44 @@ final class Hub
             $default = $cores === [] ? 'core' : ($grids === [] ? 'add' : "grid:{$grids[0]}");
             $choice = $this->ui->choose(_('OpenSim — setup'), $options, $default);
 
-            $quit = match (true) {
-                $choice === 'quit' => true,
-                $choice === 'core' => $this->coreMenu($cores),
-                $cores === [] => $this->ui->warn(_('Install an OpenSim core first.')) ?? false,
-                $choice === 'add' => $this->addGrid(),
-                default => $this->gridScreen(substr($choice, strlen('grid:'))),
-            };
+            try {
+                $quit = match (true) {
+                    $choice === 'quit' => true,
+                    $choice === 'core' => $this->coreMenu($cores),
+                    $cores === [] => $this->ui->warn(_('Install an OpenSim core first.')) ?? false,
+                    $choice === 'add' => $this->addGrid(),
+                    default => $this->gridScreen(substr($choice, strlen('grid:'))),
+                };
+            } catch (Back) {
+                // Escape in a screen: the menu it came from (here, the first one)
+                $quit = false;
+            } catch (Quit) {
+                $quit = true;
+            }
             if ($quit) {
                 $this->offerRestarts();
 
                 return;
             }
+        }
+    }
+
+    /**
+     * A flow that asks questions, which the user can give up with Escape: back to the screen that started
+     * it, nothing was written (everything is written after the questions).
+     *
+     * @template T
+     * @param \Closure():T $flow
+     * @return T|null
+     */
+    private function guard(\Closure $flow): mixed
+    {
+        try {
+            return $flow();
+        } catch (Back) {
+            $this->ui->note(_('Abandoned.'));
+
+            return null;
         }
     }
 
@@ -164,11 +192,11 @@ final class Hub
 
         switch ($choice) {
             case 'new':
-                $nick = (new NewGrid($this->ui))->run(null);
+                $nick = $this->guard(fn() => (new NewGrid($this->ui))->run(null));
 
                 return $nick !== null && $this->gridScreen($nick);
             case 'external':
-                $made = (new NewSim($this->ui))->run(null, null, true);
+                $made = $this->guard(fn() => (new NewSim($this->ui))->run(null, null, true));
 
                 return $made !== null && $this->simScreen($made[0], $made[1]);
             default:
@@ -209,10 +237,10 @@ final class Hub
             }
             switch (true) {
                 case $choice === 'configure':
-                    (new NewGrid($this->ui))->run($nick);
+                    $this->guard(fn() => (new NewGrid($this->ui))->run($nick));
                     break;
                 case $choice === 'addsim':
-                    $made = (new NewSim($this->ui))->run($nick);
+                    $made = $this->guard(fn() => (new NewSim($this->ui))->run($nick));
                     if ($made !== null && $this->simScreen($made[0], $made[1])) {
                         return true;
                     }
@@ -263,10 +291,10 @@ final class Hub
             }
             switch (true) {
                 case $choice === 'reconfigure':
-                    (new NewSim($this->ui))->run($nick, $this->simName($nick, $slug));
+                    $this->guard(fn() => (new NewSim($this->ui))->run($nick, $this->simName($nick, $slug)));
                     break;
                 case $choice === 'addregion':
-                    (new NewSim($this->ui))->addRegion($nick, $this->simName($nick, $slug));
+                    $this->guard(fn() => (new NewSim($this->ui))->addRegion($nick, $this->simName($nick, $slug)));
                     break;
                 case $choice === 'toggle':
                     $done = $this->act(
@@ -308,7 +336,7 @@ final class Hub
 
             switch ($choice) {
                 case 'reconfigure':
-                    (new NewSim($this->ui))->reconfigureRegion($nick, $this->simName($nick, $slug), $name);
+                    $this->guard(fn() => (new NewSim($this->ui))->reconfigureRegion($nick, $this->simName($nick, $slug), $name));
                     break;
                 case 'toggle':
                     $done = $this->act($region['enabled'] ? 'region-disable' : 'region-enable', [

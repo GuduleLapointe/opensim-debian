@@ -13,6 +13,8 @@ use OpenSim\Installer\Ui\InstallerUi;
  */
 final class RecordingUi implements InstallerUi
 {
+    use \OpenSim\Installer\Ui\AsksForms;
+
     /** @var array<int,array{label:string,keys:list<string>,default:?string}> */
     public array $screens = [];
     /** @var list<string> */

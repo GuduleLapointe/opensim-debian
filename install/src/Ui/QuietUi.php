@@ -11,6 +11,8 @@ namespace OpenSim\Installer\Ui;
  */
 final class QuietUi implements InstallerUi
 {
+    use AsksForms;
+
     public function intro(string $title): void {}
 
     public function note(string $message): void {}
