@@ -144,7 +144,7 @@ final class NewGrid
         if ($plan->helpers) {
             $this->ui->note(
                 sprintf(
-                    _("Web site: the helpers are in %s, the placeholder site in /usr/share/opensim-web/html (when the opensim-web package is installed). The configuration for your web server is in %s/web: %s.caddyfile, %s-nginx.conf, %s-apache.conf, to include in the site of the grid (opensim web snippet <caddy|nginx|apache> --grid %s writes it again)."),
+                    _("Web site: the helpers are in %s, the placeholder site in /usr/share/opensim-web/html (when the opensim-web package is installed). The configuration for your web server is in %s/web: %s.caddyfile, %s-nginx.conf, %s-apache.conf, to include in the site of the grid (opensim web %s snippet <caddy|nginx|apache> writes it again)."),
                     Snippets::WEBROOT,
                     $plan->gridDir,
                     $plan->gridNick,

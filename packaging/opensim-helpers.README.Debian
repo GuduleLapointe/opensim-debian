@@ -29,7 +29,7 @@ Web server
 
 `opensim web` tells where the services are and what answers;
 `opensim setup` writes it for the grid in /etc/opensim/grids/<grid>/web (<grid>.caddyfile, <grid>-nginx.conf, <grid>-apache.conf),
-`opensim web snippet caddy|nginx|apache` writes it again, what the web server needs, the aliases of the paths of
+`opensim web <grid> snippet caddy|nginx|apache` writes it again, what the web server needs, the aliases of the paths of
 helpers.ini included. Include the result in the site of the grid; the config of the web server is not
 touched.
 

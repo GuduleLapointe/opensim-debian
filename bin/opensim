@@ -71,51 +71,62 @@ if [ "${1:-}" = "web" ]; then
 fi
 
 # Before the helpers, which answer -h
-USAGE="opensim [-hvq] <command> [instance...]"
+USAGE="opensim [-hvq] <command> [instance] [action] [options]"
 HELP="
-opensim <start|stop [now]|restart [now]> [instance1] [instance2] [...]
+The instance (a grid or a simulator) comes right after the command, then the
+action and its arguments, then the options.
+
+Instances
 opensim status
-opensim setup           create or modify grids and simulators (setup wizard)
-opensim import robust FILE [--nick NICK] [--core DIR] [--apply]
-opensim import sim FILE --grid NICK [--name NAME] [--core DIR] [--apply]
-                        port the configuration of a grid or of a simulator not
-                        made by the kit (its files are not changed); without
-                        --apply, tells what would be written and which settings
-                        of the original are kept
-opensim profile list|add|default|remove
-                        the installs the tools know about: add NAME --core DIR
-                        [--etc DIR] [--data DIR] registers an install made by hand
-opensim oar pack|info|check|unpack
-                        OpenSimulator archives: pack makes one from a folder,
-                        info and check read it, unpack extracts it
-opensim users import FILE [--grid NICK] [--apply]
-                        make the accounts of a list (CSV or JSON) in the database
-                        of a grid; without --apply, tells what would be made
-opensim web [show|check] [--grid NICK]
-opensim web snippet <caddy|nginx|apache> [--grid NICK]
-                        the helpers of a grid (economy, search, offline messages):
-                        where they are served, what answers, and what the web
-                        server needs to serve them
-opensim <enable|disable> <instance> [instance2] [...]
+opensim <start|stop [now]|restart [now]> [instance...]
+opensim <enable|disable> <instance...>
                         enable or disable a grid or a simulator
-opensim rest --url http://HOST:PORT --user USER (-- <command> | - | --repl)
-                        the remote console of an instance of another machine or
-                        a container (password in OPENSIM_REST_PASSWORD)
-opensim ports [--publish|--ufw] [instance...]
-                        the ports the instances listen on, and who has to reach
-                        them; --publish gives the -p options of a container,
-                        --ufw the rules of the firewall
-opensim next port [-e PORT] [MIN] [COUNT]
-                        free ports from MIN (default 9010)
-opensim next location [-e X,Y] GRID [X,Y] [COUNT]
-                        the free places nearest to X,Y (default 1000,1000) by
-                        the rule of the grid
 opensim console|screen <instance>
                         attach to the console of a running instance (Ctrl-A D
                         leaves it running)
 opensim command <instance> <text>|-
                         send a command to the console of an instance, or the
                         lines read from the standard input (-)
+opensim ports [instance...] [--publish|--ufw]
+                        the ports the instances listen on, and who has to reach
+                        them; --publish gives the -p options of a container,
+                        --ufw the rules of the firewall
+
+Grids
+opensim setup [--file FILE [--check]]
+                        create or modify grids and simulators (setup wizard), or
+                        make a setup described in a JSON or YAML file
+opensim import [nick] robust FILE [--core DIR] [--apply]
+opensim import <grid> sim FILE [--name NAME] [--core DIR] [--apply]
+                        port the configuration of a grid or of a simulator not
+                        made by the kit (its files are not changed); without
+                        --apply, tells what would be written and which settings
+                        of the original are kept
+opensim users [grid] import FILE [--apply]
+                        make the accounts of a list (CSV, JSON or YAML) in the
+                        database of a grid; without --apply, tells what would
+                        be made
+opensim web [grid] [show|check]
+opensim web [grid] snippet <caddy|nginx|apache>
+                        the helpers of a grid (economy, search): where they are
+                        served, what answers, and what the web server needs to
+                        serve them
+opensim next <grid> location [X,Y] [COUNT] [-e X,Y]
+                        the free places nearest to X,Y (default 1000,1000) by
+                        the rule of the grid
+
+This machine
+opensim next port [-e PORT] [MIN] [COUNT]
+                        free ports from MIN (default 9010)
+opensim profile list|add|default|remove
+                        the installs the tools know about: add NAME --core DIR
+                        [--etc DIR] [--data DIR] registers an install made by hand
+opensim oar pack|info|check|unpack
+                        OpenSimulator archives: pack makes one from a folder,
+                        info and check read it, unpack extracts it
+opensim rest --url http://HOST:PORT --user USER (-- <command> | - | --repl)
+                        the remote console of an instance of another machine or
+                        a container (password in OPENSIM_REST_PASSWORD)
 opensim install-dotnet  install the .NET runtime OpenSim needs (as root)
 
 	-h display this help

@@ -5,8 +5,11 @@ declare(strict_types=1);
 /**
  * opensim import: port the configuration of a grid that was not made by the kit, without changing its files.
  *
- *   opensim import robust FILE [--nick NICK] [--core DIR] [--apply]
- *   opensim import sim FILE --grid NICK [--name NAME] [--core DIR] [--apply]
+ *   opensim import [NICK] robust FILE [--core DIR] [--apply]
+ *   opensim import GRID sim FILE [--name NAME] [--core DIR] [--apply]
+ *
+ * The grid comes first, as the instance does in the other commands: the nick of the grid to make (the one of its
+ * config when left out), or the grid the simulator joins (--nick and --grid work too).
  *
  * What the setup asks is detected in the config (name, ports, database, console...) and goes through the
  * generators of the kit: a standard config, valid for the core chosen, in /etc/opensim/grids/<nick>/. The other
@@ -32,7 +35,7 @@ use OpenSim\Installer\Import\SimImporter;
 use OpenSim\Installer\SetupFailed;
 use OpenSim\Installer\Ui\QuietUi;
 
-const USAGE = "usage: opensim import robust FILE [--nick NICK] [--core DIR] [--apply]\n       opensim import sim FILE --grid NICK [--name NAME] [--core DIR] [--apply]\n";
+const USAGE = "usage: opensim import [NICK] robust FILE [--core DIR] [--apply]\n       opensim import GRID sim FILE [--name NAME] [--core DIR] [--apply]\n";
 
 /** Say what is wrong and stop. */
 function fail(string $message, int $code = 1): never
@@ -74,14 +77,24 @@ function report(array $lines, array $customizations): string
 }
 
 $args = array_slice($argv, 1);
+if (in_array($args[0] ?? '', ['-h', '--help'], true)) {
+    echo USAGE;
+    exit(0);
+}
+// opensim import [GRID] robust|sim FILE: the grid comes first, as the instance does in the other commands (the
+// nick of the grid to make, or the grid the simulator joins)
+$grid = '';
+if (!in_array($args[0] ?? '', ['robust', 'sim'], true) && !str_starts_with($args[0] ?? '-', '-')) {
+    $grid = array_shift($args);
+}
 $what = $args[0] ?? '';
 if (!in_array($what, ['robust', 'sim'], true)) {
     fwrite(STDERR, USAGE);
-    exit(in_array($what, ['-h', '--help'], true) ? 0 : 2);
+    exit(2);
 }
 array_shift($args);
 
-$options = ['nick' => '', 'core' => '', 'grid' => '', 'name' => ''];
+$options = ['nick' => $what === 'robust' ? $grid : '', 'core' => '', 'grid' => $what === 'sim' ? $grid : '', 'name' => ''];
 $apply = false;
 $words = [];
 for ($i = 0; $i < count($args); $i++) {
@@ -119,7 +132,7 @@ if ($what === 'robust') {
         fail("the core has no $exampleFile", 2);
     }
     if (is_file($plan->robustIni())) {
-        fail("the grid {$plan->gridNick} is already configured ({$plan->robustIni()}): choose another nick with --nick", 2);
+        fail("the grid {$plan->gridNick} is already configured ({$plan->robustIni()}): choose another nick: opensim import <nick> robust FILE", 2);
     }
 
     $customizations = RobustImporter::customizations(
@@ -171,7 +184,7 @@ if ($what === 'robust') {
 // A simulator of a grid the kit knows
 $grid = $options['grid'] === '' ? null : GridInfo::load($profile, $options['grid']);
 if ($grid === null) {
-    fail('the grid of the simulator is one the kit knows (opensim setup, or opensim import robust): --grid NICK', 2);
+    fail('the grid of the simulator is one the kit knows (opensim setup, or opensim import robust): opensim import <grid> sim FILE', 2);
 }
 $core = $options['core'] !== '' ? rtrim($options['core'], '/') : ($grid->coreDirectory !== '' ? $grid->coreDirectory : (string) ($profile['CoreDirectory'] ?? ''));
 if ($core === '' || !is_dir("$core/bin")) {

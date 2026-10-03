@@ -5,10 +5,13 @@ declare(strict_types=1);
 /**
  * opensim web: the web side of a grid, the helpers (economy, search, offline messages) its viewers use.
  *
- *   opensim web [show] [--grid NICK]          where the services are, and what the grid tells its viewers
- *   opensim web snippet <caddy|nginx|apache> [--grid NICK] [--webroot DIR] [--socket PATH]
- *                                             what the web server needs to serve them, to include in its config
- *   opensim web check [--grid NICK]           asks each service on the web, tells what answers
+ *   opensim web [GRID] [show]            where the services are, and what the grid tells its viewers
+ *   opensim web [GRID] snippet <caddy|nginx|apache> [--webroot DIR] [--socket PATH]
+ *                                        what the web server needs to serve them, to include in its config
+ *   opensim web [GRID] check             asks each service on the web, tells what answers
+ *
+ * The grid is the first word, as the instance is in the other commands; it can be left out when the machine
+ * has only one (--grid GRID works too).
  *
  * The path of the helpers and of each service is the operator's: `path` and [Urls] in the helpers.ini of the
  * grid (see Web\HelpersConfig).
@@ -22,7 +25,7 @@ use OpenSim\Installer\Web\HelpersConfig;
 use OpenSim\Installer\Web\Services;
 use OpenSim\Installer\Web\Snippets;
 
-const USAGE = "usage: opensim web [show] [--grid NICK]\n       opensim web snippet <caddy|nginx|apache> [--grid NICK] [--webroot DIR] [--socket PATH]\n       opensim web check [--grid NICK]\n";
+const USAGE = "usage: opensim web [GRID] [show]\n       opensim web [GRID] snippet <caddy|nginx|apache> [--webroot DIR] [--socket PATH]\n       opensim web [GRID] check\n";
 
 /** Say what is wrong and stop. */
 function fail(string $message, int $code = 1): never
@@ -32,10 +35,7 @@ function fail(string $message, int $code = 1): never
 }
 
 $args = array_slice($argv, 1);
-$command = 'show';
-if ($args !== [] && in_array($args[0], ['show', 'snippet', 'check'], true)) {
-    $command = array_shift($args);
-} elseif ($args !== [] && ($args[0] === '-h' || $args[0] === '--help')) {
+if ($args !== [] && ($args[0] === '-h' || $args[0] === '--help')) {
     echo USAGE;
     exit(0);
 }
@@ -47,6 +47,19 @@ for ($i = 0; $i < count($args); $i++) {
         $options[$m[1]] = $m[2] ?? ($args[++$i] ?? fail("--{$m[1]} needs a value", 2));
     } else {
         $words[] = $args[$i];
+    }
+}
+
+// opensim web [GRID] [show|check|snippet SERVER]: the grid comes first, as the instance does in the other commands
+$actions = ['show', 'snippet', 'check'];
+$command = 'show';
+if ($words !== [] && !in_array($words[0], $actions, true)) {
+    $options['grid'] = $options['grid'] ?: array_shift($words);
+}
+if ($words !== []) {
+    $command = array_shift($words);
+    if (!in_array($command, $actions, true)) {
+        fail("unknown action $command\n" . USAGE, 2);
     }
 }
 
@@ -65,7 +78,7 @@ if ($options['grid'] === '' || !in_array($options['grid'], $grids, true)) {
         $grids === []
             ? 'no grid of this machine: make one with `opensim setup`'
             : ($options['grid'] === ''
-                ? 'several grids, choose one with --grid (' . implode(', ', $grids) . ')'
+                ? 'several grids, say which: opensim web <grid> (' . implode(', ', $grids) . ')'
                 : "no grid {$options['grid']} (" . implode(', ', $grids) . ')'),
         2,
     );
@@ -113,4 +126,4 @@ echo 'Webroot:   ' . $options['webroot'] . (is_dir($options['webroot']) ? '' : '
 foreach ($rows as $service => [$url, $script]) {
     printf("  %-15s %s\n", $service, $url);
 }
-echo "\nThe web server needs: opensim web snippet <caddy|nginx|apache>\n";
+echo "\nThe web server needs: opensim web $nick snippet <caddy|nginx|apache>\n";

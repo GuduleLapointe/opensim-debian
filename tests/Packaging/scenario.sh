@@ -302,7 +302,7 @@ check "a region is reconfigured in place, its UUID kept" "grep -q 'exit code: 0'
 # The next free place and port follow the rules of the setup: the place nearest to the first one of the grid,
 # with both the places the registry has and the ones the region files have (Sim1North is registered at
 # 1001,1000 until its simulator restarts, its file says 1000,1001)
-check "opensim next location gives the free place nearest to the first one" "[ \"\$(opensim next location testgrid)\" = 999,1000 ]"
+check "opensim next location gives the free place nearest to the first one" "[ \"\$(opensim next testgrid location)\" = 999,1000 ]"
 check "opensim next port gives a free port" "[ \"\$(opensim next port 9100)\" = 9100 ]"
 # The ports of an instance are a block of ten, the same on any machine: Robust
 # 8002 public and 8003 private; the first simulator 9000, 9004 for its console

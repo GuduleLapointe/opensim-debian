@@ -30,6 +30,17 @@ _opensim_instances()
   done | tr '[:upper:]' '[:lower:]' | sort -u
 }
 
+# The grids the setup made, by nick
+_opensim_grids()
+{
+  local etc dir
+  for etc in $(_opensim_etc); do
+    for dir in "$etc"/grids/*/; do
+      [ -d "$dir" ] && basename "$dir"
+    done
+  done | tr '[:upper:]' '[:lower:]' | sort -u
+}
+
 _opensim()
 {
   local cur
@@ -54,22 +65,52 @@ _opensim()
           [ "$COMP_CWORD" = 2 ] || [ "${COMP_WORDS[1]}" = ports ] &&
             COMPREPLY=( $(compgen -W "$([ "${COMP_WORDS[1]}" = ports ] && echo '--publish --ufw') $(_opensim_instances)" -- "$cur") )
           ;;
+        setup)
+          COMPREPLY=( $(compgen -f -W "--file --check --result" -- "$cur") )
+          ;;
         next)
-          [ "$COMP_CWORD" = 2 ] && COMPREPLY=( $(compgen -W "port location" -- "$cur") )
+          case $COMP_CWORD in
+            2) COMPREPLY=( $(compgen -W "port $(_opensim_grids)" -- "$cur") ) ;;
+            3) [ "${COMP_WORDS[2]}" != port ] && COMPREPLY=( $(compgen -W "location" -- "$cur") ) ;;
+          esac
           ;;
         import)
-          [ "$COMP_CWORD" = 2 ] && COMPREPLY=( $(compgen -W "robust sim" -- "$cur") )
-          [ "$COMP_CWORD" -gt 2 ] && COMPREPLY=( $(compgen -f -W "--nick --grid --name --core --apply" -- "$cur") )
+          # opensim import [NICK] robust|sim FILE: the grid first
+          case ${COMP_WORDS[2]} in
+            robust|sim) [ "$COMP_CWORD" -gt 2 ] && COMPREPLY=( $(compgen -f -W "--core --name --apply" -- "$cur") ) ;;
+            *)
+              case $COMP_CWORD in
+                2) COMPREPLY=( $(compgen -W "robust sim $(_opensim_grids)" -- "$cur") ) ;;
+                3) COMPREPLY=( $(compgen -W "robust sim" -- "$cur") ) ;;
+                *) COMPREPLY=( $(compgen -f -W "--core --name --apply" -- "$cur") ) ;;
+              esac
+              ;;
+          esac
           ;;
         users)
-          [ "$COMP_CWORD" = 2 ] && COMPREPLY=( $(compgen -W "import" -- "$cur") )
-          [ "$COMP_CWORD" -gt 2 ] && COMPREPLY=( $(compgen -f -W "--grid --apply --keep-going --result --format" -- "$cur") )
+          # opensim users [GRID] import FILE
+          case ${COMP_WORDS[2]} in
+            import) [ "$COMP_CWORD" -gt 2 ] && COMPREPLY=( $(compgen -f -W "--apply --keep-going --result --format" -- "$cur") ) ;;
+            *)
+              case $COMP_CWORD in
+                2) COMPREPLY=( $(compgen -W "import $(_opensim_grids)" -- "$cur") ) ;;
+                3) COMPREPLY=( $(compgen -W "import" -- "$cur") ) ;;
+                *) COMPREPLY=( $(compgen -f -W "--apply --keep-going --result --format" -- "$cur") ) ;;
+              esac
+              ;;
+          esac
           ;;
         web)
-          case $COMP_CWORD in
-            2) COMPREPLY=( $(compgen -W "show snippet check" -- "$cur") ) ;;
-            3) [ "${COMP_WORDS[2]}" = snippet ] && COMPREPLY=( $(compgen -W "caddy nginx apache" -- "$cur") ) ;;
-          esac
+          # opensim web [GRID] [show|check|snippet SERVER]
+          local i=2
+          case ${COMP_WORDS[2]} in show|check|snippet) ;; *) [ "$COMP_CWORD" -gt 2 ] && i=3 ;; esac
+          if [ "$COMP_CWORD" = 2 ]; then
+            COMPREPLY=( $(compgen -W "show snippet check $(_opensim_grids)" -- "$cur") )
+          elif [ "$COMP_CWORD" = "$i" ]; then
+            COMPREPLY=( $(compgen -W "show snippet check" -- "$cur") )
+          elif [ "$COMP_CWORD" = $((i + 1)) ] && [ "${COMP_WORDS[i]}" = snippet ]; then
+            COMPREPLY=( $(compgen -W "caddy nginx apache" -- "$cur") )
+          fi
           ;;
       esac
       ;;

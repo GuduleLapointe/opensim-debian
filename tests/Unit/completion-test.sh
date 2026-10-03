@@ -52,3 +52,13 @@ function test_stop_proposes_now_first() {
 function test_next_proposes_what_it_gives() {
 	assert_equals "port" "$(complete_words opensim next p)"
 }
+
+function test_the_grid_comes_first_in_the_commands_that_have_actions() {
+	assert_contains "alpha" "$(complete_words opensim web a)"
+	assert_equals "show snippet check" "$(complete_words opensim web alpha '')"
+	assert_equals "snippet" "$(complete_words opensim web alpha sn)"
+	assert_equals "caddy" "$(complete_words opensim web alpha snippet c)"
+	assert_equals "import" "$(complete_words opensim users alpha i)"
+	assert_equals "robust" "$(complete_words opensim import alpha r)"
+	assert_equals "location" "$(complete_words opensim next alpha l)"
+}

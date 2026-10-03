@@ -5,7 +5,10 @@ declare(strict_types=1);
 /**
  * opensim users: the accounts of a grid.
  *
- *   opensim users import FILE [--grid NICK] [--apply] [--keep-going] [--result FILE] [--format csv|json|yaml]
+ *   opensim users [GRID] import FILE [--apply] [--keep-going] [--result FILE] [--format csv|json|yaml]
+ *
+ * The grid comes first, as the instance does in the other commands; it can be left out when the machine has
+ * only one (--grid GRID works too).
  *
  * Makes the accounts of a list, CSV (first, last, email, password; a header line is accepted) or JSON (a list of
  * objects with the same keys), directly in the database of the grid, as Robust does when `create user` is typed in
@@ -23,7 +26,7 @@ use OpenSim\Installer\Grid\Database;
 use OpenSim\Installer\Grid\GridInfo;
 use OpenSim\Installer\Ui\QuietUi;
 
-const USAGE = "usage: opensim users import FILE [--grid NICK] [--apply] [--keep-going] [--result FILE] [--format csv|json|yaml]\n";
+const USAGE = "usage: opensim users [GRID] import FILE [--apply] [--keep-going] [--result FILE] [--format csv|json|yaml]\n";
 
 /** Say what is wrong and stop. */
 function fail(string $message, int $code = 1): never
@@ -33,13 +36,22 @@ function fail(string $message, int $code = 1): never
 }
 
 $args = array_slice($argv, 1);
+if (in_array($args[0] ?? '', ['-h', '--help'], true)) {
+    echo USAGE;
+    exit(0);
+}
+// opensim users [GRID] import FILE: the grid comes first, as the instance does in the other commands
+$grid = '';
+if (($args[0] ?? '') !== 'import' && !str_starts_with($args[0] ?? '-', '-')) {
+    $grid = array_shift($args);
+}
 if (($args[0] ?? '') !== 'import') {
     fwrite(STDERR, USAGE);
-    exit(($args[0] ?? '') === '-h' || ($args[0] ?? '') === '--help' ? 0 : 2);
+    exit(2);
 }
 array_shift($args);
 
-$options = ['grid' => '', 'result' => '', 'format' => ''];
+$options = ['grid' => $grid, 'result' => '', 'format' => ''];
 $flags = ['apply' => false, 'keep-going' => false];
 $words = [];
 for ($i = 0; $i < count($args); $i++) {
@@ -75,7 +87,7 @@ $grid = $options['grid'] === '' ? null : GridInfo::load($profile, $options['grid
 if ($grid === null || $grid->remote || $grid->dbName === '') {
     fail(
         $options['grid'] === ''
-            ? 'choose the grid with --grid (' . implode(', ', $grids) . ')'
+            ? 'say which grid: opensim users <grid> import ... (' . implode(', ', $grids) . ')'
             : "no grid {$options['grid']} on this machine, with a database to write to",
         2,
     );

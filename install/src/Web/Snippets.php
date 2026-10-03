@@ -36,7 +36,7 @@ final class Snippets
 
     private static function header(string $server, string $nick, Services $services, string $how): string
     {
-        return "# Helpers of the grid $nick, written by `opensim web snippet $server`.\n" .
+        return "# Helpers of the grid $nick, written by `opensim web $nick snippet $server`.\n" .
             "# $how\n" .
             "# Helpers at {$services->base()}; a service with its own path (helpers.ini, [Urls]) has an alias below.\n";
     }

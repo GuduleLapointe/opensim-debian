@@ -9,7 +9,7 @@ declare(strict_types=1);
  *   opensim next port [-e PORT] [MIN] [COUNT]
  *       COUNT free ports from MIN (default 9010), none of them in a config file,
  *       bound on this machine, or given with -e
- *   opensim next location [-e X,Y] GRID [X,Y] [COUNT]
+ *   opensim next GRID location [X,Y] [COUNT] [-e X,Y]
  *       COUNT free places nearest to X,Y (default 1000,1000) in the grid, by its
  *       rule (the free blocks it leaves between its regions); the places given
  *       with -e are taken
@@ -28,7 +28,7 @@ use OpenSim\Installer\Grid\Places;
 use OpenSim\Installer\Ports;
 use OpenSim\Installer\Ui\QuietUi;
 
-const USAGE = "usage: opensim next port [-e PORT] [MIN] [COUNT]\n       opensim next location [-e X,Y] GRID [X,Y] [COUNT]\n";
+const USAGE = "usage: opensim next port [-e PORT] [MIN] [COUNT]\n       opensim next GRID location [X,Y] [COUNT] [-e X,Y]\n";
 
 /** Say what is wrong and stop. */
 function usage(string $message = ''): never
@@ -42,13 +42,20 @@ if ($what === '-h' || $what === '--help') {
     echo USAGE;
     exit(0);
 }
+// opensim next GRID location ...: the grid comes first, as the instance does in the other commands
+$gridFirst = null;
+$rest = array_slice($argv, 2);
+if ($what !== '' && !in_array($what, ['port', 'location'], true) && ($argv[2] ?? '') === 'location') {
+    $gridFirst = $what;
+    $what = 'location';
+    $rest = array_slice($argv, 3);
+}
 if (!in_array($what, ['port', 'location'], true)) {
     usage($what === '' ? 'port or location?' : "unknown: $what");
 }
 
 $exclude = [];
-$args = [];
-$rest = array_slice($argv, 2);
+$args = $gridFirst === null ? [] : [$gridFirst];
 while ($rest !== []) {
     $arg = array_shift($rest);
     if ($arg === '-e') {

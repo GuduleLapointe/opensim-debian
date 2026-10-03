@@ -150,3 +150,24 @@ describe('Robust config with the helpers', function () {
         expect(web_robust($plan))->not->toMatch('/^\s*economy\s*=/m');
     });
 });
+
+describe('opensim web, the grid first', function () {
+    test('takes the grid as the first word, as the instance is in the other commands', function () {
+        $home = web_home(['alpha', 'beta']);
+
+        [, $output] = web_run(['beta'], $home);
+        expect($output)->toContain('Grid:      beta');
+
+        [, $output] = web_run(['beta', 'snippet', 'caddy'], $home);
+        expect($output)->toContain('env OPENSIM_GRID beta');
+
+        [$status, , $errors] = web_run(['snippet', 'caddy'], $home);
+        expect($status)->toBe(2)->and($errors)->toContain('several grids, say which: opensim web <grid>');
+    });
+
+    test('still takes --grid', function () {
+        [, $output] = web_run(['snippet', 'nginx', '--grid', 'beta'], web_home(['alpha', 'beta']));
+
+        expect($output)->toContain('fastcgi_param OPENSIM_GRID beta;');
+    });
+});
