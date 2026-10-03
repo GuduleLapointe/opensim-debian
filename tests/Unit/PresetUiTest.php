@@ -112,3 +112,11 @@ it('reads a login URI as host:port, with or without the scheme', function () {
         ->and(QuickSetup::login('play.example.org'))->toBeNull()
         ->and(QuickSetup::login('host:99999'))->toBeNull();
 });
+
+it('answers from the table what the questions to ask would match too', function () {
+    // "Password of " asks the password of a database administrator; the password of the new account is not that
+    $inner = askingUi([]);
+    $ui = new PresetUi($inner, ['Password of the new account' => 'hunter22'], ['Password of ']);
+
+    expect($ui->secret('Password of the new account'))->toBe('hunter22')->and($inner->asked)->toBe([]);
+});

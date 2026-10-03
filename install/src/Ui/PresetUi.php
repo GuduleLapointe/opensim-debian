@@ -111,7 +111,7 @@ final class PresetUi implements InstallerUi
         $preset = $this->preset($label);
         if ($preset !== null && !is_array($preset)) {
             $value = (string) (is_bool($preset) ? ($preset ? 'true' : 'false') : $preset);
-            if (!$this->prefill && !$this->asked($label) && ($validate === null || $validate($value) === null)) {
+            if (!$this->prefill && ($validate === null || $validate($value) === null)) {
                 return $this->took($label, $value);
             }
 
@@ -131,7 +131,7 @@ final class PresetUi implements InstallerUi
     public function secret(string $label, ?\Closure $validate = null, ?string $hint = null): string
     {
         $preset = $this->preset($label);
-        if (is_string($preset) && !$this->asked($label) && ($validate === null || $validate($preset) === null)) {
+        if (is_string($preset) && ($validate === null || $validate($preset) === null)) {
             return $this->took($label, $preset, true);
         }
 
