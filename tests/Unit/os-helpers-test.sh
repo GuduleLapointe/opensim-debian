@@ -104,3 +104,18 @@ function test_oscountrealusers_does_not_guess_without_a_list() {
 
     assert_equals '' "$(osCountRealUsers)"
 }
+
+function test_oscountrealusers_from_a_screen_only_tells_when_nobody_is_there() {
+	eval "$(sed -n '/^osCountRealUsers()/,/^}/p' "$ROOT/libexec/os-helpers")"
+	unset OSIM_REST_INI
+	simName=sim
+	osScreenExists() { return 0; }
+	osScreenOutput() { printf '\nRoot agents in region Sim1: 0 (root 0, child 2)\n'; }
+
+	assert_equals '0' "$(osCountRealUsers)"
+
+	osScreenOutput() { printf '\nRoot agents in region Sim1: 1 (root 1, child 0)\nAnn Lee 1111-truncated\n'; }
+
+	osCountRealUsers >/dev/null
+	assert_equals '1' "$?"
+}
