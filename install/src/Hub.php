@@ -11,6 +11,8 @@ use OpenSim\Installer\Grid\NewSim;
 use OpenSim\Installer\Grid\RegionState;
 use OpenSim\Installer\Grid\SimConfig;
 use OpenSim\Installer\Grid\SimState;
+use OpenSim\Installer\Setup\QuickSetup;
+use OpenSim\Installer\Setup\SetupRunner;
 use OpenSim\Installer\Ui\Back;
 use OpenSim\Installer\Ui\InstallerUi;
 use OpenSim\Installer\Ui\Quit;
@@ -182,19 +184,29 @@ final class Hub
         $choice = $this->ui->choose(
             _('Add a grid'),
             [
-                'new' => _('Create grid on this machine'),
+                'quick' => _('Quick setup (recommended): a grid and its first region, the usual settings'),
+                'new' => _('Advanced setup: a grid on this machine, every setting'),
                 'external' => _('Connect to an external grid'),
                 'back' => _('Back'),
                 'quit' => _('Quit'),
             ],
-            'new',
+            'quick',
         );
 
         switch ($choice) {
+            case 'quick':
+                $made = $this->guard(fn() => $this->quickSetup());
+
+                return $made !== null && $this->ready($made[0], $made[1]);
             case 'new':
                 $nick = $this->guard(fn() => (new NewGrid($this->ui))->run(null));
+                if ($nick === null) {
+                    return false;
+                }
+                // The grid is made: its first simulator and its region are what is missing to use it
+                $made = $this->guard(fn() => (new NewSim($this->ui))->run($nick));
 
-                return $nick !== null && $this->gridScreen($nick);
+                return $made !== null ? $this->ready($made[0], $made[1]) : $this->gridScreen($nick);
             case 'external':
                 $made = $this->guard(fn() => (new NewSim($this->ui))->run(null, null, true));
 
@@ -202,6 +214,50 @@ final class Hub
             default:
                 return $choice === 'quit';
         }
+    }
+
+    /**
+     * The quick setup: a form, then the setup with the defaults and the plan to accept. When the plan is
+     * not accepted, the advanced setup is offered.
+     *
+     * @return ?array{0:string,1:string} the grid and its simulator
+     */
+    private function quickSetup(): ?array
+    {
+        $quick = new QuickSetup($this->ui);
+        $data = $quick->ask();
+        $made = (new SetupRunner($this->ui))->run($data, SetupRunner::ASK);
+        if ($made !== null || !$this->ui->confirm(_('Go through the advanced setup instead?'), true)) {
+            return $made;
+        }
+
+        $nick = (new NewGrid($this->ui))->run(null);
+
+        return $nick === null ? null : (new NewSim($this->ui))->run($nick);
+    }
+
+    /**
+     * What the user sees when a grid and its first region are made: it is finished, and what remains
+     * is optional. Finishing is what is proposed.
+     *
+     * @return bool whether to quit the setup
+     */
+    private function ready(string $nick, string $slug): bool
+    {
+        $profile = (new Config())->profile();
+        $grid = GridInfo::load($profile, $nick);
+        $this->ui->note(
+            sprintf(_("Your grid %s is ready, nothing more is needed."), $this->ui->entity($nick))
+            . ($grid !== null && !$grid->remote ? "\n" . sprintf(_('Login URI: %s'), "http://{$grid->baseHostname}:{$grid->publicPort}") : '')
+            . "\n" . _('You can quit now, or go on to add regions and simulators.'),
+        );
+        $choice = $this->ui->choose(
+            _('Setup'),
+            ['quit' => _('Finish: quit the setup'), 'more' => _('Go on: add regions and simulators, change settings')],
+            'quit',
+        );
+
+        return $choice === 'quit' || $this->simScreen($nick, $slug);
     }
 
     /** @return bool whether to quit the setup */

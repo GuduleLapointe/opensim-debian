@@ -17,7 +17,11 @@ final class AccountList
     {
         $text = ltrim($text, "\xEF\xBB\xBF"); // the byte order mark of a spreadsheet's export
         $format ??= str_starts_with(ltrim($text), '[') || str_starts_with(ltrim($text), '{') ? 'json' : 'csv';
-        $rows = $format === 'json' ? self::jsonRows($text) : self::csvRows($text);
+        $rows = match ($format) {
+            'json' => self::jsonRows($text),
+            'yaml' => self::dataRows(self::yaml($text)),
+            default => self::csvRows($text),
+        };
 
         $accounts = [];
         $errors = [];
@@ -54,19 +58,33 @@ final class AccountList
     /** @return array<int,array<string,mixed>> line number => values */
     private static function jsonRows(string $text): array
     {
-        $data = json_decode($text, true);
+        return self::dataRows(json_decode($text, true));
+    }
+
+    /** The accounts of a list, or of the `users` (or `accounts`) of a setup file. */
+    private static function dataRows(mixed $data): array
+    {
         if (!is_array($data)) {
             return [];
         }
-        $list = array_is_list($data) ? $data : ($data['accounts'] ?? []);
+        $list = array_is_list($data) ? $data : ($data['accounts'] ?? $data['users'] ?? []);
         $rows = [];
-        foreach ($list as $i => $entry) {
+        foreach (is_array($list) ? $list : [] as $i => $entry) {
             if (is_array($entry)) {
                 $rows[$i + 1] = self::keys($entry);
             }
         }
 
         return $rows;
+    }
+
+    private static function yaml(string $text): mixed
+    {
+        try {
+            return \Symfony\Component\Yaml\Yaml::parse($text);
+        } catch (\Symfony\Component\Yaml\Exception\ParseException) {
+            return null;
+        }
     }
 
     /** @return array<int,array<string,mixed>> line number => values */

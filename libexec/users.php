@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * opensim users: the accounts of a grid.
  *
- *   opensim users import FILE [--grid NICK] [--apply] [--keep-going] [--result FILE] [--format csv|json]
+ *   opensim users import FILE [--grid NICK] [--apply] [--keep-going] [--result FILE] [--format csv|json|yaml]
  *
  * Makes the accounts of a list, CSV (first, last, email, password; a header line is accepted) or JSON (a list of
  * objects with the same keys), directly in the database of the grid, as Robust does when `create user` is typed in
@@ -23,7 +23,7 @@ use OpenSim\Installer\Grid\Database;
 use OpenSim\Installer\Grid\GridInfo;
 use OpenSim\Installer\Ui\QuietUi;
 
-const USAGE = "usage: opensim users import FILE [--grid NICK] [--apply] [--keep-going] [--result FILE] [--format csv|json]\n";
+const USAGE = "usage: opensim users import FILE [--grid NICK] [--apply] [--keep-going] [--result FILE] [--format csv|json|yaml]\n";
 
 /** Say what is wrong and stop. */
 function fail(string $message, int $code = 1): never
@@ -58,8 +58,11 @@ if (count($words) !== 1) {
 if (!is_readable($words[0])) {
     fail("cannot read {$words[0]}", 2);
 }
-if ($options['format'] !== '' && !in_array($options['format'], ['csv', 'json'], true)) {
-    fail('the format is csv or json', 2);
+if ($options['format'] === '' && preg_match('/\.ya?ml$/i', $words[0])) {
+    $options['format'] = 'yaml';
+}
+if ($options['format'] !== '' && !in_array($options['format'], ['csv', 'json', 'yaml'], true)) {
+    fail('the format is csv, json or yaml', 2);
 }
 
 $profile = (new Config())->profile();

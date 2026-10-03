@@ -9,6 +9,7 @@ use OpenSim\Installer\Console;
 use OpenSim\Installer\Elevated;
 use OpenSim\Installer\PendingRestarts;
 use OpenSim\Installer\Ports;
+use OpenSim\Installer\Setup\SetupFile;
 use OpenSim\Installer\SetupFailed;
 use OpenSim\Installer\System;
 use OpenSim\Installer\Ui\InstallerUi;
@@ -247,6 +248,7 @@ final class NewSim
 
         if ($plan->regionOnly) {
             $this->applyRegion($plan, $profile, $grid);
+            SetupFile::record($plan->gridDir, static fn(array $data): array => SetupFile::withSim($data, $plan));
 
             return;
         }
@@ -292,6 +294,8 @@ final class NewSim
         if ($plan->createRegion) {
             $this->giveRoles($plan, $grid);
         }
+
+        SetupFile::record($plan->gridDir, static fn(array $data): array => SetupFile::withSim($data, $plan));
 
         $systemUser = $profile['SystemUser'] ?? '';
         $this->giveToSystemUser($systemUser, [$plan->gridDir, $plan->dataDirectory, $plan->cacheDirectory], true);

@@ -120,12 +120,17 @@ final class GridAccounts
             }
         }
 
-        // The console answers nothing to tell: look for the account
-        for ($i = 0; $i < 20; $i++) {
+        // The console answers nothing to tell: look for the account. A Robust that has just started may not
+        // take the command yet: it is sent again, a few times, before giving up (an account that exists
+        // is refused by the console, which does no harm)
+        for ($i = 0; $i < 24; $i++) {
             if ($this->exists($grid, $name) === true) {
                 return true;
             }
             sleep(1);
+            if ($i % 8 === 7) {
+                Console::send($instance, $lines);
+            }
         }
         $this->ui->error(sprintf(_("The account %s was not created: see the console of the grid."), $name));
 

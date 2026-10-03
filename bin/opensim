@@ -149,7 +149,8 @@ fi
 
 # The setup wizard
 if [ "${1:-}" = "setup" ]; then
-	exec php "$BASEDIR/install/install.php"
+	shift
+	exec php "$BASEDIR/install/install.php" "$@"
 fi
 
 source $BASEDIR/libexec/venv-setup || end $? "Could not setup python venv"

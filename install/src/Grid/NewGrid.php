@@ -7,6 +7,7 @@ namespace OpenSim\Installer\Grid;
 use OpenSim\Installer\Config;
 use OpenSim\Installer\Elevated;
 use OpenSim\Installer\Ports;
+use OpenSim\Installer\Setup\SetupFile;
 use OpenSim\Installer\SetupFailed;
 use OpenSim\Installer\System;
 use OpenSim\Installer\TextFile;
@@ -120,6 +121,9 @@ final class NewGrid
         if ($logConfig !== null) {
             $this->ui->note(sprintf(_("Wrote %s"), $logConfig));
         }
+
+        // What was asked is kept, to make the same grid again from a file (opensim setup --file)
+        SetupFile::record($plan->gridDir, static fn(array $data): array => SetupFile::withGrid($data, $plan));
 
         $systemUser = $profile['SystemUser'] ?? '';
         $this->giveToSystemUser($systemUser, [$plan->etcDirectory, $plan->dataDirectory, $plan->cacheDirectory], true);

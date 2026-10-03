@@ -24,7 +24,8 @@
         "laravel/prompts": "^0.3.18",
         "magicoli/opensim-helpers": "dev-opensim-kit",
         "nubs/random-name-generator": "^2.2",
-        "magicoli/bash-tools": "^1.0.4"
+        "magicoli/bash-tools": "^1.0.4",
+        "symfony/yaml": "^7.4"
     },
     "require-dev": {
         "dealerdirect/phpcodesniffer-composer-installer": "^1.2",
