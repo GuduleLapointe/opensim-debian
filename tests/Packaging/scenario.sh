@@ -86,8 +86,8 @@ mysql -e "CREATE DATABASE testgrid_robust; CREATE USER opensim@localhost IDENTIF
 check "grid enabled" "[ -L /etc/opensim/robust.d/testgrid.ini ]"
 check "the setup wrote the helpers.ini of the grid, for the group of the web server" "grep -q 'grid_name = \"Testgrid\"' /etc/opensim/grids/testgrid/helpers.ini &&
     [ \"\$(stat -c '%G %a' /etc/opensim/grids/testgrid/helpers.ini)\" = 'www-data 640' ]"
-check "the Robust config tells the viewers where the services are" "grep -q '^ *economy = \"\${Const|WebURL}/helpers/currency.php\"' /etc/opensim/grids/testgrid/Robust.HG.ini &&
-    grep -q '^ *search = \"\${Const|WebURL}/helpers/query.php\"' /etc/opensim/grids/testgrid/Robust.HG.ini"
+check "the Robust config tells the viewers where the services are" "grep -q '^ *economy = \"\${Const|WebURL}/helpers\"' /etc/opensim/grids/testgrid/Robust.HG.ini &&
+    grep -q '^ *SearchURL = \"\${Const|WebURL}/helpers/query.php\"' /etc/opensim/grids/testgrid/Robust.HG.ini"
 cat >/tmp/helpers-settings.php <<'EOF'
 <?php
 define('OPENSIM_ENGINE', true);

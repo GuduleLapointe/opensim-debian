@@ -255,8 +255,6 @@ cat <<EOF >$TMP.thisgrid.ini || end $? "could not create $TMP.thisgrid.ini"
 	;help = "\${Const|WebURL}/support"
 	;password = "\${Const|WebURL}/password"
 	;economy = "$economyURL"
-	;search = "\${Const|WebURL}/helpers/query.php"
-	;message = "\${Const|WebURL}/helpers/offline.php"
 	;GridStatus = "\${Const|WebURL}/GridStatus"
 	;GridStatusRSS = "\${Const|WebURL}/GridStatusRSS"
 [BakedTextureService]

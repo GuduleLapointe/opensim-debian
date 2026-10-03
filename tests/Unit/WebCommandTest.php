@@ -136,9 +136,11 @@ describe('Robust config with the helpers', function () {
 
         $ini = web_robust($plan);
 
-        expect($ini)->toContain('economy = "${Const|WebURL}/helper/currency.php"');
-        expect($ini)->toContain('search = "${Const|WebURL}/search"');
-        expect($ini)->toContain('message = "${Const|WebURL}/helper/offline.php"');
+        // The economy is the path of the helpers, the viewer adds the script; the search API is the query script
+        expect($ini)->toContain('economy = "${Const|WebURL}/helper"');
+        expect($ini)->toContain('SearchURL = "${Const|WebURL}/search"');
+        expect($ini)->not->toContain('currency.php');
+        expect($ini)->not->toContain('message = ');
     });
 
     test('tells nothing of them when the grid has none', function () {

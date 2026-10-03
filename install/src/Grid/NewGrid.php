@@ -137,6 +137,15 @@ final class NewGrid
         }
 
         $this->ui->note(sprintf(_("Grid '%s' configured."), $plan->gridName));
+        if ($plan->helpers) {
+            $this->ui->note(
+                sprintf(
+                    _("Web site: the helpers are in %s, the placeholder site in /usr/share/opensim-web/html (when the opensim-web package is installed). The configuration for your web server (Caddy, nginx or Apache): opensim web snippet <caddy|nginx|apache> --grid %s"),
+                    Snippets::WEBROOT,
+                    $plan->gridNick,
+                ),
+            );
+        }
     }
 
     /**
@@ -420,21 +429,17 @@ final class NewGrid
     {
         $existing = HelpersConfig::read($gridDir);
         $plan->helpers = $this->ui->confirm(
-            _('Serve the economy, search and offline messages of the grid with opensim-helpers?'),
+            _('Serve the economy and the search of the grid with opensim-helpers?'),
             $existing !== [] || is_dir(Snippets::WEBROOT),
         );
         if (!$plan->helpers) {
             return;
         }
         $plan->helpersUrls = $existing['Urls'] ?? [];
-        $plan->helpersPath = Services::normalize(
-            $this->ui->text(
-                _('Path of the helpers on the web site'),
-                $existing['Helpers']['path'] ?? HelpersConfig::DEFAULT_PATH,
-                static fn(string $v): ?string => preg_match('#^/?[A-Za-z0-9._/-]*$#', trim($v))
-                    ? null
-                    : _('A path such as /helpers.'),
-            ),
+        // The path is not asked for now: what the grid already has, else /helpers
+        $plan->helpersPath = Services::normalize($existing['Helpers']['path'] ?? HelpersConfig::DEFAULT_PATH);
+        $this->ui->note(
+            sprintf(_('Helpers URL: %s (the viewers add the name of the script)'), rtrim($plan->webUrl, '/') . $plan->helpersPath),
         );
     }
 

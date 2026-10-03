@@ -27,9 +27,6 @@ final class Services
         'directory_info' => 'directory_info.php',
     ];
 
-    /** What the grid announces to the viewers (`[GridInfoService]` of Robust) and the service behind it. */
-    public const GRID_INFO = ['economy' => 'currency', 'search' => 'search', 'message' => 'offline'];
-
     /** The folders of the helpers that are not for the web. */
     public const PRIVATE_FOLDERS = ['addons', 'bin', 'classes', 'includes', 'locales', 'templates', 'tests', 'tools', 'vendor'];
 

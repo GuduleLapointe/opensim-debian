@@ -80,9 +80,10 @@ final class RobustConfig
         // What the viewers are told of the services of the helpers, at the path the grid has chosen
         if ($plan->helpers) {
             $services = new Services($plan->helpersPath, $plan->helpersUrls);
-            foreach (Services::GRID_INFO as $key => $service) {
-                $ini->set('GridInfoService', $key, $this->q('${Const|WebURL}' . $services->path($service)));
-            }
+            // The economy is the path of the helpers: the viewer adds the name of the script (currency.php...)
+            $ini->set('GridInfoService', 'economy', $this->q('${Const|WebURL}' . $services->base()));
+            // The search of the viewer, in-world, is the query script (not a page of the web site)
+            $ini->set('LoginService', 'SearchURL', $this->q('${Const|WebURL}' . $services->path('search')));
         }
 
         if ($plan->enableHypergrid) {
