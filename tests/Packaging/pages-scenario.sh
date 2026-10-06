@@ -8,6 +8,7 @@
 
 db=testgrid_robust
 helpers=http://127.0.0.1:8090/helpers
+site=http://127.0.0.1:8090
 sql() { mysql -BN "$db" -e "$1"; }
 get() { curl -s -m 60 "$@"; }
 status() { curl -s -o /dev/null -m 60 -w '%{http_code}' "$@"; }
@@ -35,6 +36,27 @@ cfg motd 'Bienvenue à <USERNAME>\nSecond line'
 check "motd: the text of the grid, as it is (Robust makes the new lines and the name)" "[ \"\$(get $helpers/motd.php)\" = 'Bienvenue à <USERNAME>\\nSecond line' ]"
 check "motd: the address Robust reads it at is served" "[ \"\$(status http://127.0.0.1:8090\$(robust_path MessageUrl))\" = 200 ]"
 cp -p /tmp/helpers.ini.pages $helpers_ini
+
+ts "pages: the layout and the blocks"
+rm -rf /tmp/opensim-helpers-cache
+firefox='Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0'
+firestorm='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) SecondLife/7.1.9 (Firestorm-Releasex64; default skin)'
+home=$(get -A "$firefox" $site/)
+check "home: a browser gets the page of the grid, with its top bar and its footer" "echo \"\$home\" | grep -q '<body class=\"browser\">' && echo \"\$home\" | grep -q 'class=\"topbar\"' && echo \"\$home\" | grep -q '<footer>' && echo \"\$home\" | grep -q 'Testgrid'"
+check "home: it shows the info and the status of the grid" "echo \"\$home\" | grep -q 'block-grid-info' && echo \"\$home\" | grep -q 'block-grid-status'"
+splash=$(get -A "$firestorm" $site/welcome)
+check "welcome: a viewer gets the content alone, no top bar, no footer" "echo \"\$splash\" | grep -q '<body class=\"viewer\">' && echo \"\$splash\" | grep -q 'block-grid-status' && ! echo \"\$splash\" | grep -q 'class=\"topbar\"' && ! echo \"\$splash\" | grep -q '<footer>'"
+check "welcome: a browser can ask to see what a viewer sees (?viewer=1), and the other way round" "get -A '$firefox' '$site/welcome?viewer=1' | grep -q '<body class=\"viewer\">' && get -A '$firestorm' '$site/welcome?viewer=0' | grep -q '<body class=\"browser\">'"
+check "static: the style of the pages is served where the page says it is" "href=\$(echo \"\$home\" | grep -o 'href=\"[^\"]*page.css\"' | cut -d'\"' -f2) && [ \"\$(status http://127.0.0.1:8090\$href)\" = 200 ] && get -D - -o /dev/null http://127.0.0.1:8090\$href | grep -qi '^content-type: text/css'"
+check "static: nothing outside the static files, and /assets is not that" "[ \"\$(status --path-as-is \"$helpers/static/../includes/bootstrap.php\")\" = 404 ] && [ \"\$(status \"$site/assets/logos/logo.svg\")\" = 404 ]"
+members=$(sql "SELECT COUNT(*) FROM UserAccounts WHERE active = 1")
+regions=$(sql "SELECT COUNT(*) FROM regions")
+check "grid-status block: the numbers of the database, as a fragment to embed" "block=\$(get '$helpers/blocks/grid-status?title=Status'); echo \"\$block\" | grep -q '<h3 class=\"block-title\">Status</h3>' && echo \"\$block\" | grep -qE '<th scope=\"row\">Members</th><td>$members</td>' && echo \"\$block\" | grep -qE '<th scope=\"row\">Regions</th><td>$regions</td>'"
+check "grid-status block: online when Robust answers" "get '$helpers/blocks/grid-status' | grep -q '<th scope=\"row\">Status</th><td>Online</td>'"
+check "grid-status block: its data, for an application that makes its own page" "[ \"\$(get '$helpers/blocks/grid-status?format=json&title=' | php -r 'echo json_decode(stream_get_contents(STDIN), true)[\"rows\"][1][\"value\"];')\" = \"$members\" ]"
+check "grid-status block: without the visitors of other grids when asked" "! get '$helpers/blocks/grid-status?hypergrid=0' | grep -q 'Active users' && get '$helpers/blocks/grid-status' | grep -q 'Active users'"
+check "grid-info block: the name of the grid and the link to log in" "get '$helpers/blocks/grid-info' | grep -q 'Testgrid' && get '$helpers/blocks/grid-info' | grep -q 'href=\"hop://localhost:8002\"'"
+check "blocks: one that does not exist is a 404" "[ \"\$(status '$helpers/blocks/nothing')\" = 404 ]"
 
 ts "pages: the destination guide"
 mkdir -p /tmp/guide
@@ -171,9 +193,9 @@ region bbbbbbbb-0000-4000-8000-000000000002 'Far two' http://127.0.0.1:9 1
 region cccccccc-0000-4000-8000-000000000001 'Odd' 'http://x"><script>alert(1)</script>' 1
 page=$(get $directory)
 check "directory: the totals of the grids that registered" "echo \"\$page\" | grep -q '<strong>3 grids</strong>, 4 regions, 5 parcels'"
-check "directory: a grid is shown by its name, which its gatekeeper tells, with its numbers" "echo \"\$page\" | grep -q '<a href=\"?gatekeeperURL=http://127.0.0.1:8002\">Testgrid</a> (1 regions, 2 parcels)'"
-check "directory: a grid that does not answer is shown by its address" "echo \"\$page\" | grep -q '<a href=\"?gatekeeperURL=http://127.0.0.1:9\">127.0.0.1:9</a> (2 regions, 2 parcels)'"
-check "directory: what a grid registered is text, not markup" "! echo \"\$page\" | grep -q '<script>alert' && echo \"\$page\" | grep -q '&lt;script&gt;alert(1)&lt;/script&gt;'"
+check "directory: a grid is shown by its name, which its gatekeeper tells, with its numbers" "echo \"\$page\" | grep -q '<a href=\"?gatekeeperURL=http%3A%2F%2F127.0.0.1%3A8002\">Testgrid</a> (1 region, 2 parcels)'"
+check "directory: a grid that does not answer is shown by its address" "echo \"\$page\" | grep -q '<a href=\"?gatekeeperURL=http%3A%2F%2F127.0.0.1%3A9\">127.0.0.1:9</a> (2 regions, 2 parcels)'"
+check "directory: what a grid registered is text, not markup" "! echo \"\$page\" | grep -q '<script>alert' && echo \"\$page\" | grep -q '&lt;script&gt;alert(1)'"
 check "directory: no warning in the log" "! grep -q 'Undefined\|Warning' /tmp/php-pages.log"
 sql "DELETE FROM parcels; DELETE FROM regionsregister; INSERT INTO parcels SELECT * FROM parcels_bak; INSERT INTO regionsregister SELECT * FROM regionsregister_bak; DROP TABLE parcels_bak, regionsregister_bak"
 
