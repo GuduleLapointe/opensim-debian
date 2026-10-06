@@ -2,17 +2,17 @@
 # The offline messages of a grid, on the grid of the scenario: what the OfflineMessageModule of a simulator asks offline.php
 # of the helpers (the URL of its config is .../helpers/offline.php, it adds /SaveMessage/ and /RetrieveMessages/ and sends the
 # XML of the message as OpenSimulator serializes it), the mails of the helpers for those who ask for them in their viewer, and
-# what a grid does for a message another grid sends to one of its users who is offline. Sourced by scenario.sh
+# what a grid does for a message another grid sends to one of its users who is offline. Sourced by package-scenario.sh
 # (STOP_AFTER=offline stops the scenario after it), in the test container.
 
-[[ $(type -t check) == function ]] || source /test/lib.sh
+[[ $(type -t check) == function ]] || source /test/scenario-lib.sh
 
 db=testgrid_robust
 sql() { mysql -BN "$db" -e "$1"; }
 helpers=http://127.0.0.1:8090/helpers
 zero=00000000-0000-0000-0000-000000000000
 account() { sql "SELECT PrincipalID FROM UserAccounts WHERE FirstName='$1' AND LastName='$2'"; }
-xml() { php /test/offline/xml.php - "$1"; }
+xml() { php /test/offline/xml-probe.php - "$1"; }
 
 # A message as OpenSimulator serializes a GridInstantMessage
 im() { # from, from name, to, dialog, message
@@ -52,7 +52,7 @@ pkill -f 'php .*-S 127.0.0.1:8090' 2>/dev/null || true
 mkdir -p /tmp/mails
 rm -f /tmp/mails/*
 sql "DELETE FROM im_offline" 2>/dev/null || true
-(cd /var/www/html && OPENSIM_GRID=testgrid PHP_CLI_SERVER_WORKERS=4 setsid -f php -d sendmail_path=/test/offline/fakemail -S 127.0.0.1:8090 index.php >/tmp/php-offline.log 2>&1)
+(cd /var/www/html && OPENSIM_GRID=testgrid PHP_CLI_SERVER_WORKERS=4 setsid -f php -d sendmail_path=/test/offline/mail-fake -S 127.0.0.1:8090 index.php >/tmp/php-offline.log 2>&1)
 wait_check 20 "the site of the helpers answers" "[ \"\$(curl -s -o /dev/null -w '%{http_code}' $helpers/motd.php)\" = 200 ]"
 check "the grid has the table of the offline messages" "[ \"\$(sql \"SHOW TABLES LIKE 'im_offline'\")\" = im_offline ]"
 sql "CREATE TABLE IF NOT EXISTS usersettings (useruuid varchar(36) NOT NULL, imviaemail enum('true','false') NOT NULL, visible enum('true','false') NOT NULL, email varchar(254) NOT NULL, PRIMARY KEY (useruuid))"
@@ -69,7 +69,7 @@ ts "offline: the user comes back, the simulator asks for the messages"
 # The answer is kept in a file, to be read by the checks
 reply=/tmp/offline-reply.xml
 retrieve "$recipient" >$reply
-messages() { php /test/offline/xml.php $reply "$1"; }
+messages() { php /test/offline/xml-probe.php $reply "$1"; }
 check "the answer is the list of the messages as OpenSimulator reads it" "[ \"\$(messages 'count(/ArrayOfGridInstantMessage/GridInstantMessage)')\" = 2 ]"
 check "the messages of the user, in the order they came, not the ones of another" "[ \"\$(messages '/ArrayOfGridInstantMessage/GridInstantMessage[1]/message')\" = 'Hello Bulk One' ] && ! grep -q 'Not for Bulk One' $reply"
 check "each message has what the simulator needs of it" "[ \"\$(messages '/ArrayOfGridInstantMessage/GridInstantMessage[1]/fromAgentName')\" = 'Bulk Two' ] &&

@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * What the OpenSimSearch module sends to the web service and reads from its answers, from its source
  * (modules/OpenSimSearch), against the contract the search tests of the packages check the helpers with
- * (tests/Packaging/search/contract.php): when the module changes, this test says what to update.
+ * (tests/Packaging/search/search-module-contract.php): when the module changes, this test says what to update.
  */
 
 /**
@@ -54,7 +54,7 @@ describe('Search module contract', function () {
     });
 
     test('is what the search tests of the packages check the helpers with', function () use ($source) {
-        $contract = require dirname(__DIR__) . '/Packaging/search/contract.php';
+        $contract = require dirname(__DIR__) . '/Packaging/search/search-module-contract.php';
 
         expect($contract)->toBe(search_module_calls((string) file_get_contents($source)));
     });

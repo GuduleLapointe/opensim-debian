@@ -43,10 +43,10 @@ ln -s "$PWD"/dist/opensim-tools_*.deb "$PWD"/dist/opensim-kit-*.zip "$stage/dist
 ln -s "$DEPS_ENGINE" "$stage/deps/engine"
 ln -s "$DEPS_REST" "$stage/deps/rest"
 ln -s "$DEPS_HELPERS" "$stage/deps/helpers"
-ln -s "$PWD/tests/Packaging/lib.sh" "$stage/test/lib.sh"
+ln -s "$PWD/tests/Packaging/scenario-lib.sh" "$stage/test/scenario-lib.sh"
 COPYFILE_DISABLE=1 tar -chf - -C "$stage" dist deps test | podman run --rm -i --memory="${MEMORY:-400m}" "$BASE" bash -c '
 tar -xf - --no-same-owner --warning=no-unknown-keyword -C /
-source /test/lib.sh
+source /test/scenario-lib.sh
 # A previous version of a package, which had the libraries bundled as folders of vendor/magicoli (dpkg does not
 # replace a folder by a link when it upgrades): installed in place of the real one
 previous() { # package, libraries

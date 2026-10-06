@@ -1,10 +1,10 @@
 <?php
 /**
- * What the tests of textgen.php (tests/Packaging/pages.sh) read of an image: its size and format, the colour of the
+ * What the tests of textgen.php (tests/Packaging/pages-scenario.sh) read of an image: its size and format, the colour of the
  * background (the pixel in the corner), the colour of the text (the most frequent colour that is not the background), and
  * how much of the picture is text.
  *
- *   php image.php FILE      prints: WIDTHxHEIGHT FORMAT background=R,G,B text=R,G,B ink=PERCENT
+ *   php image-probe.php FILE      prints: WIDTHxHEIGHT FORMAT background=R,G,B text=R,G,B ink=PERCENT
  */
 
 declare(strict_types=1);

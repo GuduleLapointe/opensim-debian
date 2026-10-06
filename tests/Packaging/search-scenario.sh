@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # The search of a grid, as the simulators and the viewers use it, on the grid of the scenario: its Robust and its simulator
-# are running, its accounts exist, its helpers are the ones of the packages. Sourced by scenario.sh (STOP_AFTER=search
+# are running, its accounts exist, its helpers are the ones of the packages. Sourced by package-scenario.sh (STOP_AFTER=search
 # stops the scenario after it, to run only this), in the test container.
 #
-# Two kinds of simulator: one that only tells its snapshot (search/fakesim.php, with the files collector-*.xml in the
+# Two kinds of simulator: one that only tells its snapshot (search/sim-fake.php, with the files collector-*.xml in the
 # format OpenSimulator writes), to know what the tables must hold, and the real simulator of the grid.
-# The searches are the calls of the OpenSimSearch module to query.php, with the keys it sends (search/queries.php, from
+# The searches are the calls of the OpenSimSearch module to query.php, with the keys it sends (search/search-check.php, from
 # the contract checked against the source of the module). The search of people is not the module's: the core asks the
 # user accounts service of Robust, which is asked here the same way.
 
-[[ $(type -t check) == function ]] || source /test/lib.sh
+[[ $(type -t check) == function ]] || source /test/scenario-lib.sh
 
 db=testgrid_robust
 sql() { mysql -BN "$db" -e "$1"; }
@@ -19,7 +19,7 @@ null_key=00000000-0000-0000-0000-000000000000
 # The searches of one group, their lines, and a failure of any of them is one of the scenario
 queries() { # group
     local out
-    out=$(php /test/search/queries.php "$1" "$helpers/query.php" 2>&1) || FAILED=1
+    out=$(php /test/search/search-check.php "$1" "$helpers/query.php" 2>&1) || FAILED=1
     echo "$out"
 }
 # What a simulator does when it starts, and when it stops, to the search. Registering answers at once: the snapshot is read
@@ -39,8 +39,8 @@ pkill -f 'php -S 127.0.0.1:9990' 2>/dev/null || true
 ts "search: the site of the helpers, and a simulator that only tells its snapshot"
 mkdir -p /tmp/fakesim
 (cd /var/www/html && OPENSIM_GRID=testgrid PHP_CLI_SERVER_WORKERS=4 setsid -f php -S 127.0.0.1:8090 index.php >/tmp/php-search.log 2>&1)
-(cd /test/search && setsid -f php -S 127.0.0.1:9990 fakesim.php >/tmp/fakesim.log 2>&1)
-cp /test/search/collector-1.xml /tmp/fakesim/collector.xml
+(cd /test/search && setsid -f php -S 127.0.0.1:9990 sim-fake.php >/tmp/fakesim.log 2>&1)
+cp /test/search/collector-1-fixture.xml /tmp/fakesim/collector.xml
 wait_check 20 "the site of the helpers answers" "[ \"\$(curl -s -o /dev/null -w '%{http_code}' $helpers/motd.php)\" = 200 ]"
 wait_check 20 "the simulator tells its snapshot" "curl -s 'http://127.0.0.1:9990/?method=collector' | grep -q '<regiondata>'"
 check "register.php without a host and a port is refused" "[ \"\$(curl -s -o /dev/null -w '%{http_code}' $helpers/register.php)\" = 400 ]"
@@ -65,7 +65,7 @@ check "a parcel has the picture and the group it tells, and only it" "[ \"\$(sql
     [ \"\$(sql \"SELECT has_picture FROM popularplaces WHERE name='Group Hall'\")\" = 1 ] && [ \"\$(sql \"SELECT SUM(has_picture) FROM popularplaces\")\" = 1 ]"
 
 ts "search: the searches of the viewers"
-sed "s/{{regions}}/$regions/" /test/search/seed.sql | mysql "$db"
+sed "s/{{regions}}/$regions/" /test/search/search-tables-fixture.sql | mysql "$db"
 check "the events, the classifieds and the parcels for the pages are in the tables" "[ \"\$(sql 'SELECT COUNT(*) FROM events')\" = 4 ] && [ \"\$(sql 'SELECT COUNT(*) FROM classifieds')\" = 3 ] && [ \"\$(sql \"SELECT COUNT(*) FROM parcels WHERE parcelname LIKE 'Paging Plot%'\")\" = 120 ]"
 for group in places popular land events classifieds; do
     ts "search: $group"
@@ -73,7 +73,7 @@ for group in places popular land events classifieds; do
 done
 
 ts "search: the simulator tells another snapshot"
-cp /test/search/collector-2.xml /tmp/fakesim/collector.xml
+cp /test/search/collector-2-fixture.xml /tmp/fakesim/collector.xml
 register 9990 online
 wait_check 60 "the new snapshot is read" "[ \"\$(sql \"SELECT COUNT(*) FROM allparcels WHERE parcelname LIKE '%renewed%'\")\" = 1 ]"
 queries changed

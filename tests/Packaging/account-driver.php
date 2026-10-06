@@ -1,7 +1,7 @@
 <?php
 
 // Makes an account in the grid TEST_GRID (default testgrid), through the console of its Robust, as the setup does,
-// for tests/Packaging/scenario.sh. TEST_ACCOUNT (default "Later User"), its password TEST_ACCOUNT_PASSWORD.
+// for tests/Packaging/package-scenario.sh. TEST_ACCOUNT (default "Later User"), its password TEST_ACCOUNT_PASSWORD.
 
 require '/usr/share/opensim-tools/vendor/autoload.php';
 require __DIR__ . '/ScriptedUi.php';

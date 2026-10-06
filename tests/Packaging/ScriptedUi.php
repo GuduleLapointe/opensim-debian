@@ -1,7 +1,7 @@
 <?php
 
 // A frontend of the setup that answers from a table, for the scripted tests
-// (newgrid.php, newsim.php).
+// (newgrid-driver.php, newsim-driver.php).
 
 use OpenSim\Installer\Ui\InstallerUi;
 

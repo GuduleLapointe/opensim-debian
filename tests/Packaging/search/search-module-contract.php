@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * What the OpenSimSearch module sends to the web service (query.php of the helpers) and reads in its answers, for each
  * call it makes: the keys of the request, and the keys of the answer it needs. Checked against the source of the module by
- * tests/Unit/SearchModuleContractTest.php, used by the search tests of the packages (tests/Packaging/search.sh).
+ * tests/Unit/SearchModuleContractTest.php, used by the search tests of the packages (tests/Packaging/search-scenario.sh).
  */
 return [
     'ClassifiedInfoRequest/classifieds_info_query' => [

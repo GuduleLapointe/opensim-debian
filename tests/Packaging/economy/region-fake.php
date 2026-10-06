@@ -1,15 +1,15 @@
 <?php
 /**
- * A simulator with a money module, for the economy tests (tests/Packaging/economy.sh): the XML-RPC calls the helpers make to
+ * A simulator with a money module, for the economy tests (tests/Packaging/economy-scenario.sh): the XML-RPC calls the helpers make to
  * the region of an avatar (GetBalance, UpdateBalance, AddBankerMoney, SendMoneyBalance), answered the way the module does.
  * The balance it holds is in /tmp/fakeregion/balance, the calls it received, one JSON per line, in /tmp/fakeregion/calls.log.
  *
- *   php -S 127.0.0.1:8099 fakeregion.php
+ *   php -S 127.0.0.1:8099 region-fake.php
  */
 
 declare(strict_types=1);
 
-require dirname(__DIR__) . '/xmlrpc.php';
+require dirname(__DIR__) . '/xmlrpc-lib.php';
 
 $dir = '/tmp/fakeregion';
 @mkdir($dir);

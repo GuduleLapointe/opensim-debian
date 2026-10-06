@@ -1,20 +1,20 @@
 <?php
 /**
- * The queries of the search tests of the packages (tests/Packaging/search.sh), as the OpenSimSearch module of a simulator
+ * The queries of the search tests of the packages (tests/Packaging/search-scenario.sh), as the OpenSimSearch module of a simulator
  * makes them to the web service of the grid (query.php of the helpers): the same XML-RPC calls, with the keys the module
  * sends (all strings, as the module sends them), and the answers read the way the module reads them.
  *
- *   php queries.php GROUP URL      GROUP: places, popular, land, events, classifieds, changed, gone, sim
+ *   php search-check.php GROUP URL      GROUP: places, popular, land, events, classifieds, changed, gone, sim
  *
  * It prints one line per check, as the scenarios do, and exits with 1 when one failed. What the groups expect is what the
- * fixtures (collector-1.xml, collector-2.xml, seed.sql) put in the tables.
+ * fixtures (collector-1-fixture.xml, collector-2-fixture.xml, search-tables-fixture.sql) put in the tables.
  */
 
 declare(strict_types=1);
 
 [, $group, $url] = $argv + [1 => '', 2 => ''];
-require dirname(__DIR__) . '/xmlrpc.php';
-$contract = require __DIR__ . '/contract.php';
+require dirname(__DIR__) . '/xmlrpc-lib.php';
+$contract = require __DIR__ . '/search-module-contract.php';
 $failed = false;
 
 // Ratings and sorts of the viewer (OpenMetaverse DirFindFlags)
@@ -222,7 +222,7 @@ switch ($group) {
         break;
 
     default:
-        fwrite(STDERR, "usage: php queries.php places|popular|land|events|classifieds|changed|gone|sim URL\n");
+        fwrite(STDERR, "usage: php search-check.php places|popular|land|events|classifieds|changed|gone|sim URL\n");
         exit(2);
 }
 

@@ -1,7 +1,7 @@
 <?php
 
 // Runs the simulator wizard of the installed kit with scripted answers, for
-// tests/Packaging/scenario.sh.
+// tests/Packaging/package-scenario.sh.
 
 require '/usr/share/opensim-tools/vendor/autoload.php';
 require __DIR__ . '/ScriptedUi.php';

@@ -3,7 +3,7 @@
 # and Caddy, each with the file the setup writes for it (opensim web GRID snippet SERVER), PHP-FPM or
 # mod_php behind. One server at a time, they all want the port 80 of the machine by default.
 
-source /test/lib.sh
+source /test/scenario-lib.sh
 magiiic_repository
 
 ts "packages, grid"
@@ -11,7 +11,7 @@ apt_q install "$(deb opensim-0.9.3.0)" "$(deb opensim-rest-php)" "$(deb opensim-
 systemctl start mariadb
 mysql -e "CREATE DATABASE testgrid_robust; CREATE USER opensim@localhost IDENTIFIED BY 'testpass';
     GRANT ALL ON testgrid_robust.* TO opensim@localhost;"
-(cd /var/lib/opensim && runuser -u opensim -- php /test/newgrid.php | tail -1)
+(cd /var/lib/opensim && runuser -u opensim -- php /test/newgrid-driver.php | tail -1)
 # The table of the offline messages, which Robust makes when it runs (it does not here)
 mysql testgrid_robust -e "CREATE TABLE IF NOT EXISTS im_offline (ID mediumint(9) NOT NULL AUTO_INCREMENT, PrincipalID char(36) NOT NULL DEFAULT '',
     FromID char(36) NOT NULL DEFAULT '', Message text NOT NULL, TMStamp timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),

@@ -2,9 +2,9 @@
 # The pages and the small services of the helpers that are not the search, the offline messages or the economy, on the
 # grid of the scenario: the message of the day (motd.php), the destination guide (guide.php), the images of text
 # (textgen.php), the events of a calendar (eventsparser.php) and the page of the directory (directory_info.php). Sourced by
-# scenario.sh (STOP_AFTER=pages stops the scenario after it), in the test container.
+# package-scenario.sh (STOP_AFTER=pages stops the scenario after it), in the test container.
 
-[[ $(type -t check) == function ]] || source /test/lib.sh
+[[ $(type -t check) == function ]] || source /test/scenario-lib.sh
 
 db=testgrid_robust
 helpers=http://127.0.0.1:8090/helpers
@@ -88,7 +88,7 @@ text=$helpers/textgen.php
 check "textgen: the fonts, as a list" "get '$text?list=1' | grep -qx 'DejaVu-Sans'"
 check "textgen: the fonts, as JSON" "get '$text?json=1' | php -r 'echo in_array(\"DejaVu-Sans\", json_decode(stream_get_contents(STDIN), true)) ? \"yes\" : \"no\";' | grep -q yes"
 check "textgen: the list is plain text" "get -D - -o /dev/null '$text?list=1' | grep -qi '^content-type: text/plain'"
-img() { php /test/pages/image.php "$1"; }
+img() { php /test/pages/image-probe.php "$1"; }
 get "$text?string=Hello" -D /tmp/text.headers -o /tmp/text.png
 check "textgen: a PNG of 1024 x 1024" "grep -qi '^content-type: image/png' /tmp/text.headers && img /tmp/text.png | grep -q '^1024x1024 PNG'"
 check "textgen: white on black, by default, and there is a text" "img /tmp/text.png | grep -q 'background=0,0,0 text=255,255,255' && ! img /tmp/text.png | grep -q 'ink=0.00'"
@@ -126,7 +126,7 @@ cat >/tmp/hypevents/events.json <<JSON
   {"title": "Class", "description": "A lecture", "start": "$(day '+4 days')", "end": "$(day '+4 days 90 minutes')", "hgurl": "http://127.0.0.1:8002:Sim1/1/2/3", "categories": ["lecture"]}
 ]
 JSON
-(cd /tmp/hypevents && PHP_CLI_SERVER_WORKERS=2 setsid -f php -S 127.0.0.1:8098 /test/pages/events.php >/tmp/php-hypevents.log 2>&1)
+(cd /tmp/hypevents && PHP_CLI_SERVER_WORKERS=2 setsid -f php -S 127.0.0.1:8098 /test/pages/hypevents-fake.php >/tmp/php-hypevents.log 2>&1)
 wait_check 20 "the calendar answers" "[ \"\$(status http://127.0.0.1:8098/events.json)\" = 200 ]"
 cfg events_url http://127.0.0.1:8098
 sql "DELETE FROM events"

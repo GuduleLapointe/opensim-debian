@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # The economy of a grid, on the grid of the scenario: what the viewer and the simulators ask currency.php and landtool.php of
-# the helpers (economy/calls.php makes the calls, as they do, and checks the answers and what the helpers wrote in the
-# database): with the economy of the helpers alone, with a money server in the simulators (economy/fakeregion.php is the
+# the helpers (economy/economy-check.php makes the calls, as they do, and checks the answers and what the helpers wrote in the
+# database): with the economy of the helpers alone, with a money server in the simulators (economy/region-fake.php is the
 # simulator and its money module, the helpers call the region of the avatar), with the settings of the grid, and for the
-# providers that sell currency (Gloebit, Podex). The tables of the economy are the ones of the money servers: the helpers do not
-# create them, nor do the packages, so the test does. Sourced by scenario.sh (STOP_AFTER=economy stops the scenario after it),
+# providers that sell currency (Gloebit, Podex). The tables of the economy (balances, transactions) are made by the money server or the Gloebit module,
+# not by the helpers or the packages, so the test creates them. Sourced by package-scenario.sh (STOP_AFTER=economy stops the scenario after it),
 # in the test container.
 
-[[ $(type -t check) == function ]] || source /test/lib.sh
+[[ $(type -t check) == function ]] || source /test/scenario-lib.sh
 
 db=testgrid_robust
 ini=$helpers_ini
@@ -16,12 +16,12 @@ sql() { mysql -BN "$db" -e "$1"; }
 account() { sql "SELECT PrincipalID FROM UserAccounts WHERE FirstName='$1' AND LastName='$2'"; }
 calls() { # group
     local out
-    out=$(DB=$db AGENT=$agent FRIEND=$friend SECURE=$secure FRIEND_SECURE=$friend_secure SESSION=$session REGION=$region SECRET=$secret REGION2=$region2 SECRET2=$secret2 HELPER_URL=$helper_url SCRIPT_KEY=${script_key:-} php /test/economy/calls.php "$1" "$helpers" 2>&1) || FAILED=1
+    out=$(DB=$db AGENT=$agent FRIEND=$friend SECURE=$secure FRIEND_SECURE=$friend_secure SESSION=$session REGION=$region SECRET=$secret REGION2=$region2 SECRET2=$secret2 HELPER_URL=$helper_url SCRIPT_KEY=${script_key:-} php /test/economy/economy-check.php "$1" "$helpers" 2>&1) || FAILED=1
     echo "$out"
 }
 start_region() {
     rm -rf /tmp/fakeregion
-    (cd /test/economy && DB=$db PHP_CLI_SERVER_WORKERS=2 setsid -f php -S 127.0.0.1:8099 fakeregion.php >/tmp/php-fakeregion.log 2>&1)
+    (cd /test/economy && DB=$db PHP_CLI_SERVER_WORKERS=2 setsid -f php -S 127.0.0.1:8099 region-fake.php >/tmp/php-fakeregion.log 2>&1)
     wait_check 20 "the fake region answers" "curl -s -o /dev/null -m 5 -X POST --data '<x/>' http://127.0.0.1:8099/"
     rm -rf /tmp/fakeregion
 }

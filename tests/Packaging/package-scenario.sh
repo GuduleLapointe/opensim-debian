@@ -2,7 +2,7 @@
 # Package test scenario, run by tests/Packaging/run inside the test container,
 # with the packages in /dist.
 
-source /test/lib.sh
+source /test/scenario-lib.sh
 core=$(deb opensim-0.9.3.0)
 # The tools with the packages of the family they depend on (the helpers, the engine, rest-php)
 tools="$(deb opensim-rest-php) $(deb opensim-engine) $(deb opensim-helpers) $(deb opensim-tools)"
@@ -51,7 +51,7 @@ ts "grid from the wizard"
 systemctl start mariadb
 mysql -e "CREATE DATABASE testgrid_robust; CREATE USER opensim@localhost IDENTIFIED BY 'testpass';
     GRANT ALL ON testgrid_robust.* TO opensim@localhost;"
-(cd /var/lib/opensim && runuser -u opensim -- php /test/newgrid.php | tail -1)
+(cd /var/lib/opensim && runuser -u opensim -- php /test/newgrid-driver.php | tail -1)
 check "grid enabled" "[ -L /etc/opensim/robust.d/testgrid.ini ]"
 check "the setup wrote the helpers.ini of the grid, for the group of the web server" "grep -q 'grid_name = \"Testgrid\"' /etc/opensim/grids/testgrid/helpers.ini &&
     [ \"\$(stat -c '%G %a' /etc/opensim/grids/testgrid/helpers.ini)\" = 'www-data 640' ]"
@@ -80,10 +80,10 @@ check "no file of the grid has Windows line endings, which the files of the core
 # checked or fixed can be tried again, and nothing is written
 wizard() { # grid, password, [user]
     (cd /var/lib/opensim && TEST_GRID=$1 TEST_DB_PASSWORD=$2 TEST_NO_ENABLE=1 TEST_REPEAT=${TEST_REPEAT:-1} \
-        TEST_DB_USER=${TEST_DB_USER:-} runuser -u "${3:-opensim}" -- php /test/newgrid.php 2>&1)
+        TEST_DB_USER=${TEST_DB_USER:-} runuser -u "${3:-opensim}" -- php /test/newgrid-driver.php 2>&1)
 }
 as_root() { # grid, password
-    (cd /var/lib/opensim && TEST_GRID=$1 TEST_DB_PASSWORD=$2 TEST_NO_ENABLE=1 TEST_DB_USER=${TEST_DB_USER:-} php /test/newgrid.php 2>&1)
+    (cd /var/lib/opensim && TEST_GRID=$1 TEST_DB_PASSWORD=$2 TEST_NO_ENABLE=1 TEST_DB_USER=${TEST_DB_USER:-} php /test/newgrid-driver.php 2>&1)
 }
 wizard Badgrid wrong >/tmp/badgrid.out
 check "no administrator access, wrong password: nothing written" "
@@ -127,7 +127,7 @@ check "a creation that fails ends the setup, with the commands and an error code
 useradd -m -s /bin/bash dbadmin
 echo 'dbadmin ALL=(opensim) NOPASSWD: ALL' >/etc/sudoers.d/dbadmin && chmod 440 /etc/sudoers.d/dbadmin
 mysql -e "CREATE USER dbadmin@localhost IDENTIFIED VIA unix_socket; GRANT ALL ON *.* TO dbadmin@localhost WITH GRANT OPTION"
-(cd /var/lib/opensim && TEST_GRID=Adminsgrid TEST_DB_PASSWORD= TEST_NO_ENABLE=1 TEST_DB_USER=adminsuser runuser -u dbadmin -- php /test/newgrid.php >/tmp/adminsgrid.out 2>&1
+(cd /var/lib/opensim && TEST_GRID=Adminsgrid TEST_DB_PASSWORD= TEST_NO_ENABLE=1 TEST_DB_USER=adminsuser runuser -u dbadmin -- php /test/newgrid-driver.php >/tmp/adminsgrid.out 2>&1
     echo "exit code: $?" >>/tmp/adminsgrid.out)
 pass=$(grep -a 'Database password ->' /tmp/adminsgrid.out | head -1 | sed 's/.*-> //')
 check "own database account, no sudo to root: account and database created" "MYSQL_PWD='$pass' mysql -u adminsuser -e 'SELECT 1' adminsgrid_robust >/dev/null 2>&1"
@@ -160,7 +160,7 @@ rm -rf /etc/opensim/grids/asked /var/lib/opensim/data/asked /var/cache/opensim/a
 
 # The setup started as root, as on the packaged install, starts the grid and
 # sees it run (a screen session is per user, the setup is not the one running it)
-(cd /var/lib/opensim && TEST_GRID=Startgrid TEST_DB_PASSWORD= TEST_START=1 TEST_DB_USER=startuser php /test/newgrid.php >/tmp/startgrid.out 2>&1
+(cd /var/lib/opensim && TEST_GRID=Startgrid TEST_DB_PASSWORD= TEST_START=1 TEST_DB_USER=startuser php /test/newgrid-driver.php >/tmp/startgrid.out 2>&1
     echo "exit code: $?" >>/tmp/startgrid.out)
 check "the setup reports the grid it started as running, exit code 0" "grep -q \"Grid 'startgrid' is running\" /tmp/startgrid.out &&
     grep -q 'exit code: 0' /tmp/startgrid.out && [ -n \"\$(robust_pid)\" ]"
@@ -203,7 +203,7 @@ check "no write denied" "! grep -qiE 'denied|unauthorized' $(robust_log)"
 ts "simulator in the grid"
 owner_password='Pa ss^w0rd\z'
 (cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=Sim1 TEST_START=1 TEST_NEW_OWNER="Test Owner" TEST_NEW_OWNER_PASSWORD="$owner_password" \
-    TEST_ADMIN_USER=dbroot TEST_ADMIN_PASSWORD=adminpw runuser -u opensim -- php /test/newsim.php >/tmp/sim1.out 2>&1
+    TEST_ADMIN_USER=dbroot TEST_ADMIN_PASSWORD=adminpw runuser -u opensim -- php /test/newsim-driver.php >/tmp/sim1.out 2>&1
     echo "exit code: $?" >>/tmp/sim1.out)
 check "the simulator wizard ends well, the region is online" "grep -q 'exit code: 0' /tmp/sim1.out &&
     grep -q 'region Sim1 is online' /tmp/sim1.out && [ -n '$(sim_pid)' ]"
@@ -238,13 +238,13 @@ sim=$(sim_pid)
 
 # More regions are added to the running simulator without restarting it, and
 # the console of an instance can be reached
-(cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=Sim1 TEST_ADD_REGION=Sim1North runuser -u opensim -- php /test/newsim.php >/tmp/region2.out 2>&1
+(cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=Sim1 TEST_ADD_REGION=Sim1North runuser -u opensim -- php /test/newsim-driver.php >/tmp/region2.out 2>&1
     echo "exit code: $?" >>/tmp/region2.out)
 check "a region is added to the running simulator, and online" "grep -q 'exit code: 0' /tmp/region2.out && grep -q 'Region Sim1North is online' /tmp/region2.out &&
     [ \"\$(mysql -BN -e \"SELECT CONCAT(locX DIV 256, ',', locY DIV 256) FROM testgrid_robust.regions WHERE regionName='Sim1North'\")\" = 8003,8002 ] && [ '$(sim_pid)' = '$sim' ]"
 check "the parcel of the new region is named after it by the object of the setup, without a restart" "grep -q 'Parcel of region Sim1North is named Sim1North' /tmp/region2.out &&
     [ \"\$(mysql -BN -e \"SELECT Name FROM testgrid_sim1.land WHERE RegionUUID = (SELECT uuid FROM testgrid_robust.regions WHERE regionName='Sim1North')\")\" = Sim1North ]"
-(cd /var/lib/opensim && TEST_GRID=testgrid runuser -u opensim -- php /test/account.php >/tmp/account.out 2>&1; echo "exit code: $?" >>/tmp/account.out)
+(cd /var/lib/opensim && TEST_GRID=testgrid runuser -u opensim -- php /test/account-driver.php >/tmp/account.out 2>&1; echo "exit code: $?" >>/tmp/account.out)
 check "an account made after the default region has it as home" "grep -q 'exit code: 0' /tmp/account.out && home_is_default Later User"
 # Accounts made from a list, directly in the database (no console): their inventory, their password, their home
 printf 'first,last,email,password\nBulk,One,one@example.org,bulkpw1\nBulk,Two,,\n' >/tmp/bulk.csv
@@ -266,25 +266,25 @@ check "an account that exists is skipped" "grep -q 'exists' /tmp/bulk-again.out 
 rm -f users-result-*.csv /tmp/users-result-*.csv
 
 # The search, on the grid as it is: Robust, a simulator, the accounts (STOP_AFTER=search ends the scenario here)
-source /test/search.sh
+source /test/search-scenario.sh
 [[ ${STOP_AFTER:-} != search ]] || { ts "done after the search: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"; exit $FAILED; }
 
 # The offline messages, on the same grid
-source /test/offline.sh
+source /test/offline-scenario.sh
 [[ ${STOP_AFTER:-} != offline ]] || { ts "done after the offline messages: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"; exit $FAILED; }
 
 # The economy, on the same grid
-source /test/economy.sh
+source /test/economy-scenario.sh
 [[ ${STOP_AFTER:-} != economy ]] || { ts "done after the economy: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"; exit $FAILED; }
 
 # The pages and the small services of the helpers, on the same grid
-source /test/pages.sh
+source /test/pages-scenario.sh
 [[ ${STOP_AFTER:-} != pages ]] || { ts "done after the pages: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"; exit $FAILED; }
 
 # A region that exists is changed in place: its place, not its identity
 regionfile=/etc/opensim/grids/testgrid/sims/testgrid_sim1/regions/Sim1North.ini
 regionuuid=$(grep -m1 '^RegionUUID' $regionfile)
-(cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=Sim1 TEST_RECONFIGURE_REGION=Sim1North TEST_LOCATION=8002,8003 runuser -u opensim -- php /test/newsim.php >/tmp/region3.out 2>&1
+(cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=Sim1 TEST_RECONFIGURE_REGION=Sim1North TEST_LOCATION=8002,8003 runuser -u opensim -- php /test/newsim-driver.php >/tmp/region3.out 2>&1
     echo "exit code: $?" >>/tmp/region3.out)
 check "a region is reconfigured in place, its UUID kept" "grep -q 'exit code: 0' /tmp/region3.out && grep -q '^Location = 8002,8003' $regionfile && [ \"\$(grep -m1 '^RegionUUID' $regionfile)\" = '$regionuuid' ]"
 # The next free place and port follow the rules of the setup: the place nearest to the first one of the grid,
@@ -378,7 +378,7 @@ apt_q install "$unstable"
 # its port (x4 of its block), the ports of the next block (9010)
 ts "remote console"
 (cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=Rest TEST_START=1 TEST_CONSOLE=rest TEST_OWNER="Test Owner" \
-    TEST_ADMIN_USER=dbroot TEST_ADMIN_PASSWORD=adminpw runuser -u opensim -- php /test/newsim.php >/tmp/rest.out 2>&1
+    TEST_ADMIN_USER=dbroot TEST_ADMIN_PASSWORD=adminpw runuser -u opensim -- php /test/newsim-driver.php >/tmp/rest.out 2>&1
     echo "exit code: $?" >>/tmp/rest.out)
 check "a simulator with a remote console is set up and started" "grep -q 'exit code: 0' /tmp/rest.out && grep -q 'region Rest is online' /tmp/rest.out"
 check "its console is in its config, on the port x4 of its block" "grep -q '^console_port = 9014' /etc/opensim/grids/testgrid/sims/testgrid_rest.ini &&
@@ -401,7 +401,7 @@ rm -f /etc/opensim/opensim.d/testgrid_rest.ini
 # under its own nick, and owns an estate of an account that has to exist already
 ts "simulator of a grid elsewhere"
 (cd /var/lib/opensim && TEST_REMOTE_GRID=Elsewhere TEST_REMOTE_ADDRESS=localhost:8002 TEST_SIM=Far TEST_START=1 TEST_OWNER="Test Owner" \
-    TEST_DB_PASSWORD=testpass TEST_ADMIN_USER=dbroot TEST_ADMIN_PASSWORD=adminpw runuser -u opensim -- php /test/newsim.php >/tmp/far.out 2>&1
+    TEST_DB_PASSWORD=testpass TEST_ADMIN_USER=dbroot TEST_ADMIN_PASSWORD=adminpw runuser -u opensim -- php /test/newsim-driver.php >/tmp/far.out 2>&1
     echo "exit code: $?" >>/tmp/far.out)
 check "the simulator wizard joins a grid by its address and ends well" "grep -q 'exit code: 0' /tmp/far.out && grep -q 'Wrote /etc/opensim/grids/Elsewhere/Elsewhere.conf' /tmp/far.out && grep -q \"Simulator 'Far' is running\" /tmp/far.out"
 check "the grid is kept as a remote one, with its address and its ports" "grep -q '^Remote = true' /etc/opensim/grids/Elsewhere/Elsewhere.conf && grep -q '^BaseHostname = localhost' /etc/opensim/grids/Elsewhere/Elsewhere.conf &&

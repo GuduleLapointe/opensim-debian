@@ -1,6 +1,6 @@
 <?php
 /**
- * What the offline messages tests read in an XML document: php xml.php FILE|- XPATH prints the text of each node the path
+ * What the offline messages tests read in an XML document: php xml-probe.php FILE|- XPATH prints the text of each node the path
  * finds, one per line, count when the path is count(...), nothing when the document is not XML. Not the xmlns, which the
  * documents of OpenSimulator have.
  */

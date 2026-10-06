@@ -1,20 +1,20 @@
 <?php
 /**
- * The calls of the economy tests of the packages (tests/Packaging/economy.sh), as the viewer and the simulators make them to
+ * The calls of the economy tests of the packages (tests/Packaging/economy-scenario.sh), as the viewer and the simulators make them to
  * currency.php and landtool.php of the helpers: the same XML-RPC calls, with the keys they send, and the answers read the way
  * they read them. What the helpers wrote in the database is checked in the same run.
  *
- *   php calls.php GROUP URL      GROUP: plain, moneyserver, gloebit, podex
+ *   php economy-check.php GROUP URL      GROUP: plain, moneyserver, gloebit, podex
  *
  * URL is the path of the helpers on the web site. The avatars, the sessions and the regions are in the environment
- * (economy.sh sets them), the grid is the one of the database it gives. It prints one line per check, as the scenarios do,
+ * (economy-scenario.sh sets them), the grid is the one of the database it gives. It prints one line per check, as the scenarios do,
  * and exits with 1 when one failed.
  */
 
 declare(strict_types=1);
 
 [, $group, $helpers] = $argv + [1 => '', 2 => ''];
-require dirname(__DIR__) . '/xmlrpc.php';
+require dirname(__DIR__) . '/xmlrpc-lib.php';
 $failed = false;
 
 $env = fn(string $name): string => (string) getenv($name);

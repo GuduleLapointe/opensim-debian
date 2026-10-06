@@ -86,13 +86,13 @@ check "no database server in the image" "! inapp sh -c 'command -v mariadbd || c
 check "OpenSimulator and its tools are there" "inapp sh -c 'opensim --help >/dev/null && [ -f /usr/share/opensim/*/bin/OpenSim.dll ] && dotnet --list-runtimes | grep -q NETCore.App'"
 
 ts "a grid, set up from inside"
-"$ENGINE" exec -e TEST_GRID=Testgrid -e TEST_DB_HOST=db -e TEST_DB_PASSWORD=testpass -e TEST_START=1 "$app" php /test/newgrid.php >/tmp/ctest-grid.out 2>&1
+"$ENGINE" exec -e TEST_GRID=Testgrid -e TEST_DB_HOST=db -e TEST_DB_PASSWORD=testpass -e TEST_START=1 "$app" php /test/newgrid-driver.php >/tmp/ctest-grid.out 2>&1
 echo "exit code: $?" >>/tmp/ctest-grid.out
 check "the grid wizard ends well, Robust runs" "grep -q 'exit code: 0' /tmp/ctest-grid.out && grep -q \"Grid 'testgrid' is running\" /tmp/ctest-grid.out"
 
 ts "a simulator, from inside, its database and its account made on the way"
 "$ENGINE" exec -e TEST_GRID=testgrid -e TEST_SIM=Sim1 -e TEST_START=1 -e TEST_NEW_OWNER="Test Owner" \
-    -e TEST_ADMIN_USER=root -e TEST_ADMIN_PASSWORD=rootpw "$app" php /test/newsim.php >/tmp/ctest-sim.out 2>&1
+    -e TEST_ADMIN_USER=root -e TEST_ADMIN_PASSWORD=rootpw "$app" php /test/newsim-driver.php >/tmp/ctest-sim.out 2>&1
 echo "exit code: $?" >>/tmp/ctest-sim.out
 check "the simulator wizard ends well, the region is online" "grep -q 'exit code: 0' /tmp/ctest-sim.out && grep -q 'region Sim1 is online' /tmp/ctest-sim.out"
 check "the region is registered in the grid database" "[ \"\$(registered)\" = 1 ]"
