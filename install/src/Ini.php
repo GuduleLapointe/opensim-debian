@@ -38,7 +38,11 @@ final class Ini
     public function set(string $section, string $key, string $value, ?string $near = null): void
     {
         $newLine = "$key = $value";
-        $keyRe = '/^\s*;?\s*' . preg_quote($key, '/') . '\s*=/';
+        // A key the section has (active) is the one to set, whatever commented example comes before it
+        $keyRe = '/^\s*' . preg_quote($key, '/') . '\s*=/';
+        if (!$this->has($section, $keyRe)) {
+            $keyRe = '/^\s*;?\s*' . preg_quote($key, '/') . '\s*=/';
+        }
 
         $sectionStart = -1;
         $inTarget = false;
@@ -92,6 +96,21 @@ final class Ini
             return;
         }
         $this->lines[] = $newLine;
+    }
+
+    /** Whether a section has a line that matches. */
+    private function has(string $section, string $lineRe): bool
+    {
+        $inTarget = false;
+        foreach ($this->lines as $text) {
+            if (preg_match('/^\s*\[(.+?)\]\s*$/', $text, $m)) {
+                $inTarget = strcasecmp(trim($m[1]), $section) === 0;
+            } elseif ($inTarget && preg_match($lineRe, $text)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
