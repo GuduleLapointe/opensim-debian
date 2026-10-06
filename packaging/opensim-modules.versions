@@ -3,10 +3,12 @@
 # unstable, each in /usr/share/opensim-modules/<core>/<module>, not loaded
 # until enabled.
 # One line per file: module, core, module version (0.0~git<date>.<commit> for
-# a snapshot of an unversioned source, <version>+git<date>.<commit> after the
-# version the source declares), packaging revision (the next one for any change
-# to a published package), file: a path in this repository, or a URL followed
-# by its SHA256 and the name to install.
+# a snapshot of an unversioned source, <version>.<build>+git<date>.<commit> after
+# the version the source declares, <build> being the number of commits of the
+# source: two snapshots of the same day stay in order, and the first one sorts
+# above the older <version>+git<date>.<commit> ones), packaging revision (the
+# next one for any change to a published package), file: a path in this
+# repository, or a URL followed by its SHA256 and the name to install.
 
 # A DLL only works with the OpenSimulator it was built for, unstable is the commit of upstream/opensim
 opensimsearch 0.9.3.0 0.4+git20261005.d81ecde 1 https://github.com/GuduleLapointe/OpenSimSearch/releases/download/0.4%2Bgit20261005.d81ecde/OpenSimSearch.Modules-opensim-0.9.3.0.dll 4d9d144db9aacd680ef1e429c5b0e40f6f0512018033e53104cd3ded52ade94f OpenSimSearch.Modules.dll
