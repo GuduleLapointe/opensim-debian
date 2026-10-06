@@ -77,6 +77,10 @@
 - [ ] helpers: the Gloebit sandbox cannot be set from `helpers.ini`
 - [ ] helpers: without a money server they write `transactions` with other columns (`sourceId`, `destId`...) than with one (`sender`, `receiver`...): check which module makes which
 - [ ] the engine has its own `OpenSim_HypEvents` and `functions-economy.php`, with the faults the helpers had (`make_random_guid`, `opensim_get_region_info`): which one is the source?
+- [x] the helpers have pages made of blocks (grid info, grid status) with a layout that gives a viewer the content alone and a browser the top bar and the footer too (`pages-scenario.sh`)
+- [ ] helpers, next blocks and pages: popular places, web search (`?q=`, `/<topic>/`, `/<category>/`), avatar profile with its stream (the term of Firestorm, no longer "flux"; a table meant to be compatible with ActivityPub, read only first), the web assets (`<prefix>/assets/<uuid>.<format>`, the textures of the grid converted for the web, read from the asset service of Robust)
+- [ ] helpers, URLs: each service has its own path (`query`, `register`, `offline`, `search`, `guide`, `motd`...), `<path>/<script>.php` is only the default; only `currency.php` and `landtool.php` are fixed, under the economy path; a route also answers its sub-paths (`/guide/<topic>/`); `search` is the web search page and `query` the API, the kit has to follow (`SearchURL` of Robust is the page)
+- [ ] helpers, lists for LSL scripts: the guide and the search give the list as text (title and URL separated by a pipe, a text alone is a title, a dash alone a new column, a pipe alone an empty row), which a guide source can be too
 - [ ] add to the README of opensim-helpers (and of the engine) a short section on how to use them with the OpenSim kit
 - [ ] install instructions in the README of `lsl-ossl-zed` (rust, clone, `zed: install dev extension`, the prebuilt LSP binaries only cover Linux x86_64 and macOS)
 
