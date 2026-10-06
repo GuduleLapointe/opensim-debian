@@ -110,8 +110,9 @@ final class HelpersConfig
         ;; mail_sender = "no-reply@example.org"
         ;; The message of the day shown at login (motd.php, read by Robust when it starts; <USERNAME> is the avatar)
         ;; motd = "Welcome to My Grid, <USERNAME>!"
-        ;; The destinations of the guide (guide.php): a file or a URL of "Name|Region URL" lines, a name alone starts a category
-        ;; guide_source = "/etc/opensim/grids/<grid>/destinations.txt"
+        ;; The destinations of the guide (guide.php): a file (looked for in this folder) or a URL of "Name|Region URL" lines,
+        ;; a name alone starts a category
+        ;; guide_source = "destinations.txt"
         ;; events_url = "https://2do.directory/events"
         ;; currency_provider = "gloebit"
         ;; currency_use_moneyserver = false
