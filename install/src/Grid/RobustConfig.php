@@ -88,6 +88,8 @@ final class RobustConfig
             $ini->set('GridInfoService', 'welcome', $this->q('${Const|WebURL}' . $services->path('welcome')));
             // The destination guide of the viewers is the one of the helpers
             $ini->set('LoginService', 'DestinationGuide', $this->q('${Const|WebURL}' . $services->path('guide')));
+            // The profile page: the viewers replace [AGENT_NAME] by Firstname.Lastname (the helpers also take Firstname-Lastname)
+            $ini->set('GridInfoService', 'web_profile_url', $this->q('${Const|WebURL}' . $services->path('profile') . '/[AGENT_NAME]'));
             // The message of the day: the text of motd.php (WelcomeMessage), read when Robust starts
             $ini->set('LoginService', 'MessageUrl', $this->q('${Const|WebURL}' . $services->path('motd')));
         }

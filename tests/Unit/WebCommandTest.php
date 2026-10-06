@@ -142,6 +142,8 @@ describe('Robust config with the helpers', function () {
         expect($ini)->toContain('DestinationGuide = "${Const|WebURL}/helper/guide.php"');
         expect($ini)->toContain('MessageUrl = "${Const|WebURL}/helper/motd.php"');
         expect($ini)->toContain('WelcomeMessage = "Welcome to ');
+        // The profile page: the viewers replace [AGENT_NAME] by Firstname.Lastname
+        expect($ini)->toContain('web_profile_url = "${Const|WebURL}/profile/[AGENT_NAME]"');
         expect($ini)->not->toContain('currency.php');
         expect($ini)->not->toContain('message = ');
     });

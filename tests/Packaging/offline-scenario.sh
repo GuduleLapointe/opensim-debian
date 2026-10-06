@@ -9,7 +9,7 @@
 
 db=testgrid_robust
 sql() { mysql -BN "$db" -e "$1"; }
-helpers=http://127.0.0.1:8090/helpers
+helpers=http://localhost:8090/helpers
 zero=00000000-0000-0000-0000-000000000000
 account() { sql "SELECT PrincipalID FROM UserAccounts WHERE FirstName='$1' AND LastName='$2'"; }
 xml() { php /test/offline/xml-probe.php - "$1"; }

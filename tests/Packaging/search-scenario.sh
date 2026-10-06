@@ -13,7 +13,7 @@
 
 db=testgrid_robust
 sql() { mysql -BN "$db" -e "$1"; }
-site=http://127.0.0.1:8090
+site=http://localhost:8090
 helpers=$site/helpers
 null_key=00000000-0000-0000-0000-000000000000
 # The searches of one group, their lines, and a failure of any of them is one of the scenario

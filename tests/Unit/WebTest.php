@@ -43,6 +43,8 @@ describe('Helpers.ini', function () {
         expect($text)->toContain('[Helpers]');
         expect($text)->toContain(';; GuideSource = "destinations.txt"');
         expect($text)->toContain(';; SearchConnectionString = ');
+        // The currency is the business of the modules (Gloebit.ini...), not of this file
+        expect($text)->not->toMatch('/Currency/');
         // What has its place in OpenSim.ini or Robust.ini is not copied there
         expect($text)->not->toMatch('/^\s*(grid_name|login_uri|web_url|gridname|ConnectionString)\b/m');
         expect($text)->not->toMatch('/^\[(robust_db|Urls)\]/m');

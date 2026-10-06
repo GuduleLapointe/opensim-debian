@@ -10,8 +10,8 @@
 [[ $(type -t check) == function ]] || source /test/scenario-lib.sh
 
 db=testgrid_robust
-ini=$helpers_ini
-helpers=http://127.0.0.1:8090/helpers
+opensim_ini=/etc/opensim/grids/testgrid/OpenSim.ini
+helpers=http://localhost:8090/helpers
 sql() { mysql -BN "$db" -e "$1"; }
 account() { sql "SELECT PrincipalID FROM UserAccounts WHERE FirstName='$1' AND LastName='$2'"; }
 calls() { # group
@@ -42,9 +42,13 @@ helper_url=https://localhost/helpers/currency.php
 script_key=
 
 ts "economy: the site of the helpers, a region with a money module, two avatars in it"
-cp -p $ini /tmp/Helpers.ini.economy
+cp -p $opensim_ini /tmp/OpenSim.ini.economy
+# The currency is what the economy module of OpenSim.ini says (Gloebit, BetaGridLikeMoneyModule). A money server, a rate and
+# a key have no setting yet: the test defines them as constants, before the helpers read the config
+mode() { echo "$1" >/tmp/economy-constants.json; }
+mode '{}'
 pkill -f 'php .*-S 127.0.0.1:809[0]' 2>/dev/null || true
-(cd /var/www/html && OPENSIM_GRID=testgrid PHP_CLI_SERVER_WORKERS=4 setsid -f php -S 127.0.0.1:8090 index.php >/tmp/php-economy.log 2>&1)
+(cd /var/www/html && OPENSIM_GRID=testgrid PHP_CLI_SERVER_WORKERS=4 setsid -f php -d auto_prepend_file=/test/economy/settings-fixture.php -S 127.0.0.1:8090 index.php >/tmp/php-economy.log 2>&1)
 wait_check 20 "the site of the helpers answers" "[ \"\$(curl -s -o /dev/null -w '%{http_code}' $helpers/motd.php)\" = 200 ]"
 start_region
 # The region of the avatars: a copy of one of the grid that is where the fake one is
@@ -64,16 +68,15 @@ sql "DROP TABLE IF EXISTS transactions; DROP TABLE IF EXISTS balances;
     CREATE TABLE transactions (sourceId char(36), destId char(36), amount int, flags int, aggregatePermInventory int, aggregatePermNextOwner int, description varchar(255), transactionType int, timeOccurred int, RegionGenerated char(36), ipGenerated varchar(64))"
 calls plain
 
-ts "economy: the settings of the grid"
-cfg CurrencyScriptKey "key-of-the-grid"
-cfg CurrencyRate 4
+ts "economy: the key and the rate"
+mode '{"CURRENCY_SCRIPT_KEY": "key-of-the-grid", "CURRENCY_RATE": 4}'
 script_key=key-of-the-grid
 calls settings
 script_key=
-sed -i '/^CurrencyScriptKey/d;/^CurrencyRate /d' $ini
+mode '{}'
 
 ts "economy: with a money server in the simulators"
-cfg CurrencyUseMoneyServer true
+mode '{"CURRENCY_USE_MONEYSERVER": true}'
 sql "DROP TABLE transactions;
     CREATE TABLE transactions (UUID char(36), sender char(36), receiver char(36), amount int, objectUUID char(36), regionHandle bigint unsigned, type int, time int, secure char(36), status int, description varchar(255));
     CREATE TABLE balances (user char(36) PRIMARY KEY, balance int, status int);
@@ -85,15 +88,21 @@ ts "economy: with a region that does not answer"
 stop_region
 calls moneyserver-down
 
-ts "economy: Gloebit"
-cfg CurrencyProvider gloebit
+ts "economy: Gloebit, the module of the grid"
+mode '{}'
+ini_set $opensim_ini Economy economymodule Gloebit
+ini_set $opensim_ini Gloebit GLBEnvironment production
 calls gloebit
+ini_set $opensim_ini Gloebit GLBEnvironment sandbox
+calls gloebit-sandbox
 
-ts "economy: Podex"
-cfg CurrencyProvider podex
+ts "economy: Podex, which is not set up by the helpers"
+cp -p /tmp/OpenSim.ini.economy $opensim_ini
+mode '{"CURRENCY_PROVIDER": "podex"}'
 calls podex
 
 ts "economy: the grid is back as it was"
-cp -p /tmp/Helpers.ini.economy $ini
+cp -p /tmp/OpenSim.ini.economy $opensim_ini
+rm -f /tmp/economy-constants.json
 sql "DROP TABLE transactions; DROP TABLE balances; DELETE FROM regions WHERE uuid = '$home_region'; DELETE FROM Presence WHERE UserID IN ('$agent', '$friend'); DELETE FROM GridUser WHERE UserID IN ('$agent', '$friend')"
 pkill -f 'php .*-S 127.0.0.1:809[0]' 2>/dev/null || true

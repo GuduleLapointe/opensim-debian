@@ -7,8 +7,8 @@
 [[ $(type -t check) == function ]] || source /test/scenario-lib.sh
 
 db=testgrid_robust
-helpers=http://127.0.0.1:8090/helpers
-site=http://127.0.0.1:8090
+helpers=http://localhost:8090/helpers
+site=http://localhost:8090
 sql() { mysql -BN "$db" -e "$1"; }
 get() { curl -s -m 60 "$@"; }
 status() { curl -s -o /dev/null -m 60 -w '%{http_code}' "$@"; }
@@ -35,7 +35,7 @@ check "motd: a welcome to the grid, by default, with the name of the avatar left
 check "motd: plain text, in UTF-8" "grep -qi '^content-type: text/plain; charset=utf-8' /tmp/motd.headers"
 ini_set $robust_ini LoginService WelcomeMessage 'Bienvenue à <USERNAME>\nSecond line'
 check "motd: the text of the grid, as it is (Robust makes the new lines and the name)" "[ \"\$(get $helpers/motd.php)\" = 'Bienvenue à <USERNAME>\\nSecond line' ]"
-check "motd: the address Robust reads it at is served" "[ \"\$(status http://127.0.0.1:8090\$(robust_path MessageUrl))\" = 200 ]"
+check "motd: the address Robust reads it at is served" "[ \"\$(status http://localhost:8090\$(robust_path MessageUrl))\" = 200 ]"
 cp -p /tmp/Robust.HG.ini.pages $robust_ini
 
 ts "pages: the layout and the blocks"
@@ -49,7 +49,7 @@ check "home: a viewer gets the content alone" "get -A '$firestorm' $site/ | grep
 splash=$(get -A "$firestorm" $site/welcome)
 check "welcome: the splash page is the one a viewer shows with the sidebars, and no top bar, no footer" "echo \"\$splash\" | grep -q '<body class=\"viewer page-splash\">' && echo \"\$splash\" | grep -q 'sidebar-left' && echo \"\$splash\" | grep -q 'block-grid-status' && ! echo \"\$splash\" | grep -q 'class=\"topbar\"' && ! echo \"\$splash\" | grep -q '<footer>'"
 check "welcome: a browser can ask to see what a viewer sees (?viewer=1), and the other way round" "get -A '$firefox' '$site/welcome?viewer=1' | grep -q '<body class=\"viewer page-splash\">' && get -A '$firestorm' '$site/welcome?viewer=0' | grep -q '<body class=\"browser page-splash\">'"
-check "assets: the style of the pages is served where the page says it is" "href=\$(echo \"\$home\" | grep -o 'href=\"[^\"]*page.css[^\"]*\"' | cut -d'\"' -f2) && [ \"\$(status http://127.0.0.1:8090\$href)\" = 200 ] && get -D - -o /dev/null http://127.0.0.1:8090\$href | grep -qi '^content-type: text/css'"
+check "assets: the style of the pages is served where the page says it is" "href=\$(echo \"\$home\" | grep -o 'href=\"[^\"]*page.css[^\"]*\"' | cut -d'\"' -f2) && [ \"\$(status http://localhost:8090\$href)\" = 200 ] && get -D - -o /dev/null http://localhost:8090\$href | grep -qi '^content-type: text/css'"
 check "assets: nothing outside them" "[ \"\$(status --path-as-is \"$helpers/assets/../includes/bootstrap.php\")\" = 404 ] && [ \"\$(status \"$helpers/assets/css/nothing.css\")\" = 404 ]"
 members=$(sql "SELECT COUNT(*) FROM UserAccounts WHERE active = 1")
 regions=$(sql "SELECT COUNT(*) FROM regions")

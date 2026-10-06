@@ -4,7 +4,7 @@
  * currency.php and landtool.php of the helpers: the same XML-RPC calls, with the keys they send, and the answers read the way
  * they read them. What the helpers wrote in the database is checked in the same run.
  *
- *   php economy-check.php GROUP URL      GROUP: plain, moneyserver, gloebit, podex
+ *   php economy-check.php GROUP URL      GROUP: plain, settings, moneyserver, moneyserver-down, gloebit, gloebit-sandbox, podex
  *
  * URL is the path of the helpers on the web site. The avatars, the sessions and the regions are in the environment
  * (economy-scenario.sh sets them), the grid is the one of the database it gives. It prints one line per check, as the scenarios do,
@@ -162,7 +162,7 @@ switch ($group) {
         check('land: the currency for the land is added by the region', succeeded($answer) && count(region_calls('AddBankerMoney')) === 2, substr($answer['raw'], 0, 300));
         break;
 
-    // What the grid sets in helpers.ini: the key that makes the confirm value, the rate of the currency
+    // What the test defines for the grid: the key that makes the confirm value, the rate of the currency
     case 'settings':
         $answer = $quote($secure, 1000);
         check('settings: the confirm value is made with the key of the grid', succeeded($answer) && ($answer['value']['confirm'] ?? '') === $confirm && $confirm !== md5('1234567883789_127.0.0.1'), substr($answer['raw'], 0, 300));
@@ -178,14 +178,24 @@ switch ($group) {
         check('balance: the avatar is told its balance is not available, not that it owns nothing', refused(call('currency.php', 'simulatorUserBalanceRequest', ['agentId' => $agent, 'secureSessionId' => $secure]), 'authenticate'));
         break;
 
-    // Gloebit sells fixed packs: the viewer is offered the one that covers what it asks for
+    // Gloebit sells fixed packs: the viewer is offered the one that covers what it asks for, and finishes on its page
     case 'gloebit':
         foreach ([[300, 199, 400], [400, 199, 400], [500, 499, 1050], [2000, 999, 2150], [50000, 4999, 11500]] as [$asked, $cost, $pack]) {
             $answer = $quote($secure, $asked);
             check("gloebit quote $asked: the pack of $pack, for $cost cents", succeeded($answer) && ($answer['value']['currency']['estimatedCost'] ?? null) === $cost && ($answer['value']['currency']['currencyBuy'] ?? null) === $pack, substr($answer['raw'], 0, 300));
         }
+        $transactions = cell('SELECT COUNT(*) FROM transactions');
         $answer = $buy($secure, 500, $confirm);
-        check('gloebit buy: no money server, no purchase here: the viewer is sent to the Gloebit page, with where to come back', $answer['status'] === 200 && ($answer['value']['success'] ?? null) === false && str_starts_with((string) ($answer['value']['errorURI'] ?? ''), 'https://www.gloebit.com/purchase') && str_contains((string) ($answer['value']['errorURI'] ?? ''), "agentId=$agent") && stripos((string) ($answer['value']['errorMessage'] ?? ''), 'Gloebit') !== false, substr($answer['raw'], 0, 400));
+        check('gloebit buy: the currency is not added here, the viewer is sent to the Gloebit page, with where to come back', $answer['status'] === 200 && ($answer['value']['success'] ?? null) === false && str_starts_with((string) ($answer['value']['errorURI'] ?? ''), 'https://www.gloebit.com/purchase') && str_contains((string) ($answer['value']['errorURI'] ?? ''), "agentId=$agent") && stripos((string) ($answer['value']['errorMessage'] ?? ''), 'Gloebit') !== false, substr($answer['raw'], 0, 400));
+        $answer = call('landtool.php', 'buyLandPrep', ['agentId' => $agent, 'secureSessionId' => $secure, 'currencyBuy' => 100, 'estimatedCost' => 0, 'billableArea' => 256, 'confirm' => $confirm]);
+        check('gloebit land: the same, nothing is added for the land either', ($answer['value']['success'] ?? null) === false && str_starts_with((string) ($answer['value']['errorURI'] ?? ''), 'https://www.gloebit.com/purchase'), substr($answer['raw'], 0, 400));
+        check('gloebit: no transaction was written', cell('SELECT COUNT(*) FROM transactions') === $transactions);
+        break;
+
+    // The sandbox of Gloebit is what [Gloebit] GLBEnvironment says
+    case 'gloebit-sandbox':
+        $answer = $buy($secure, 500, $confirm);
+        check('gloebit sandbox: the page of the sandbox', str_starts_with((string) ($answer['value']['errorURI'] ?? ''), 'https://sandbox.gloebit.com/purchase'), substr($answer['raw'], 0, 400));
         break;
 
     // Podex sells in-world: the viewer is sent to the terminals

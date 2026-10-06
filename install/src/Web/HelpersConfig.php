@@ -71,7 +71,7 @@ final class HelpersConfig
         return <<<'INI'
         ;; Helpers.ini: what opensim-helpers need and OpenSim.ini and Robust.ini have no place for, in the format of
         ;; OpenSimulator. The settings that have an official place (the name of the grid, its addresses, the message of
-        ;; the day, the databases...) are read from OpenSim.ini and Robust.ini, do not copy them here. This file may hold
+        ;; the day, the databases, the economy module and Gloebit...) are read from OpenSim.ini and Robust.ini, do not copy them here. This file may hold
         ;; any of them, in the same sections, for a web host that has no OpenSimulator, but what the other files say wins.
         ;; Like every ini file of the grid, it may hold passwords: mode 640, group of the web server.
 
@@ -87,11 +87,6 @@ final class HelpersConfig
         ;; ThemePath = "theme"
         ;; LogoURL = "https://example.org/logo.png"
         ;; MailSender = "no-reply@example.org"
-        ;; The currency: the economy module of OpenSim.ini tells the provider and whether there is a money server
-        ;; CurrencyProvider = "podex"
-        ;; CurrencyScriptKey = "123456789"
-        ;; CurrencyRate = 4
-        ;; CurrencyRatePer = 1000
 
         INI;
     }

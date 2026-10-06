@@ -72,8 +72,8 @@ check "opensim web tells where the services are, and writes what the web server 
     opensim web snippet caddy | grep -q 'env OPENSIM_GRID testgrid' && opensim web snippet nginx | grep -q 'fastcgi_param OPENSIM_GRID testgrid;'"
 (cd /var/www/html && OPENSIM_GRID=testgrid nohup php -S 127.0.0.1:8090 index.php >/tmp/php-web.log 2>&1 &)
 sleep 2
-check "the default site shows the grid, the splash page too, the helpers answer under their prefix" "curl -s http://127.0.0.1:8090/ | grep -q Testgrid &&
-    curl -s http://127.0.0.1:8090/welcome | grep -q Testgrid && [ \"\$(curl -s -o /dev/null -w %{http_code} http://127.0.0.1:8090/helpers/motd.php)\" = 200 ]"
+check "the default site shows the grid, the splash page too, the helpers answer under their prefix" "curl -s http://localhost:8090/ | grep -q Testgrid &&
+    curl -s http://localhost:8090/welcome | grep -q Testgrid && [ \"\$(curl -s -o /dev/null -w %{http_code} http://localhost:8090/helpers/motd.php)\" = 200 ]"
 pkill -f 'php -S 127.0.0.1:8090'
 check "no file of the grid has Windows line endings, which the files of the core have" "[ -z \"\$(grep -rlI \"\$(printf '\\r')\" /etc/opensim/grids/testgrid)\" ]"
 
