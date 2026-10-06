@@ -69,6 +69,13 @@
 - [x] the search is tested on the grid of the package scenario (`STOP_AFTER=search tests/Packaging/run`): registering, the snapshot, places, popular places, land, events, classifieds, people, with the keys the module sends (`tests/Packaging/search.sh`)
 - [x] the real simulator registers by itself when it starts and tells a parcel shown in search (`ShowDirectory`, read at start), which the places and the popular places give (`tests/Packaging/search.sh`)
 - [x] search: a simulator that cannot be reached, or answers "try later" (503: one request a minute per address), is asked again later, more and more late, and forgotten after ten failures (it was asked at every run)
+- [x] the offline messages, the economy (currency, land tool) and the pages of the helpers (message of the day, guide, images of text, events, directory) are tested on the grid of the package scenario (`offline.sh`, `economy.sh`, `pages.sh`)
+- [ ] offline messages: a grid without helpers has none (the setup writes no `[Messaging]`, and the `OfflineIMService` of Robust that the V2 module needs is not enabled): helpers (mails, no limit), V2 module with the Robust service (no mails, 25 messages), or both
+- [ ] helpers: the guide reads `source` from the request when the grid sets none, so any file or URL the server can read: ignore it, or accept only URLs
+- [ ] helpers: the style, the script and the picture of the guide and the style of the directory page are linked with the path of the files (`/usr/share/opensim-helpers/...`), the router should serve them
+- [ ] helpers: an empty calendar keeps the old events (`eventsparser.php` takes `[]` for an invalid answer)
+- [ ] helpers: the Gloebit sandbox cannot be set from `helpers.ini`, and no package creates the tables of the economy (`balances`, `transactions`), the money server does
+- [ ] the engine has its own `OpenSim_HypEvents` and `functions-economy.php`, with the faults the helpers had (`make_random_guid`, `opensim_get_region_info`): which one is the source?
 - [ ] add to the README of opensim-helpers (and of the engine) a short section on how to use them with the OpenSim kit
 - [ ] install instructions in the README of `lsl-ossl-zed` (rust, clone, `zed: install dev extension`, the prebuilt LSP binaries only cover Linux x86_64 and macOS)
 

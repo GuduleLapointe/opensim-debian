@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+- new: tests of the offline messages, the economy and the pages of the helpers
 - new: tests of the search (register, snapshot, places, land, events, classifieds, people, the real simulator) in `tests/Packaging/search.sh`
 - fix: the OpenSimSearch module is built for 0.9.3.0 and unstable, it was the DLL of 0.9.2
 - update: the module comes from a fork in `modules/OpenSimSearch` (BSD-3-Clause), no longer from `contrib/`
