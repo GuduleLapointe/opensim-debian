@@ -48,7 +48,7 @@ check "home: a viewer gets the content alone" "get -A '$firestorm' $site/ | grep
 splash=$(get -A "$firestorm" $site/welcome)
 check "welcome: the splash page is the one a viewer shows with the sidebars, and no top bar, no footer" "echo \"\$splash\" | grep -q '<body class=\"viewer page-splash\">' && echo \"\$splash\" | grep -q 'sidebar-left' && echo \"\$splash\" | grep -q 'block-grid-status' && ! echo \"\$splash\" | grep -q 'class=\"topbar\"' && ! echo \"\$splash\" | grep -q '<footer>'"
 check "welcome: a browser can ask to see what a viewer sees (?viewer=1), and the other way round" "get -A '$firefox' '$site/welcome?viewer=1' | grep -q '<body class=\"viewer page-splash\">' && get -A '$firestorm' '$site/welcome?viewer=0' | grep -q '<body class=\"browser page-splash\">'"
-check "assets: the style of the pages is served where the page says it is" "href=\$(echo \"\$home\" | grep -o 'href=\"[^\"]*page.css\"' | cut -d'\"' -f2) && [ \"\$(status http://127.0.0.1:8090\$href)\" = 200 ] && get -D - -o /dev/null http://127.0.0.1:8090\$href | grep -qi '^content-type: text/css'"
+check "assets: the style of the pages is served where the page says it is" "href=\$(echo \"\$home\" | grep -o 'href=\"[^\"]*page.css[^\"]*\"' | cut -d'\"' -f2) && [ \"\$(status http://127.0.0.1:8090\$href)\" = 200 ] && get -D - -o /dev/null http://127.0.0.1:8090\$href | grep -qi '^content-type: text/css'"
 check "assets: nothing outside them" "[ \"\$(status --path-as-is \"$helpers/assets/../includes/bootstrap.php\")\" = 404 ] && [ \"\$(status \"$helpers/assets/css/nothing.css\")\" = 404 ]"
 members=$(sql "SELECT COUNT(*) FROM UserAccounts WHERE active = 1")
 regions=$(sql "SELECT COUNT(*) FROM regions")
@@ -60,6 +60,16 @@ check "grid-info block: the name of the grid and the link to log in" "get '$help
 check "motd block: the message of the grid, for a page that does not know who reads it" "get '$helpers/blocks/motd' | grep -q 'Welcome to Testgrid, traveler!'"
 check "blocks: one that does not exist is a 404" "[ \"\$(status '$helpers/blocks/nothing')\" = 404 ]"
 check "profile: a profile has no page yet, and it is a 404, not an error" "[ \"\$(status '$site/@jane.doe')\" = 404 ]"
+
+ts "pages: the theme of the grid"
+theme=/etc/opensim/grids/testgrid/theme
+mkdir -p $theme/templates/pages $theme/assets/css
+echo '<p class="ours">Our home page</p>' >$theme/templates/pages/home-page.twig
+echo 'body { margin: 0; }' >$theme/assets/css/mine.css
+chmod -R a+rX $theme
+check "theme: a page of the theme replaces the one of the helpers, in the layout of the helpers" "home=\$(get -A '$firefox' $site/); echo \"\$home\" | grep -q 'Our home page' && ! echo \"\$home\" | grep -q 'grid-name' && echo \"\$home\" | grep -q 'class=\"topbar\"'"
+check "theme: an asset of the theme is served with the ones of the helpers" "[ \"\$(status $helpers/assets/css/mine.css)\" = 200 ] && [ \"\$(status $helpers/assets/css/page.css)\" = 200 ]"
+rm -rf $theme
 
 ts "pages: the destination guide"
 mkdir -p /tmp/guide
@@ -80,7 +90,7 @@ check "guide: the viewers are sent to it, by the config of Robust" "[ \"\$(robus
 check "guide: no destinations is said, as a page, not an error" "[ \"\$(status $guide)\" = 200 ] && get $guide | grep -q 'realm of destinations'"
 cfg guide_source /tmp/guide/destinations.txt
 page=$(get $guide)
-check "guide: a page of the viewer, with the categories of the file" "echo \"\$page\" | grep -q '<!DOCTYPE html>' && echo \"\$page\" | grep -q 'Places to see' && echo \"\$page\" | grep -q 'Shops'"
+check "guide: a page of the layout, with the categories of the file" "echo \"\$page\" | grep -qi '<!doctype html>' && echo \"\$page\" | grep -q 'Places to see' && echo \"\$page\" | grep -q 'Shops'"
 check "guide: each category says how many destinations it has" "echo \"\$page\" | grep -q '3 destinations' && echo \"\$page\" | grep -q '1 destinations'"
 check "guide: the comments are not destinations" "! echo \"\$page\" | grep -q 'a comment'"
 places=$(get "$guide?category=Places%20to%20see")
@@ -91,6 +101,8 @@ check "guide: what the file holds is text, not markup" "echo \"\$places\" | grep
 check "guide: another category has its own destinations" "get \"$guide?category=Shops\" | grep -q 'Mall' && ! get \"$guide?category=Shops\" | grep -q 'Welcome Plaza'"
 check "guide: a category that does not exist gives the list of the categories" "get \"$guide?category=Nowhere\" | grep -q '3 destinations'"
 check "guide: the file of the grid is the one used, not one the caller names" "get \"$guide?source=/etc/hostname\" | grep -q 'Places to see'"
+check "guide: in a browser it has the top bar, the sidebars and its style in the head (versioned, so it is not loaded again at each visit)" "echo \"\$page\" | grep -q 'class=\"topbar\"' && echo \"\$page\" | grep -q 'sidebar-left' && echo \"\$page\" | tr -d '\n' | grep -qE '<head>.*guide.css\\?v=[0-9]+.*</head>'"
+check "guide: in a viewer it is the content alone" "viewer_page=\$(get -A '$firestorm' $guide); echo \"\$viewer_page\" | grep -q 'id=\"guide\"' && ! echo \"\$viewer_page\" | grep -q 'class=\"topbar\"' && ! echo \"\$viewer_page\" | grep -q 'sidebar-left'"
 cfg guide_source /tmp/guide/single.txt
 single=$(get $guide)
 check "guide: a file of one category opens it, with no way back to the list" "echo \"\$single\" | grep -q 'Only category' && echo \"\$single\" | grep -q 'Single' && ! echo \"\$single\" | grep -q 'Back to categories'"
