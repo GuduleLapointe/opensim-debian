@@ -2,6 +2,10 @@
 
 ### Unreleased
 
+- update: the helpers read the official settings (Robust.ini, OpenSim.ini), the setup copies none in `helpers.ini`
+- update: `Helpers.ini` only holds what has no official place, in `[Helpers]`; no more `[Urls]` nor `[robust_db]`
+- update: every ini file of a grid is mode 640 for the group of the web server
+- fix: Robust `SearchURL` is no longer set to the query script, it is a web page
 - new: tests of the offline messages, the economy and the pages of the helpers
 - new: tests of the search (register, snapshot, places, land, events, classifieds, people, the real simulator) in `tests/Packaging/search-scenario.sh`
 - fix: the OpenSimSearch module is built for 0.9.3.0 and unstable, it was the DLL of 0.9.2

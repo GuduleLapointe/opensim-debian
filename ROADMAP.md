@@ -74,7 +74,7 @@
 - [ ] helpers: the guide reads `source` from the request when the grid sets none, so any file or URL the server can read: ignore it, or accept only URLs
 - [ ] helpers: the style, the script and the picture of the guide and the style of the directory page are linked with the path of the files (`/usr/share/opensim-helpers/...`), the router should serve them
 - [ ] helpers: an empty calendar keeps the old events (`eventsparser.php` takes `[]` for an invalid answer)
-- [ ] helpers: the Gloebit sandbox cannot be set from `helpers.ini`
+- [ ] helpers: the Gloebit sandbox cannot be set from `Helpers.ini`
 - [ ] helpers: without a money server they write `transactions` with other columns (`sourceId`, `destId`...) than with one (`sender`, `receiver`...): check which module makes which
 - [ ] the engine has its own `OpenSim_HypEvents` and `functions-economy.php`, with the faults the helpers had (`make_random_guid`, `opensim_get_region_info`): which one is the source?
 - [x] the helpers have one layout for every page (left sidebar, main content, right sidebar), blocks (grid info, grid status, message of the day) that templates use as variables, the content alone for a viewer except on the splash page, and a `/health` page listing the addresses of the grid with their status (`pages-scenario.sh`)

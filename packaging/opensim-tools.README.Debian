@@ -10,25 +10,25 @@ here is needed for it.
 Settings
 --------
 
-The helpers read the config of the grid: the Robust config of the grid and its helpers.ini, in
-/etc/opensim/grids/<grid>/, written by `opensim setup`. Nothing to edit in the helpers. They are specific to a grid:
-with several grids on a machine, the virtual host of each one sets OPENSIM_GRID (the snippets below do).
+The helpers read the config of the grid as OpenSimulator has it: Robust.ini (the addresses, the message of the day,
+the databases), OpenSim.ini and the ini of the simulators (the addresses of the search, the registration and the
+offline messages), in /etc/opensim/grids/<grid>/, written by `opensim setup`. Nothing is copied in another file: what
+has an official place is read there. Helpers.ini, same format, only holds what has none, in [Helpers] (the source of the
+guide, the search database, the theme, the currency...), as a commented template. They are specific to a grid: with
+several grids on a machine, the virtual host of each one sets OPENSIM_GRID (the snippets below do).
 
-In helpers.ini, the operator chooses:
-
-  [Helpers] path     where the helpers are on the web site (default /helpers, e.g. /helper)
-  [Urls]             the public path of a service, when it is not <path>/<script>.php
-                     (search = "/search", guide = "/guide", ...)
-  [search_db] ...    another database for a service (hostname, prefix, user, password)
+The helpers serve the addresses the grid gives to its services, those of this site only (the host of WebURL). The
+economy address is where they are by default (/helpers, e.g. /helper): currency.php and landtool.php are under it, the
+other services are where the grid puts them in its settings. Each query uses the database of its service, as
+OpenSimulator chooses it (the ConnectionString of the section of the service, else DatabaseService).
 
 Web server
 ----------
 
 `opensim web` tells where the services are and what answers;
 `opensim setup` writes it for the grid in /etc/opensim/grids/<grid>/web (<grid>.caddyfile, <grid>-nginx.conf, <grid>-apache.conf),
-`opensim web <grid> snippet caddy|nginx|apache` writes it again, what the web server needs, the aliases of the paths of
-helpers.ini included. Include the result in the site of the grid; the config of the web server is not
-touched.
+`opensim web <grid> snippet caddy|nginx|apache` writes it again, what the web server needs. Include the result in the
+site of the grid; the config of the web server is not touched.
 
-helpers.ini holds the password of the database: it is readable by the web server only (group www-data
-when the machine has one).
+Every ini file of a grid may hold a password: they are readable by their owner and the web server only (mode 640, group
+www-data when the machine has one).
