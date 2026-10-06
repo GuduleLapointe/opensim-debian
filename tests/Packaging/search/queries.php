@@ -13,6 +13,7 @@
 declare(strict_types=1);
 
 [, $group, $url] = $argv + [1 => '', 2 => ''];
+require dirname(__DIR__) . '/xmlrpc.php';
 $contract = require __DIR__ . '/contract.php';
 $failed = false;
 
@@ -38,112 +39,6 @@ $base = [
     'EventInfoRequest/event_info_query' => ['eventID' => 1],
     'ClassifiedInfoRequest/classifieds_info_query' => ['classifiedID' => ''],
 ];
-
-function check(string $label, bool $ok, string $detail = ''): void
-{
-    global $failed;
-    echo ($ok ? '   ok: ' : '   FAILED: ') . $label . ($ok || $detail === '' ? '' : " [$detail]") . "\n";
-    $failed = $failed || !$ok;
-}
-
-/** A value of an XML-RPC answer, as PHP. */
-function xr_value(DOMElement $value): mixed
-{
-    $type = null;
-    foreach ($value->childNodes as $child) {
-        if ($child instanceof DOMElement) {
-            $type = $child;
-            break;
-        }
-    }
-    if ($type === null) {
-        return $value->textContent;
-    }
-    switch ($type->nodeName) {
-        case 'struct':
-            $out = [];
-            foreach ($type->childNodes as $member) {
-                if (!$member instanceof DOMElement || $member->nodeName !== 'member') {
-                    continue;
-                }
-                $name = '';
-                $content = null;
-                foreach ($member->childNodes as $part) {
-                    if ($part instanceof DOMElement && $part->nodeName === 'name') {
-                        $name = $part->textContent;
-                    }
-                    if ($part instanceof DOMElement && $part->nodeName === 'value') {
-                        $content = xr_value($part);
-                    }
-                }
-                $out[$name] = $content;
-            }
-            return $out;
-        case 'array':
-            $out = [];
-            foreach ((new DOMXPath($type->ownerDocument))->query('data/value', $type) as $item) {
-                $out[] = xr_value($item);
-            }
-            return $out;
-        case 'int':
-        case 'i4':
-        case 'i8':
-            return (int) $type->textContent;
-        case 'double':
-            return (float) $type->textContent;
-        case 'boolean':
-            return trim($type->textContent) === '1';
-        case 'nil':
-            return null;
-        default:
-            return $type->textContent;
-    }
-}
-
-/** One XML-RPC call, as the module makes it: a struct of strings. */
-function rpc(string $url, string $method, array $request): array
-{
-    $members = '';
-    foreach ($request as $key => $value) {
-        $members .=
-            '<member><name>' .
-            htmlspecialchars((string) $key) .
-            '</name><value><string>' .
-            htmlspecialchars((string) $value) .
-            '</string></value></member>';
-    }
-    $body =
-        '<?xml version="1.0"?><methodCall><methodName>' .
-        $method .
-        '</methodName><params><param><value><struct>' .
-        $members .
-        '</struct></value></param></params></methodCall>';
-    $context = stream_context_create([
-        'http' => [
-            'method' => 'POST',
-            'header' => "Content-Type: text/xml\r\n",
-            'content' => $body,
-            'ignore_errors' => true,
-            'timeout' => 60,
-        ],
-    ]);
-    $raw = (string) @file_get_contents($url, false, $context);
-    $status = 0;
-    foreach ($http_response_header ?? [] as $line) {
-        if (preg_match('#^HTTP/\S+ (\d+)#', $line, $found)) {
-            $status = (int) $found[1];
-        }
-    }
-    $value = null;
-    $dom = new DOMDocument();
-    if ($raw !== '' && @$dom->loadXML($raw)) {
-        // The helpers answer as PHP encodes a value, <params> at the root, which the module reads
-        $node = (new DOMXPath($dom))->query('/methodResponse/params/param/value | /params/param/value')->item(0);
-        $value = $node instanceof DOMElement ? xr_value($node) : null;
-    }
-
-    return ['status' => $status, 'raw' => $raw, 'value' => is_array($value) ? $value : []];
-}
 
 /** A call of the module by its name in the contract, the values of $base unless given. */
 function ask(string $site, array $values = []): array

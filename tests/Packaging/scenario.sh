@@ -273,6 +273,10 @@ source /test/search.sh
 source /test/offline.sh
 [[ ${STOP_AFTER:-} != offline ]] || { ts "done after the offline messages: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"; exit $FAILED; }
 
+# The economy, on the same grid
+source /test/economy.sh
+[[ ${STOP_AFTER:-} != economy ]] || { ts "done after the economy: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"; exit $FAILED; }
+
 
 # A region that exists is changed in place: its place, not its identity
 regionfile=/etc/opensim/grids/testgrid/sims/testgrid_sim1/regions/Sim1North.ini

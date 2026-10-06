@@ -39,3 +39,13 @@ magiiic_repository() {
     echo "deb [signed-by=/usr/share/keyrings/magiiic-packaging.gpg] https://apt.magiiic.com stable main" >/etc/apt/sources.list.d/magiiic.list
     apt-get update -qq
 }
+
+# An option of [Helpers] in the helpers.ini of the grid of the scenario, as it is written (no escape is read in the value)
+helpers_ini=/etc/opensim/grids/testgrid/helpers.ini
+cfg() { # option, value
+    local tmp
+    tmp=$(mktemp)
+    grep -v "^$1 *=" $helpers_ini | LINE="$1 = \"$2\"" awk '{ print } /^\[Helpers\]/ { print ENVIRON["LINE"] }' >"$tmp"
+    cat "$tmp" >$helpers_ini
+    rm -f "$tmp"
+}
