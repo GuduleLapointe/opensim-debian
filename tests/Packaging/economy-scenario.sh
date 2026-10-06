@@ -48,7 +48,7 @@ cp -p $opensim_ini /tmp/OpenSim.ini.economy
 mode() { echo "$1" >/tmp/economy-constants.json; }
 mode '{}'
 pkill -f 'php .*-S 127.0.0.1:809[0]' 2>/dev/null || true
-(cd /var/www/html && OPENSIM_GRID=testgrid PHP_CLI_SERVER_WORKERS=4 setsid -f php -d auto_prepend_file=/test/economy/settings-fixture.php -S 127.0.0.1:8090 index.php >/tmp/php-economy.log 2>&1)
+(cd /var/www/html && OPENSIM_GRID=testgrid PHP_CLI_SERVER_WORKERS=4 setsid -f php -S 127.0.0.1:8090 /test/economy/site-fake.php >/tmp/php-economy.log 2>&1)
 wait_check 20 "the site of the helpers answers" "[ \"\$(curl -s -o /dev/null -w '%{http_code}' $helpers/motd.php)\" = 200 ]"
 start_region
 # The region of the avatars: a copy of one of the grid that is where the fake one is
