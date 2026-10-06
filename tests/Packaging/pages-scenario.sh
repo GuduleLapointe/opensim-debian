@@ -42,21 +42,24 @@ rm -rf /tmp/opensim-helpers-cache
 firefox='Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0'
 firestorm='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) SecondLife/7.1.9 (Firestorm-Releasex64; default skin)'
 home=$(get -A "$firefox" $site/)
-check "home: a browser gets the page of the grid, with its top bar and its footer" "echo \"\$home\" | grep -q '<body class=\"browser\">' && echo \"\$home\" | grep -q 'class=\"topbar\"' && echo \"\$home\" | grep -q '<footer>' && echo \"\$home\" | grep -q 'Testgrid'"
-check "home: it shows the info and the status of the grid" "echo \"\$home\" | grep -q 'block-grid-info' && echo \"\$home\" | grep -q 'block-grid-status'"
+check "home: a browser gets the top bar, the three columns and the footer" "echo \"\$home\" | grep -q '<body class=\"browser page-home\">' && echo \"\$home\" | grep -q 'class=\"topbar\"' && echo \"\$home\" | grep -q 'sidebar-left' && echo \"\$home\" | grep -q 'sidebar-right' && echo \"\$home\" | grep -q '<footer>'"
+check "home: what the grid is on the left (info, status), the message of the day on the right, its name in the middle" "echo \"\$home\" | grep -q 'block-grid-info' && echo \"\$home\" | grep -q 'block-grid-status' && echo \"\$home\" | grep -q 'block-motd' && echo \"\$home\" | grep -q '<h1 class=\"grid-name\">Testgrid</h1>'"
+check "home: a viewer gets the content alone" "get -A '$firestorm' $site/ | grep -q 'content-only' && ! get -A '$firestorm' $site/ | grep -q 'sidebar-left' && ! get -A '$firestorm' $site/ | grep -q 'class=\"topbar\"'"
 splash=$(get -A "$firestorm" $site/welcome)
-check "welcome: a viewer gets the content alone, no top bar, no footer" "echo \"\$splash\" | grep -q '<body class=\"viewer\">' && echo \"\$splash\" | grep -q 'block-grid-status' && ! echo \"\$splash\" | grep -q 'class=\"topbar\"' && ! echo \"\$splash\" | grep -q '<footer>'"
-check "welcome: a browser can ask to see what a viewer sees (?viewer=1), and the other way round" "get -A '$firefox' '$site/welcome?viewer=1' | grep -q '<body class=\"viewer\">' && get -A '$firestorm' '$site/welcome?viewer=0' | grep -q '<body class=\"browser\">'"
-check "static: the style of the pages is served where the page says it is" "href=\$(echo \"\$home\" | grep -o 'href=\"[^\"]*page.css\"' | cut -d'\"' -f2) && [ \"\$(status http://127.0.0.1:8090\$href)\" = 200 ] && get -D - -o /dev/null http://127.0.0.1:8090\$href | grep -qi '^content-type: text/css'"
-check "static: nothing outside the static files, and /assets is not that" "[ \"\$(status --path-as-is \"$helpers/static/../includes/bootstrap.php\")\" = 404 ] && [ \"\$(status \"$site/assets/logos/logo.svg\")\" = 404 ]"
+check "welcome: the splash page is the one a viewer shows with the sidebars, and no top bar, no footer" "echo \"\$splash\" | grep -q '<body class=\"viewer page-splash\">' && echo \"\$splash\" | grep -q 'sidebar-left' && echo \"\$splash\" | grep -q 'block-grid-status' && ! echo \"\$splash\" | grep -q 'class=\"topbar\"' && ! echo \"\$splash\" | grep -q '<footer>'"
+check "welcome: a browser can ask to see what a viewer sees (?viewer=1), and the other way round" "get -A '$firefox' '$site/welcome?viewer=1' | grep -q '<body class=\"viewer page-splash\">' && get -A '$firestorm' '$site/welcome?viewer=0' | grep -q '<body class=\"browser page-splash\">'"
+check "assets: the style of the pages is served where the page says it is" "href=\$(echo \"\$home\" | grep -o 'href=\"[^\"]*page.css\"' | cut -d'\"' -f2) && [ \"\$(status http://127.0.0.1:8090\$href)\" = 200 ] && get -D - -o /dev/null http://127.0.0.1:8090\$href | grep -qi '^content-type: text/css'"
+check "assets: nothing outside them" "[ \"\$(status --path-as-is \"$helpers/assets/../includes/bootstrap.php\")\" = 404 ] && [ \"\$(status \"$helpers/assets/css/nothing.css\")\" = 404 ]"
 members=$(sql "SELECT COUNT(*) FROM UserAccounts WHERE active = 1")
 regions=$(sql "SELECT COUNT(*) FROM regions")
-check "grid-status block: the numbers of the database, as a fragment to embed" "block=\$(get '$helpers/blocks/grid-status?title=Status'); echo \"\$block\" | grep -q '<h3 class=\"block-title\">Status</h3>' && echo \"\$block\" | grep -qE '<th scope=\"row\">Members</th><td>$members</td>' && echo \"\$block\" | grep -qE '<th scope=\"row\">Regions</th><td>$regions</td>'"
-check "grid-status block: online when Robust answers" "get '$helpers/blocks/grid-status' | grep -q '<th scope=\"row\">Status</th><td>Online</td>'"
+check "grid-status block: the numbers of the database, as a fragment to embed" "block=\$(get '$helpers/blocks/grid-status?title=Status' | tr -d '\n'); echo \"\$block\" | grep -q '<h3 class=\"block-title\">Status</h3>' && echo \"\$block\" | grep -qE '<th scope=\"row\">Members</th>[[:space:]]*<td>$members</td>' && echo \"\$block\" | grep -qE '<th scope=\"row\">Regions</th>[[:space:]]*<td>$regions</td>'"
+check "grid-status block: online when Robust answers" "get '$helpers/blocks/grid-status' | tr -d '\n' | grep -qE '<th scope=\"row\">Status</th>[[:space:]]*<td>Online</td>'"
 check "grid-status block: its data, for an application that makes its own page" "[ \"\$(get '$helpers/blocks/grid-status?format=json&title=' | php -r 'echo json_decode(stream_get_contents(STDIN), true)[\"rows\"][1][\"value\"];')\" = \"$members\" ]"
 check "grid-status block: without the visitors of other grids when asked" "! get '$helpers/blocks/grid-status?hypergrid=0' | grep -q 'Active users' && get '$helpers/blocks/grid-status' | grep -q 'Active users'"
 check "grid-info block: the name of the grid and the link to log in" "get '$helpers/blocks/grid-info' | grep -q 'Testgrid' && get '$helpers/blocks/grid-info' | grep -q 'href=\"hop://localhost:8002\"'"
+check "motd block: the message of the grid, for a page that does not know who reads it" "get '$helpers/blocks/motd' | grep -q 'Welcome to Testgrid, traveler!'"
 check "blocks: one that does not exist is a 404" "[ \"\$(status '$helpers/blocks/nothing')\" = 404 ]"
+check "profile: a profile has no page yet, and it is a 404, not an error" "[ \"\$(status '$site/@jane.doe')\" = 404 ]"
 
 ts "pages: the destination guide"
 mkdir -p /tmp/guide
@@ -171,6 +174,23 @@ check "events: the position is in the grid (the place in the region added to the
 check "events: no place means the middle of the region" "[ \"\$(event globalPos 'Odd one')\" = \"\$((x + 128)),\$((y + 128)),25\" ]"
 pkill -f 'php .*-S 127.0.0.1:809[8]' 2>/dev/null || true
 cp -p /tmp/helpers.ini.pages $helpers_ini
+
+ts "pages: the health page"
+rm -rf /tmp/opensim-helpers-cache
+health_json() { get "$site/health?format=json" | php -r '$d = json_decode(stream_get_contents(STDIN), true); foreach ($d["groups"] as $g) { foreach ($g["rows"] as $r) { echo $g["title"], "|", $r["label"], "|", $r["url"], "|", $r["status"], "|", $r["level"], "\n"; } }'; }
+health_json >/tmp/health.txt
+check "health: a page for the addresses of the grid, in a browser" "get -A '$firefox' $site/health | grep -q 'health-table'"
+check "health: the login address is there, and answers" "grep -qE '^[^|]*\\|login\\|http://localhost:8002\\|[0-9]+\\|' /tmp/health.txt"
+check "health: an address that the grid info gives and nothing serves has no answer" "grep -qE '^[^|]*\\|economy\\|https://localhost[^|]*\\|no answer' /tmp/health.txt"
+check "health: an address that is not defined is there too, empty" "grep -E '\\|not defined\\|none$' /tmp/health.txt | grep -q ."
+check "health: the services of the helpers are there, with their address" "grep -q '|Search (query)|https://localhost/helpers/query.php|' /tmp/health.txt && grep -q '|currency.php|https://localhost/' /tmp/health.txt"
+check "health: what the install needs, the database of Robust in the first place" "grep -q '|Database of Robust||ok|ok$' /tmp/health.txt"
+check "health: the guide has no source yet, and says so" "grep -q '|Destination guide source||not defined|none$' /tmp/health.txt"
+cfg guide_source /tmp/guide/destinations.txt
+rm -rf /tmp/opensim-helpers-cache
+check "health: the guide source, once the grid gives one" "health_json | grep -q '|Destination guide source||ok|ok$'"
+cp -p /tmp/helpers.ini.pages $helpers_ini
+rm -rf /tmp/opensim-helpers-cache
 
 ts "pages: the directory"
 # The directory of the search, with what the test puts in it: a grid that answers, two regions of one that does not, an
