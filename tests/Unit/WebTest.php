@@ -1,6 +1,6 @@
 <?php
 /**
- * The web side of a grid: where its services are, its helpers.ini, what the web server needs.
+ * The web side of a grid: where its services are, its Helpers.ini, what the web server needs.
  */
 
 use OpenSim\Installer\Web\HelpersConfig;
@@ -11,89 +11,65 @@ describe('Services', function () {
     test('are under /helpers by default', function () {
         $services = new Services();
 
-        expect($services->path('search'))->toBe('/helpers/query.php');
+        expect($services->path('query'))->toBe('/helpers/query.php');
         expect($services->path('currency'))->toBe('/helpers/currency.php');
         expect($services->url('https://play.example.org/', 'offline'))->toBe(
             'https://play.example.org/helpers/offline.php',
         );
-        expect($services->aliases())->toBe([]);
     });
 
-    test('follow the path chosen', function () {
-        $services = new Services('helper/', ['search' => '/search', 'guide' => 'guide']);
+    test('follow the path of the economy', function () {
+        $services = new Services('helper/');
 
         expect($services->path('currency'))->toBe('/helper/currency.php');
-        expect($services->path('query.php'))->toBe('/search');
-        expect($services->path('guide'))->toBe('/guide');
-        expect($services->aliases())->toBe(['search' => '/search', 'guide' => '/guide']);
+        expect($services->path('query.php'))->toBe('/helper/query.php');
+        expect($services->path('guide'))->toBe('/helper/guide.php');
     });
 
-    test('keep the default path out of aliases', function () {
-        expect((new Services('/helper', ['currency' => '/helper/currency.php']))->aliases())->toBe([]);
+    test('have the path of an address of the Robust config, with its constants', function () {
+        expect(Services::pathOf('${Const|WebURL}/helper/'))
+            ->toBe('/helper')
+            ->and(Services::pathOf('https://play.example.org/currency'))
+            ->toBe('/currency')
+            ->and(Services::pathOf('${Const|WebURL}'))
+            ->toBe('/');
     });
 });
 
-describe('helpers.ini', function () {
-    test('is written with what the setup knows', function () {
-        $text = HelpersConfig::render('', [
-            'gridName' => 'Alpha World',
-            'loginUri' => 'http://play.example.org:8002',
-            'webUrl' => 'https://play.example.org',
-            'mailSender' => '',
-            'dbHost' => 'localhost',
-            'dbName' => 'alpha_robust',
-            'dbUser' => 'opensim',
-            'dbPass' => 'pw',
-        ]);
+describe('Helpers.ini', function () {
+    test('is a template that sets nothing: every setting is commented out, none is one of the official files', function () {
+        $text = HelpersConfig::template();
 
-        expect($text)->toContain('path = "/helpers"');
-        expect($text)->toContain('grid_name = "Alpha World"');
-        expect($text)->toContain('web_url = "https://play.example.org"');
-        expect($text)->toContain('prefix = "alpha_robust"');
-        expect($text)->toContain(';; search = "/search"');
-        expect($text)->not->toMatch('/^mail_sender/m');
+        expect($text)->toContain('[Helpers]');
+        expect($text)->toContain(';; GuideSource = "destinations.txt"');
+        expect($text)->toContain(';; SearchConnectionString = ');
+        // What has its place in OpenSim.ini or Robust.ini is not copied there
+        expect($text)->not->toMatch('/^\s*(grid_name|login_uri|web_url|gridname|ConnectionString)\b/m');
+        expect($text)->not->toMatch('/^\[(robust_db|Urls)\]/m');
     });
 
-    test('keeps what the operator changed when the setup runs again', function () {
+    test('is the name of the file, in the folder of the grid', function () {
+        expect(HelpersConfig::path('/etc/opensim/grids/alpha/'))->toBe('/etc/opensim/grids/alpha/Helpers.ini');
+    });
+
+    test('gives the web address and the path of the helpers from the Robust config, the economy being their path', function () {
         $dir = test_tmp() . '/helpers-ini-' . bin2hex(random_bytes(4));
         mkdir($dir);
-        $first = HelpersConfig::render('', [
-            'gridName' => 'Alpha',
-            'loginUri' => 'http://a:8002',
-            'webUrl' => 'https://a',
-            'mailSender' => '',
-            'dbHost' => 'localhost',
-            'dbName' => 'alpha',
-            'dbUser' => 'u',
-            'dbPass' => 'p',
-        ]);
         file_put_contents(
-            HelpersConfig::path($dir),
-            str_replace(
-                ["path = \"/helpers\"", ';; search = "/search"'],
-                ['path = "/helper"', 'search = "/search"'],
-                $first,
-            ),
+            "$dir/Robust.HG.ini",
+            "[Const]\n    WebURL = \"https://play.example.org\"\n[GridInfoService]\n    economy = \"\${Const|WebURL}/helper\"\n",
         );
 
-        $again = HelpersConfig::render((string) file_get_contents(HelpersConfig::path($dir)), [
-            'gridName' => 'Alpha Renamed',
-            'loginUri' => 'http://a:8002',
-            'webUrl' => 'https://a',
-            'mailSender' => '',
-            'dbHost' => 'localhost',
-            'dbName' => 'alpha',
-            'dbUser' => 'u',
-            'dbPass' => 'new',
-        ]);
-        file_put_contents(HelpersConfig::path($dir), $again);
-        $services = HelpersConfig::services($dir);
+        expect(HelpersConfig::webUrl($dir))
+            ->toBe('https://play.example.org')
+            ->and(HelpersConfig::basePath($dir))
+            ->toBe('/helper')
+            ->and(HelpersConfig::services($dir)->path('currency'))
+            ->toBe('/helper/currency.php');
 
-        expect($again)->toContain('grid_name = "Alpha Renamed"');
-        expect($again)->toContain('password = "new"');
-        expect($services->base())->toBe('/helper');
-        expect($services->path('search'))->toBe('/search');
-        expect(HelpersConfig::read($dir)['robust_db']['password'])->toBe('new');
+        $bare = test_tmp() . '/helpers-ini-' . bin2hex(random_bytes(4));
+        mkdir($bare);
+        expect(HelpersConfig::basePath($bare))->toBe('/helpers')->and(HelpersConfig::webUrl($bare))->toBe('');
     });
 });
 
@@ -176,12 +152,12 @@ describe('Snippets for the web server', function () {
 });
 
 describe('Pages', function () {
-    test('have a path of their own, or the default one', function () {
+    test('have a default path', function () {
         expect((new Services())->path('home'))
             ->toBe('/')
             ->and((new Services())->path('welcome'))
             ->toBe('/welcome')
-            ->and((new Services('/helpers', ['welcome' => 'hello']))->path('welcome'))
-            ->toBe('/hello');
+            ->and((new Services())->path('health'))
+            ->toBe('/health');
     });
 });

@@ -195,6 +195,17 @@ final class NewGrid
 
         $systemUser = $profile['SystemUser'] ?? '';
         $this->giveToSystemUser($systemUser, [$plan->etcDirectory, $plan->dataDirectory, $plan->cacheDirectory], true);
+        // Every ini file may hold a password, and the web server reads them: 640, the group of the web server
+        if (!GridFiles::protect($plan->gridDir) && $plan->helpers) {
+            $this->ui->warn(
+                sprintf(
+                    _(
+                        'The ini files of %s may hold passwords and the web server must read them: give them to its group (chgrp, then chmod 640).',
+                    ),
+                    $plan->gridDir,
+                ),
+            );
+        }
 
         if ($plan->enable) {
             if (GridState::enable($etcRoot, $plan->gridNick)) {
@@ -331,9 +342,9 @@ final class NewGrid
     }
 
     /**
-     * The helpers.ini of the grid: what opensim-helpers needs, so the web server does not have to read the Robust
-     * config. What the operator changed in it is kept. Readable by the group of the web server when this process
-     * can give it, else by everybody who can reach the folder of the grid.
+     * The files of the web side of the grid: the Helpers.ini that holds what has no official place (once: what the operator
+     * changed in it is kept), and the configuration of the web server. The addresses, the name of the grid and the databases
+     * are not copied in another file: the helpers read Robust.ini and OpenSim.ini.
      */
     private function writeHelpers(GridPlan $plan): void
     {
@@ -341,36 +352,10 @@ final class NewGrid
             return;
         }
         $path = HelpersConfig::path($plan->gridDir);
-        $text = HelpersConfig::render(
-            is_file($path) ? TextFile::read($path) : '',
-            [
-                'gridName' => $plan->gridName,
-                'loginUri' => "http://{$plan->baseHostname}:{$plan->publicPort}",
-                'webUrl' => $plan->webUrl,
-                'mailSender' => '',
-                'dbHost' => $plan->dbHost,
-                'dbName' => $plan->dbName,
-                'dbUser' => $plan->dbUser,
-                'dbPass' => $plan->dbPass,
-            ],
-            $plan->helpersPath,
-        );
-        file_put_contents($path, $text);
-        $group = function_exists('posix_getgrnam') ? posix_getgrnam('www-data') : false;
-        if ($group !== false && @chgrp($path, $group['gid'])) {
-            chmod($path, 0o640);
-        } else {
-            chmod($path, 0o644);
-            $this->ui->warn(
-                sprintf(
-                    _(
-                        '%s holds the database password and is readable by every user of this machine: give it to the group of your web server (chgrp, then chmod 640).',
-                    ),
-                    $path,
-                ),
-            );
+        if (!is_file($path)) {
+            file_put_contents($path, HelpersConfig::template());
+            $this->ui->note(sprintf(_('Wrote %s'), $path));
         }
-        $this->ui->note(sprintf(_('Wrote %s'), $path));
 
         // The configuration of the web server for this grid, one file for each server, to include in its site
         $webDir = "{$plan->gridDir}/web";
@@ -544,7 +529,6 @@ final class NewGrid
         $saved = @parse_ini_file("$gridDir/$nick.conf", true, INI_SCANNER_RAW)['Grid']['Center'] ?? '';
         $defaultCenter =
             trim((string) $saved, " \t\"") !== '' ? trim((string) $saved, " \t\"") : "$defaultPublic,$defaultPublic";
-        $existingHelpers = HelpersConfig::read($gridDir);
         $v = $this->ui->form(
             [
                 ['key' => 'host', 'label' => _('Base hostname'), 'default' => $defaultHost, 'validate' => $required],
@@ -591,12 +575,12 @@ final class NewGrid
                     'key' => 'helpers',
                     'label' => _('Serve the economy and the search of the grid with opensim-helpers?'),
                     'type' => 'confirm',
-                    'default' => $existingHelpers !== [] || is_dir(Snippets::WEBROOT) ? 'yes' : 'no',
+                    'default' => is_file(HelpersConfig::path($gridDir)) || is_dir(Snippets::WEBROOT) ? 'yes' : 'no',
                 ],
                 [
                     'key' => 'helpers_path',
                     'label' => _('Helpers path'),
-                    'default' => $existingHelpers['Helpers']['path'] ?? HelpersConfig::DEFAULT_PATH,
+                    'default' => HelpersConfig::basePath($gridDir),
                     'hint' => _('After the Web URL: the viewers add the name of the script'),
                     'validate' => static fn(string $v): ?string => preg_match('#^/?[A-Za-z0-9._/-]*$#', trim($v))
                         ? null
@@ -622,7 +606,6 @@ final class NewGrid
             $v['web'] === $defaultWeb && $v['host'] !== $defaultHost ? "https://{$plan->baseHostname}" : $v['web'];
         $plan->helpers = $v['helpers'] === 'yes';
         if ($plan->helpers) {
-            $plan->helpersUrls = $existingHelpers['Urls'] ?? [];
             // The URL of the web site is given, the path after it is the choice of the operator
             $plan->helpersPath = Services::normalize($v['helpers_path']);
             $this->ui->note(

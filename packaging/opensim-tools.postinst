@@ -63,14 +63,13 @@ case "$1" in
             adduser --system --group --home /var/lib/opensim --shell /bin/bash opensim
         fi
 
-        # The helpers read the helpers.ini of each grid through the web server: readable by its group only, when the
-        # machine has one (the setup does the same for the grids it writes)
+        # The helpers read the ini files of each grid through the web server, and any of them may hold a password: readable by
+        # its group only, when the machine has one (the setup does the same for the grids it writes)
         if getent group www-data >/dev/null 2>&1; then
             adduser --quiet opensim www-data || true
-            for ini in /etc/opensim/grids/*/helpers.ini; do
-                [ -f "$ini" ] || continue
-                chgrp www-data "$ini"
-                chmod 0640 "$ini"
+            for dir in /etc/opensim/grids/*; do
+                [ -d "$dir" ] || continue
+                find "$dir" -type f -name '*.ini' -exec chgrp www-data {} + -exec chmod 0640 {} +
             done
         fi
 

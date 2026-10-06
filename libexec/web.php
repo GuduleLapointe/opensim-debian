@@ -13,7 +13,7 @@ declare(strict_types=1);
  * The grid is the first word, as the instance is in the other commands; it can be left out when the machine
  * has only one (--grid GRID works too).
  *
- * The path of the helpers and of each service is the operator's: `path` and [Urls] in the helpers.ini of the
+ * The path of the helpers is the one of the economy of the Robust config of the
  * grid (see Web\HelpersConfig).
  */
 
@@ -87,10 +87,7 @@ if ($options['grid'] === '' || !in_array($options['grid'], $grids, true)) {
 $nick = $options['grid'];
 $gridDir = "$etc/grids/$nick";
 $services = HelpersConfig::services($gridDir);
-$ini = HelpersConfig::read($gridDir);
-$robust = (string) file_get_contents((string) GridState::robustIni($etc, $nick));
-$webUrl =
-    $ini['Helpers']['web_url'] ?? (preg_match('/^\s*WebURL\s*=\s*"?([^"\r\n]+)"?/m', $robust, $m) ? trim($m[1]) : '');
+$webUrl = HelpersConfig::webUrl($gridDir);
 
 if ($command === 'snippet') {
     $server = $words[0] ?? '';
@@ -129,9 +126,7 @@ if ($command === 'check') {
 
 echo "Grid:      $nick\n";
 echo 'Web URL:   ' . ($webUrl !== '' ? $webUrl : '(none: WebURL of the Robust config)') . "\n";
-echo "Helpers:   {$services->base()}" .
-    (is_file(HelpersConfig::path($gridDir)) ? '' : '  (no helpers.ini: run `opensim setup` for this grid)') .
-    "\n";
+echo "Helpers:   {$services->base()}" . "  (the economy of the Robust config, the path of the services by default)\n";
 echo 'Docroot:   ' .
     $options['docroot'] .
     (is_dir(Snippets::WEBROOT) ? '' : '  (the helpers are not installed: apt install opensim-helpers)') .

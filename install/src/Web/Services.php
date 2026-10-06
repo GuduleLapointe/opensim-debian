@@ -5,18 +5,17 @@ declare(strict_types=1);
 namespace OpenSim\Installer\Web;
 
 /**
- * The web services of a grid, the scripts of opensim-helpers that answer them, and the public path of
- * each: `/helpers/<script>` unless the grid says otherwise ([Urls] of its helpers.ini), so an
- * operator who has always had `/helper`, or `/search`, keeps his URLs.
+ * The web services of a grid, the scripts of opensim-helpers that answer them, and the address each has by default:
+ * `/helpers/<script>`. The grid says otherwise in the official settings (the addresses of Robust.ini and OpenSim.ini: this is
+ * where the helpers read them), `<base>` being the path of its economy, which the viewers complete with the name of the script.
  *
- * The helpers route any URL the web server sends them (see `index.php` of the helpers): the paths here are the
- * routes of their `config.php` (OPENSIM_ROUTES).
+ * The helpers route the addresses of the grid that are on this site (see `index.php` of the helpers).
  */
 final class Services
 {
     /** The service and the script of the helpers that answers it. */
     public const SCRIPTS = [
-        'search' => 'query.php',
+        'query' => 'query.php',
         'register' => 'register.php',
         'offline' => 'offline.php',
         'currency' => 'currency.php',
@@ -29,14 +28,13 @@ final class Services
         'directory_info' => 'directory_info.php',
     ];
 
-    /** The pages of the helpers and their default path: the home page, the splash page of the viewer. */
-    public const PAGES = ['home' => '/', 'welcome' => '/welcome'];
+    /** The pages of the helpers and their default path: the home page, the splash page of the viewer, the profiles, the health. */
+    public const PAGES = ['home' => '/', 'welcome' => '/welcome', 'profile' => '/profile', 'health' => '/health'];
 
     /**
-     * @param string               $base the path the helpers are served under (`/helpers`)
-     * @param array<string,string> $urls the paths the grid gives to some services
+     * @param string $base the path the helpers are served under (`/helpers`), the one of the economy
      */
-    public function __construct(private string $base = '/helpers', private array $urls = []) {}
+    public function __construct(private string $base = '/helpers') {}
 
     /** A path as the web server has it: a slash first, none at the end (the root is `/`). */
     public static function normalize(string $path): string
@@ -46,49 +44,35 @@ final class Services
         return $path;
     }
 
-    /** The base path, and an operator's own path for a service. */
+    /**
+     * The path of an address a Robust setting gives, with its constants as they are written (`${Const|WebURL}/helpers`).
+     */
+    public static function pathOf(string $address): string
+    {
+        $address = (string) preg_replace('/^\$\{Const\|[^}]+\}/', '', trim($address));
+
+        return self::normalize((string) (parse_url($address, PHP_URL_PATH) ?? $address));
+    }
+
+    /** The base path. */
     public function base(): string
     {
         return self::normalize($this->base);
     }
 
-    /** The public path of a service: the one of the grid, else the script under the base path. */
+    /** The default path of a service or a page. */
     public function path(string $service): string
     {
         if (isset(self::PAGES[$service])) {
-            $own = trim($this->urls[$service] ?? '');
-
-            return $own !== '' ? self::normalize($own) : self::PAGES[$service];
+            return self::PAGES[$service];
         }
-        $script = self::SCRIPTS[$service] ?? $service;
-        $name = array_search($script, self::SCRIPTS, true);
-        $own = $name !== false ? trim($this->urls[$name] ?? '') : '';
 
-        return $own !== '' ? self::normalize($own) : rtrim($this->base(), '/') . '/' . $script;
+        return rtrim($this->base(), '/') . '/' . (self::SCRIPTS[$service] ?? $service);
     }
 
     /** The address of a service on a web site. */
     public function url(string $webUrl, string $service): string
     {
         return rtrim($webUrl, '/') . $this->path($service);
-    }
-
-    /**
-     * What a service with its own path needs from the web server: it answers at that path with the
-     * script, outside the base path.
-     *
-     * @return array<string,string> service => its path, only for the services that are not under the base
-     */
-    public function aliases(): array
-    {
-        $aliases = [];
-        foreach (array_keys(self::SCRIPTS) as $service) {
-            $default = rtrim($this->base(), '/') . '/' . self::SCRIPTS[$service];
-            if ($this->path($service) !== $default) {
-                $aliases[$service] = $this->path($service);
-            }
-        }
-
-        return $aliases;
     }
 }

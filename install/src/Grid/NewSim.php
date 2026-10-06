@@ -513,6 +513,8 @@ final class NewSim
 
         $systemUser = $profile['SystemUser'] ?? '';
         $this->giveToSystemUser($systemUser, [$plan->gridDir, $plan->dataDirectory, $plan->cacheDirectory], true);
+        // The ini files may hold passwords and the web server reads them (the helpers): 640, the group of the web server
+        GridFiles::protect($plan->gridDir);
 
         if ($plan->enable) {
             if (SimState::enable($etcRoot, $plan->slug, $plan->iniPath())) {
@@ -543,6 +545,7 @@ final class NewSim
                 : sprintf(_('Region %s already described, left as it is.'), $plan->regionName),
         );
         $this->giveToSystemUser($profile['SystemUser'] ?? '', [$plan->regionsDir()], true);
+        GridFiles::protect($plan->gridDir);
         $this->giveRoles($plan, $grid);
         if ($plan->overwriteRegion) {
             $this->needRestart($profile, $plan, 'changed');

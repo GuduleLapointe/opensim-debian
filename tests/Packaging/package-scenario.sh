@@ -41,7 +41,7 @@ opensim install-dotnet -y 2>&1 | tail -1
 check ".NET runtime" "runuser -u opensim -- dotnet --list-runtimes | grep -q NETCore.App"
 
 # The web side of a grid: the default site (the helpers came with the tools), installed before the grid so that its
-# setup writes its helpers.ini (the user of the instances joins the group of the web server)
+# setup gives the ini files of the grid to the group of the web server (the user of the instances joins it)
 ts "web packages"
 apt_q install "$(deb opensim-web)"
 check "the helpers and the default site are installed, the helpers have no config of their own" "[ -f /usr/share/opensim-helpers/query.php ] &&
@@ -53,10 +53,12 @@ mysql -e "CREATE DATABASE testgrid_robust; CREATE USER opensim@localhost IDENTIF
     GRANT ALL ON testgrid_robust.* TO opensim@localhost;"
 (cd /var/lib/opensim && runuser -u opensim -- php /test/newgrid-driver.php | tail -1)
 check "grid enabled" "[ -L /etc/opensim/robust.d/testgrid.ini ]"
-check "the setup wrote the helpers.ini of the grid, for the group of the web server" "grep -q 'grid_name = \"Testgrid\"' /etc/opensim/grids/testgrid/helpers.ini &&
-    [ \"\$(stat -c '%G %a' /etc/opensim/grids/testgrid/helpers.ini)\" = 'www-data 640' ]"
+check "the setup wrote the Helpers.ini of the grid, with what has no official place and nothing else" "grep -q '^\[Helpers\]' /etc/opensim/grids/testgrid/Helpers.ini &&
+    ! grep -qiE '^ *(grid_name|login_uri|web_url|gridname|ConnectionString|\[robust_db\])' /etc/opensim/grids/testgrid/Helpers.ini"
+check "every ini file of the grid may hold a password: 640, the group of the web server" "[ -z \"\$(find /etc/opensim/grids/testgrid -name '*.ini' -type f \\( ! -perm 640 -o ! -group www-data \\))\" ] &&
+    [ \"\$(stat -c '%G %a' /etc/opensim/grids/testgrid/Robust.HG.ini)\" = 'www-data 640' ]"
 check "the Robust config tells the viewers where the services are" "grep -q '^ *economy = \"\${Const|WebURL}/helpers\"' /etc/opensim/grids/testgrid/Robust.HG.ini &&
-    grep -q '^ *SearchURL = \"\${Const|WebURL}/helpers/query.php\"' /etc/opensim/grids/testgrid/Robust.HG.ini"
+    grep -q '^ *DestinationGuide = \"\${Const|WebURL}/helpers/guide.php\"' /etc/opensim/grids/testgrid/Robust.HG.ini"
 check "the setup wrote the files for the web server, in the folder of the grid" "grep -q 'OPENSIM_GRID' /etc/opensim/grids/testgrid/web/testgrid.caddyfile &&
     grep -q 'fastcgi_param OPENSIM_GRID testgrid' /etc/opensim/grids/testgrid/web/testgrid-nginx.conf && [ -s /etc/opensim/grids/testgrid/web/testgrid-apache.conf ]"
 cat >/tmp/helpers-settings.php <<'EOF'

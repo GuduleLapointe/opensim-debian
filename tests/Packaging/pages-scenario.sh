@@ -24,7 +24,8 @@ start_helpers() {
     wait_check 20 "the site of the helpers answers" "[ \"\$(status $helpers/motd.php)\" = 200 ]"
 }
 
-cp -p $helpers_ini /tmp/helpers.ini.pages
+cp -p $helpers_ini /tmp/Helpers.ini.pages
+cp -p $robust_ini /tmp/Robust.HG.ini.pages
 ts "pages: the site of the helpers"
 start_helpers
 
@@ -32,10 +33,10 @@ ts "pages: the message of the day"
 body=$(get -D /tmp/motd.headers $helpers/motd.php)
 check "motd: a welcome to the grid, by default, with the name of the avatar left to Robust" "[ \"\$body\" = 'Welcome to Testgrid, <USERNAME>!' ]"
 check "motd: plain text, in UTF-8" "grep -qi '^content-type: text/plain; charset=utf-8' /tmp/motd.headers"
-cfg motd 'Bienvenue à <USERNAME>\nSecond line'
+ini_set $robust_ini LoginService WelcomeMessage 'Bienvenue à <USERNAME>\nSecond line'
 check "motd: the text of the grid, as it is (Robust makes the new lines and the name)" "[ \"\$(get $helpers/motd.php)\" = 'Bienvenue à <USERNAME>\\nSecond line' ]"
 check "motd: the address Robust reads it at is served" "[ \"\$(status http://127.0.0.1:8090\$(robust_path MessageUrl))\" = 200 ]"
-cp -p /tmp/helpers.ini.pages $helpers_ini
+cp -p /tmp/Robust.HG.ini.pages $robust_ini
 
 ts "pages: the layout and the blocks"
 rm -rf /tmp/opensim-helpers-cache
@@ -88,7 +89,7 @@ printf 'Only category\nSingle|http://one.example:8002:One/1/2/3\nTwo|http://one.
 guide=$helpers/guide.php
 check "guide: the viewers are sent to it, by the config of Robust" "[ \"\$(robust_path DestinationGuide)\" = /helpers/guide.php ]"
 check "guide: no destinations is said, as a page, not an error" "[ \"\$(status $guide)\" = 200 ] && get $guide | grep -q 'realm of destinations'"
-cfg guide_source /tmp/guide/destinations.txt
+cfg GuideSource /tmp/guide/destinations.txt
 page=$(get $guide)
 check "guide: a page of the layout, with the categories of the file" "echo \"\$page\" | grep -qi '<!doctype html>' && echo \"\$page\" | grep -q 'Places to see' && echo \"\$page\" | grep -q 'Shops'"
 check "guide: each category says how many destinations it has" "echo \"\$page\" | grep -q '3 destinations' && echo \"\$page\" | grep -q '1 destinations'"
@@ -103,17 +104,17 @@ check "guide: a category that does not exist gives the list of the categories" "
 check "guide: the file of the grid is the one used, not one the caller names" "get \"$guide?source=/etc/hostname\" | grep -q 'Places to see'"
 check "guide: in a browser it has the top bar, the sidebars and its style in the head (versioned, so it is not loaded again at each visit)" "echo \"\$page\" | grep -q 'class=\"topbar\"' && echo \"\$page\" | grep -q 'sidebar-left' && echo \"\$page\" | tr -d '\n' | grep -qE '<head>.*guide.css\\?v=[0-9]+.*</head>'"
 check "guide: in a viewer it is the content alone" "viewer_page=\$(get -A '$firestorm' $guide); echo \"\$viewer_page\" | grep -q 'id=\"guide\"' && ! echo \"\$viewer_page\" | grep -q 'class=\"topbar\"' && ! echo \"\$viewer_page\" | grep -q 'sidebar-left'"
-cfg guide_source /tmp/guide/single.txt
+cfg GuideSource /tmp/guide/single.txt
 single=$(get $guide)
 check "guide: a file of one category opens it, with no way back to the list" "echo \"\$single\" | grep -q 'Only category' && echo \"\$single\" | grep -q 'Single' && ! echo \"\$single\" | grep -q 'Back to categories'"
 (cd /tmp/guide && PHP_CLI_SERVER_WORKERS=2 setsid -f php -S 127.0.0.1:8097 -t /tmp/guide >/tmp/php-guide-source.log 2>&1)
 wait_check 20 "the file of a destination guide is on a web site" "[ \"\$(status http://127.0.0.1:8097/destinations.txt)\" = 200 ]"
-cfg guide_source http://127.0.0.1:8097/destinations.txt
+cfg GuideSource http://127.0.0.1:8097/destinations.txt
 check "guide: the destinations can be a URL, as a site keeps them" "get $guide | grep -q 'Places to see'"
-cfg guide_source /tmp/guide/does-not-exist.txt
+cfg GuideSource /tmp/guide/does-not-exist.txt
 check "guide: a file that is not there is no destinations, not an error" "[ \"\$(status $guide)\" = 200 ] && get $guide | grep -q 'realm of destinations'"
 pkill -f 'php .*-S 127.0.0.1:809[7]' 2>/dev/null || true
-cp -p /tmp/helpers.ini.pages $helpers_ini
+cp -p /tmp/Helpers.ini.pages $helpers_ini
 
 ts "pages: the images of text"
 # Imagick is only suggested by the package: a server without it says so, then it is installed (once, in a container kept)
@@ -165,7 +166,7 @@ cat >/tmp/hypevents/events.json <<JSON
 JSON
 (cd /tmp/hypevents && PHP_CLI_SERVER_WORKERS=2 setsid -f php -S 127.0.0.1:8098 /test/pages/hypevents-fake.php >/tmp/php-hypevents.log 2>&1)
 wait_check 20 "the calendar answers" "[ \"\$(status http://127.0.0.1:8098/events.json)\" = 200 ]"
-cfg events_url http://127.0.0.1:8098
+cfg HypEventsURL http://127.0.0.1:8098
 sql "DELETE FROM events"
 get $helpers/eventsparser.php >/dev/null
 wait_check 60 "the events are in the search tables" "[ \"\$(sql 'SELECT COUNT(*) FROM events')\" -gt 0 ]"
@@ -185,7 +186,16 @@ y=$(sql "SELECT locY FROM regions WHERE regionName = 'Sim1'")
 check "events: the position is in the grid (the place in the region added to the place of the region)" "[ \"\$(event globalPos 'Concert in the park')\" = \"\$((x + 50)),\$((y + 60)),70\" ]" 
 check "events: no place means the middle of the region" "[ \"\$(event globalPos 'Odd one')\" = \"\$((x + 128)),\$((y + 128)),25\" ]"
 pkill -f 'php .*-S 127.0.0.1:809[8]' 2>/dev/null || true
-cp -p /tmp/helpers.ini.pages $helpers_ini
+cp -p /tmp/Helpers.ini.pages $helpers_ini
+
+ts "pages: the routes follow the official settings"
+cp -p /etc/opensim/grids/testgrid/OpenSim.ini /tmp/OpenSim.ini.pages
+ini_set /etc/opensim/grids/testgrid/OpenSim.ini Search SearchURL https://2do.directory/helpers/query.php
+check "routes: a service the grid sends to another site has no ghost on this one" "[ \"\$(status $helpers/query.php)\" = 404 ]"
+ini_set /etc/opensim/grids/testgrid/OpenSim.ini Search SearchURL https://localhost/v3/query
+check "routes: a service the grid puts elsewhere on this site is there, and only there" "[ \"\$(status $site/v3/query)\" != 404 ] && [ \"\$(status $helpers/query.php)\" = 404 ]"
+cp -p /tmp/OpenSim.ini.pages /etc/opensim/grids/testgrid/OpenSim.ini
+check "routes: without a word of the grid a service is at its default address" "[ \"\$(status $helpers/query.php)\" != 404 ]"
 
 ts "pages: the health page"
 rm -rf /tmp/opensim-helpers-cache
@@ -195,13 +205,13 @@ check "health: a page for the addresses of the grid, in a browser" "get -A '$fir
 check "health: the login address is there, and answers" "grep -qE '^[^|]*\\|login\\|http://localhost:8002\\|[0-9]+\\|' /tmp/health.txt"
 check "health: an address that the grid info gives and nothing serves has no answer" "grep -qE '^[^|]*\\|economy\\|https://localhost[^|]*\\|no answer' /tmp/health.txt"
 check "health: an address that is not defined is there too, empty" "grep -E '\\|not defined\\|none$' /tmp/health.txt | grep -q ."
-check "health: the services of the helpers are there, with their address" "grep -q '|Search (query)|https://localhost/helpers/query.php|' /tmp/health.txt && grep -q '|currency.php|https://localhost/' /tmp/health.txt"
+check "health: the services of the helpers are there, with their address" "grep -q '|SearchURL|https://localhost/helpers/query.php|' /tmp/health.txt && grep -q '|currency.php|https://localhost/' /tmp/health.txt"
 check "health: what the install needs, the database of Robust in the first place" "grep -q '|Database of Robust||ok|ok$' /tmp/health.txt"
 check "health: the guide has no source yet, and says so" "grep -q '|Destination guide source||not defined|none$' /tmp/health.txt"
-cfg guide_source /tmp/guide/destinations.txt
+cfg GuideSource /tmp/guide/destinations.txt
 rm -rf /tmp/opensim-helpers-cache
 check "health: the guide source, once the grid gives one" "health_json | grep -q '|Destination guide source||ok|ok$'"
-cp -p /tmp/helpers.ini.pages $helpers_ini
+cp -p /tmp/Helpers.ini.pages $helpers_ini
 rm -rf /tmp/opensim-helpers-cache
 
 ts "pages: the directory"
@@ -231,5 +241,5 @@ check "directory: what a grid registered is text, not markup" "! echo \"\$page\"
 check "directory: no warning in the log" "! grep -q 'Undefined\|Warning' /tmp/php-pages.log"
 sql "DELETE FROM parcels; DELETE FROM regionsregister; INSERT INTO parcels SELECT * FROM parcels_bak; INSERT INTO regionsregister SELECT * FROM regionsregister_bak; DROP TABLE parcels_bak, regionsregister_bak"
 
-cp -p /tmp/helpers.ini.pages $helpers_ini
+cp -p /tmp/Helpers.ini.pages $helpers_ini
 pkill -f 'php .*-S 127.0.0.1:809[0]' 2>/dev/null || true

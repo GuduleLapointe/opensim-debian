@@ -113,7 +113,8 @@ ts "search: the simulator of the grid registers by itself, and tells a parcel sh
 sim_ini=/etc/opensim/grids/testgrid/sims/testgrid_sim1.ini
 sed -i '/^DATA_SRV_Search/d' "$sim_ini" # (what a former run left)
 cp "$sim_ini" /tmp/sim1.ini.search
-sed -i "/^\[DataSnapshot\]/a DATA_SRV_Search = \"$helpers/register.php\"" "$sim_ini"
+# (an address of the grid on this site: the helpers do not answer an address that has another host name)
+sed -i "/^\[DataSnapshot\]/a DATA_SRV_Search = \"http://localhost:8090/helpers/register.php\"" "$sim_ini"
 mysql testgrid_sim1 -e "UPDATE land SET LandFlags = LandFlags | 4096 WHERE Name = 'Sim1'"
 opensim stop now testgrid_sim1 >/dev/null 2>&1
 opensim start testgrid_sim1 >/dev/null 2>&1

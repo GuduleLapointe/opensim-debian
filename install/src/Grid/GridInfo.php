@@ -41,8 +41,6 @@ final class GridInfo
     public string $webUrl = '';
     public bool $helpers = false;
     public string $helpersPath = '/helpers';
-    /** @var array<string,string> */
-    public array $helpersUrls = [];
 
     /**
      * @param array<string,mixed> $profile the install profile (Config::profile())
@@ -117,26 +115,20 @@ final class GridInfo
         $grid->helpers = $plan->helpers;
         $grid->webUrl = $plan->webUrl;
         $grid->helpersPath = $plan->helpersPath;
-        $grid->helpersUrls = $plan->helpersUrls;
 
         return $grid;
     }
 
     /**
-     * The address of a service of the helpers (offline, register, search...), empty when the grid has none.
+     * The address of a service of the helpers (offline, register, query...), empty when the grid has none: under the economy
+     * the grid gives its viewers, on its web site.
      */
     public function helperUrl(string $service): string
     {
         if ($this->planned) {
-            return $this->helpers
-                ? (new \OpenSim\Installer\Web\Services($this->helpersPath, $this->helpersUrls))->url(
-                    $this->webUrl,
-                    $service,
-                )
-                : '';
+            return $this->helpers ? (new \OpenSim\Installer\Web\Services($this->helpersPath))->url($this->webUrl, $service) : '';
         }
-        $ini = \OpenSim\Installer\Web\HelpersConfig::read($this->dir);
-        $webUrl = $ini['Helpers']['web_url'] ?? '';
+        $webUrl = \OpenSim\Installer\Web\HelpersConfig::webUrl($this->dir);
         if ($webUrl === '') {
             return '';
         }

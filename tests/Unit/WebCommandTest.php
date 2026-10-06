@@ -30,13 +30,13 @@ function web_run(array $arguments, string $home): array
 }
 
 /**
- * A setup with the given grids, the first one with a helpers.ini.
+ * A setup with the given grids, the first one with a given Robust config.
  *
  * @param list<string> $nicks
- * @param string $helpers The content of the helpers.ini of the first grid.
+ * @param string $robust More of the Robust config of the first grid (the address of its economy...).
  * @return string The home of the user.
  */
-function web_home(array $nicks = ['alpha'], string $helpers = ''): string
+function web_home(array $nicks = ['alpha'], string $robust = ''): string
 {
     $root = test_tmp() . '/web-' . bin2hex(random_bytes(4));
     $etc = "$root/etc";
@@ -47,10 +47,10 @@ function web_home(array $nicks = ['alpha'], string $helpers = ''): string
     );
     foreach ($nicks as $i => $nick) {
         mkdir("$etc/grids/$nick", 0o755, true);
-        file_put_contents("$etc/grids/$nick/Robust.HG.ini", "[Const]\n    WebURL = \"https://$nick.example.org\"\n");
-        if ($i === 0 && $helpers !== '') {
-            file_put_contents("$etc/grids/$nick/helpers.ini", $helpers);
-        }
+        file_put_contents(
+            "$etc/grids/$nick/Robust.HG.ini",
+            "[Const]\n    WebURL = \"https://$nick.example.org\"\n" . ($i === 0 ? $robust : ''),
+        );
     }
 
     return "$root/home";
@@ -66,21 +66,21 @@ describe('opensim web', function () {
         expect($output)->toContain('https://alpha.example.org/helpers/currency.php');
     });
 
-    test('follows the path and the urls of the grid', function () {
+    test('follows the economy of the grid', function () {
         [, $output] = web_run(
             ['show'],
-            web_home(['alpha'], "[Helpers]\npath = \"/helper\"\n[Urls]\nsearch = \"/search\"\n"),
+            web_home(['alpha'], "[GridInfoService]\n    economy = \"\${Const|WebURL}/helper\"\n"),
         );
 
         expect($output)->toContain('https://alpha.example.org/helper/currency.php');
-        expect($output)->toContain('https://alpha.example.org/search');
+        expect($output)->toContain('https://alpha.example.org/helper/query.php');
         expect($output)->not->toContain('/helpers/');
     });
 
     test('writes the web server snippet', function () {
         [$status, $output] = web_run(
             ['snippet', 'caddy'],
-            web_home(['alpha'], "[Helpers]\npath = \"/helper\"\n[Urls]\nguide = \"/guide\"\n"),
+            web_home(['alpha'], "[GridInfoService]\n    economy = \"\${Const|WebURL}/helper\"\n"),
         );
 
         expect($status)->toBe(0);
@@ -131,13 +131,13 @@ describe('Robust config with the helpers', function () {
         $plan->baseHostname = 'localhost';
         $plan->helpers = true;
         $plan->helpersPath = '/helper';
-        $plan->helpersUrls = ['search' => '/search'];
 
         $ini = web_robust($plan);
 
-        // The economy is the path of the helpers, the viewer adds the script; the search API is the query script
+        // The economy is the path of the helpers, the viewer adds the script; the search of the simulators (SearchURL of
+        // OpenSim.ini) is not a setting of Robust, whose SearchURL is a web page
         expect($ini)->toContain('economy = "${Const|WebURL}/helper"');
-        expect($ini)->toContain('SearchURL = "${Const|WebURL}/search"');
+        expect($ini)->not->toContain('SearchURL = ');
         // The guide and the message of the day are the helpers' too; the message has a text when they cannot be reached
         expect($ini)->toContain('DestinationGuide = "${Const|WebURL}/helper/guide.php"');
         expect($ini)->toContain('MessageUrl = "${Const|WebURL}/helper/motd.php"');

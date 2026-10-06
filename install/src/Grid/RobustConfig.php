@@ -79,18 +79,16 @@ final class RobustConfig
             ],
         ]);
 
-        // What the viewers are told of the services of the helpers, at the path the grid has chosen
+        // What the viewers are told of the services of the helpers: the official settings, which the helpers read back
         if ($plan->helpers) {
-            $services = new Services($plan->helpersPath, $plan->helpersUrls);
+            $services = new Services($plan->helpersPath);
             // The economy is the path of the helpers: the viewer adds the name of the script (currency.php...)
             $ini->set('GridInfoService', 'economy', $this->q('${Const|WebURL}' . $services->base()));
             // The splash page the viewer shows before the login
             $ini->set('GridInfoService', 'welcome', $this->q('${Const|WebURL}' . $services->path('welcome')));
-            // The search of the viewer, in-world, is the query script (not a page of the web site)
-            $ini->set('LoginService', 'SearchURL', $this->q('${Const|WebURL}' . $services->path('search')));
             // The destination guide of the viewers is the one of the helpers
             $ini->set('LoginService', 'DestinationGuide', $this->q('${Const|WebURL}' . $services->path('guide')));
-            // The message of the day: the text of motd.php, read when Robust starts (WelcomeMessage when it cannot be)
+            // The message of the day: the text of motd.php (WelcomeMessage), read when Robust starts
             $ini->set('LoginService', 'MessageUrl', $this->q('${Const|WebURL}' . $services->path('motd')));
         }
 

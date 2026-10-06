@@ -36,12 +36,10 @@ final class GridPlan
     public string $consoleUser = '';
     public string $consolePass = '';
 
-    /** The helpers of the grid (economy, search, offline messages) are served by the web site: written in helpers.ini. */
+    /** The helpers of the grid (economy, search, offline messages) are served by the web site. */
     public bool $helpers = false;
-    /** Where the helpers are on the web site. */
+    /** Where the helpers are on the web site: the path of the economy the viewers are given. */
     public string $helpersPath = '/helpers';
-    /** @var array<string,string> The paths the operator gave to some services in the helpers.ini of the grid ([Urls]). */
-    public array $helpersUrls = [];
 
     // Database.
     public string $dbHost = 'localhost';

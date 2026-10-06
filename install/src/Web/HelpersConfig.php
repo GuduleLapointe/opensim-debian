@@ -4,22 +4,18 @@ declare(strict_types=1);
 
 namespace OpenSim\Installer\Web;
 
-use OpenSim\Installer\Ini;
-use OpenSim\Installer\TextFile;
-
 /**
- * The web side of a grid, in the `helpers.ini` of its folder: what opensim-helpers needs, read by the
- * engine (`OpenSim_Kit`), so the web server user does not have to read the Robust config.
+ * The web side of a grid. opensim-helpers read the official settings of the grid (Robust.ini, OpenSim.ini, the ini of its
+ * simulators) in their own format, one source of truth: the setup writes nothing of them in another file.
  *
- * The setup writes the keys it knows (the name of the grid, its login address, its web address, the
- * database); the rest of the file is the operator's and is kept: the path, the URLs of the services,
- * other databases, the options of the currency.
+ * `Helpers.ini`, in the folder of the grid, only holds what has no official place, in a section [Helpers] (the source of the
+ * guide, the search database, the theme...): the setup writes the commented template once, the rest is the operator's.
  */
 final class HelpersConfig
 {
-    public const FILE = 'helpers.ini';
+    public const FILE = 'Helpers.ini';
 
-    /** Where the helpers are, when the file says nothing. */
+    /** Where the helpers are, when the economy of the grid says nothing. */
     public const DEFAULT_PATH = '/helpers';
 
     public static function path(string $gridDir): string
@@ -27,110 +23,75 @@ final class HelpersConfig
         return rtrim($gridDir, '/') . '/' . self::FILE;
     }
 
-    /**
-     * What the file has: section => key => value (the same reader as the engine's, see OpenSim_Kit).
-     *
-     * @return array<string,array<string,string>>
-     */
-    public static function read(string $gridDir): array
+    /** The Robust config of a grid folder, empty when it has none. */
+    private static function robust(string $gridDir): string
     {
-        $ini = [];
-        $section = '';
-        foreach (is_file(self::path($gridDir)) ? explode("\n", TextFile::read(self::path($gridDir))) : [] as $line) {
-            $line = trim($line);
-            if ($line === '' || $line[0] === ';' || $line[0] === '#') {
-                continue;
-            }
-            if (preg_match('/^\[([^\]]+)\]/', $line, $m)) {
-                $section = trim($m[1]);
-                $ini[$section] ??= [];
-            } elseif ($section !== '' && preg_match('/^([^=]+?)\s*=\s*"?(.*?)"?\s*$/', $line, $m)) {
-                $ini[$section][trim($m[1])] = $m[2];
+        foreach (['Robust.HG.ini', 'Robust.ini'] as $file) {
+            if (is_file("$gridDir/$file")) {
+                return (string) file_get_contents("$gridDir/$file");
             }
         }
 
-        return $ini;
+        return '';
+    }
+
+    /** The setting of the Robust config of a grid (`WebURL`, `economy`...), empty when it has not. */
+    private static function robustValue(string $gridDir, string $key): string
+    {
+        return preg_match('/^\s*' . preg_quote($key, '/') . '\s*=\s*"?([^"\r\n]*?)"?\s*$/m', self::robust($gridDir), $m)
+            ? trim($m[1])
+            : '';
+    }
+
+    /** The address of the web site of the grid: the `WebURL` of its Robust config. */
+    public static function webUrl(string $gridDir): string
+    {
+        return self::robustValue($gridDir, 'WebURL');
+    }
+
+    /** Where the helpers are: the path of the economy the grid gives to its viewers. */
+    public static function basePath(string $gridDir): string
+    {
+        $economy = self::robustValue($gridDir, 'economy');
+
+        return $economy === '' ? self::DEFAULT_PATH : Services::pathOf($economy);
     }
 
     /** The services as the grid has them. */
     public static function services(string $gridDir): Services
     {
-        $ini = self::read($gridDir);
-
-        return new Services($ini['Helpers']['path'] ?? self::DEFAULT_PATH, $ini['Urls'] ?? []);
+        return new Services(self::basePath($gridDir));
     }
 
     /**
-     * The text of a new file, or the file as it is with the keys of the setup set.
-     *
-     * @param array{gridName:string,loginUri:string,webUrl:string,mailSender:string,dbHost:string,dbName:string,dbUser:string,dbPass:string} $values
+     * The file of a grid that has none yet: every setting is a comment, the operator uncomments what he needs.
      */
-    public static function render(string $current, array $values, string $path = self::DEFAULT_PATH): string
+    public static function template(): string
     {
-        $ini = new Ini($current !== '' ? $current : self::template($path));
-        foreach (
-            [
-                'grid_name' => $values['gridName'],
-                'login_uri' => $values['loginUri'],
-                'web_url' => $values['webUrl'],
-            ]
-            as $key => $value
-        ) {
-            $ini->set('Helpers', $key, '"' . $value . '"');
-        }
-        if ($values['mailSender'] !== '') {
-            $ini->set('Helpers', 'mail_sender', '"' . $values['mailSender'] . '"');
-        }
-        foreach (
-            [
-                'hostname' => $values['dbHost'],
-                'prefix' => $values['dbName'],
-                'user' => $values['dbUser'],
-                'password' => $values['dbPass'],
-            ]
-            as $key => $value
-        ) {
-            $ini->set('robust_db', $key, '"' . $value . '"');
-        }
-
-        return rtrim($ini->toString()) . "\n";
-    }
-
-    /** The file of a grid that has none yet: what the setup writes is set after it, the rest is the operator's. */
-    private static function template(string $path): string
-    {
-        return <<<INI
-        ;; Web side of the grid, read by opensim-helpers (through the engine).
-        ;; opensim setup writes grid_name, login_uri, web_url and [robust_db]; the rest is yours.
+        return <<<'INI'
+        ;; Helpers.ini: what opensim-helpers need and OpenSim.ini and Robust.ini have no place for, in the format of
+        ;; OpenSimulator. The settings that have an official place (the name of the grid, its addresses, the message of
+        ;; the day, the databases...) are read from OpenSim.ini and Robust.ini, do not copy them here. This file may hold
+        ;; any of them, in the same sections, for a web host that has no OpenSimulator, but what the other files say wins.
+        ;; Like every ini file of the grid, it may hold passwords: mode 640, group of the web server.
 
         [Helpers]
-        ;; Where the helpers are on the web site of the grid. Change it if your users, your viewers or your
-        ;; grid already use another one (e.g. /helper). The web server needs the same path (opensim web snippet).
-        path = "$path"
-        ;; mail_sender = "no-reply@example.org"
-        ;; The message of the day shown at login (motd.php, read by Robust when it starts; <USERNAME> is the avatar)
-        ;; motd = "Welcome to My Grid, <USERNAME>!"
-        ;; The destinations of the guide (guide.php): a file (looked for in this folder) or a URL of "Name|Region URL" lines,
-        ;; a name alone starts a category
-        ;; guide_source = "destinations.txt"
-        ;; events_url = "https://2do.directory/events"
-        ;; currency_provider = "gloebit"
-        ;; currency_use_moneyserver = false
-
-        [Urls]
-        ;; The URL of a service or a page, when it is not <path>/<script>.php: the helpers route it.
-        ;; welcome = "/welcome"
-        ;; search = "/search"
-        ;; guide = "/guide"
-        ;; motd = "/motd"
-        ;; currency = "/helper/currency.php"
-        ;; register = "/helper/register.php"
-        ;; offline = "/helper/offline.php"
-
-        [robust_db]
-        ;; The databases of the helpers are the one of Robust. Another one, for a service: a section
-        ;; [search_db], [currency_db], [offline_db] or [opensim_db] with hostname, prefix (the name of the
-        ;; database), user and password.
+        ;; The destinations of the guide: a file (looked for in this folder) or a URL, "Name|Region URL" lines, a name
+        ;; alone starts a category
+        ;; GuideSource = "destinations.txt"
+        ;; The registry of the search (parcels, hosts, events...): Robust's database unless it has its own
+        ;; SearchConnectionString = "Data Source=localhost;Database=ossearch;User ID=opensim;Password=*****;"
+        ;; HYPEvents, the calendar the events are read from
+        ;; HypEventsURL = "https://2do.directory/events"
+        ;; Whatever this folder holds (templates/, assets/) replaces the files of the helpers
+        ;; ThemePath = "theme"
+        ;; LogoURL = "https://example.org/logo.png"
+        ;; MailSender = "no-reply@example.org"
+        ;; The currency: the economy module of OpenSim.ini tells the provider and whether there is a money server
+        ;; CurrencyProvider = "podex"
+        ;; CurrencyScriptKey = "123456789"
+        ;; CurrencyRate = 4
+        ;; CurrencyRatePer = 1000
 
         INI;
     }

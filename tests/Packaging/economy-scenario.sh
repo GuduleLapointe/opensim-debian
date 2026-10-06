@@ -42,7 +42,7 @@ helper_url=https://localhost/helpers/currency.php
 script_key=
 
 ts "economy: the site of the helpers, a region with a money module, two avatars in it"
-cp -p $ini /tmp/helpers.ini.economy
+cp -p $ini /tmp/Helpers.ini.economy
 pkill -f 'php .*-S 127.0.0.1:809[0]' 2>/dev/null || true
 (cd /var/www/html && OPENSIM_GRID=testgrid PHP_CLI_SERVER_WORKERS=4 setsid -f php -S 127.0.0.1:8090 index.php >/tmp/php-economy.log 2>&1)
 wait_check 20 "the site of the helpers answers" "[ \"\$(curl -s -o /dev/null -w '%{http_code}' $helpers/motd.php)\" = 200 ]"
@@ -65,15 +65,15 @@ sql "DROP TABLE IF EXISTS transactions; DROP TABLE IF EXISTS balances;
 calls plain
 
 ts "economy: the settings of the grid"
-cfg currency_script_key "key-of-the-grid"
-cfg currency_rate 4
+cfg CurrencyScriptKey "key-of-the-grid"
+cfg CurrencyRate 4
 script_key=key-of-the-grid
 calls settings
 script_key=
-sed -i '/^currency_script_key/d;/^currency_rate /d' $ini
+sed -i '/^CurrencyScriptKey/d;/^CurrencyRate /d' $ini
 
 ts "economy: with a money server in the simulators"
-cfg currency_use_moneyserver true
+cfg CurrencyUseMoneyServer true
 sql "DROP TABLE transactions;
     CREATE TABLE transactions (UUID char(36), sender char(36), receiver char(36), amount int, objectUUID char(36), regionHandle bigint unsigned, type int, time int, secure char(36), status int, description varchar(255));
     CREATE TABLE balances (user char(36) PRIMARY KEY, balance int, status int);
@@ -86,14 +86,14 @@ stop_region
 calls moneyserver-down
 
 ts "economy: Gloebit"
-cfg currency_provider gloebit
+cfg CurrencyProvider gloebit
 calls gloebit
 
 ts "economy: Podex"
-cfg currency_provider podex
+cfg CurrencyProvider podex
 calls podex
 
 ts "economy: the grid is back as it was"
-cp -p /tmp/helpers.ini.economy $ini
+cp -p /tmp/Helpers.ini.economy $ini
 sql "DROP TABLE transactions; DROP TABLE balances; DELETE FROM regions WHERE uuid = '$home_region'; DELETE FROM Presence WHERE UserID IN ('$agent', '$friend'); DELETE FROM GridUser WHERE UserID IN ('$agent', '$friend')"
 pkill -f 'php .*-S 127.0.0.1:809[0]' 2>/dev/null || true

@@ -40,12 +40,26 @@ magiiic_repository() {
     apt-get update -qq
 }
 
-# An option of [Helpers] in the helpers.ini of the grid of the scenario, as it is written (no escape is read in the value)
-helpers_ini=/etc/opensim/grids/testgrid/helpers.ini
-cfg() { # option, value
+# A setting in an ini file of the grid of the scenario, as it is written (no escape is read in the value), in its section
+# (created with the key when it is not there)
+ini_set() { # file, section, key, value
     local tmp
     tmp=$(mktemp)
-    grep -v "^$1 *=" $helpers_ini | LINE="$1 = \"$2\"" awk '{ print } /^\[Helpers\]/ { print ENVIRON["LINE"] }' >"$tmp"
-    cat "$tmp" >$helpers_ini
+    SECTION=$2 KEY=$3 VALUE=$4 awk '
+        BEGIN { section = "[" ENVIRON["SECTION"] "]"; key = ENVIRON["KEY"]; line = key " = \"" ENVIRON["VALUE"] "\"" }
+        { sub(/\r$/, "") }
+        /^\[/ { if (inside && !done) { print line; done = 1 } inside = ($0 == section); if (inside) seen = 1 }
+        inside && $0 ~ ("^[ \t]*" key "[ \t]*=") { if (!done) { print line; done = 1 } next }
+        { print }
+        END { if (!done) { if (!seen) print section; print line } }
+    ' "$1" >"$tmp"
+    cat "$tmp" >"$1"
     rm -f "$tmp"
+}
+
+# A setting of [Helpers] in the Helpers.ini of the grid of the scenario: what has no official place
+helpers_ini=/etc/opensim/grids/testgrid/Helpers.ini
+robust_ini=/etc/opensim/grids/testgrid/Robust.HG.ini
+cfg() { # key, value
+    ini_set $helpers_ini Helpers "$1" "$2"
 }
