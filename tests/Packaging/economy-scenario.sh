@@ -3,7 +3,8 @@
 # the helpers (economy/economy-check.php makes the calls, as they do, and checks the answers and what the helpers wrote in the
 # database): with the economy of the helpers alone, with a money server in the simulators (economy/region-fake.php is the
 # simulator and its money module, the helpers call the region of the avatar), with the settings of the grid, and for the
-# providers that sell currency (Gloebit, Podex). The tables of the economy (balances, transactions) are made by the money server or the Gloebit module,
+# providers that sell currency (Gloebit, Podex): the helpers are on for any economy module but the beta one, and send the user to the
+# page of the provider when the region does not add the currency. The tables of the economy (balances, transactions) are made by the money server or the Gloebit module,
 # not by the helpers or the packages, so the test creates them. Sourced by package-scenario.sh (STOP_AFTER=economy stops the scenario after it),
 # in the test container.
 
@@ -43,8 +44,9 @@ script_key=
 
 ts "economy: the site of the helpers, a region with a money module, two avatars in it"
 cp -p $opensim_ini /tmp/OpenSim.ini.economy
-# The currency is what the economy module of OpenSim.ini says (Gloebit, BetaGridLikeMoneyModule). A money server, a rate and
-# a key have no setting yet: the test defines them as constants, before the helpers read the config
+# The currency is what the economy module of OpenSim.ini says (BetaGridLikeMoneyModule: nothing, Gloebit: the module of the region
+# is relayed to). The test defines as constants, before the helpers read the config, what has no setting: a money server for
+# another module, a rate, a key, Podex
 mode() { echo "$1" >/tmp/economy-constants.json; }
 mode '{}'
 pkill -f 'php .*-S 127.0.0.1:809[0]' 2>/dev/null || true
@@ -69,7 +71,7 @@ sql "DROP TABLE IF EXISTS transactions; DROP TABLE IF EXISTS balances;
 calls plain
 
 ts "economy: the key and the rate"
-mode '{"CURRENCY_SCRIPT_KEY": "key-of-the-grid", "CURRENCY_RATE": 4}'
+mode '{"CURRENCY_SCRIPT_KEY": "key-of-the-grid", "CURRENCY_RATE": 10}'
 script_key=key-of-the-grid
 calls settings
 script_key=
@@ -88,17 +90,20 @@ ts "economy: with a region that does not answer"
 stop_region
 calls moneyserver-down
 
-ts "economy: Gloebit, the module of the grid"
+ts "economy: Gloebit, the module of the grid (the helpers relay to its region, and send to its page when it refuses)"
 mode '{}'
 ini_set $opensim_ini Economy economymodule Gloebit
 ini_set $opensim_ini Gloebit GLBEnvironment production
+start_region
 calls gloebit
+stop_region
+calls gloebit-refused
 ini_set $opensim_ini Gloebit GLBEnvironment sandbox
 calls gloebit-sandbox
 
 ts "economy: Podex, which is not set up by the helpers"
 cp -p /tmp/OpenSim.ini.economy $opensim_ini
-mode '{"CURRENCY_PROVIDER": "podex"}'
+mode '{"CURRENCY_PROVIDER": "podex", "CURRENCY_USE_MONEYSERVER": true}'
 calls podex
 
 ts "economy: the grid is back as it was"

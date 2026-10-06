@@ -4,7 +4,7 @@
  * currency.php and landtool.php of the helpers: the same XML-RPC calls, with the keys they send, and the answers read the way
  * they read them. What the helpers wrote in the database is checked in the same run.
  *
- *   php economy-check.php GROUP URL      GROUP: plain, settings, moneyserver, moneyserver-down, gloebit, gloebit-sandbox, podex
+ *   php economy-check.php GROUP URL      GROUP: plain, settings, moneyserver, moneyserver-down, gloebit, gloebit-refused, gloebit-sandbox, podex
  *
  * URL is the path of the helpers on the web site. The avatars, the sessions and the regions are in the environment
  * (economy-scenario.sh sets them), the grid is the one of the database it gives. It prints one line per check, as the scenarios do,
@@ -79,8 +79,8 @@ switch ($group) {
     // The economy of the helpers alone: the balances are the transactions of the database, nothing asks a money server
     case 'plain':
         $answer = $quote($secure, 500);
-        check('quote: the viewer is told the cost, in cents, of the amount it asks, and the confirm value to send back', succeeded($answer) && ($answer['value']['currency']['estimatedCost'] ?? null) === 500 && ($answer['value']['currency']['currencyBuy'] ?? null) === 500 && ($answer['value']['confirm'] ?? '') === $confirm, substr($answer['raw'], 0, 300));
-        check('quote: the cost follows the rate of the grid', ($quote($secure, 1000)['value']['currency']['estimatedCost'] ?? null) === 1000);
+        check('quote: the viewer is told the cost, in cents, of the amount it asks, and the confirm value to send back', succeeded($answer) && ($answer['value']['currency']['estimatedCost'] ?? null) === 200 && ($answer['value']['currency']['currencyBuy'] ?? null) === 500 && ($answer['value']['confirm'] ?? '') === $confirm, substr($answer['raw'], 0, 300));
+        check('quote: the cost follows the default rate, 4 for 1000', ($quote($secure, 1000)['value']['currency']['estimatedCost'] ?? null) === 400);
         $answer = $quote('99999999-9999-4999-8999-999999999999', 500);
         check('quote: a wrong secure session is refused, with the page that tells why', refused($answer, 'Unable to Authenticate') && ($answer['value']['errorURI'] ?? '') === $helper_url, substr($answer['raw'], 0, 300));
         check('quote: so is something that is not a session', refused($quote('nothing', 500), 'Unable to Authenticate'));
@@ -130,7 +130,7 @@ switch ($group) {
         // Land: the viewer asks what the land costs, then buys the currency for it
         $prep = fn(string $session, int $amount) => call('landtool.php', 'preflightBuyLandPrep', ['agentId' => $GLOBALS['agent'], 'secureSessionId' => $session, 'currencyBuy' => $amount, 'billableArea' => 256]);
         $answer = $prep($secure, 500);
-        check('land preflight: the cost, the confirm value, no upgrade to propose', succeeded($answer) && ($answer['value']['currency']['estimatedCost'] ?? null) === 500 && ($answer['value']['confirm'] ?? '') === $confirm && ($answer['value']['membership']['upgrade'] ?? true) === false && ($answer['value']['landUse']['upgrade'] ?? true) === false, substr($answer['raw'], 0, 300));
+        check('land preflight: the cost, the confirm value, no upgrade to propose', succeeded($answer) && ($answer['value']['currency']['estimatedCost'] ?? null) === 200 && ($answer['value']['confirm'] ?? '') === $confirm && ($answer['value']['membership']['upgrade'] ?? true) === false && ($answer['value']['landUse']['upgrade'] ?? true) === false, substr($answer['raw'], 0, 300));
         check('land preflight: a wrong session is refused', refused($prep($none, 500), 'Unable to Authenticate'));
         $buyland = fn(string $session, int $amount, string $with) => call('landtool.php', 'buyLandPrep', ['agentId' => $GLOBALS['agent'], 'secureSessionId' => $session, 'currencyBuy' => $amount, 'estimatedCost' => 0, 'billableArea' => 256, 'confirm' => $with]);
         check('land: a wrong confirm value is refused', refused($buyland($secure, 100, 'wrong'), 'Confirm'));
@@ -145,7 +145,7 @@ switch ($group) {
     // With a money server in the simulators: the helpers write the transactions, and ask the region for the rest
     case 'moneyserver':
         $answer = $quote($secure, 500);
-        check('quote: the same as without a money server', succeeded($answer) && ($answer['value']['currency']['estimatedCost'] ?? null) === 500);
+        check('quote: the same as without a money server', succeeded($answer) && ($answer['value']['currency']['estimatedCost'] ?? null) === 200);
         check('balance: the avatar is asked to its region, which holds it', funds($agent, $secure) === 700, (string) funds($agent, $secure));
         check('balance: the region was asked with the sessions of the avatar', (region_calls('GetBalance')[0]['clientSecureSessionID'] ?? '') === $secure && (region_calls('GetBalance')[0]['clientSessionID'] ?? '') === $env('SESSION'), json_encode(region_calls('GetBalance')));
         $answer = $buy($secure, 300, $confirm);
@@ -166,7 +166,7 @@ switch ($group) {
     case 'settings':
         $answer = $quote($secure, 1000);
         check('settings: the confirm value is made with the key of the grid', succeeded($answer) && ($answer['value']['confirm'] ?? '') === $confirm && $confirm !== md5('1234567883789_127.0.0.1'), substr($answer['raw'], 0, 300));
-        check('settings: the cost follows the rate of the grid', ($answer['value']['currency']['estimatedCost'] ?? null) === 400, substr($answer['raw'], 0, 300));
+        check('settings: the rate of the module overrides the default (10 for 1000)', ($answer['value']['currency']['estimatedCost'] ?? null) === 1000, substr($answer['raw'], 0, 300));
         check('settings: the confirm value of the default key is no longer good', refused($buy($secure, 100, md5('1234567883789_127.0.0.1')), 'Confirm'));
         check('settings: the one of the grid is', succeeded($buy($secure, 100, $confirm)));
         break;
@@ -178,17 +178,24 @@ switch ($group) {
         check('balance: the avatar is told its balance is not available, not that it owns nothing', refused(call('currency.php', 'simulatorUserBalanceRequest', ['agentId' => $agent, 'secureSessionId' => $secure]), 'authenticate'));
         break;
 
-    // Gloebit sells fixed packs: the viewer is offered the one that covers what it asks for, and finishes on its page
+    // Gloebit sells fixed packs: the viewer is offered the one that covers what it asks for. The module of the grid is on the region,
+    // which the helpers ask first (the economy module of OpenSim.ini makes them relay to it)
     case 'gloebit':
         foreach ([[300, 199, 400], [400, 199, 400], [500, 499, 1050], [2000, 999, 2150], [50000, 4999, 11500]] as [$asked, $cost, $pack]) {
             $answer = $quote($secure, $asked);
             check("gloebit quote $asked: the pack of $pack, for $cost cents", succeeded($answer) && ($answer['value']['currency']['estimatedCost'] ?? null) === $cost && ($answer['value']['currency']['currencyBuy'] ?? null) === $pack, substr($answer['raw'], 0, 300));
         }
+        $answer = $buy($secure, 500, $confirm);
+        check('gloebit buy: the helpers ask the region, which adds the currency', succeeded($answer) && (region_calls('AddBankerMoney')[0]['amount'] ?? null) === 500, substr($answer['raw'], 0, 300));
+        break;
+
+    // The region does not add the currency (the Gloebit module does not, the user pays on its web site): the viewer is sent there
+    case 'gloebit-refused':
         $transactions = cell('SELECT COUNT(*) FROM transactions');
         $answer = $buy($secure, 500, $confirm);
-        check('gloebit buy: the currency is not added here, the viewer is sent to the Gloebit page, with where to come back', $answer['status'] === 200 && ($answer['value']['success'] ?? null) === false && str_starts_with((string) ($answer['value']['errorURI'] ?? ''), 'https://www.gloebit.com/purchase') && str_contains((string) ($answer['value']['errorURI'] ?? ''), "agentId=$agent") && stripos((string) ($answer['value']['errorMessage'] ?? ''), 'Gloebit') !== false, substr($answer['raw'], 0, 400));
+        check('gloebit buy: the viewer is sent to the Gloebit page, with where to come back', $answer['status'] === 200 && ($answer['value']['success'] ?? null) === false && str_starts_with((string) ($answer['value']['errorURI'] ?? ''), 'https://www.gloebit.com/purchase') && str_contains((string) ($answer['value']['errorURI'] ?? ''), "agentId=$agent") && stripos((string) ($answer['value']['errorMessage'] ?? ''), 'Gloebit') !== false, substr($answer['raw'], 0, 400));
         $answer = call('landtool.php', 'buyLandPrep', ['agentId' => $agent, 'secureSessionId' => $secure, 'currencyBuy' => 100, 'estimatedCost' => 0, 'billableArea' => 256, 'confirm' => $confirm]);
-        check('gloebit land: the same, nothing is added for the land either', ($answer['value']['success'] ?? null) === false && str_starts_with((string) ($answer['value']['errorURI'] ?? ''), 'https://www.gloebit.com/purchase'), substr($answer['raw'], 0, 400));
+        check('gloebit land: refused, with the help page of the helpers', ($answer['value']['success'] ?? null) === false && ($answer['value']['errorURI'] ?? '') === $helper_url, substr($answer['raw'], 0, 400));
         check('gloebit: no transaction was written', cell('SELECT COUNT(*) FROM transactions') === $transactions);
         break;
 
