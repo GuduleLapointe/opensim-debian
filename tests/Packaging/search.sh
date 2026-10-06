@@ -85,6 +85,14 @@ check "the register has not the simulator, its regions and its parcels are forgo
     [ \"\$(sql 'SELECT COUNT(*) FROM popularplaces')\" = 0 ] && [ \"\$(sql 'SELECT COUNT(*) FROM objects')\" = 0 ]"
 queries gone
 
+# A simulator that cannot be reached is counted, and asked again later, more and more late; after ten failures it is forgotten
+ts "search: a simulator that cannot be reached"
+register 9991 online
+wait_check 60 "it is counted as unreachable and asked again later, not at the next run" "[ \"\$(sql \"SELECT CONCAT(failcounter, '|', nextcheck > UNIX_TIMESTAMP() + 1000) FROM hostsregister WHERE port=9991\")\" = '1|1' ]"
+sql "UPDATE hostsregister SET failcounter = 10, nextcheck = 0, checked = 0 WHERE port = 9991"
+curl -s -m 60 -o /dev/null "$helpers/parser.php"
+wait_check 60 "after ten failures it is forgotten" "[ \"\$(sql \"SELECT COUNT(*) FROM hostsregister WHERE port=9991\")\" = 0 ]"
+
 # The simulator of the grid: its snapshot is what OpenSimulator writes, read by the same parser. It answers one request a
 # minute to an address (503 "try later" for the next ones): nothing asks for it before the parser. It registers with its
 # own address, the one of its regions (the address of the machine), which unregistering looks for
@@ -97,6 +105,26 @@ check "it is in the register, its regions are known with the owner of their esta
     [ \"\$(sql \"SELECT COUNT(DISTINCT owner) FROM $regions WHERE url LIKE '%:9000/' AND owner = 'Test Owner'\")\" = 1 ]"
 register 9000 offline "$own_host"
 check "it unregisters as well" "[ \"\$(sql \"SELECT COUNT(*) FROM hostsregister WHERE port=9000\")\" = 0 ] && [ \"\$(sql \"SELECT COUNT(*) FROM $regions WHERE url LIKE '%:9000/'\")\" = 0 ]"
+
+# The simulator registers by itself when it starts, to the services of its [DataSnapshot] (the one of the setup is on https://localhost,
+# which nothing serves here: another one is added, the one of this test), and tells the parcels shown in search (the flag
+# ShowDirectory, 4096, in its land table, read when it starts)
+ts "search: the simulator of the grid registers by itself, and tells a parcel shown in search"
+sim_ini=/etc/opensim/grids/testgrid/sims/testgrid_sim1.ini
+sed -i '/^DATA_SRV_Search/d' "$sim_ini" # (what a former run left)
+cp "$sim_ini" /tmp/sim1.ini.search
+sed -i "/^\[DataSnapshot\]/a DATA_SRV_Search = \"$helpers/register.php\"" "$sim_ini"
+mysql testgrid_sim1 -e "UPDATE land SET LandFlags = LandFlags | 4096 WHERE Name = 'Sim1'"
+opensim stop now testgrid_sim1 >/dev/null 2>&1
+opensim start testgrid_sim1 >/dev/null 2>&1
+wait_check 180 "it registers when it starts: its regions and its parcel shown in search are known" "[ \"\$(sql \"SELECT COUNT(*) FROM parcels WHERE parcelname='Sim1'\")\" = 1 ]"
+sim=$(sim_pid) # restarted: what the scenario compares it with later is this one
+check "it is in the register, its regions are known" "[ \"\$(sql \"SELECT COUNT(*) FROM hostsregister WHERE port=9000\")\" = 1 ] &&
+    [ \"\$(sql \"SELECT GROUP_CONCAT(regionname ORDER BY regionname) FROM $regions WHERE url LIKE '%:9000/'\")\" = Sim1,Sim1North ]"
+check "the simulator tells only the parcel that has the flag, its other parcel is not told" "[ \"\$(sql \"SELECT GROUP_CONCAT(parcelname) FROM allparcels\")\" = Sim1 ]"
+queries sim
+register 9000 offline "$own_host"
+cp /tmp/sim1.ini.search "$sim_ini"
 
 # The search of people is made by the core: it asks the user accounts service of Robust (the accounts of the list made by
 # opensim import are there)

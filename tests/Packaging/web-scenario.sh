@@ -12,7 +12,6 @@ systemctl start mariadb
 mysql -e "CREATE DATABASE testgrid_robust; CREATE USER opensim@localhost IDENTIFIED BY 'testpass';
     GRANT ALL ON testgrid_robust.* TO opensim@localhost;"
 (cd /var/lib/opensim && runuser -u opensim -- php /test/newgrid.php | tail -1)
-systemctl stop mariadb # the site does not need it, the machine has little memory
 check "the setup wrote the files for the three servers" "[ -s /etc/opensim/grids/testgrid/web/testgrid.caddyfile ] &&
     [ -s /etc/opensim/grids/testgrid/web/testgrid-nginx.conf ] && [ -s /etc/opensim/grids/testgrid/web/testgrid-apache.conf ]"
 apt_q install php-fpm
@@ -25,6 +24,9 @@ site() { # server, url of the site
     wait_check 30 "$1 answers" "curl -sk $url/ >/dev/null"
     check "$1: the home and the splash page show the grid" "curl -sk $url/ | grep -q Testgrid && curl -sk $url/welcome | grep -q Testgrid"
     check "$1: a helper answers under its prefix" "[ \"\$(curl -sk $url/helpers/motd.php)\" = 'Welcome to Testgrid, <USERNAME>!' ]"
+    # The scripts that need the database, behind each server: they keep it in global variables, which the router must leave them
+    check "$1: a search is answered, so the helpers reach their database" "curl -sk -d '<?xml version=\"1.0\"?><methodCall><methodName>dir_popular_query</methodName><params><param><value><struct><member><name>flags</name><value><string>117440512</string></value></member></struct></value></param></params></methodCall>' $url/helpers/query.php | grep -q '<name>success</name>'"
+    check "$1: a simulator that registers without its address is refused by the script, not by an error of the server" "[ \"\$(curl -sk -o /dev/null -w '%{http_code}' $url/helpers/register.php)\" = 400 ]"
     check "$1: an unknown URL is a 404 of the router" "[ \"\$(curl -sk -o /dev/null -w '%{http_code}' $url/nope)\" = 404 ] && curl -sk $url/nope | grep -q 'Not found'"
 }
 

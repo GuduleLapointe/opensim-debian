@@ -67,8 +67,8 @@
     - [ ] the system user to run the instances as is per profile, not only `SystemUser` of `[Defaults]`
     - [ ] the setup offers to register an install (the core menu), and no script assumes `/etc/opensim`, `/var/lib/opensim` or `/usr/share/opensim` (review, one fix per file, with a test)
 - [x] the search is tested on the grid of the package scenario (`STOP_AFTER=search tests/Packaging/run`): registering, the snapshot, places, popular places, land, events, classifieds, people, with the keys the module sends (`tests/Packaging/search.sh`)
-- [ ] a parcel of the real simulator shown in search (`ShowDirectory` = 4096 in `Flags` of its `land` table, the simulator has to tell it again), and the registration the simulator makes by itself when it starts: its URL is `https://localhost` in the test, which nothing serves
-- [ ] search: the parser counts a simulator that answers "try later" (503, one request a minute per address) as unreachable, and it asks again at each run (`nextcheck` is set to 0, not to the delay it computes): to decide
+- [x] the real simulator registers by itself when it starts and tells a parcel shown in search (`ShowDirectory`, read at start), which the places and the popular places give (`tests/Packaging/search.sh`)
+- [x] search: a simulator that cannot be reached, or answers "try later" (503: one request a minute per address), is asked again later, more and more late, and forgotten after ten failures (it was asked at every run)
 - [ ] add to the README of opensim-helpers (and of the engine) a short section on how to use them with the OpenSim kit
 - [ ] install instructions in the README of `lsl-ossl-zed` (rust, clone, `zed: install dev extension`, the prebuilt LSP binaries only cover Linux x86_64 and macOS)
 

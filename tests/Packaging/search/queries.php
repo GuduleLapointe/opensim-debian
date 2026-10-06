@@ -4,7 +4,7 @@
  * makes them to the web service of the grid (query.php of the helpers): the same XML-RPC calls, with the keys the module
  * sends (all strings, as the module sends them), and the answers read the way the module reads them.
  *
- *   php queries.php GROUP URL      GROUP: places, popular, land, events, classifieds, changed
+ *   php queries.php GROUP URL      GROUP: places, popular, land, events, classifieds, changed, gone, sim
  *
  * It prints one line per check, as the scenarios do, and exits with 1 when one failed. What the groups expect is what the
  * fixtures (collector-1.xml, collector-2.xml, seed.sql) put in the tables.
@@ -306,6 +306,19 @@ switch ($group) {
         check('changed: a region the simulator stopped telling stays until it unregisters', names(ask($places, ['text' => 'Lounge', 'flags' => MATURE])) === ['Mature Lounge']);
         break;
 
+    case 'sim':
+        // The parcel of the real simulator, as OpenSimulator tells it
+        $places = 'DirPlacesQuery/dir_places_query';
+        $answer = ask($places, ['text' => 'Sim1']);
+        shaped($places, $answer, 'the parcel of the simulator');
+        $row = rows($answer)[0] ?? [];
+        check('the parcel of the simulator: found by its name, with an info UUID the module can read, and its traffic', names($answer) === ['Sim1'] && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', (string) ($row['parcel_id'] ?? '')) === 1 && is_numeric($row['dwell'] ?? 'x'));
+        check('the parcel of the simulator: the other parcel of the grid is not found', names(ask($places, ['text' => 'Sim1North'])) === []);
+        $popular = ask('DirPopularQuery/dir_popular_query');
+        shaped('DirPopularQuery/dir_popular_query', $popular, 'the popular places');
+        check('the parcel of the simulator is a popular place, and nothing else of the simulator is', names($popular) === ['Sim1']);
+        break;
+
     case 'gone':
         // After the simulator unregistered
         $places = 'DirPlacesQuery/dir_places_query';
@@ -314,7 +327,7 @@ switch ($group) {
         break;
 
     default:
-        fwrite(STDERR, "usage: php queries.php places|popular|land|events|classifieds|changed|gone URL\n");
+        fwrite(STDERR, "usage: php queries.php places|popular|land|events|classifieds|changed|gone|sim URL\n");
         exit(2);
 }
 
