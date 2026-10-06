@@ -162,7 +162,7 @@ region() { # uuid, name, gatekeeper, parcels
     sql "INSERT INTO regionsregister (regionname, regionUUID, regionhandle, url, owner, owneruuid, gatekeeperURL) VALUES ('$2', '$1', '1', '$3', 'Owner', '$1', '$3')"
     local i
     for i in $(seq "$4"); do
-        sql "CREATE TEMPORARY TABLE p SELECT * FROM parcels_bak LIMIT 1; UPDATE p SET regionUUID = '$1', parcelUUID = UUID(); INSERT INTO parcels SELECT * FROM p"
+        sql "INSERT INTO parcels (parcelUUID, regionUUID, parcelname, landingpoint, description, searchcategory, build, script, public, gatekeeperURL) VALUES (UUID(), '$1', 'Parcel $i', '128/128/25', '', 'Any', 'true', 'true', 'true', '$3')"
     done
 }
 region aaaaaaaa-0000-4000-8000-000000000001 'Home' http://127.0.0.1:8002 2
