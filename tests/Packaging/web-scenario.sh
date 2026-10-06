@@ -12,11 +12,21 @@ systemctl start mariadb
 mysql -e "CREATE DATABASE testgrid_robust; CREATE USER opensim@localhost IDENTIFIED BY 'testpass';
     GRANT ALL ON testgrid_robust.* TO opensim@localhost;"
 (cd /var/lib/opensim && runuser -u opensim -- php /test/newgrid.php | tail -1)
+# The table of the offline messages, which Robust makes when it runs (it does not here)
+mysql testgrid_robust -e "CREATE TABLE IF NOT EXISTS im_offline (ID mediumint(9) NOT NULL AUTO_INCREMENT, PrincipalID char(36) NOT NULL DEFAULT '',
+    FromID char(36) NOT NULL DEFAULT '', Message text NOT NULL, TMStamp timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+    PRIMARY KEY (ID), KEY PrincipalID (PrincipalID), KEY FromID (FromID)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3"
 check "the setup wrote the files for the three servers" "[ -s /etc/opensim/grids/testgrid/web/testgrid.caddyfile ] &&
     [ -s /etc/opensim/grids/testgrid/web/testgrid-nginx.conf ] && [ -s /etc/opensim/grids/testgrid/web/testgrid-apache.conf ]"
 apt_q install php-fpm
 systemctl start php8.2-fpm
 check "PHP-FPM listens where the files say" "[ -S /run/php/php-fpm.sock ]"
+
+# What the offline message module of a simulator asks, at the URL it is given (.../helpers/offline.php) plus the method
+OFFLINE_IM='<?xml version="1.0"?><GridInstantMessage><fromAgentID>aaaaaaaa-0000-4000-8000-000000000001</fromAgentID><fromAgentName>Alice</fromAgentName><toAgentID>bbbbbbbb-0000-4000-8000-000000000001</toAgentID><dialog>0</dialog><fromGroup>false</fromGroup><message>Hello behind the server</message><imSessionID>00000000-0000-0000-0000-000000000000</imSessionID><offline>0</offline><Position><X>0</X><Y>0</Y><Z>0</Z></Position><binaryBucket>AA==</binaryBucket><ParentEstateID>0</ParentEstateID><RegionID>00000000-0000-0000-0000-000000000000</RegionID><timestamp>1</timestamp></GridInstantMessage>'
+OFFLINE_GET='<?xml version="1.0"?><UUID><Guid>bbbbbbbb-0000-4000-8000-000000000001</Guid></UUID>'
+offline_save() { curl -sk -d "$OFFLINE_IM" "$1/helpers/offline.php/SaveMessage/"; }
+offline_get() { curl -sk -d "$OFFLINE_GET" "$1/helpers/offline.php/RetrieveMessages/"; }
 
 # What a visitor and a viewer ask, at the site of the grid: the pages, a helper under its prefix, an unknown URL
 site() { # server, url of the site
@@ -27,6 +37,7 @@ site() { # server, url of the site
     # The scripts that need the database, behind each server: they keep it in global variables, which the router must leave them
     check "$1: a search is answered, so the helpers reach their database" "curl -sk -d '<?xml version=\"1.0\"?><methodCall><methodName>dir_popular_query</methodName><params><param><value><struct><member><name>flags</name><value><string>117440512</string></value></member></struct></value></param></params></methodCall>' $url/helpers/query.php | grep -q '<name>success</name>'"
     check "$1: a simulator that registers without its address is refused by the script, not by an error of the server" "[ \"\$(curl -sk -o /dev/null -w '%{http_code}' $url/helpers/register.php)\" = 400 ]"
+    check "$1: the offline messages of the module are stored at its URL, and given back" "offline_save $url | grep -q '<boolean>true</boolean>' && offline_get $url | grep -q 'Hello behind the server'"
     check "$1: an unknown URL is a 404 of the router" "[ \"\$(curl -sk -o /dev/null -w '%{http_code}' $url/nope)\" = 404 ] && curl -sk $url/nope | grep -q 'Not found'"
 }
 

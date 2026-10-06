@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Stands for sendmail (sendmail_path of the web server of the test): keeps each mail it is given in /tmp/mails
+mkdir -p /tmp/mails
+cat >"/tmp/mails/$(date +%s%N).eml"

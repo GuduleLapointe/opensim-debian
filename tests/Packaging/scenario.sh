@@ -269,6 +269,11 @@ rm -f users-result-*.csv /tmp/users-result-*.csv
 source /test/search.sh
 [[ ${STOP_AFTER:-} != search ]] || { ts "done after the search: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"; exit $FAILED; }
 
+# The offline messages, on the same grid
+source /test/offline.sh
+[[ ${STOP_AFTER:-} != offline ]] || { ts "done after the offline messages: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"; exit $FAILED; }
+
+
 # A region that exists is changed in place: its place, not its identity
 regionfile=/etc/opensim/grids/testgrid/sims/testgrid_sim1/regions/Sim1North.ini
 regionuuid=$(grep -m1 '^RegionUUID' $regionfile)
