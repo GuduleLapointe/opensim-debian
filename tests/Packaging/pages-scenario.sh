@@ -118,7 +118,7 @@ cp -p /tmp/Helpers.ini.pages $helpers_ini
 
 ts "pages: the images of text"
 # Imagick is only suggested by the package: a server without it says so, then it is installed (once, in a container kept)
-php -m | grep -qi imagick || check "textgen: a server without Imagick says it, it does not fail" "[ \"\$(status \"$helpers/textgen.php?string=Hello\")\" = 501 ]"
+php -m | grep -qi imagick || check "textgen: a server without Imagick says it (bad configuration, 503), it does not fail" "[ \"\$(status \"$helpers/textgen.php?string=Hello\")\" = 503 ]"
 apt_q install php-imagick
 check "php-imagick is installed" "php -m | grep -qi imagick"
 start_helpers
@@ -210,9 +210,9 @@ check "health: the login address is there, and answers with its code" "grep -qE 
 check "health: the addresses are links" "get -A '$firefox' $site/health | grep -q '<a href=\"http://localhost:8002'"
 check "health: an address that nothing serves gives the code of the error, not a word" "grep -qE '^\\[GridInfoService\\]\\|economy\\|https://localhost[^|]*\\|cURL error [0-9]+\\|error' /tmp/health.txt"
 check "health: the key of the currency is there, said defined, never shown" "grep -q '^\\[MoneyServer\\]|MoneyScriptAccessKey||defined|ok$' /tmp/health.txt && ! grep -qE '[0-9a-f]{32}' /tmp/health.txt"
-check "the profile without a name is a bad request" "[ \"\$(status $site/profile)\" = 400 ]"
+check "the profile without a name is not a page: a teapot" "[ \"\$(status $site/profile)\" = 418 ]"
 check "health: an address that is not defined is there too, empty" "grep -E '\\|not defined\\|none$' /tmp/health.txt | grep -q ."
-check "health: the services of the helpers are there, with their address" "grep -q '^\\[Search\\]|SearchURL|https://localhost/helpers/query.php|' /tmp/health.txt && grep -q '|currency.php|https://localhost/' /tmp/health.txt"
+check "health: the services of the helpers are there, with their address" "grep -qE 'query.php\\|https://localhost/helpers/query.php\\||SearchURL\\|https://localhost/helpers/query.php' /tmp/health.txt && grep -q '|currency.php|https://localhost/' /tmp/health.txt"
 check "health: the database of Robust, named as in its section" "grep -q '^\\[DatabaseService\\]|ConnectionString||ok|ok$' /tmp/health.txt"
 check "health: the guide has no source yet, and says so" "grep -q '^\\[Helpers\\]|GuideSource||not defined|none$' /tmp/health.txt"
 # Every address of [GridInfoService] is there, the ones the helpers do not serve too, with the answer where it leads
@@ -223,12 +223,34 @@ rm -rf /tmp/opensim-helpers-cache
 health_json >/tmp/health-more.txt
 check "health: an address of [GridInfoService] the helpers know nothing about is there, with its code" "grep -q '^\\[GridInfoService\\]|partner|$site/helpers/guide.php|200|ok' /tmp/health-more.txt && grep -q '^\\[GridInfoService\\]|elsewhere|$site/nothing-here|404|error' /tmp/health-more.txt"
 check "health: the profile is asked with the name of the owner of the grid, not the one of its services, and without any name" "grep -qE '^\\[GridInfoService\\]\\|web_profile_url\\|[^|]*/profile/Test\\.Owner\\|' /tmp/health-more.txt && grep -qE '^\\[GridInfoService\\]\\|web_profile_url\\|[^|]*/profile\\|' /tmp/health-more.txt && ! grep -q 'GRID.SERVICES' /tmp/health-more.txt"
-check "the address of the helpers itself answers with a public page of its own, what is under it that is not known does not" "[ \"\$(status $site/helpers)\" = 200 ] && ! get $site/helpers | grep -q health-table && get $site/helpers | grep -q 'OpenSimulator helpers' && [ \"\$(status $site/helpers/nothing)\" = 404 ]"
+check "the address of the helpers itself is not a page, a teapot, and what is under it that is not known is not found" "[ \"\$(status $site/helpers)\" = 418 ] && [ \"\$(status $site/helpers/)\" = 418 ] && [ \"\$(status $site/helpers/nothing)\" = 404 ]"
+check "a page called with another method than GET is refused, with the methods it answers" "[ \"\$(status -X POST $site/welcome)\" = 405 ] && curl -s -o /dev/null -D - -X POST $site/welcome | grep -qi '^allow: GET, HEAD'"
 cp -p /tmp/Robust.HG.ini.pages /etc/opensim/grids/testgrid/Robust.HG.ini
 cfg GuideSource /tmp/guide/destinations.txt
 rm -rf /tmp/opensim-helpers-cache
 check "health: the guide source, once the grid gives one" "health_json | grep -q '^\\[Helpers\\]|GuideSource||ok|ok$'"
 cp -p /tmp/Helpers.ini.pages $helpers_ini
+rm -rf /tmp/opensim-helpers-cache
+
+ts "pages: the services refuse what is not a call, with the code that says why"
+: >/tmp/php-pages.log
+post() { curl -s -o /dev/null -m 60 -w '%{http_code}' -X POST "$@"; }
+check "services: the ones called by XML-RPC refuse the wrong method, and say which one is right" "[ \"\$(status $helpers/query.php)\" = 405 ] && [ \"\$(status $helpers/offline.php)\" = 405 ] && [ \"\$(status $helpers/currency.php)\" = 405 ] && [ \"\$(status $helpers/landtool.php)\" = 405 ] && curl -s -o /dev/null -D - $helpers/query.php | grep -qi '^allow: POST'"
+check "services: and an empty request is a bad request" "[ \"\$(post $helpers/query.php)\" = 400 ] && [ \"\$(post $helpers/offline.php/SaveMessage/)\" = 400 ] && [ \"\$(post $helpers/currency.php)\" = 400 ] && [ \"\$(post $helpers/landtool.php)\" = 400 ]"
+check "services: the registration of a simulator without its host and port is a bad request, with an unknown service too" "[ \"\$(status $helpers/register.php)\" = 400 ] && [ \"\$(status '$helpers/register.php?host=127.0.0.1&port=9000&service=nothing')\" = 400 ]"
+check "services: an unknown method of the offline messages is not found" "[ \"\$(echo '<a/>' | curl -s -o /dev/null -m 60 -w '%{http_code}' -X POST --data-binary @- $helpers/offline.php/Nothing/)\" = 404 ]"
+check "services: nothing answers with a 500 for what is only a wrong call" "! grep -q '\\[500\\]' /tmp/php-pages.log"
+# The same, as the health page tells it: a refusal is what is expected of a service called the wrong way, in green
+cp -p /etc/opensim/grids/testgrid/OpenSim.ini /tmp/OpenSim.ini.pages
+ini_set /etc/opensim/grids/testgrid/OpenSim.ini Search SearchURL "$helpers/query.php"
+ini_set /etc/opensim/grids/testgrid/OpenSim.ini Messaging OfflineMessageURL "$helpers/offline.php"
+ini_set /etc/opensim/grids/testgrid/OpenSim.ini DataSnapshot DATA_SRV_test "$helpers/register.php"
+rm -rf /tmp/opensim-helpers-cache
+health_json >/tmp/health-api.txt
+check "health: a service called with the wrong method must refuse (green), and answer a call that makes sense" "grep -q '^\\[Search\\]|SearchURL|$helpers/query.php|405|ok' /tmp/health-api.txt && grep -q '^\\[Search\\]|SearchURL|$helpers/query.php|200|ok' /tmp/health-api.txt"
+check "health: an address that wants a call is refused when asked bare, and that is green" "grep -q '^\\[Messaging\\]|OfflineMessageURL|$helpers/offline.php|405|ok' /tmp/health-api.txt && grep -q '^\\[DataSnapshot\\]|DATA_SRV_test|$helpers/register.php|400|ok' /tmp/health-api.txt"
+check "health: the currency and the land services are checked the two ways" "[ \"\$(grep -c '|currency.php|' /tmp/health-api.txt)\" = 2 ] && [ \"\$(grep -c '|landtool.php|' /tmp/health-api.txt)\" = 2 ]"
+cp -p /tmp/OpenSim.ini.pages /etc/opensim/grids/testgrid/OpenSim.ini
 rm -rf /tmp/opensim-helpers-cache
 
 ts "pages: the directory"
