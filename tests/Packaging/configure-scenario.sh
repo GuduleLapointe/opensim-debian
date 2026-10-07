@@ -12,7 +12,8 @@ ts "configure: the settings of the operator and the key of the grid before"
 cp -p $robust /tmp/Robust.HG.ini.configure
 printf '\n[Custom]\n    KeepMe = robust\n' >>$robust
 ini_set $robust LoginService WelcomeMessage '"Hello, <USERNAME>, from the operator"'
-# The web search given to one of the two settings that say it
+# The web search given to one of the two settings that say it (the grid made before had it in both)
+sed -i '/^[[:space:]]*SearchURL[[:space:]]*=/d' $robust
 ini_set $robust GridInfoService search 'https://play.example.org/search'
 key=$(grep -m1 '^MoneyScriptAccessKey' $grid/MoneyServer.ini)
 printf '\n[Custom]\nKeepMe = money\n' >>$grid/MoneyServer.ini
