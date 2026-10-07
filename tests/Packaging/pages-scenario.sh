@@ -54,7 +54,12 @@ check "assets: nothing outside them" "[ \"\$(status --path-as-is \"$helpers/asse
 members=$(sql "SELECT COUNT(*) FROM UserAccounts WHERE active = 1")
 regions=$(sql "SELECT COUNT(*) FROM regions")
 check "grid-status block: the numbers of the database, as a fragment to embed" "block=\$(get '$helpers/blocks/grid-status?title=Status' | tr -d '\n'); echo \"\$block\" | grep -q '<h3 class=\"block-title\">Status</h3>' && echo \"\$block\" | grep -qE '<th scope=\"row\">Members</th>[[:space:]]*<td>$members</td>' && echo \"\$block\" | grep -qE '<th scope=\"row\">Regions</th>[[:space:]]*<td>$regions</td>'"
-check "grid-status block: online when Robust answers" "get '$helpers/blocks/grid-status' | tr -d '\n' | grep -qE '<th scope=\"row\">Status</th>[[:space:]]*<td>Online</td>'"
+check "grid-status block: online when Robust answers" "get '$helpers/blocks/grid-status' | tr -d '\n' | grep -qE '<th scope=\"row\">Status</th>[[:space:]]*<td>ONLINE</td>'"
+check "grid_status: the state of the grid, as a page for the viewers (ONLINE, the keyword they read), at its default address" "[ \"\$(status $helpers/grid_status)\" = 200 ] && get -A '$firestorm' $helpers/grid_status | grep -q 'ONLINE' && ! get -A '$firestorm' $helpers/grid_status | grep -q 'class=\"topbar\"'"
+check "grid_info: what the grid is, a page of the same kind" "[ \"\$(status $helpers/grid_info)\" = 200 ] && get -A '$firestorm' $helpers/grid_info | grep -q 'Testgrid'"
+cfg GridStatusURL "$site/status"
+check "grid_status: where Helpers.ini puts it, and no longer at the default address" "[ \"\$(status $site/status)\" = 200 ] && [ \"\$(status $helpers/grid_status)\" = 404 ]"
+cp -p /tmp/Helpers.ini.pages $helpers_ini
 check "grid-status block: its data, for an application that makes its own page" "[ \"\$(get '$helpers/blocks/grid-status?format=json&title=' | php -r 'echo json_decode(stream_get_contents(STDIN), true)[\"rows\"][1][\"value\"];')\" = \"$members\" ]"
 check "grid-status block: without the visitors of other grids when asked" "! get '$helpers/blocks/grid-status?hypergrid=0' | grep -q 'Active users' && get '$helpers/blocks/grid-status' | grep -q 'Active users'"
 check "grid-info block: the name of the grid and the link to log in" "get '$helpers/blocks/grid-info' | grep -q 'Testgrid' && get '$helpers/blocks/grid-info' | grep -q 'href=\"hop://localhost:8002\"'"
@@ -217,6 +222,7 @@ check "health: an address that is not defined is there too, empty" "grep -E '\\|
 check "health: the services of the helpers are there, with their address" "grep -qE 'query.php\\|https://localhost/helpers/query.php\\||SearchURL\\|https://localhost/helpers/query.php' /tmp/health.txt && grep -q '|currency.php|https://localhost/' /tmp/health.txt"
 check "health: the database of Robust, named as in its section" "grep -q '^\\[DatabaseService\\]|ConnectionString||OK|ok$' /tmp/health.txt"
 check "health: the guide has no source yet, and says so" "grep -q '^\\[Helpers\\]|GuideSource|||none$' /tmp/health.txt"
+check "health: the public pages of the grid are there, as the settings of Helpers.ini name them" "grep -q '^\\[Helpers\\]|GridInfoURL|https://localhost/helpers/grid_info|' /tmp/health.txt && grep -q '^\\[Helpers\\]|GridStatusURL|https://localhost/helpers/grid_status|' /tmp/health.txt"
 # Every address of [GridInfoService] is there, the ones the helpers do not serve too, with the answer where it leads
 cp -p /etc/opensim/grids/testgrid/Robust.HG.ini /tmp/Robust.HG.ini.pages
 ini_set /etc/opensim/grids/testgrid/Robust.HG.ini GridInfoService partner "$site/helpers/guide.php"
@@ -224,7 +230,7 @@ ini_set /etc/opensim/grids/testgrid/Robust.HG.ini GridInfoService elsewhere "$si
 rm -rf /tmp/opensim-helpers-cache
 health_json >/tmp/health-more.txt
 check "health: a setting of the config the grid does not say yet (a restart not done) is an error, with what the grid says" "grep -q '^\\[GridInfoService\\]|partner|$site/helpers/guide.php|differs|error' /tmp/health-more.txt && grep -q '^\\[GridInfoService\\]|elsewhere|$site/nothing-here|differs|error' /tmp/health-more.txt"
-check "health: the profile is asked with the name of the owner of the grid, not the one of its services, and without any name" "grep -qE '^\\|web_profile_url\\|[^|]*/profile/Test\\.Owner\\|' /tmp/health-more.txt && grep -qE '^\\|web_profile_url\\|[^|]*/profile\\|' /tmp/health-more.txt && ! grep -q 'GRID.SERVICES' /tmp/health-more.txt"
+check "health: what the grid says has the profile without a name only, the one with the name of the owner of the grid (not of its services) is in the config" "grep -qE '^\\|web_profile_url\\|[^|]*/profile\\|' /tmp/health-more.txt && ! grep -qE '^\\|web_profile_url\\|[^|]*/profile/' /tmp/health-more.txt && grep -qE '^\\[GridInfoService\\]\\|web_profile_url\\|[^|]*/profile/Test\\.Owner\\|' /tmp/health-more.txt && ! grep -q 'GRID.SERVICES' /tmp/health-more.txt"
 check "the address of the helpers itself is not a page, a teapot, and what is under it that is not known is not found" "[ \"\$(status $site/helpers)\" = 418 ] && [ \"\$(status $site/helpers/)\" = 418 ] && [ \"\$(status $site/helpers/nothing)\" = 404 ]"
 check "a page called with another method than GET is refused, with the methods it answers" "[ \"\$(status -X POST $site/welcome)\" = 405 ] && curl -s -o /dev/null -D - -X POST $site/welcome | grep -qi '^allow: GET, HEAD'"
 cp -p /tmp/Robust.HG.ini.pages /etc/opensim/grids/testgrid/Robust.HG.ini
