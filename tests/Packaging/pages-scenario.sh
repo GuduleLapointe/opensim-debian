@@ -200,6 +200,9 @@ check "routes: a service the grid sends to another site has no ghost on this one
 ini_set /etc/opensim/grids/testgrid/OpenSim.ini Search SearchURL https://localhost/v3/query
 check "routes: a service the grid puts elsewhere on this site is there, and only there" "[ \"\$(status $site/v3/query)\" != 404 ] && [ \"\$(status $helpers/query.php)\" = 404 ]"
 cp -p /tmp/OpenSim.ini.pages /etc/opensim/grids/testgrid/OpenSim.ini
+ini_set /etc/opensim/grids/testgrid/OpenSim.ini DataSnapshot DATA_SRV_Mistake "$helpers/query.php"
+check "routes: a registration that points to query.php does not take the place of the search, which is still there, and the registration is served at its default address" "[ \"\$(status $helpers/query.php)\" = 405 ] && [ \"\$(status $helpers/register.php)\" = 400 ]"
+cp -p /tmp/OpenSim.ini.pages /etc/opensim/grids/testgrid/OpenSim.ini
 check "routes: without a word of the grid a service is at its default address" "[ \"\$(status $helpers/query.php)\" != 404 ]"
 
 ts "pages: the health page"
