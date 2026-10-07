@@ -13,7 +13,7 @@ cp -p $robust /tmp/Robust.HG.ini.configure
 printf '\n[Custom]\n    KeepMe = robust\n' >>$robust
 ini_set $robust LoginService WelcomeMessage '"Hello, <USERNAME>, from the operator"'
 # The web search given to one of the two settings that say it
-ini_set $robust GridInfoService search '"https://play.example.org/search"'
+ini_set $robust GridInfoService search 'https://play.example.org/search'
 key=$(grep -m1 '^MoneyScriptAccessKey' $grid/MoneyServer.ini)
 printf '\n[Custom]\nKeepMe = money\n' >>$grid/MoneyServer.ini
 # Edited as root here, the files stay the ones of the system user

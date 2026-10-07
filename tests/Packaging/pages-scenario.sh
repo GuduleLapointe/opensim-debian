@@ -260,7 +260,7 @@ check "health: the offline messages and the registration the same, each in its s
 check "health: the currency and the land services are checked twice each" "[ \"\$(grep -c '|currency.php|' /tmp/health-api.txt)\" = 2 ] && [ \"\$(grep -c '|landtool.php|' /tmp/health-api.txt)\" = 2 ]"
 health_files >/tmp/health-files.txt
 check "health: what the grid says first, then the files of the config" "head -1 /tmp/health-files.txt | grep -q '^get_grid_info||login|' && grep -q '^Robust.HG.ini|\\[GridInfoService\\]|' /tmp/health-files.txt && grep -q '^OpenSim.ini|\\[Search\\]|' /tmp/health-files.txt && grep -q '^MoneyServer.ini|\\[MoneyServer\\]|' /tmp/health-files.txt && grep -q '^Robust.HG.ini|\\[DatabaseService\\]|' /tmp/health-files.txt"
-check "health: the two SearchURL each in its own section: the web search of Robust, the calls of the API of OpenSim" "grep -q '^Robust.HG.ini|\\[GridInfoService\\]|SearchURL|Web search$' /tmp/health-files.txt && grep -q '^OpenSim.ini|\\[Search\\]|SearchURL|without data$' /tmp/health-files.txt && grep -q '^OpenSim.ini|\\[Search\\]|SearchURL|with valid XMLRPC request$' /tmp/health-files.txt"
+check "health: the web search where each setting says it (search of the grid info, SearchURL of the login service), apart from the calls of the API of OpenSim" "grep -q '^Robust.HG.ini|\\[GridInfoService\\]|search|Web search$' /tmp/health-files.txt && grep -q '^Robust.HG.ini|\\[LoginService\\]|SearchURL|Web search$' /tmp/health-files.txt && grep -q '^OpenSim.ini|\\[Search\\]|SearchURL|without data$' /tmp/health-files.txt && grep -q '^OpenSim.ini|\\[Search\\]|SearchURL|with valid XMLRPC request$' /tmp/health-files.txt"
 cp -p /tmp/OpenSim.ini.pages /etc/opensim/grids/testgrid/OpenSim.ini
 rm -rf /tmp/opensim-helpers-cache
 
