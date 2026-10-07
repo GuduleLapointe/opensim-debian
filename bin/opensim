@@ -140,9 +140,18 @@ if [ "${1:-}" = "enable" ] || [ "${1:-}" = "disable" ]; then
 	exec php "$BASEDIR/libexec/toggle.php" "$@"
 fi
 
+# The setup runs as the person who started it, who cannot read nor write the files of the grids (they are for the system user,
+# mode 640): it asks that user for them, with sudo. Say so before the questions, not after the answers.
+setupNeedsSystemUser() {
+	[ -n "$SystemUser" ] && [ "$(id -un)" != "$SystemUser" ] && [ "$(id -u)" != 0 ] || return 0
+	sudo -u "$SystemUser" true 2>/dev/null ||
+		end 1 "the setup needs sudo to read and write the files of the grids, which belong to $SystemUser: run it with sudo, or as a user allowed to run commands as $SystemUser"
+}
+
 # The setup wizard
 if [ "${1:-}" = "setup" ]; then
 	shift
+	setupNeedsSystemUser
 	exec php "$BASEDIR/install/install.php" "$@"
 fi
 
