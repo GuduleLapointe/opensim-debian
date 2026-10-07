@@ -81,7 +81,7 @@ describe('opensim enable <grid> search', function () {
         expect($status)
             ->toBe(0)
             ->and($output)
-            ->toContain('search enabled for alpha: 2 simulators changed, restart to apply: opensim restart alpha_one alpha_two')
+            ->toContain('search enabled for alpha: 2 simulators and Robust changed, restart to apply: opensim restart alpha alpha_one alpha_two')
             ->and(features_sim($grid, 'alpha_one'))
             ->toContain("[Search]\nModule = OpenSimSearch\nSearchURL = \"https://play.example.org/helpers/query.php\"")
             ->toContain('index_sims = true')
@@ -141,6 +141,71 @@ describe('opensim enable <grid> search', function () {
     });
 });
 
+describe('The web search and the profile page of a grid, with the in-world search and the profiles', function () {
+    test('gives Robust the page of the web search at the address of the helpers, to both settings that say it', function () {
+        [$home, $grid] = features_tree();
+
+        features_run(['enable', 'alpha', 'search'], $home);
+        $robust = (string) file_get_contents("$grid/Robust.HG.ini");
+
+        expect($robust)
+            ->toContain("[GridInfoService]\ngridname = \"Alpha World\"\nsearch = \"\${Const|WebURL}/search\"")
+            ->toContain('SearchURL = "${Const|WebURL}/search"');
+    });
+
+    test('gives to one of the two the address of the other, and keeps two that differ', function () {
+        [$home, $grid] = features_tree();
+        file_put_contents("$grid/Robust.HG.ini", (string) file_get_contents("$grid/Robust.HG.ini") . "[LoginService]\nSearchURL = \"https://play.example.org/find\"\n");
+
+        features_run(['enable', 'alpha', 'search'], $home);
+        $robust = (string) file_get_contents("$grid/Robust.HG.ini");
+
+        expect($robust)->toContain('search = "https://play.example.org/find"');
+
+        // Two addresses are the operator's
+        file_put_contents("$grid/Robust.HG.ini", str_replace('search = "https://play.example.org/find"', 'search = "https://play.example.org/other"', $robust));
+        features_run(['enable', 'alpha', 'search'], $home);
+
+        expect((string) file_get_contents("$grid/Robust.HG.ini"))->toContain('search = "https://play.example.org/other"')->toContain('SearchURL = "https://play.example.org/find"');
+    });
+
+    test('is taken out with the search, and put back', function () {
+        [$home, $grid] = features_tree();
+        features_run(['enable', 'alpha', 'search'], $home);
+
+        features_run(['disable', 'alpha', 'search'], $home);
+        $off = (string) file_get_contents("$grid/Robust.HG.ini");
+        features_run(['enable', 'alpha', 'search'], $home);
+
+        expect($off)
+            ->not->toMatch('/^\s*search\s*=/m')
+            ->toContain(';search = "${Const|WebURL}/search"')
+            ->and((string) file_get_contents("$grid/Robust.HG.ini"))
+            ->toMatch('/^search = "\$\{Const\|WebURL\}\/search"$/m');
+    });
+
+    test('leaves the web search of a grid that sent its search elsewhere as it is', function () {
+        [$home, $grid] = features_tree();
+
+        features_run(['enable', 'alpha', 'search', 'https://search.example.net/h'], $home);
+
+        expect((string) file_get_contents("$grid/Robust.HG.ini"))->not->toContain('search = ')->not->toContain('SearchURL');
+    });
+
+    test('gives Robust the page of the profiles with the profile service, and keeps the one the grid has', function () {
+        [$home, $grid] = features_tree();
+
+        features_run(['enable', 'alpha', 'profiles'], $home);
+
+        expect((string) file_get_contents("$grid/Robust.HG.ini"))->toContain('web_profile_url = "${Const|WebURL}/profile/[AGENT_NAME]"');
+
+        file_put_contents("$grid/Robust.HG.ini", str_replace('${Const|WebURL}/profile/[AGENT_NAME]', 'https://profiles.example.net/[AGENT_NAME]', (string) file_get_contents("$grid/Robust.HG.ini")));
+        features_run(['enable', 'alpha', 'profiles'], $home);
+
+        expect((string) file_get_contents("$grid/Robust.HG.ini"))->toContain('web_profile_url = "https://profiles.example.net/[AGENT_NAME]"');
+    });
+});
+
 describe('opensim disable <grid> search', function () {
     test('takes the search of the grid out of the simulators, and keeps the registration to another directory', function () {
         [$home, $grid] = features_tree();
@@ -151,7 +216,7 @@ describe('opensim disable <grid> search', function () {
         expect($status)
             ->toBe(0)
             ->and($output)
-            ->toContain('search disabled for alpha: 2 simulators changed')
+            ->toContain('search disabled for alpha: 2 simulators and Robust changed')
             // Commented out, with the value it had, not erased
             ->and(features_sim($grid, 'alpha_one'))
             ->not->toMatch('/^\s*SearchURL\s*=/m')
@@ -290,7 +355,7 @@ describe('opensim enable|disable <grid> and the OpenSim.ini of the grid', functi
         expect($status)
             ->toBe(0)
             ->and($output)
-            ->toContain('search enabled for alpha: 2 simulators and the OpenSim.ini of the grid changed, restart to apply: opensim restart alpha_one alpha_two')
+            ->toContain('search enabled for alpha: 2 simulators, Robust and the OpenSim.ini of the grid changed, restart to apply: opensim restart alpha alpha_one alpha_two')
             ->and($general)
             ->toContain('DATA_SRV_Alpha = "https://play.example.org/helpers/register.php"')
             ->not->toContain('query.php')

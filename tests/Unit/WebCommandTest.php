@@ -135,9 +135,9 @@ describe('Robust config with the helpers', function () {
         $ini = web_robust($plan);
 
         // The economy is the path of the helpers, the viewer adds the script; the search of the simulators (SearchURL of
-        // OpenSim.ini) is not a setting of Robust, whose SearchURL is a web page
+        // OpenSim.ini) is not a setting of Robust, whose `search` and SearchURL are the web page of the search
         expect($ini)->toContain('economy = "${Const|WebURL}/helper"');
-        expect($ini)->not->toContain('SearchURL = ');
+        expect($ini)->toContain('search = "${Const|WebURL}/search"')->toContain('SearchURL = "${Const|WebURL}/search"');
         // The guide and the message of the day are the helpers' too; the message has a text when they cannot be reached
         expect($ini)->toContain('DestinationGuide = "${Const|WebURL}/helper/guide.php"');
         expect($ini)->toContain('MessageUrl = "${Const|WebURL}/helper/motd.php"');

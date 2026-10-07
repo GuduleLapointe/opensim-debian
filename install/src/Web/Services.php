@@ -29,7 +29,7 @@ final class Services
     ];
 
     /** The pages of the helpers and their default path: the home page, the splash page of the viewer, the profiles, the health. */
-    public const PAGES = ['home' => '/', 'welcome' => '/welcome', 'profile' => '/profile', 'health' => '/health'];
+    public const PAGES = ['home' => '/', 'welcome' => '/welcome', 'profile' => '/profile', 'search' => '/search', 'health' => '/health'];
 
     /**
      * @param string $base the path the helpers are served under (`/helpers`), the one of the economy

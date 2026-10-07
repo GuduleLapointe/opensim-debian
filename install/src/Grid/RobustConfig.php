@@ -93,6 +93,10 @@ final class RobustConfig
             $ini->set('GridInfoService', 'web_profile_url', $this->q('${Const|WebURL}' . $services->path('profile') . '/[AGENT_NAME]'));
             // The message of the day: the text of motd.php (WelcomeMessage), read when Robust starts
             $ini->set('LoginService', 'MessageUrl', $this->q('${Const|WebURL}' . $services->path('motd')));
+            // The search of the web, when the grid has none of the two settings that say it (alignSearch() gives one to the other)
+            if (($ini->get('GridInfoService', 'search') ?? '') === '' && ($ini->get('LoginService', 'SearchURL') ?? '') === '') {
+                $ini->set('GridInfoService', 'search', $this->q('${Const|WebURL}' . $services->path('search')));
+            }
         }
 
         if ($plan->enableHypergrid) {

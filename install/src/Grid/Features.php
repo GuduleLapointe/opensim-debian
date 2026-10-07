@@ -146,11 +146,41 @@ final class Features
                 $ini->comment('DataSnapshot', 'index_sims');
             }
         });
+        // The web search of the grid: the page of the helpers, which the viewers open from the setting of the grid info and of the
+        // login service. Given to both when it has neither; a grid that sent its search elsewhere (a prefix) keeps its settings
+        if ($prefix === '') {
+            $result['robust'] = $this->robust(function (Ini $ini) use ($on): void {
+                $path = $this->pagePath('search');
+                $search = $ini->get('GridInfoService', 'search') ?? '';
+                $url = $ini->get('LoginService', 'SearchURL') ?? '';
+                if (!$on) {
+                    $ini->comment('GridInfoService', 'search');
+                    $ini->comment('LoginService', 'SearchURL');
+
+                    return;
+                }
+                if ($path !== '' && $search === '' && $url === '') {
+                    $search = '${Const|WebURL}' . $path;
+                    $ini->set('GridInfoService', 'search', $this->quote($search));
+                    $ini->set('LoginService', 'SearchURL', $this->quote($search));
+                } elseif ($search !== '' && $url === '') {
+                    $ini->set('LoginService', 'SearchURL', $this->quote($search));
+                } elseif ($url !== '' && $search === '') {
+                    $ini->set('GridInfoService', 'search', $this->quote($url));
+                }
+            }, $result) || $result['robust'];
+        }
         if ($on) {
             array_push($result['notes'], ...$this->moduleNotes('opensimsearch'));
         }
 
         return $result;
+    }
+
+    /** The path of a page of the helpers on the site of the grid (/search, /profile), empty when the grid has no helpers. */
+    private function pagePath(string $page): string
+    {
+        return (string) (parse_url($this->grid->helperUrl($page), PHP_URL_PATH) ?? '');
     }
 
     /**
@@ -223,12 +253,18 @@ final class Features
                 $ini->comment('UserProfiles', 'ProfileServiceURL');
             }
         });
-        // The service is Robust's: its connector and its switch
+        // The service is Robust's: its connector and its switch, and the page of the profiles the viewers open
         $result['robust'] = $this->robust(function (Ini $ini) use ($on): void {
             if ($on) {
                 $ini->uncomment('UserProfilesServiceConnector');
             }
             $ini->set('UserProfilesService', 'Enabled', $on ? 'true' : 'false');
+            $path = $this->pagePath('profile');
+            if (!$on) {
+                $ini->comment('GridInfoService', 'web_profile_url');
+            } elseif ($path !== '' && ($ini->get('GridInfoService', 'web_profile_url') ?? '') === '') {
+                $ini->set('GridInfoService', 'web_profile_url', $this->quote('${Const|WebURL}' . $path . '/[AGENT_NAME]'));
+            }
         }, $result);
 
         return $result;

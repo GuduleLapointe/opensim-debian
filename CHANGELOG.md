@@ -6,6 +6,7 @@
 - update: the setup reads the distribution, lays what the grid has over it, then its own choices: a new setting of the distribution is taken, what the operator set stays
 - fix: configuring a grid or a simulator that exists no longer removes the settings the operator added
 - new: `opensim enable|disable <grid> search|economy|profiles` writes, or comments out, the settings of a feature in the simulators, Robust and the OpenSim.ini of the grid
+- update: the grids with helpers tell the viewers the web search (`search`, `SearchURL`) and the profile page (`web_profile_url`); the commands give them with the search and the profiles
 - fix: the simulators are made with the search module and `ProfileServiceURL`, without which search, classifieds and profile edits did not work
 - update: the setup gives the web search of one of `[GridInfoService] search` and `[LoginService] SearchURL` to the other when it has none
 - new: installing the package adds the files a grid lacks (`MoneyServer.ini`), without the setup

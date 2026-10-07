@@ -267,6 +267,42 @@ check "health: the web search where each setting says it (search of the grid inf
 cp -p /tmp/OpenSim.ini.pages /etc/opensim/grids/testgrid/OpenSim.ini
 rm -rf /tmp/opensim-helpers-cache
 
+ts "pages: the web search and the profiles"
+owner=$(sql "SELECT PrincipalID FROM UserAccounts WHERE FirstName = 'Test' AND LastName = 'Owner'")
+gk=http://play.example.org:8002
+null=00000000-0000-0000-0000-000000000000
+# What the tables of the search hold now is kept, the page is tried with its own
+for table in parcels parcelsales regionsregister events classifieds; do sql "DROP TABLE IF EXISTS ${table}_bak2; CREATE TABLE ${table}_bak2 AS SELECT * FROM $table; DELETE FROM $table"; done
+sql "INSERT INTO regionsregister (regionname, regionUUID, regionhandle, url, owner, owneruuid, gatekeeperURL) VALUES ('Alpha', 'aaaaaaaa-0000-4000-8000-0000000000a1', '1', 'http://127.0.0.1:9990/', 'Test Owner', '$owner', '$gk')"
+sql "INSERT INTO parcels (parcelUUID, regionUUID, parcelname, landingpoint, description, searchcategory, build, script, public, dwell, infouuid, mature, gatekeeperURL, imageUUID) VALUES
+    ('bbbbbbbb-0000-4000-8000-0000000000b1', 'aaaaaaaa-0000-4000-8000-0000000000a1', 'Garden of Alpha', '128/128/25', 'A quiet garden', '0', 'true', 'true', 'true', 12, 'cccccccc-0000-4000-8000-0000000000c1', 'PG', '$gk', '$null'),
+    ('bbbbbbbb-0000-4000-8000-0000000000b3', 'aaaaaaaa-0000-4000-8000-0000000000a1', '<script>alert(1)</script>', '1/1/1', '', '0', 'true', 'true', 'true', 0, 'cccccccc-0000-4000-8000-0000000000c3', 'PG', '$gk', '$null')"
+sql "INSERT INTO parcelsales (regionUUID, parcelname, parcelUUID, area, saleprice, landingpoint, infoUUID, dwell, parentestate, mature, gatekeeperURL) VALUES ('aaaaaaaa-0000-4000-8000-0000000000a1', 'Sale Meadow', 'bbbbbbbb-0000-4000-8000-0000000000b2', 2048, 500, '10/20/30', '$null', 0, 1, 'PG', '$gk')"
+sql "INSERT INTO events (owneruuid, name, eventid, creatoruuid, category, description, dateUTC, duration, covercharge, coveramount, simname, parcelUUID, globalPos, eventflags, gatekeeperURL, landingpoint, parcelName, mature) VALUES ('$owner', 'Concert in the park', 1, '$owner', 20, 'Live music', UNIX_TIMESTAMP() + 86400, 60, 0, 0, 'Alpha', 'bbbbbbbb-0000-4000-8000-0000000000b1', '<1,2,3>', 0, '$gk', '1/2/3', 'Garden of Alpha', 'false')"
+price=$(sql "SHOW COLUMNS FROM classifieds LIKE 'priceforlisting'")
+sql "INSERT INTO classifieds (classifieduuid, creatoruuid, creationdate, expirationdate, category, name, description, parceluuid, parentestate, snapshotuuid, simname, posglobal, parcelname, classifiedflags${price:+, priceforlisting}) VALUES ('eeeeeeee-0000-4000-8000-0000000000e1', '$owner', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + 86400, '1', 'Land to rent', 'Cheap and quiet', '$null', 1, '$null', 'Alpha', '<1,2,3>', 'Meadow', 0${price:+, 0})"
+search() { get -A "$firefox" "$site/search$1"; }
+check "web search: the page of the grid, with its form, is served where Robust says it" "[ \"\$(status $site/search)\" = 200 ] && search '' | grep -q 'type=\"search\"' && [ \"\$(robust_path search)\" = /search ]"
+check "web search: a word finds the places, with the link a viewer follows" "search '?q=garden' | grep -q 'href=\"hop://play.example.org:8002/Alpha/128/128/25\">Garden of Alpha</a>'"
+check "web search: the land for sale, with its area and its price, under its own path" "search '/land/' | grep -q 'Sale Meadow' && search '/land/' | grep -q '2,048 m' && search '/land/' | grep -q '500' && ! search '/land/' | grep -q 'Garden of Alpha'"
+check "web search: the events to come, the classifieds, the people (by the name asked)" "search '?q=concert' | grep -q 'Concert in the park' && search '?q=rent' | grep -q 'Land to rent' && search '?q=Test' | grep -q 'href=\"/profile/Test.Owner\"'"
+check "web search: nothing found is said, and what has a meaning in a query is only a word" "search '?q=nothing-like-this' | grep -q 'Nothing found' && search '?q=%25' | grep -q 'Nothing found'"
+check "web search: what the tables hold is text, not markup" "! search '?q=script' | grep -q '<script>alert' && search '?q=script' | grep -q '&lt;script&gt;alert(1)'"
+check "web search: the people of a grid are not listed when nobody is asked for" "! search '' | grep -q 'Test Owner'"
+check "web search: a viewer gets the content alone" "get -A '$firestorm' '$site/search?q=garden' | grep -q 'content-only' && ! get -A '$firestorm' '$site/search?q=garden' | grep -q 'class=\"topbar\"'"
+check "web search: the home page has the form" "get -A '$firefox' $site/ | grep -q 'type=\"search\"'"
+check "profile: the page of an avatar of the grid, its name and since when it is a member" "[ \"\$(status $site/profile/Test.Owner)\" = 200 ] && get -A '$firefox' $site/profile/Test.Owner | grep -q 'Test Owner' && get -A '$firefox' $site/profile/Test.Owner | grep -q 'Member since'"
+check "profile: without a published profile, nothing more than that" "get -A '$firefox' $site/profile/Test.Owner | grep -q 'not published'"
+if [ -n "$(sql "SHOW TABLES LIKE 'userprofile'")" ]; then
+    sql "DELETE FROM userprofile WHERE useruuid = '$owner'; INSERT INTO userprofile (useruuid, profilePartner, profileAllowPublish, profileMaturePublish, profileURL, profileWantToMask, profileWantToText, profileSkillsMask, profileSkillsText, profileLanguages, profileImage, profileAboutText, profileFirstImage, profileFirstText) VALUES ('$owner', '$null', UNHEX('01'), UNHEX('00'), 'https://owner.example.org/', 0, 'Make friends', 0, 'Scripting', 'English', '$null', 'About <b>me</b>', '$null', 'By the sea')"
+    check "profile: what the avatar published is there, as text, and its web page is a link" "get -A '$firefox' $site/profile/Test.Owner | grep -q 'About &lt;b&gt;me&lt;/b&gt;' && get -A '$firefox' $site/profile/Test.Owner | grep -q 'href=\"https://owner.example.org/\"' && get -A '$firefox' $site/profile/Test.Owner | grep -q 'By the sea'"
+    sql "UPDATE userprofile SET profileAllowPublish = UNHEX('00') WHERE useruuid = '$owner'"
+    check "profile: what is not published is not shown" "! get -A '$firefox' $site/profile/Test.Owner | grep -q 'About' && get -A '$firefox' $site/profile/Test.Owner | grep -q 'not published'"
+    sql "DELETE FROM userprofile WHERE useruuid = '$owner'"
+fi
+check "profile: an avatar that is not there is a page that says so, with a 404, and the account of the services has no profile" "[ \"\$(status $site/profile/Nobody.Here)\" = 404 ] && get -A '$firefox' $site/profile/Nobody.Here | grep -q 'no such avatar' && [ \"\$(status $site/profile/GRID.SERVICES)\" = 404 ]"
+for table in parcels parcelsales regionsregister events classifieds; do sql "DELETE FROM $table; INSERT INTO $table SELECT * FROM ${table}_bak2; DROP TABLE ${table}_bak2"; done
+
 ts "pages: the directory"
 # The directory of the search, with what the test puts in it: a grid that answers, two regions of one that does not, an
 # address with markup (anybody can register one)

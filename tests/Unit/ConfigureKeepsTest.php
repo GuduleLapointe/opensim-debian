@@ -34,6 +34,23 @@ describe('Configuring a grid that exists', function () {
         return $plan;
     };
 
+    test('tells the viewers the web search of the helpers when the grid has helpers and says nothing of it, and keeps what it says', function () use ($plan) {
+        $plan = $plan();
+        $plan->helpers = true;
+        $plan->helpersPath = '/helpers';
+        $robust = new RobustConfig();
+
+        $text = $robust->generate($plan);
+
+        expect($text)->toContain('search = "${Const|WebURL}/search"')->toContain('SearchURL = "${Const|WebURL}/search"');
+
+        // The grid has its own: the setup leaves it
+        file_put_contents($plan->robustIni(), str_replace('search = "${Const|WebURL}/search"', 'search = "https://other.example.org/q"', $text));
+        $kept = $robust->generate($plan);
+
+        expect($kept)->toContain('search = "https://other.example.org/q"')->not->toContain('search = "${Const|WebURL}/search"');
+    });
+
     test('gives the search of the web to both settings that say it when only one is given, and keeps two that differ', function () use ($plan) {
         $plan = $plan();
         $robust = new RobustConfig();
