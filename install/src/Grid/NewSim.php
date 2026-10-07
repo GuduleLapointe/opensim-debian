@@ -1251,6 +1251,7 @@ final class NewSim
         // The helpers of the grid, when it has some: offline messages and the search index
         $plan->offlineUrl = $grid->helperUrl('offline');
         $plan->registerUrl = $grid->helperUrl('register');
+        $plan->searchUrl = $grid->helperUrl('query');
 
         // The estate and its owner, then the first region, each on one screen
         if (!$this->askEstate($plan, $grid, $database, $current)) {

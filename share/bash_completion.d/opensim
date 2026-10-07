@@ -59,7 +59,12 @@ _opensim()
           COMPREPLY=( $(compgen -W "$([ "$COMP_CWORD" = 2 ] && echo now) $(_opensim_instances)" -- "$cur") )
           ;;
         enable|disable)
-          COMPREPLY=( $(compgen -W "$(_opensim_instances all)" -- "$cur") )
+          # opensim enable <grid> search|economy|profiles, economy takes beta or gloebit
+          case $COMP_CWORD in
+            2) COMPREPLY=( $(compgen -W "$(_opensim_instances all)" -- "$cur") ) ;;
+            3) COMPREPLY=( $(compgen -W "$(_opensim_instances all) search economy profiles" -- "$cur") ) ;;
+            4) [ "${COMP_WORDS[3]}" = economy ] && [ "${COMP_WORDS[1]}" = enable ] && COMPREPLY=( $(compgen -W "beta gloebit" -- "$cur") ) ;;
+          esac
           ;;
         console|screen|command|ports)
           [ "$COMP_CWORD" = 2 ] || [ "${COMP_WORDS[1]}" = ports ] &&

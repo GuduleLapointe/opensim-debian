@@ -54,6 +54,8 @@ final class SimPlan
     /** The helpers of the grid the simulator tells its offline messages and its data to (empty without helpers) */
     public string $offlineUrl = '';
     public string $registerUrl = '';
+    /** The search service of the helpers, which the module of search of the simulator asks (empty without helpers) */
+    public string $searchUrl = '';
 
     public string $estateName = '';
     public string $estateOwner = '';

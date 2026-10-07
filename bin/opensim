@@ -75,6 +75,9 @@ Commands:
     start [instance...]
     stop|restart [now] [instance...]
     enable|disable <instance...>
+    enable|disable <grid> search [<url prefix>]
+    enable|disable <grid> economy [beta|gloebit] [<url prefix>]
+    enable|disable <grid> profiles
     console|screen <instance>
     command <instance> <text>|-
     ports [instance...] [--publish|--ufw]

@@ -118,4 +118,34 @@ describe('Configuring a simulator that exists', function () {
             ->and(SimConfig::readName($plan->iniPath()))
             ->toBe('Sim1');
     });
+
+    test('has the profile service of the grid, and the search module and its registration when the grid has helpers', function () {
+        $dir = test_tmp() . '/sim-' . bin2hex(random_bytes(4));
+        mkdir("$dir/sims", 0o755, true);
+        $make = function (bool $helpers) use ($dir) {
+            $plan = new SimPlan();
+            $plan->gridDir = $dir;
+            $plan->gridNick = 'alpha';
+            $plan->gridName = 'Alpha';
+            $plan->slug = $helpers ? 'alpha_with' : 'alpha_without';
+            $plan->simName = 'Sim';
+            $plan->baseHostname = 'play.example.org';
+            $plan->httpPort = 9000;
+            if ($helpers) {
+                $plan->searchUrl = 'https://play.example.org/helpers/query.php';
+                $plan->registerUrl = 'https://play.example.org/helpers/register.php';
+            }
+            (new SimConfig())->write($plan);
+
+            return (string) file_get_contents($plan->iniPath());
+        };
+
+        expect($make(true))
+            ->toContain("[Search]\nModule = OpenSimSearch\nSearchURL = \"https://play.example.org/helpers/query.php\"")
+            ->toContain('DATA_SRV_Alpha = "https://play.example.org/helpers/register.php"')
+            ->toContain("[UserProfiles]\nProfileServiceURL = \"\${Const|BaseURL}:\${Const|PublicPort}\"")
+            ->and($make(false))
+            ->not->toContain('[Search]')
+            ->toContain('ProfileServiceURL');
+    });
 });

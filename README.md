@@ -57,6 +57,10 @@ opensim setup
 - Stop/Restart all instances or matching instances
 - If first parameter is "now", stops the simulator immediately, otherwise send reminders to leave during 2 minutes then stop
 
+`opensim enable|disable <grid> search|economy|profiles`
+
+- Write, or take out, the settings of a feature in the files of the grid: the in-world search, the economy (beta module or Gloebit), the profiles with their classifieds
+
 `opensim status`
 
 - Show active instances, per instance and global memory and cpu usage

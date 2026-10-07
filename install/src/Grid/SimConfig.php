@@ -74,6 +74,15 @@ final class SimConfig
             '[GridService]',
             'MapTileDirectory = "${Const|CacheDirectory}/maptiles"',
             '',
+            ...$plan->searchUrl !== ''
+                ? [
+                    ';; The search of the grid: the module of the simulator asks the helpers for the places, the land for sale...',
+                    '[Search]',
+                    'Module = OpenSimSearch',
+                    'SearchURL = "' . $plan->searchUrl . '"',
+                    '',
+                ]
+                : [],
             '[DataSnapshot]',
             'snapshot_cache_directory = "${Const|CacheDirectory}/DataSnapshot"',
             ...$plan->registerUrl !== ''
@@ -94,6 +103,10 @@ final class SimConfig
                     '',
                 ]
                 : [],
+            ';; The profiles (and their classifieds) are kept by Robust, which the simulator asks',
+            '[UserProfiles]',
+            'ProfileServiceURL = "${Const|BaseURL}:${Const|PublicPort}"',
+            '',
             '[YEngine]',
             'ScriptEnginesPath = "${Const|DataDirectory}/ScriptEngines"',
             '',
@@ -120,7 +133,13 @@ final class SimConfig
      */
     public static function dataServiceName(SimPlan $plan): string
     {
-        $text = $plan->gridNick !== '' ? $plan->gridNick : $plan->gridName;
+        return self::dataServiceNameOf($plan->gridNick, $plan->gridName);
+    }
+
+    /** The same, from the nick and the name of a grid. */
+    public static function dataServiceNameOf(string $nick, string $name): string
+    {
+        $text = $nick !== '' ? $nick : $name;
         $words = preg_split('/[^A-Za-z0-9]+/', Slug::ascii($text), -1, PREG_SPLIT_NO_EMPTY);
         $name = implode('', array_map('ucfirst', $words ?: []));
 

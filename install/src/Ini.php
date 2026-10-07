@@ -214,6 +214,53 @@ final class Ini
         }
     }
 
+    /**
+     * Remove the active lines of a key from a section: the comments, and the other keys, stay.
+     *
+     * @return bool whether something was removed
+     */
+    public function remove(string $section, string $key): bool
+    {
+        $kept = [];
+        $inTarget = false;
+        $removed = false;
+        $re = '/^\s*' . preg_quote($key, '/') . '\s*=/i';
+        foreach ($this->lines as $text) {
+            if (preg_match('/^\s*\[(.+?)\]\s*$/', $text, $m)) {
+                $inTarget = strcasecmp(trim($m[1]), $section) === 0;
+            } elseif ($inTarget && preg_match($re, $text)) {
+                $removed = true;
+
+                continue;
+            }
+            $kept[] = $text;
+        }
+        $this->lines = $kept;
+
+        return $removed;
+    }
+
+    /**
+     * The active keys of a section whose name matches.
+     *
+     * @param  string $pattern a regular expression
+     * @return list<string>
+     */
+    public function keys(string $section, string $pattern): array
+    {
+        $keys = [];
+        $inTarget = false;
+        foreach ($this->lines as $text) {
+            if (preg_match('/^\s*\[(.+?)\]\s*$/', $text, $m)) {
+                $inTarget = strcasecmp(trim($m[1]), $section) === 0;
+            } elseif ($inTarget && preg_match('/^\s*([^\s;#=][^=]*?)\s*=/', $text, $m) && preg_match($pattern, $m[1])) {
+                $keys[] = $m[1];
+            }
+        }
+
+        return $keys;
+    }
+
     public function removeSection(string $section): void
     {
         $kept = [];

@@ -314,6 +314,30 @@ check "opensim next port gives a free port" "[ \"\$(opensim next port 9100)\" = 
 mysql testgrid_robust -e "CREATE TEMPORARY TABLE r SELECT * FROM regions LIMIT 1; UPDATE r SET uuid = 'aaaaaaaa-0000-4000-8000-0000000000cc', regionName = 'Elsewhere', regionHandle = 77, locX = 7000, locY = 7000, serverIP = '10.9.9.9', serverPort = 9700, serverHttpPort = 9701, serverURI = 'http://10.9.9.9:9701/'; INSERT INTO regions SELECT * FROM r"
 check "opensim next port skips the ports of the regions the grids know, served by another machine" "[ \"\$(opensim next port 9700 2 | tr '\\n' ' ')\" = '9702 9703 ' ]"
 mysql testgrid_robust -e "DELETE FROM regions WHERE uuid = 'aaaaaaaa-0000-4000-8000-0000000000cc'"
+
+ts "features: search, economy and profiles of a grid, enabled and disabled by a command"
+sims=/etc/opensim/grids/testgrid/sims
+check "the simulators of a grid with helpers are made with the search module and the profile service" "[ -n \"\$(ls $sims/*.ini)\" ] && [ -z \"\$(grep -L 'SearchURL = \"https://localhost/helpers/query.php\"' $sims/*.ini)\" ] && [ -z \"\$(grep -L 'ProfileServiceURL' $sims/*.ini)\" ]"
+out=$(opensim disable testgrid search 2>&1)
+check "opensim disable <grid> search takes the module and the registration out of the simulators" "echo \"\$out\" | grep -q 'search disabled for testgrid' && [ -z \"\$(grep -l 'SearchURL' $sims/*.ini)\" ] && [ -z \"\$(grep -l 'DATA_SRV_Testgrid' $sims/*.ini)\" ]"
+out=$(opensim enable testgrid search 2>&1)
+check "opensim enable <grid> search puts them back, at the address of the helpers of the grid" "echo \"\$out\" | grep -q 'search enabled for testgrid' && [ -z \"\$(grep -L 'SearchURL = \"https://localhost/helpers/query.php\"' $sims/*.ini)\" ] && [ -z \"\$(grep -L 'DATA_SRV_Testgrid = \"https://localhost/helpers/register.php\"' $sims/*.ini)\" ]"
+out=$(opensim enable testgrid search 2>&1)
+check "opensim enable <grid> search again changes nothing and says so" "echo \"\$out\" | grep -q 'nothing to change: search is already enabled for testgrid'"
+out=$(opensim enable testgrid search https://search.example.net/h 2>&1)
+check "opensim enable <grid> search <url prefix> uses that address" "echo \"\$out\" | grep -q 'search enabled for testgrid' && [ -z \"\$(grep -L 'SearchURL = \"https://search.example.net/h/query.php\"' $sims/*.ini)\" ]"
+opensim enable testgrid search >/dev/null 2>&1
+out=$(opensim enable testgrid economy 2>&1)
+check "opensim enable <grid> economy is the beta module" "echo \"\$out\" | grep -q 'economy (beta) enabled for testgrid' && [ -z \"\$(grep -L 'economymodule = BetaGridLikeMoneyModule' $sims/*.ini)\" ]"
+out=$(opensim enable testgrid economy gloebit 2>&1)
+check "opensim enable <grid> economy gloebit sets the module, and says which keys are the operator's" "echo \"\$out\" | grep -q 'economy (gloebit) enabled' && echo \"\$out\" | grep -q 'GLBKey' && [ -z \"\$(grep -L 'economymodule = Gloebit' $sims/*.ini)\" ] && [ -z \"\$(grep -l 'GLBKey' $sims/*.ini)\" ]"
+out=$(opensim disable testgrid economy 2>&1)
+check "opensim disable <grid> economy takes the module out: OpenSimulator has its beta one again" "echo \"\$out\" | grep -q 'economy disabled for testgrid' && [ -z \"\$(grep -l 'economymodule' $sims/*.ini)\" ]"
+out=$(opensim disable testgrid profiles 2>&1)
+check "opensim disable <grid> profiles takes the profile service out of the simulators and of Robust" "echo \"\$out\" | grep -q 'profiles disabled for testgrid' && [ -z \"\$(grep -l 'ProfileServiceURL' $sims/*.ini)\" ] && grep -A8 '^\[UserProfilesService\]' /etc/opensim/grids/testgrid/Robust.HG.ini | grep -q 'Enabled = false'"
+out=$(opensim enable testgrid profiles 2>&1)
+check "opensim enable <grid> profiles puts them back" "echo \"\$out\" | grep -q 'profiles enabled for testgrid' && [ -z \"\$(grep -L 'ProfileServiceURL' $sims/*.ini)\" ] && grep -A8 '^\[UserProfilesService\]' /etc/opensim/grids/testgrid/Robust.HG.ini | grep -q 'Enabled = true'"
+check "a grid that is not there is said" "! opensim enable nowhere search 2>&1 | grep -qv 'no grid called nowhere'"
 # The ports of an instance are a block of ten, the same on any machine: Robust
 # 8002 public and 8003 private; the first simulator 9000, 9004 for its console
 # (kept, not enabled), its regions 9001 and 9002, in UDP

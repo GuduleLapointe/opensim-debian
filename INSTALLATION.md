@@ -96,6 +96,23 @@ opensim web <grid> snippet caddy  # for the web server: caddy, nginx or apache
 
 The setup writes a complete file for each server in `/etc/opensim/grids/<grid>/web/` (`<grid>.caddyfile`, `<grid>-nginx.conf`, `<grid>-apache.conf`), for the site of the web URL of the grid: include it from the config of the server, or use it alone. Certificates are yours to add (Caddy gets its own).
 
+## Search, economy and profiles
+
+The in-world search (places, land for sale, classifieds), the economy and the profiles need settings in the files of the simulators, and for some in the one of Robust. Three commands write them, and take them out:
+
+```bash
+opensim enable <grid> search [<url prefix>]
+opensim enable <grid> economy [beta|gloebit] [<url prefix>]
+opensim enable <grid> profiles
+opensim disable <grid> search|economy|profiles
+```
+
+- **search**: `[Search]` (`Module = OpenSimSearch`, `SearchURL`) and `[DataSnapshot]` (`index_sims`, `gridname`, `DATA_SRV_<Grid>`) in each simulator, at `<url prefix>/query.php` and `<url prefix>/register.php`, the helpers of the grid by default (a grid that has none needs the prefix). The module has to be installed and enabled (`opensimsearch` in `EnabledModules` of `opensim.conf`): the command says when it is not. A registration to another directory is not touched, `disable` leaves it.
+- **economy**: the beta module of OpenSimulator (`economymodule = BetaGridLikeMoneyModule`, the sale of land and things on), or Gloebit (the module, the sandbox, the address of the economy in Robust, `currency.php` and `landtool.php` being the helpers'). The keys of your Gloebit application (`GLBKey`, `GLBSecret`, `GLBOwnerName`) are yours to write in `[Gloebit]`: there is no default key. `disable` gives back the module OpenSimulator has by default.
+- **profiles**: the profile service the simulators ask for the profiles and their classifieds (`[UserProfiles] ProfileServiceURL`), served by Robust (`[UserProfilesService]`).
+
+The simulators of a grid the setup makes already have the profiles, and the search when the grid has helpers. The commands say what to restart. They change those settings only: the rest of the files is yours, and `opensim setup` writes the settings it manages again.
+
 ## Firewall
 
 The setup does not touch the firewall: `opensim ports --ufw` tells which rules the enabled instances need, you apply them.
