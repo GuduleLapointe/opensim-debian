@@ -6,7 +6,7 @@
 
 [[ $(type -t check) == function ]] || source /test/scenario-lib.sh
 
-instance=testgrid_emptysim
+instance=testgrid_empty_sim
 running() { pgrep -f "OpenSim.dll -inifile=/etc/opensim/opensim.d/$instance.ini" >/dev/null; }
 driver() { (cd /var/lib/opensim && TEST_GRID=testgrid TEST_SIM=EmptySim TEST_ADMIN_USER=dbroot TEST_ADMIN_PASSWORD=adminpw "$@" runuser -u opensim -- php /test/newsim-driver.php 2>&1; echo "exit code: $?"); }
 
@@ -19,7 +19,7 @@ check "the launcher refuses it and says why, nothing is left running" "[ $code !
 
 ts "no region: a region added to it"
 driver env TEST_ADD_REGION=EmptyRegion >/tmp/emptysim-add.out
-check "the region is added and the simulator is up with it" "grep -q 'exit code: 0' /tmp/emptysim-add.out && grep -q 'Region EmptyRegion is online' /tmp/emptysim-add.out && running"
+check "the region is added and the simulator is up with it" "grep -q 'exit code: 0' /tmp/emptysim-add.out && grep -q 'region EmptyRegion is online' /tmp/emptysim-add.out && running"
 
 ts "no region: the grid is back as it was"
 opensim stop now $instance >/dev/null 2>&1
