@@ -461,6 +461,10 @@ source /test/person-scenario.sh
 source /test/no-region-scenario.sh
 [[ ${STOP_AFTER:-} != no-region ]] || { ts "done after the simulator without a region: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"; exit $FAILED; }
 
+# The name proposed for the simulator made for a region
+source /test/sim-name-scenario.sh
+[[ ${STOP_AFTER:-} != sim-name ]] || { ts "done after the name of the simulator: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"; exit $FAILED; }
+
 ts "remove the tools, grid started by the service"
 registered=$(sim_registered)
 systemctl restart opensim

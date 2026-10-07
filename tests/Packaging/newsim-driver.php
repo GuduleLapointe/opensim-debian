@@ -56,6 +56,11 @@ if (getenv('TEST_REMOTE_GRID')) {
 if (getenv('TEST_ADD_REGION')) {
     $answers['Region name'] = getenv('TEST_ADD_REGION');
 }
+// TEST_REGION_TO_GRID: add the region to the grid, which asks where it goes (a new simulator by default), as the
+// Add region of the menu of a grid; TEST_DEFAULT_SIM_NAME: keep the name the setup proposes for the simulator
+if (getenv('TEST_DEFAULT_SIM_NAME')) {
+    unset($answers['Simulator name']);
+}
 // TEST_RECONFIGURE_REGION: change the place (TEST_LOCATION) of that region of the simulator TEST_SIM
 if (getenv('TEST_LOCATION')) {
     $answers['Region location'] = getenv('TEST_LOCATION');
@@ -65,6 +70,8 @@ try {
     $wizard = new NewSim(new ScriptedUi($answers));
     if (getenv('TEST_RECONFIGURE_REGION')) {
         $wizard->reconfigureRegion(getenv('TEST_GRID'), $sim, getenv('TEST_RECONFIGURE_REGION'));
+    } elseif (getenv('TEST_REGION_TO_GRID')) {
+        $wizard->addRegionToGrid(getenv('TEST_GRID'));
     } elseif (getenv('TEST_ADD_REGION')) {
         $wizard->addRegion(getenv('TEST_GRID'), $sim);
     } else {
