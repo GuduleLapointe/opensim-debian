@@ -453,6 +453,10 @@ check "a module no longer enabled is unlinked" "[ ! -e $addins/Gloebit.dll ] && 
 crudini --inplace --set $conf Defaults EnabledModules "opensimsearch gloebit"
 rm -f /etc/opensim/opensim.d/testsim.ini
 
+# The setup run by a person who is not the system user
+source /test/person-scenario.sh
+[[ ${STOP_AFTER:-} != person ]] || { ts "done after the person: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"; exit $FAILED; }
+
 ts "remove the tools, grid started by the service"
 registered=$(sim_registered)
 systemctl restart opensim
