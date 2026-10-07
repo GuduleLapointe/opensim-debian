@@ -141,19 +141,21 @@ check "people: a first name finds its accounts" "[ \"\$(accounts Bulk)\" = 2 ]"
 check "people: a first name and a last name find one" "[ \"\$(accounts 'Bulk One')\" = 1 ] && people 'Bulk One' | grep -q '<LastName>One<'"
 check "people: nobody is found for a name nobody has" "[ \"\$(accounts Nobodyhere)\" = 0 ]"
 
-# The box "show in search" of a profile: the core keeps it nowhere, the module tells it to the search, which writes it where the
-# profile service keeps it (a profile that exists, from a simulator of the grid: here the machine itself)
+# The box "show in search" of a profile: OpenSimulator shows the first two flags of the user account and never writes them, the
+# module tells the box to the search, which writes them (for the avatar whose secure session it holds, from the simulator it
+# is connected to)
 ts "search: the show in search box of a profile"
 profile=bbbbbbbb-0000-4000-8000-0000000000bb
-sql "DELETE FROM userprofile WHERE useruuid IN ('$profile', 'cccccccc-0000-4000-8000-0000000000cc')"
-sql "INSERT INTO userprofile (useruuid, profilePartner, profileAllowPublish, profileMaturePublish, profileURL, profileWantToMask, profileWantToText, profileSkillsMask, profileSkillsText, profileLanguages, profileImage, profileAboutText, profileFirstImage, profileFirstText) VALUES ('$profile', '$null_key', 0, 1, '', 0, '', 0, '', '', '$null_key', '', '$null_key', '')"
-# (the two avatars are in the grid, with their secure session, as Robust keeps it when they are connected)
+sql "DELETE FROM UserAccounts WHERE PrincipalID = '$profile'"
+# (an account that is mature and has a flag of its own, 4, which the box does not touch)
+sql "INSERT INTO UserAccounts (PrincipalID, ScopeID, FirstName, LastName, Email, ServiceURLs, Created, UserLevel, UserFlags, UserTitle, active) VALUES ('$profile', '$null_key', 'Box', 'Tester', '', '', 0, 0, 6, '', 1)"
+# (the avatars are in the grid, with their secure session, as Robust keeps it when they are connected)
 sql "DELETE FROM Presence WHERE UserID IN ('$profile', 'cccccccc-0000-4000-8000-0000000000cc')"
 sql "INSERT INTO Presence (UserID, RegionID, SessionID, SecureSessionID) VALUES ('$profile', '$null_key', 'dddddddd-0000-4000-8000-0000000000d1', 'eeeeeeee-0000-4000-8000-0000000000e1'), ('cccccccc-0000-4000-8000-0000000000cc', '$null_key', 'dddddddd-0000-4000-8000-0000000000d2', 'eeeeeeee-0000-4000-8000-0000000000e2')"
 queries publish
-check "profile box: the profile is published, not mature, as told, and not by a session that is not its avatar's" "[ \"\$(sql \"SELECT CONCAT(profileAllowPublish, profileMaturePublish) FROM userprofile WHERE useruuid='$profile'\")\" = 10 ]"
-check "profile box: no profile was made for an avatar that had none" "[ \"\$(sql \"SELECT COUNT(*) FROM userprofile WHERE useruuid='cccccccc-0000-4000-8000-0000000000cc'\")\" = 0 ]"
-sql "DELETE FROM userprofile WHERE useruuid='$profile'"
+check "profile box: the account is shown in search, not mature, its own flag kept, as told and not by the session of another" "[ \"\$(sql \"SELECT UserFlags FROM UserAccounts WHERE PrincipalID='$profile'\")\" = 5 ]"
+check "profile box: no account was made for an avatar that had none" "[ \"\$(sql \"SELECT COUNT(*) FROM UserAccounts WHERE PrincipalID='cccccccc-0000-4000-8000-0000000000cc'\")\" = 0 ]"
+sql "DELETE FROM UserAccounts WHERE PrincipalID = '$profile'"
 sql "DELETE FROM Presence WHERE UserID IN ('$profile', 'cccccccc-0000-4000-8000-0000000000cc')"
 
 pkill -f 'php -S 127.0.0.1:8090' || true

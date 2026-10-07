@@ -216,7 +216,7 @@ switch ($group) {
 
     case 'publish':
         // The "show in search" box of a profile, as the module tells it (booleans, the session of the avatar in Presence, the
-        // profile made by the scenario)
+        // account made by the scenario)
         $call = 'AvatarPropertiesUpdate/avatar_publish_update';
         $has_keys = ['allow_publish', 'avatar_id', 'mature_publish', 'secure_session_id'];
         check('profile box: the request has the keys the module sends', $has_keys === $contract[$call]['request']);
@@ -225,9 +225,9 @@ switch ($group) {
         $without = 'cccccccc-0000-4000-8000-0000000000cc';
         $secure_with = 'eeeeeeee-0000-4000-8000-0000000000e1';
         $secure_without = 'eeeeeeee-0000-4000-8000-0000000000e2';
-        check('profile box: a profile that exists is answered, for the session of its avatar', succeeded($tell($with, $secure_with, true, false)));
+        check('profile box: an account is answered, for the session of its avatar', succeeded($tell($with, $secure_with, true, false)));
         $none = $tell($without, $secure_without, true, true);
-        check('profile box: an avatar without profile is a failure with its message, nothing is made', $none['status'] === 200 && ($none['value']['success'] ?? true) === false && is_string($none['value']['errorMessage'] ?? null) && $none['value']['errorMessage'] !== '', substr($none['raw'], 0, 200));
+        check('profile box: an avatar without account is a failure with its message, nothing is made', $none['status'] === 200 && ($none['value']['success'] ?? true) === false && is_string($none['value']['errorMessage'] ?? null) && $none['value']['errorMessage'] !== '', substr($none['raw'], 0, 200));
         check('profile box: the session of another avatar is a 403', $tell($with, $secure_without, false, false)['status'] === 403);
         check('profile box: a session that is not one is a 403', $tell($with, 'eeeeeeee-0000-4000-8000-0000000000ff', false, false)['status'] === 403);
         check('profile box: what is not an avatar is a 400', $tell('not-an-avatar', $secure_with, true, true)['status'] === 400);
