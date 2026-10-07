@@ -8,6 +8,10 @@ declare(strict_types=1);
  * tests/Unit/SearchModuleContractTest.php, used by the search tests of the packages (tests/Packaging/search-scenario.sh).
  */
 return [
+    'AvatarPropertiesUpdate/avatar_publish_update' => [
+        'request' => ['allow_publish', 'avatar_id', 'mature_publish'],
+        'response' => [],
+    ],
     'ClassifiedInfoRequest/classifieds_info_query' => [
         'request' => ['classifiedID'],
         'response' => ['category', 'classifiedflags', 'classifieduuid', 'creationdate', 'creatoruuid', 'description', 'expirationdate', 'name', 'parcelname', 'parceluuid', 'parentestate', 'posglobal', 'priceforlisting', 'simname', 'snapshotuuid'],

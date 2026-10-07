@@ -136,5 +136,16 @@ check "people: a first name finds its accounts" "[ \"\$(accounts Bulk)\" = 2 ]"
 check "people: a first name and a last name find one" "[ \"\$(accounts 'Bulk One')\" = 1 ] && people 'Bulk One' | grep -q '<LastName>One<'"
 check "people: nobody is found for a name nobody has" "[ \"\$(accounts Nobodyhere)\" = 0 ]"
 
+# The box "show in search" of a profile: the core keeps it nowhere, the module tells it to the search, which writes it where the
+# profile service keeps it (a profile that exists, from a simulator of the grid: here the machine itself)
+ts "search: the show in search box of a profile"
+profile=bbbbbbbb-0000-4000-8000-0000000000bb
+sql "DELETE FROM userprofile WHERE useruuid IN ('$profile', 'cccccccc-0000-4000-8000-0000000000cc')"
+sql "INSERT INTO userprofile (useruuid, profilePartner, profileAllowPublish, profileMaturePublish, profileURL, profileWantToMask, profileWantToText, profileSkillsMask, profileSkillsText, profileLanguages, profileImage, profileAboutText, profileFirstImage, profileFirstText) VALUES ('$profile', '$null_key', 0, 1, '', 0, '', 0, '', '', '$null_key', '', '$null_key', '')"
+queries publish
+check "profile box: the profile is published, not mature, as told" "[ \"\$(sql \"SELECT CONCAT(profileAllowPublish, profileMaturePublish) FROM userprofile WHERE useruuid='$profile'\")\" = 10 ]"
+check "profile box: no profile was made for an avatar that had none" "[ \"\$(sql \"SELECT COUNT(*) FROM userprofile WHERE useruuid='cccccccc-0000-4000-8000-0000000000cc'\")\" = 0 ]"
+sql "DELETE FROM userprofile WHERE useruuid='$profile'"
+
 pkill -f 'php -S 127.0.0.1:8090' || true
 pkill -f 'php -S 127.0.0.1:9990' || true

@@ -214,6 +214,17 @@ switch ($group) {
         check('the parcel of the simulator is a popular place, and nothing else of the simulator is', names($popular) === ['Sim1']);
         break;
 
+    case 'publish':
+        // The "show in search" box of a profile, as the module tells it (booleans, the profile made by the scenario)
+        $keys = ['allow_publish', 'avatar_id', 'mature_publish'];
+        check('profile box: the request has the keys the module sends', $keys === $contract['AvatarPropertiesUpdate/avatar_publish_update']['request']);
+        $tell = fn(string $avatar, bool $allow, bool $mature) => rpc($url, 'avatar_publish_update', ['avatar_id' => $avatar, 'allow_publish' => $allow, 'mature_publish' => $mature], true);
+        check('profile box: a profile that exists is answered', succeeded($tell('bbbbbbbb-0000-4000-8000-0000000000bb', true, false)));
+        $none = $tell('cccccccc-0000-4000-8000-0000000000cc', true, true);
+        check('profile box: an avatar without profile is a failure with its message, nothing is made', $none['status'] === 200 && ($none['value']['success'] ?? true) === false && is_string($none['value']['errorMessage'] ?? null) && $none['value']['errorMessage'] !== '', substr($none['raw'], 0, 200));
+        check('profile box: what is not an avatar is a 400', $tell('not-an-avatar', true, true)['status'] === 400);
+        break;
+
     case 'gone':
         // After the simulator unregistered
         $places = 'DirPlacesQuery/dir_places_query';
@@ -222,7 +233,7 @@ switch ($group) {
         break;
 
     default:
-        fwrite(STDERR, "usage: php search-check.php places|popular|land|events|classifieds|changed|gone|sim URL\n");
+        fwrite(STDERR, "usage: php search-check.php places|popular|land|events|classifieds|changed|gone|sim|publish URL\n");
         exit(2);
 }
 
