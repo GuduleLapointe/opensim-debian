@@ -15,7 +15,7 @@ status() { curl -s -o /dev/null -m 60 -w '%{http_code}' "$@"; }
 # What the Robust config of the grid gives for a setting that is an address of the web site: its path
 robust_path() {
     local value
-    value=$(grep -m1 "^$1 *=" /etc/opensim/grids/testgrid/Robust.HG.ini | cut -d'"' -f2)
+    value=$(grep -m1 "^[[:space:]]*$1[[:space:]]*=" /etc/opensim/grids/testgrid/Robust.HG.ini | cut -d'"' -f2)
     echo "${value#'${Const|WebURL}'}"
 }
 start_helpers() {
