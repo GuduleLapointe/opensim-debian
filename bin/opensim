@@ -591,8 +591,15 @@ stopSim() {
 		[ -z "${OSIM_REST_INI:-}" ] && osScreenExists "$simName" && screen -x $simName >/dev/null 2>&1
 		if [ "$pid" ]; then
 			log "stopping $simName"
-			osWaitExit "$simName" "$pid" $timeout && log "$simName stopped" ||
-				log 1 "$simName still running after ${timeout}s"
+			if osWaitExit "$simName" "$pid" $timeout; then
+				log "$simName stopped"
+			else
+				# Asked to shut down and not gone when the delay is over (a console busy with a long command, a hung
+				# instance): it is forced
+				log "$simName still running after ${timeout}s, forcing it"
+				osForceStop "$simName" "$pid" && log "$simName stopped (forced)" ||
+					log 1 "$simName still running after being killed"
+			fi
 		fi
 	done
 }

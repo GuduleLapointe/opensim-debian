@@ -256,3 +256,44 @@ function test_a_silence_is_not_a_user_to_wait_for() {
 	assert_equals '1' "$?"
 	assert_equals '' "$OS_USERS_UNKNOWN"
 }
+
+# A process that is not a child of the test, so that it is gone once killed and not a zombie. Args: what to run first
+detached() { bash -c "$1; sleep 300 >/dev/null 2>&1 & echo \$!"; }
+
+# What osForceStop needs: waiting for a process to go, and the signals it sends noted in $WORK/signals
+fake_waitexit() {
+	osWaitExit() {
+		local t=0
+		while builtin kill -0 "$2" 2>/dev/null; do
+			[ $t -lt $(($3 * 10)) ] || return 1
+			sleep 0.1
+			t=$((t + 1))
+		done
+	}
+	kill() {
+		[ "$1" = -0 ] || echo "$1" >>"$WORK/signals"
+		builtin kill "$@"
+	}
+}
+
+function test_osforcestop_kills_what_ignores_the_term_signal() {
+	eval "$(sed -n '/^osForceStop()/,/^}/p' "$ROOT/libexec/os-helpers")"
+	fake_waitexit
+	pid=$(detached 'trap "" TERM')
+
+	osForceStop test "$pid" 1
+	assert_equals '0' "$?"
+	assert_equals "-TERM -KILL" "$(tr '\n' ' ' <"$WORK/signals" | sed 's/ $//')"
+	assert_equals "gone" "$(builtin kill -0 "$pid" 2>/dev/null && echo alive || echo gone)"
+}
+
+function test_osforcestop_stops_at_term_when_that_is_enough() {
+	eval "$(sed -n '/^osForceStop()/,/^}/p' "$ROOT/libexec/os-helpers")"
+	fake_waitexit
+	pid=$(detached ':')
+
+	osForceStop test "$pid" 5
+	assert_equals '0' "$?"
+	assert_equals "-TERM" "$(tr '\n' ' ' <"$WORK/signals" | sed 's/ $//')"
+	assert_equals "gone" "$(builtin kill -0 "$pid" 2>/dev/null && echo alive || echo gone)"
+}
