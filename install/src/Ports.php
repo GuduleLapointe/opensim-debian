@@ -194,14 +194,35 @@ final class Ports
             str_contains($path, '/config-include/');
     }
 
-    /** @return list<int> ports currently bound, from netstat (BSD '.port' and Linux ':port') */
+    /** @return list<int> ports currently bound here, from netstat */
     private static function boundPorts(): array
     {
         [, $out] = System::capture('netstat -an');
+
+        return self::parseBound($out);
+    }
+
+    /**
+     * The ports a machine has bound, from the output of `netstat -an` (BSD '.port', Linux ':port'): the local port of a TCP socket
+     * that listens and of a UDP socket. The connections to other machines (their port is theirs, the local one is temporary)
+     * are not ports this machine keeps.
+     *
+     * @return list<int>
+     */
+    public static function parseBound(string $netstat): array
+    {
         $ports = [];
-        if (preg_match_all('/[.:](\d+)\s/', $out, $m)) {
-            foreach ($m[1] as $p) {
-                $ports[] = (int) $p;
+        foreach (preg_split('/\R/', $netstat) ?: [] as $line) {
+            $cols = preg_split('/\s+/', trim($line)) ?: [];
+            $proto = $cols[0] ?? '';
+            if (!str_starts_with($proto, 'tcp') && !str_starts_with($proto, 'udp')) {
+                continue;
+            }
+            if (str_starts_with($proto, 'tcp') && !in_array('LISTEN', $cols, true)) {
+                continue;
+            }
+            if (isset($cols[3]) && preg_match('/[.:](\d+)$/', $cols[3], $m)) {
+                $ports[] = (int) $m[1];
             }
         }
 
