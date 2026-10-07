@@ -53,6 +53,8 @@ mysql -e "CREATE DATABASE testgrid_robust; CREATE USER opensim@localhost IDENTIF
     GRANT ALL ON testgrid_robust.* TO opensim@localhost;"
 (cd /var/lib/opensim && runuser -u opensim -- php /test/newgrid-driver.php | tail -1)
 check "grid enabled" "[ -L /etc/opensim/robust.d/testgrid.ini ]"
+check "the setup wrote a MoneyServer.ini with a key made at random, where the MoneyServer reads it, mode 640 for the group of the web server" "grep -qE '^MoneyScriptAccessKey = \"[0-9a-f]{32}\"' /etc/opensim/grids/testgrid/MoneyServer.ini &&
+    [ \"\$(stat -c '%a %U:%G' /etc/opensim/grids/testgrid/MoneyServer.ini)\" = '640 opensim:www-data' ]"
 check "the setup wrote the Helpers.ini of the grid, with what has no official place and nothing else" "grep -q '^\[Helpers\]' /etc/opensim/grids/testgrid/Helpers.ini &&
     ! grep -qiE '^ *(grid_name|login_uri|web_url|gridname|ConnectionString|\[robust_db\])' /etc/opensim/grids/testgrid/Helpers.ini"
 check "every ini file of the grid may hold a password: 640, the group of the web server" "[ -z \"\$(find /etc/opensim/grids/testgrid -name '*.ini' -type f \\( ! -perm 640 -o ! -group www-data \\))\" ] &&

@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+- new: the setup of a grid with helpers writes a `MoneyServer.ini` with a random `MoneyScriptAccessKey`, the key the helpers and the MoneyServer share
 - fix: a simulator without a region is not started by the setup, and `opensim start` refuses it
 - update: the simulator made for a new region is named after it by default
 - update: the entry of a simulator's menu is `Add region in <simulator>`

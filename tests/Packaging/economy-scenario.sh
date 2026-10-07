@@ -40,16 +40,10 @@ region2=$(sql "SELECT uuid FROM regions WHERE regionName='Sim1North'")
 secret2=$(sql "SELECT regionSecret FROM regions WHERE regionName='Sim1North'")
 home_region=99999999-0000-4000-8000-0000000000aa
 helper_url=https://localhost/helpers/currency.php
-# The key of the grid: the grid says none, so it is made of the password of its database, as the helpers read it
-cat >/tmp/helpers-key.php <<'KEY'
-<?php
-chdir('/usr/share/opensim-helpers');
-require 'includes/bootstrap.php';
-echo defined('CURRENCY_SCRIPT_KEY') ? CURRENCY_SCRIPT_KEY : '';
-KEY
-grid_key=$(OPENSIM_GRID=testgrid runuser -u www-data -- php /tmp/helpers-key.php)
+# The key of the grid is the one of its MoneyServer.ini (the setup made it), the helpers read it there
+grid_key=$(grep -m1 '^MoneyScriptAccessKey' /etc/opensim/grids/testgrid/MoneyServer.ini | sed -E 's/^[^"]*"([^"]*)".*/\1/')
 script_key=$grid_key
-check "the grid has a script key of its own, not the public default" "[ -n '$grid_key' ] && [ '$grid_key' != 1234567883789 ]"
+check "the grid has a script key of its own, the one of its MoneyServer.ini, not the public default" "[ -n '$grid_key' ] && [ '$grid_key' != 1234567883789 ]"
 
 ts "economy: the site of the helpers, a region with a money module, two avatars in it"
 cp -p $opensim_ini /tmp/OpenSim.ini.economy
@@ -81,13 +75,13 @@ calls plain
 
 ts "economy: the key of the MoneyServer, in its own file, and the rate"
 # MoneyScriptAccessKey is read where the MoneyServer has it: [MoneyServer] of MoneyServer.ini, beside Robust.ini and OpenSim.ini
+cp -p /etc/opensim/grids/testgrid/MoneyServer.ini /tmp/MoneyServer.ini.economy
 printf '[MoneyServer]\nMoneyScriptAccessKey = "key-of-the-grid"\n' >/etc/opensim/grids/testgrid/MoneyServer.ini
-chown opensim:www-data /etc/opensim/grids/testgrid/MoneyServer.ini && chmod 640 /etc/opensim/grids/testgrid/MoneyServer.ini
 mode '{"CURRENCY_RATE": 10}'
 script_key=key-of-the-grid
 calls settings
 script_key=$grid_key
-rm -f /etc/opensim/grids/testgrid/MoneyServer.ini
+cp -p /tmp/MoneyServer.ini.economy /etc/opensim/grids/testgrid/MoneyServer.ini
 mode '{}'
 
 ts "economy: with a money server in the simulators"

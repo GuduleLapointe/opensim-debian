@@ -1,3 +1,4 @@
+check "the address of the helpers itself answers with a public page of its own, what is under it that is not known does not" "[ \"\$(status $site/helpers)\" = 200 ] && ! get $site/helpers | grep -q health-table && get $site/helpers | grep -q 'OpenSimulator helpers' && [ \"\$(status $site/helpers/nothing)\" = 404 ]"
 #!/usr/bin/env bash
 # The pages and the small services of the helpers that are not the search, the offline messages or the economy, on the
 # grid of the scenario: the message of the day (motd.php), the destination guide (guide.php), the images of text
@@ -202,7 +203,7 @@ rm -rf /tmp/opensim-helpers-cache
 health_json() { get "$site/health?format=json" | php -r '$d = json_decode(stream_get_contents(STDIN), true); foreach ($d["groups"] as $g) { foreach ($g["rows"] as $r) { echo $g["title"], "|", $r["label"], "|", $r["url"], "|", $r["status"], "|", $r["level"], "\n"; } }'; }
 health_json >/tmp/health.txt
 check "health: a page for the addresses of the grid, in a browser" "get -A '$firefox' $site/health | grep -q 'health-table'"
-check "health: also with the other services, under the path of the helpers" "[ \"\$(curl -s -o /dev/null -w '%{http_code}' $site/helpers/health)\" = 200 ]"
+check "health: at its own address only, it is for who manages the grid" "[ \"\$(status $site/health)\" = 200 ] && [ \"\$(status $helpers/health)\" = 404 ]"
 check "the menu of the top bar has the pages the site serves, the current one marked" "get -A '$firefox' $site/health | tr -d '\\n' | grep -q '<a href=\"/\">Home</a>.*href=\"/helpers/guide.php\">Destinations</a>.*<a href=\"/health\" aria-current=\"page\">Health</a>'"
 check "health: the sections are named as in the ini files, and the settings by their key" "grep -q '^\\[GridInfoService\\]|login|' /tmp/health.txt && grep -q '^\\[LoginService\\]|DestinationGuide|' /tmp/health.txt &&
     grep -q '^\\[Search\\]|SearchURL|' /tmp/health.txt && grep -q '^\\[DataSnapshot\\]|DATA_SRV_' /tmp/health.txt && grep -q '^\\[Messaging\\]|OfflineMessageURL|' /tmp/health.txt"

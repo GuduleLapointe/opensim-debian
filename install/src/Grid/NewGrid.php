@@ -356,6 +356,12 @@ final class NewGrid
             file_put_contents($path, HelpersConfig::template());
             $this->ui->note(sprintf(_('Wrote %s'), $path));
         }
+        // The key the currency helpers share with a MoneyServer, made at random and written once, where both read it
+        $money = HelpersConfig::moneyServerPath($plan->gridDir);
+        if (!is_file($money)) {
+            file_put_contents($money, HelpersConfig::moneyServerTemplate(bin2hex(random_bytes(16))));
+            $this->ui->note(sprintf(_('Wrote %s'), $money));
+        }
 
         // The configuration of the web server for this grid, one file for each server, to include in its site
         $webDir = "{$plan->gridDir}/web";

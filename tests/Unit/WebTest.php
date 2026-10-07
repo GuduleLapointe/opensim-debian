@@ -36,6 +36,17 @@ describe('Services', function () {
     });
 });
 
+describe('MoneyServer.ini', function () {
+    test('has the key of the helpers where the MoneyServer has it, under its name and in its section', function () {
+        $text = HelpersConfig::moneyServerTemplate('0123456789abcdef0123456789abcdef');
+
+        expect($text)->toContain("[MoneyServer]\nMoneyScriptAccessKey = \"0123456789abcdef0123456789abcdef\"");
+        // Nothing of the helpers in the file of the server
+        expect($text)->not->toMatch('/^\[Helpers\]|ScriptKey|CURRENCY/m');
+        expect(HelpersConfig::moneyServerPath('/etc/opensim/grids/alpha/'))->toBe('/etc/opensim/grids/alpha/MoneyServer.ini');
+    });
+});
+
 describe('Helpers.ini', function () {
     test('is a template that sets nothing: every setting is commented out, none is one of the official files', function () {
         $text = HelpersConfig::template();
