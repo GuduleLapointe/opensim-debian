@@ -207,9 +207,10 @@ check "health: at its own address only, it is for who manages the grid" "[ \"\$(
 check "the menu of the top bar has the pages the site serves, the current one marked" "get -A '$firefox' $site/health | tr -d '\\n' | grep -q '<a href=\"/\">Home</a>.*href=\"/helpers/guide.php\">Destinations</a>.*<a href=\"/health\" aria-current=\"page\">Health</a>'"
 check "health: the sections are named as in the ini files, and the settings by their key" "grep -q '^\\[GridInfoService\\]|login|' /tmp/health.txt && grep -q '^\\[LoginService\\]|DestinationGuide|' /tmp/health.txt &&
     grep -q '^\\[Search\\]|SearchURL|' /tmp/health.txt && grep -q '^\\[DataSnapshot\\]|DATA_SRV_' /tmp/health.txt && grep -q '^\\[Messaging\\]|OfflineMessageURL|' /tmp/health.txt"
-check "health: the login address is there, and answers with its code" "grep -qE '^\\[GridInfoService\\]\\|login\\|http://localhost:8002/?\\|200\\|ok' /tmp/health.txt"
+check "health: it starts with what the grid says, the login address is asked and answers with its code" "grep -qE '^\\|login\\|http://localhost:8002/?\\|200\\|ok' /tmp/health.txt && grep -qE '^\\|gridname\\|\\|\\|none' /tmp/health.txt"
 check "health: the addresses are links" "get -A '$firefox' $site/health | grep -q '<a href=\"http://localhost:8002'"
-check "health: an address that nothing serves gives the code of the error, not a word" "grep -qE '^\\[GridInfoService\\]\\|economy\\|https://localhost[^|]*\\|cURL error [0-9]+\\|error' /tmp/health.txt"
+check "health: an address that nothing serves gives the code of the error, not a word" "grep -qE '^\\|economy\\|https://localhost[^|]*\\|cURL error [0-9]+\\|error' /tmp/health.txt"
+check "health: what the config says is compared with what the grid says: the same is fine" "grep -qE '^\\[GridInfoService\\]\\|login\\|[^|]*\\|OK\\|ok' /tmp/health.txt && grep -qE '^\\[GridInfoService\\]\\|economy\\|[^|]*\\|OK\\|ok' /tmp/health.txt"
 check "health: the key of the currency is there, said defined, never shown" "grep -q '^\\[MoneyServer\\]|MoneyScriptAccessKey||OK|ok$' /tmp/health.txt && ! grep -qE '[0-9a-f]{32}' /tmp/health.txt"
 check "the profile without a name is not a page: a teapot" "[ \"\$(status $site/profile)\" = 418 ]"
 check "health: an address that is not defined is there too, empty" "grep -E '\\|\\|\\|none$' /tmp/health.txt | grep -q ."
@@ -222,8 +223,8 @@ ini_set /etc/opensim/grids/testgrid/Robust.HG.ini GridInfoService partner "$site
 ini_set /etc/opensim/grids/testgrid/Robust.HG.ini GridInfoService elsewhere "$site/nothing-here"
 rm -rf /tmp/opensim-helpers-cache
 health_json >/tmp/health-more.txt
-check "health: an address of [GridInfoService] the helpers know nothing about is there, with its code" "grep -q '^\\[GridInfoService\\]|partner|$site/helpers/guide.php|200|ok' /tmp/health-more.txt && grep -q '^\\[GridInfoService\\]|elsewhere|$site/nothing-here|404|error' /tmp/health-more.txt"
-check "health: the profile is asked with the name of the owner of the grid, not the one of its services, and without any name" "grep -qE '^\\[GridInfoService\\]\\|web_profile_url\\|[^|]*/profile/Test\\.Owner\\|' /tmp/health-more.txt && grep -qE '^\\[GridInfoService\\]\\|web_profile_url\\|[^|]*/profile\\|' /tmp/health-more.txt && ! grep -q 'GRID.SERVICES' /tmp/health-more.txt"
+check "health: a setting of the config the grid does not say yet (a restart not done) is an error, with what the grid says" "grep -q '^\\[GridInfoService\\]|partner|$site/helpers/guide.php|differs|error' /tmp/health-more.txt && grep -q '^\\[GridInfoService\\]|elsewhere|$site/nothing-here|differs|error' /tmp/health-more.txt"
+check "health: the profile is asked with the name of the owner of the grid, not the one of its services, and without any name" "grep -qE '^\\|web_profile_url\\|[^|]*/profile/Test\\.Owner\\|' /tmp/health-more.txt && grep -qE '^\\|web_profile_url\\|[^|]*/profile\\|' /tmp/health-more.txt && ! grep -q 'GRID.SERVICES' /tmp/health-more.txt"
 check "the address of the helpers itself is not a page, a teapot, and what is under it that is not known is not found" "[ \"\$(status $site/helpers)\" = 418 ] && [ \"\$(status $site/helpers/)\" = 418 ] && [ \"\$(status $site/helpers/nothing)\" = 404 ]"
 check "a page called with another method than GET is refused, with the methods it answers" "[ \"\$(status -X POST $site/welcome)\" = 405 ] && curl -s -o /dev/null -D - -X POST $site/welcome | grep -qi '^allow: GET, HEAD'"
 cp -p /tmp/Robust.HG.ini.pages /etc/opensim/grids/testgrid/Robust.HG.ini
@@ -248,12 +249,12 @@ ini_set /etc/opensim/grids/testgrid/OpenSim.ini Messaging OfflineMessageURL "$he
 ini_set /etc/opensim/grids/testgrid/OpenSim.ini DataSnapshot DATA_SRV_test "$helpers/register.php"
 rm -rf /tmp/opensim-helpers-cache
 health_json >/tmp/health-api.txt
-check "health: a service that answers a call is asked one that makes sense, and answers 200" "grep -q '^\\[Search\\]|SearchURL|$helpers/query.php|200|ok' /tmp/health-api.txt"
-check "health: an address that wants a call is refused when asked bare, and that is green" "grep -q '^\\[Messaging\\]|OfflineMessageURL|$helpers/offline.php|405|ok' /tmp/health-api.txt && grep -q '^\\[DataSnapshot\\]|DATA_SRV_test|$helpers/register.php|400|ok' /tmp/health-api.txt"
-check "health: the currency and the land services are checked, once each" "[ \"\$(grep -c '|currency.php|' /tmp/health-api.txt)\" = 1 ] && [ \"\$(grep -c '|landtool.php|' /tmp/health-api.txt)\" = 1 ]"
+check "health: a service is called with nothing, and must refuse, then with what it expects, and must answer" "[ \"\$(grep -c '^\\[Search\\]|SearchURL|$helpers/query.php|400|ok' /tmp/health-api.txt)\" = 1 ] && [ \"\$(grep -c '^\\[Search\\]|SearchURL|$helpers/query.php|200|ok' /tmp/health-api.txt)\" = 1 ]"
+check "health: the offline messages and the registration the same, each in its section" "[ \"\$(grep -c '^\\[Messaging\\]|OfflineMessageURL|$helpers/offline.php|400|ok' /tmp/health-api.txt)\" = 1 ] && [ \"\$(grep -c '^\\[Messaging\\]|OfflineMessageURL|$helpers/offline.php|200|ok' /tmp/health-api.txt)\" = 1 ] && [ \"\$(grep -c '^\\[DataSnapshot\\]|DATA_SRV_test|$helpers/register.php|400|ok' /tmp/health-api.txt)\" = 1 ] && [ \"\$(grep -c '^\\[DataSnapshot\\]|DATA_SRV_test|$helpers/register.php|200|ok' /tmp/health-api.txt)\" = 1 ]"
+check "health: the currency and the land services are checked twice each" "[ \"\$(grep -c '|currency.php|' /tmp/health-api.txt)\" = 2 ] && [ \"\$(grep -c '|landtool.php|' /tmp/health-api.txt)\" = 2 ]"
 health_files >/tmp/health-files.txt
-check "health: by file of the config" "grep -q '^Robust.HG.ini|\\[GridInfoService\\]|' /tmp/health-files.txt && grep -q '^OpenSim.ini|\\[Search\\]|' /tmp/health-files.txt && grep -q '^MoneyServer.ini|\\[MoneyServer\\]|' /tmp/health-files.txt && grep -q '^Robust.HG.ini|\\[DatabaseService\\]|' /tmp/health-files.txt"
-check "health: the two SearchURL each in its own section, the web search of Robust and the API of OpenSim" "grep -q '^Robust.HG.ini|\\[GridInfoService\\]|SearchURL|Web search$' /tmp/health-files.txt && grep -q '^OpenSim.ini|\\[Search\\]|SearchURL|API$' /tmp/health-files.txt && [ \"\$(grep -c '|SearchURL|' /tmp/health-files.txt)\" = 2 ]"
+check "health: what the grid says first, then the files of the config" "head -1 /tmp/health-files.txt | grep -q '^get_grid_info||login|' && grep -q '^Robust.HG.ini|\\[GridInfoService\\]|' /tmp/health-files.txt && grep -q '^OpenSim.ini|\\[Search\\]|' /tmp/health-files.txt && grep -q '^MoneyServer.ini|\\[MoneyServer\\]|' /tmp/health-files.txt && grep -q '^Robust.HG.ini|\\[DatabaseService\\]|' /tmp/health-files.txt"
+check "health: the two SearchURL each in its own section: the web search of Robust, the calls of the API of OpenSim" "grep -q '^Robust.HG.ini|\\[GridInfoService\\]|SearchURL|Web search$' /tmp/health-files.txt && grep -q '^OpenSim.ini|\\[Search\\]|SearchURL|without data$' /tmp/health-files.txt && grep -q '^OpenSim.ini|\\[Search\\]|SearchURL|with valid XMLRPC request$' /tmp/health-files.txt"
 cp -p /tmp/OpenSim.ini.pages /etc/opensim/grids/testgrid/OpenSim.ini
 rm -rf /tmp/opensim-helpers-cache
 
