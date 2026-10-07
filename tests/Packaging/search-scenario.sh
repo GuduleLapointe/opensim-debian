@@ -51,7 +51,10 @@ check "the search tables are made by the first request" "[ \"\$(sql \"SHOW TABLE
 ts "search: a simulator registers, and the helpers read its snapshot"
 register 9990 online
 wait_check 60 "the snapshot is read: the regions of the simulator are known" "[ \"\$(sql \"SELECT COUNT(*) FROM $regions WHERE url='http://127.0.0.1:9990/'\")\" = 3 ]"
-check "the simulator is in the register, it is not asked again before its snapshot expires" "[ \"\$(sql \"SELECT COUNT(*) FROM hostsregister WHERE host='127.0.0.1' AND port=9990 AND failcounter=0 AND nextcheck > UNIX_TIMESTAMP() + 3000\")\" = 1 ]"
+check "the simulator is in the register, it is asked again soon: its regions may not be all loaded when it registers" "[ \"\$(sql \"SELECT COUNT(*) FROM hostsregister WHERE host='127.0.0.1' AND port=9990 AND failcounter=0 AND nextcheck BETWEEN UNIX_TIMESTAMP() + 30 AND UNIX_TIMESTAMP() + 120\")\" = 1 ]"
+sql "UPDATE hostsregister SET nextcheck = 0, checked = 0 WHERE port = 9990"
+curl -s -m 60 -o /dev/null "$helpers/parser.php"
+wait_check 30 "asked again, it is not asked once more before its snapshot expires" "[ \"\$(sql \"SELECT COUNT(*) FROM hostsregister WHERE host='127.0.0.1' AND port=9990 AND failcounter=0 AND nextcheck > UNIX_TIMESTAMP() + 3000\")\" = 1 ]"
 check "its three regions are known, by the address of the simulator" "[ \"\$(sql \"SELECT GROUP_CONCAT(regionname ORDER BY regionname) FROM $regions WHERE url='http://127.0.0.1:9990/'\")\" = Alpha,Beta,Gamma ]"
 check "the owner of a region is the one of its estate" "[ \"\$(sql \"SELECT CONCAT(owner, '|', ownerUUID) FROM $regions WHERE regionname='Alpha'\")\" = 'Alice Owner|aaaaaaaa-0000-4000-8000-000000000001' ]"
 check "every parcel is known, the ones shown in search have their own list" "[ \"\$(sql \"SELECT COUNT(*) FROM allparcels\")\" = 6 ] && [ \"\$(sql \"SELECT COUNT(*) FROM parcels WHERE regionUUID IN (SELECT regionUUID FROM $regions WHERE url='http://127.0.0.1:9990/')\")\" = 5 ]"
