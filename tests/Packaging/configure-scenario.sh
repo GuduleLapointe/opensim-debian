@@ -12,6 +12,8 @@ ts "configure: the settings of the operator and the key of the grid before"
 cp -p $robust /tmp/Robust.HG.ini.configure
 printf '\n[Custom]\n    KeepMe = robust\n' >>$robust
 ini_set $robust LoginService WelcomeMessage '"Hello, <USERNAME>, from the operator"'
+# The web search given to one of the two settings that say it
+ini_set $robust GridInfoService search '"https://play.example.org/search"'
 key=$(grep -m1 '^MoneyScriptAccessKey' $grid/MoneyServer.ini)
 printf '\n[Custom]\nKeepMe = money\n' >>$grid/MoneyServer.ini
 # Edited as root here, the files stay the ones of the system user
@@ -22,6 +24,7 @@ ts "configure: the grid configured again"
     echo "exit code: $?" >>/tmp/configure.out)
 check "the setup ends well" "grep -q 'exit code: 0' /tmp/configure.out"
 check "the settings and the sections of the operator are still in Robust.HG.ini, the file before beside it" "grep -q 'KeepMe = robust' $robust && grep -q 'Hello, <USERNAME>, from the operator' $robust && [ -f $robust~ ]"
+check "the web search given to one of the two settings is given to the other, and kept in the first" "grep -qE '^[[:space:]]*SearchURL[[:space:]]*=[[:space:]]*\"https://play.example.org/search\"' $robust && grep -qE '^[[:space:]]*search[[:space:]]*=[[:space:]]*\"https://play.example.org/search\"' $robust"
 check "the key of the MoneyServer and what the operator added to its file are kept" "grep -qF '$key' $grid/MoneyServer.ini && grep -q 'KeepMe = money' $grid/MoneyServer.ini"
 check "the files keep the mode and the group of the web server" "[ \"\$(stat -c '%a %G' $robust $grid/MoneyServer.ini | sort -u)\" = '640 www-data' ]"
 

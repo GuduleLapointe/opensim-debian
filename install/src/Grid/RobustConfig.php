@@ -132,8 +132,26 @@ final class RobustConfig
         if ($existing === null) {
             $ini->uncomment('UserProfilesServiceConnector');
         }
+        $this->alignSearch($ini);
 
         return $ini->toString();
+    }
+
+    /**
+     * The search of the web has two settings: `[LoginService] SearchURL` (documented since 0.7.1, sent to the viewer at login
+     * and as a feature of the grid) and `[GridInfoService] search` (what get_grid_info says, which the viewers read). Until it is
+     * known which one each viewer takes, a value given to one is given to the other when it has none; `search` is the real one,
+     * the one the helpers use. Two values that differ are the operator's.
+     */
+    private function alignSearch(Ini $ini): void
+    {
+        $search = $ini->get('GridInfoService', 'search') ?? '';
+        $url = $ini->get('LoginService', 'SearchURL') ?? '';
+        if ($search !== '' && $url === '') {
+            $ini->set('LoginService', 'SearchURL', $this->q($search));
+        } elseif ($url !== '' && $search === '') {
+            $ini->set('GridInfoService', 'search', $this->q($url));
+        }
     }
 
     private function q(string $value): string

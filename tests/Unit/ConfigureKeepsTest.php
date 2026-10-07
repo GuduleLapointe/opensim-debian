@@ -34,6 +34,30 @@ describe('Configuring a grid that exists', function () {
         return $plan;
     };
 
+    test('gives the search of the web to both settings that say it when only one is given, and keeps two that differ', function () use ($plan) {
+        $plan = $plan();
+        $robust = new RobustConfig();
+
+        // Nothing given: nothing made up
+        $text = $robust->generate($plan);
+        expect($text)->not->toMatch('/^\s*search\s*=/m');
+
+        // search only: SearchURL of the login service gets it
+        file_put_contents($plan->robustIni(), str_replace('[GridInfoService]', "[GridInfoService]\n    search = \"https://play.example.org/search\"", $text));
+        $both = $robust->generate($plan);
+        expect($both)->toContain('SearchURL = "https://play.example.org/search"')->and($both)->toContain('search = "https://play.example.org/search"');
+
+        // SearchURL only: search gets it
+        file_put_contents($plan->robustIni(), str_replace('SearchURL = ""', 'SearchURL = "https://play.example.org/find"', $text));
+        $both = $robust->generate($plan);
+        expect($both)->toContain('SearchURL = "https://play.example.org/find"')->and($both)->toContain('search = "https://play.example.org/find"');
+
+        // Two values: the operator's, none is replaced
+        file_put_contents($plan->robustIni(), str_replace(['SearchURL = ""', '[GridInfoService]'], ['SearchURL = "https://a.example.org/"', "[GridInfoService]\n    search = \"https://b.example.org/\""], $text));
+        $kept = $robust->generate($plan);
+        expect($kept)->toContain('SearchURL = "https://a.example.org/"')->and($kept)->toContain('search = "https://b.example.org/"');
+    });
+
     test('changes the values the setup manages and keeps the settings and the sections of the operator, and the ones the distribution has', function () use ($plan) {
         $plan = $plan();
         $robust = new RobustConfig();
