@@ -130,7 +130,7 @@ final class GridShared
         if (!is_file($path)) {
             return null;
         }
-        $before = (string) file_get_contents($path);
+        $before = GridFiles::read($path);
         $after = $before;
         foreach ($replacements as $pattern => $replacement) {
             $after = (string) preg_replace($pattern, $replacement, $after);

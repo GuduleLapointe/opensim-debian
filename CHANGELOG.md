@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+- fix: the setup reads the files of a grid as the system user, a region added by a person no longer gets port 1
 - update: the helpers read the official settings (Robust.ini, OpenSim.ini), the setup copies none in `helpers.ini`
 - update: `Helpers.ini` only holds what has no official place, in `[Helpers]`; no more `[Urls]` nor `[robust_db]`
 - update: every ini file of a grid is mode 640 for the group of the web server

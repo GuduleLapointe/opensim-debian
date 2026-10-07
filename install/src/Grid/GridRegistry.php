@@ -110,7 +110,7 @@ final class GridRegistry
             }
         }
         foreach (glob("{$grid->dir}/sims/*/regions/*.ini") ?: [] as $file) {
-            foreach (preg_split('/^\s*\[/m', (string) file_get_contents($file)) ?: [] as $section) {
+            foreach (preg_split('/^\s*\[/m', GridFiles::read($file)) ?: [] as $section) {
                 if (preg_match('/^\s*Location\s*=\s*(\d+)\s*,\s*(\d+)/m', $section, $m)) {
                     $width = preg_match('/^\s*SizeX\s*=\s*(\d+)/m', $section, $w) ? intdiv((int) $w[1], 256) : 1;
                     $height = preg_match('/^\s*SizeY\s*=\s*(\d+)/m', $section, $h) ? intdiv((int) $h[1], 256) : 1;

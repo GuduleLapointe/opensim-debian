@@ -257,7 +257,7 @@ final class GridInfo
      */
     public static function parse(string $path): array
     {
-        $text = (string) file_get_contents($path);
+        $text = GridFiles::read($path);
         $current = [];
 
         $grab = static function (string $key) use ($text): ?string {

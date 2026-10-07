@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OpenSim\Installer\Web;
 
+use OpenSim\Installer\Grid\GridFiles;
+
 /**
  * The web side of a grid. opensim-helpers read the official settings of the grid (Robust.ini, OpenSim.ini, the ini of its
  * simulators) in their own format, one source of truth: the setup writes nothing of them in another file.
@@ -28,7 +30,7 @@ final class HelpersConfig
     {
         foreach (['Robust.HG.ini', 'Robust.ini'] as $file) {
             if (is_file("$gridDir/$file")) {
-                return (string) file_get_contents("$gridDir/$file");
+                return GridFiles::read("$gridDir/$file");
             }
         }
 

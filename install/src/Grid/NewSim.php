@@ -356,7 +356,7 @@ final class NewSim
         $plan->httpPort = (int) (GridInfo::parse($plan->iniPath())['httpPort'] ?? 0);
         // The address the regions of this simulator already announce
         foreach (glob("{$plan->regionsDir()}/*.ini") ?: [] as $file) {
-            if (preg_match('/^\s*ExternalHostName\s*=\s*(\S+)/m', (string) file_get_contents($file), $m)) {
+            if (preg_match('/^\s*ExternalHostName\s*=\s*(\S+)/m', GridFiles::read($file), $m)) {
                 $plan->externalHost = $m[1];
                 break;
             }

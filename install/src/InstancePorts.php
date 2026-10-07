@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OpenSim\Installer;
 
+use OpenSim\Installer\Grid\GridFiles;
+
 /**
  * The ports an instance (Robust or simulator) listens on, read from its config
  * and, for a simulator, from the descriptions of its regions, with what each
@@ -25,7 +27,7 @@ final class InstancePorts
      */
     public static function of(string $ini): array
     {
-        $text = (string) @file_get_contents($ini);
+        $text = GridFiles::read($ini);
         $values = self::values($text);
         $const = $values['const'] ?? [];
         $expand = static function (string $value) use ($const): string {
@@ -104,7 +106,7 @@ final class InstancePorts
 
             $regions = $first('startup', 'regionload_regionsdir');
             foreach ($regions !== null ? (glob(rtrim($regions, '/') . '/*.ini') ?: []) : [] as $file) {
-                $region = (string) @file_get_contents($file);
+                $region = GridFiles::read($file);
                 if (preg_match_all('/^\s*\[([^\]]+)\]\s*$(.*?)(?=^\s*\[|\z)/ms', $region, $blocks, PREG_SET_ORDER)) {
                     foreach ($blocks as $block) {
                         if (preg_match('/^\s*InternalPort\s*=\s*"?(\d+)/mi', $block[2], $m)) {

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OpenSim\Installer;
 
+use OpenSim\Installer\Grid\GridFiles;
+
 /**
  * The next free ports, shared by the setup and `opensim next port`: a port is
  * "in use" if it appears (even commented) in any OpenSim config .ini under the
@@ -127,7 +129,7 @@ final class Ports
 
         $profile = (new Config())->profile();
         foreach (self::configFiles($profile['EtcRoot'] ?? '', $profile['DataRoot'] ?? '') as $file) {
-            $text = (string) @file_get_contents($file);
+            $text = GridFiles::read($file);
             if (
                 preg_match_all(
                     '/^[\s;]*(?:InternalPort|PublicPort|PrivatePort|http_listener_port|http_listener_sslport|console_port|ConsolePort)\s*=\s*"?(\d+)/im',

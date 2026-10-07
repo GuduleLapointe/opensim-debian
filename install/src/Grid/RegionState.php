@@ -25,7 +25,7 @@ final class RegionState
         $files = array_merge(glob("$regionsDir/*.ini") ?: [], glob("$regionsDir/*.ini" . self::DISABLED) ?: []);
         sort($files);
         foreach ($files as $file) {
-            if (preg_match_all('/^\s*\[([^\]]+)\]/m', (string) file_get_contents($file), $m)) {
+            if (preg_match_all('/^\s*\[([^\]]+)\]/m', GridFiles::read($file), $m)) {
                 foreach ($m[1] as $name) {
                     $regions[trim($name)] = ['file' => $file, 'enabled' => !str_ends_with($file, self::DISABLED)];
                 }
@@ -65,7 +65,7 @@ final class RegionState
     public static function values(string $file): array
     {
         $values = [];
-        $text = (string) file_get_contents($file);
+        $text = GridFiles::read($file);
         foreach (['RegionUUID', 'Location', 'SizeX', 'InternalPort', 'ExternalHostName'] as $key) {
             if (preg_match('/^\s*' . $key . '\s*=\s*"?([^"\r\n]*?)"?\s*$/m', $text, $m)) {
                 $values[$key] = trim($m[1]);
