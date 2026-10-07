@@ -78,15 +78,21 @@ if (isset($names[1]) && Features::isFeature($names[1])) {
     $state = $verb . 'd';
     $what = $feature . ($feature === Features::ECONOMY && $verb === 'enable' ? ' (' . ($options['money'] ?? 'beta') . ')' : '');
     $touched = $result['sims'];
-    if ($touched === [] && !$result['robust']) {
+    if ($touched === [] && !$result['grid'] && !$result['robust']) {
         echo "nothing to change: $what is already $state for {$grid->nick}" .
             ($features->simulators() === [] ? ' (the grid has no simulator on this machine)' : '') . "\n";
     } else {
+        // What the simulators and Robust read at their start; the OpenSim.ini of the grid is read by the helpers each time
         $restart = $touched;
         if ($result['robust']) {
             array_unshift($restart, GridInfo::instanceName($grid->nick));
         }
-        $changed = count($touched) . ' simulator' . (count($touched) === 1 ? '' : 's') . ($result['robust'] ? ' and Robust' : '');
+        $parts = array_filter([
+            $touched === [] ? null : count($touched) . ' simulator' . (count($touched) === 1 ? '' : 's'),
+            $result['robust'] ? 'Robust' : null,
+            $result['grid'] ? 'the OpenSim.ini of the grid' : null,
+        ]);
+        $changed = count($parts) > 1 ? implode(', ', array_slice($parts, 0, -1)) . ' and ' . end($parts) : (string) reset($parts);
         echo "$what $state for {$grid->nick}: $changed changed" .
             ($restart === [] ? '' : ", restart to apply: opensim restart " . implode(' ', $restart)) . "\n";
     }

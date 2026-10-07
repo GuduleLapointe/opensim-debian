@@ -240,6 +240,35 @@ final class Ini
         return $removed;
     }
 
+    /** Whether a section has the key, active or commented out. */
+    public function mentions(string $section, string $key): bool
+    {
+        return $this->has($section, '/^\s*;?\s*' . preg_quote($key, '/') . '\s*=/i');
+    }
+
+    /**
+     * Comment out the active lines of a key in a section, with the value they had: it is kept to be seen, and what sets the key
+     * again uncomments it.
+     *
+     * @return bool whether something was commented
+     */
+    public function comment(string $section, string $key): bool
+    {
+        $inTarget = false;
+        $commented = false;
+        $re = '/^(\s*)(' . preg_quote($key, '/') . '\s*=.*)$/i';
+        foreach ($this->lines as $i => $text) {
+            if (preg_match('/^\s*\[(.+?)\]\s*$/', $text, $m)) {
+                $inTarget = strcasecmp(trim($m[1]), $section) === 0;
+            } elseif ($inTarget && preg_match($re, $text, $m)) {
+                $this->lines[$i] = $m[1] . ';' . $m[2];
+                $commented = true;
+            }
+        }
+
+        return $commented;
+    }
+
     /**
      * The active keys of a section whose name matches.
      *

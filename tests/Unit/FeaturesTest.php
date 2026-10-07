@@ -32,7 +32,7 @@ function features_run(array $arguments, string $home): array
  *
  * @return array{0:string,1:string} The home of the user, the folder of the grid.
  */
-function features_tree(bool $helpers = true): array
+function features_tree(bool $helpers = true, bool $general = false): array
 {
     $root = test_tmp() . '/features-' . bin2hex(random_bytes(4));
     $etc = "$root/etc";
@@ -49,6 +49,13 @@ function features_tree(bool $helpers = true): array
             "[UserProfilesService]\n    Enabled = false\n" .
             "[ServiceConnectors]\n    ;UserProfilesServiceConnector = \"\${Const|PublicPort}/OpenSim.Server.Handlers.dll:UserProfilesConnector\"\n",
     );
+    if ($general) {
+        // The OpenSim.ini of the grid, which the helpers read first: a registration at the address of the search, the beta module
+        file_put_contents(
+            "$grid/OpenSim.ini",
+            "[Economy]\n    economymodule = BetaGridLikeMoneyModule\n    SellEnabled = true\n[DataSnapshot]\nDATA_SRV_Alpha = https://play.example.org/helpers/query.php\n[Messaging]\n    ; nothing of ours\n",
+        );
+    }
     file_put_contents("$grid/alpha.conf", "[Grid]\nGridName = \"Alpha World\"\nGridNick = alpha\n");
     file_put_contents("$grid/sims/alpha_one.ini", "[Const]\nBaseURL = \"http://play.example.org\"\nPublicPort = 8002\n[Startup]\nkeep = me\n");
     file_put_contents(
@@ -145,15 +152,29 @@ describe('opensim disable <grid> search', function () {
             ->toBe(0)
             ->and($output)
             ->toContain('search disabled for alpha: 2 simulators changed')
+            // Commented out, with the value it had, not erased
             ->and(features_sim($grid, 'alpha_one'))
-            ->not->toContain('SearchURL')
-            ->not->toContain('DATA_SRV_Alpha')
+            ->not->toMatch('/^\s*SearchURL\s*=/m')
+            ->not->toMatch('/^\s*DATA_SRV_Alpha\s*=/m')
+            ->toContain(';SearchURL = "https://play.example.org/helpers/query.php"')
+            ->toContain(';DATA_SRV_Alpha = "https://play.example.org/helpers/register.php"')
             // Nobody to register to: the simulator no longer indexes
-            ->not->toContain('index_sims')
+            ->not->toMatch('/^\s*index_sims\s*=/m')
             ->and(features_sim($grid, 'alpha_two'))
-            ->not->toContain('DATA_SRV_Alpha')
-            ->toContain('DATA_SRV_2do')
+            ->not->toMatch('/^\s*DATA_SRV_Alpha\s*=/m')
+            ->toMatch('/^DATA_SRV_2do\s*=/m')
             ->toContain('index_sims = true');
+    });
+
+    test('puts back what it commented out', function () {
+        [$home, $grid] = features_tree();
+        features_run(['enable', 'alpha', 'search'], $home);
+        $enabled = features_sim($grid, 'alpha_one');
+
+        features_run(['disable', 'alpha', 'search'], $home);
+        features_run(['enable', 'alpha', 'search'], $home);
+
+        expect(features_sim($grid, 'alpha_one'))->toBe($enabled);
     });
 });
 
@@ -210,7 +231,8 @@ describe('opensim enable <grid> economy', function () {
         features_run(['disable', 'alpha', 'economy'], $home);
 
         expect(features_sim($grid, 'alpha_one'))
-            ->not->toContain('economymodule')
+            ->not->toMatch('/^\s*economymodule\s*=/m')
+            ->toContain(';economymodule = Gloebit')
             ->toContain("[Gloebit]\nEnabled = false");
     });
 });
@@ -240,7 +262,7 @@ describe('opensim enable <grid> profiles', function () {
         features_run(['disable', 'alpha', 'profiles'], $home);
 
         expect(features_sim($grid, 'alpha_one'))
-            ->not->toContain('ProfileServiceURL')
+            ->not->toMatch('/^\s*ProfileServiceURL\s*=/m')
             ->and((string) file_get_contents("$grid/Robust.HG.ini"))
             ->toContain("[UserProfilesService]\n    Enabled = false");
     });
@@ -255,5 +277,55 @@ describe('opensim enable with a name that is not a feature', function () {
         expect($status)->toBe(1)->and($errors)->toContain('no grid called nowhere');
         [$bad, , $usage] = features_run(['enable', 'alpha', 'profiles', 'https://x.example.org'], $home);
         expect($bad)->toBe(2)->and($usage)->toContain('usage: opensim enable|disable');
+    });
+});
+
+describe('opensim enable|disable <grid> and the OpenSim.ini of the grid', function () {
+    test('puts right a registration at the address of the search, the one the helpers read first, and says so', function () {
+        [$home, $grid] = features_tree(true, true);
+
+        [$status, $output] = features_run(['enable', 'alpha', 'search'], $home);
+        $general = (string) file_get_contents("$grid/OpenSim.ini");
+
+        expect($status)
+            ->toBe(0)
+            ->and($output)
+            ->toContain('search enabled for alpha: 2 simulators and the OpenSim.ini of the grid changed, restart to apply: opensim restart alpha_one alpha_two')
+            ->and($general)
+            ->toContain('DATA_SRV_Alpha = "https://play.example.org/helpers/register.php"')
+            ->not->toContain('query.php')
+            // Nothing is added to it that the simulators have, they do not read it
+            ->not->toContain('[Search]')
+            ->not->toContain('index_sims');
+    });
+
+    test('comments out what it holds when the feature is disabled, and puts it right when enabled again', function () {
+        [$home, $grid] = features_tree(true, true);
+
+        features_run(['disable', 'alpha', 'search'], $home);
+        $off = (string) file_get_contents("$grid/OpenSim.ini");
+        features_run(['enable', 'alpha', 'search'], $home);
+        $on = (string) file_get_contents("$grid/OpenSim.ini");
+
+        expect($off)
+            ->not->toMatch('/^\s*DATA_SRV_Alpha\s*=/m')
+            ->toContain(';DATA_SRV_Alpha = https://play.example.org/helpers/query.php')
+            ->and($on)
+            ->toMatch('/^DATA_SRV_Alpha = "https:\/\/play.example.org\/helpers\/register.php"$/m');
+    });
+
+    test('keeps its economy module the same as the simulators', function () {
+        [$home, $grid] = features_tree(true, true);
+
+        features_run(['enable', 'alpha', 'economy', 'gloebit'], $home);
+        $gloebit = (string) file_get_contents("$grid/OpenSim.ini");
+        features_run(['disable', 'alpha', 'economy'], $home);
+        $off = (string) file_get_contents("$grid/OpenSim.ini");
+
+        expect($gloebit)
+            ->toContain('economymodule = Gloebit')
+            ->and($off)
+            ->not->toMatch('/^\s*economymodule\s*=/m')
+            ->toMatch('/^\s*;economymodule = Gloebit$/m');
     });
 });

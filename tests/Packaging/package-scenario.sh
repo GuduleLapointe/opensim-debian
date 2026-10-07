@@ -317,26 +317,38 @@ mysql testgrid_robust -e "DELETE FROM regions WHERE uuid = 'aaaaaaaa-0000-4000-8
 
 ts "features: search, economy and profiles of a grid, enabled and disabled by a command"
 sims=/etc/opensim/grids/testgrid/sims
+general=/etc/opensim/grids/testgrid/OpenSim.ini
+# A setting that is active: not a comment of it
+active() { echo "^[[:space:]]*$1[[:space:]]*="; }
+cp -p $general /tmp/OpenSim.ini.features
 check "the simulators of a grid with helpers are made with the search module and the profile service" "[ -n \"\$(ls $sims/*.ini)\" ] && [ -z \"\$(grep -L 'SearchURL = \"https://localhost/helpers/query.php\"' $sims/*.ini)\" ] && [ -z \"\$(grep -L 'ProfileServiceURL' $sims/*.ini)\" ]"
 out=$(opensim disable testgrid search 2>&1)
-check "opensim disable <grid> search takes the module and the registration out of the simulators" "echo \"\$out\" | grep -q 'search disabled for testgrid' && [ -z \"\$(grep -l 'SearchURL' $sims/*.ini)\" ] && [ -z \"\$(grep -l 'DATA_SRV_Testgrid' $sims/*.ini)\" ]"
+check "opensim disable <grid> search comments the module and the registration out of the simulators, with their value" "echo \"\$out\" | grep -q 'search disabled for testgrid' && [ -z \"\$(grep -lE \"\$(active SearchURL)\" $sims/*.ini)\" ] && [ -z \"\$(grep -lE \"\$(active DATA_SRV_Testgrid)\" $sims/*.ini)\" ] && grep -q ';SearchURL = \"https://localhost/helpers/query.php\"' $sims/*.ini"
 out=$(opensim enable testgrid search 2>&1)
 check "opensim enable <grid> search puts them back, at the address of the helpers of the grid" "echo \"\$out\" | grep -q 'search enabled for testgrid' && [ -z \"\$(grep -L 'SearchURL = \"https://localhost/helpers/query.php\"' $sims/*.ini)\" ] && [ -z \"\$(grep -L 'DATA_SRV_Testgrid = \"https://localhost/helpers/register.php\"' $sims/*.ini)\" ]"
 out=$(opensim enable testgrid search 2>&1)
 check "opensim enable <grid> search again changes nothing and says so" "echo \"\$out\" | grep -q 'nothing to change: search is already enabled for testgrid'"
+# The OpenSim.ini of the grid, which the helpers read first: a registration at the address of the search is put right, and
+# commented out and put back with the others
+ini_set $general DataSnapshot DATA_SRV_Testgrid "https://localhost/helpers/query.php"
+out=$(opensim enable testgrid search 2>&1)
+check "opensim enable <grid> search puts right a registration the OpenSim.ini of the grid has at the address of the search" "echo \"\$out\" | grep -q 'the OpenSim.ini of the grid' && grep -qE 'DATA_SRV_Testgrid = \"https://localhost/helpers/register.php\"' $general && ! grep -q 'query.php' $general"
+opensim disable testgrid search >/dev/null 2>&1
+check "opensim disable <grid> search comments it out there too" "! grep -qE \"\$(active DATA_SRV_Testgrid)\" $general && grep -q ';DATA_SRV_Testgrid' $general"
 out=$(opensim enable testgrid search https://search.example.net/h 2>&1)
-check "opensim enable <grid> search <url prefix> uses that address" "echo \"\$out\" | grep -q 'search enabled for testgrid' && [ -z \"\$(grep -L 'SearchURL = \"https://search.example.net/h/query.php\"' $sims/*.ini)\" ]"
+check "opensim enable <grid> search <url prefix> uses that address, in the simulators and in the OpenSim.ini of the grid" "echo \"\$out\" | grep -q 'search enabled for testgrid' && [ -z \"\$(grep -L 'SearchURL = \"https://search.example.net/h/query.php\"' $sims/*.ini)\" ] && grep -q 'DATA_SRV_Testgrid = \"https://search.example.net/h/register.php\"' $general"
 opensim enable testgrid search >/dev/null 2>&1
+cp -p /tmp/OpenSim.ini.features $general
 out=$(opensim enable testgrid economy 2>&1)
 check "opensim enable <grid> economy is the beta module" "echo \"\$out\" | grep -q 'economy (beta) enabled for testgrid' && [ -z \"\$(grep -L 'economymodule = BetaGridLikeMoneyModule' $sims/*.ini)\" ]"
 out=$(opensim enable testgrid economy gloebit 2>&1)
 check "opensim enable <grid> economy gloebit sets the module, and says which keys are the operator's" "echo \"\$out\" | grep -q 'economy (gloebit) enabled' && echo \"\$out\" | grep -q 'GLBKey' && [ -z \"\$(grep -L 'economymodule = Gloebit' $sims/*.ini)\" ] && [ -z \"\$(grep -l 'GLBKey' $sims/*.ini)\" ]"
 out=$(opensim disable testgrid economy 2>&1)
-check "opensim disable <grid> economy takes the module out: OpenSimulator has its beta one again" "echo \"\$out\" | grep -q 'economy disabled for testgrid' && [ -z \"\$(grep -l 'economymodule' $sims/*.ini)\" ]"
+check "opensim disable <grid> economy comments the module out: OpenSimulator has its beta one again" "echo \"\$out\" | grep -q 'economy disabled for testgrid' && [ -z \"\$(grep -lE \"\$(active economymodule)\" $sims/*.ini)\" ]"
 out=$(opensim disable testgrid profiles 2>&1)
-check "opensim disable <grid> profiles takes the profile service out of the simulators and of Robust" "echo \"\$out\" | grep -q 'profiles disabled for testgrid' && [ -z \"\$(grep -l 'ProfileServiceURL' $sims/*.ini)\" ] && grep -A8 '^\[UserProfilesService\]' /etc/opensim/grids/testgrid/Robust.HG.ini | grep -q 'Enabled = false'"
+check "opensim disable <grid> profiles comments the profile service out of the simulators, and turns it off in Robust" "echo \"\$out\" | grep -q 'profiles disabled for testgrid' && [ -z \"\$(grep -lE \"\$(active ProfileServiceURL)\" $sims/*.ini)\" ] && grep -A8 '^\\[UserProfilesService\\]' /etc/opensim/grids/testgrid/Robust.HG.ini | grep -q 'Enabled = false'"
 out=$(opensim enable testgrid profiles 2>&1)
-check "opensim enable <grid> profiles puts them back" "echo \"\$out\" | grep -q 'profiles enabled for testgrid' && [ -z \"\$(grep -L 'ProfileServiceURL' $sims/*.ini)\" ] && grep -A8 '^\[UserProfilesService\]' /etc/opensim/grids/testgrid/Robust.HG.ini | grep -q 'Enabled = true'"
+check "opensim enable <grid> profiles puts them back" "echo \"\$out\" | grep -q 'profiles enabled for testgrid' && [ -z \"\$(grep -L 'ProfileServiceURL' $sims/*.ini)\" ] && grep -A8 '^\\[UserProfilesService\\]' /etc/opensim/grids/testgrid/Robust.HG.ini | grep -q 'Enabled = true'"
 check "a grid that is not there is said" "! opensim enable nowhere search 2>&1 | grep -qv 'no grid called nowhere'"
 # The ports of an instance are a block of ten, the same on any machine: Robust
 # 8002 public and 8003 private; the first simulator 9000, 9004 for its console

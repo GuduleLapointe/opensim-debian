@@ -8,8 +8,10 @@ use OpenSim\Installer\Ini;
 
 /**
  * What `opensim enable|disable <grid> <feature>` writes: the settings a feature of a grid needs, in the files of its
- * simulators (sims/*.ini, which each simulator reads) and, for what Robust says, in its Robust config. Nothing else is
- * touched: the operator customizes the rest in the files, and a setting that is there is changed in place.
+ * simulators (sims/*.ini, which each simulator reads), in the OpenSim.ini of the grid for the ones it already has (the helpers
+ * read it first, a setting there that is wrong hides the right one) and, for what Robust says, in its Robust config. Nothing
+ * else is touched: the operator customizes the rest in the files. A setting that is there is changed in place, and `disable`
+ * comments it out, with its value, so that it can be seen and replaced.
  *
  *  - search: the module of search of the simulators (`[Search]`) and their registration to the search service of the helpers
  *    (`[DataSnapshot]`), which the helpers read back (`query.php` answers the module, `register.php` the snapshots);
@@ -41,7 +43,7 @@ final class Features
      *
      * @param  array{prefix?:string,money?:string} $options the address of the services (a prefix: `<prefix>/query.php`), the
      *                                                      money module (beta or gloebit)
-     * @return array{error:?string,sims:list<string>,robust:bool,notes:list<string>}
+     * @return array{error:?string,sims:list<string>,grid:bool,robust:bool,notes:list<string>}
      */
     public function enable(string $feature, array $options = []): array
     {
@@ -51,7 +53,7 @@ final class Features
     /**
      * Disable a feature of the grid.
      *
-     * @return array{error:?string,sims:list<string>,robust:bool,notes:list<string>}
+     * @return array{error:?string,sims:list<string>,grid:bool,robust:bool,notes:list<string>}
      */
     public function disable(string $feature): array
     {
@@ -77,11 +79,11 @@ final class Features
 
     /**
      * @param  array{prefix?:string,money?:string} $options
-     * @return array{error:?string,sims:list<string>,robust:bool,notes:list<string>}
+     * @return array{error:?string,sims:list<string>,grid:bool,robust:bool,notes:list<string>}
      */
     private function apply(string $feature, bool $on, array $options): array
     {
-        $result = ['error' => null, 'sims' => [], 'robust' => false, 'notes' => []];
+        $result = ['error' => null, 'sims' => [], 'grid' => false, 'robust' => false, 'notes' => []];
         $prefix = rtrim(trim($options['prefix'] ?? ''), '/');
         if ($prefix !== '' && !preg_match('#^https?://[^\s/]+#i', $prefix)) {
             $result['error'] = "'$prefix' is not an address, give the start of the address of the services (https://www.example.org/helpers)";
@@ -110,8 +112,8 @@ final class Features
     }
 
     /**
-     * @param  array{error:?string,sims:list<string>,robust:bool,notes:list<string>} $result
-     * @return array{error:?string,sims:list<string>,robust:bool,notes:list<string>}
+     * @param  array{error:?string,sims:list<string>,grid:bool,robust:bool,notes:list<string>} $result
+     * @return array{error:?string,sims:list<string>,grid:bool,robust:bool,notes:list<string>}
      */
     private function search(bool $on, string $prefix, array $result): array
     {
@@ -125,23 +127,23 @@ final class Features
             return $result;
         }
 
-        $this->eachSimulator($result, function (Ini $ini) use ($on, $name, $query, $register): void {
+        $this->eachFile($result, function (Ini $ini, bool $grid) use ($on, $name, $query, $register): void {
             $service = "DATA_SRV_$name";
             if ($on) {
-                $ini->set('Search', 'Module', 'OpenSimSearch');
-                $ini->set('Search', 'SearchURL', $this->quote($query));
-                $ini->set('DataSnapshot', 'index_sims', 'true');
-                $ini->set('DataSnapshot', 'gridname', $this->quote($this->grid->name));
-                $ini->set('DataSnapshot', $service, $this->quote($register));
+                $this->put($ini, $grid, 'Search', 'Module', 'OpenSimSearch');
+                $this->put($ini, $grid, 'Search', 'SearchURL', $this->quote($query));
+                $this->put($ini, $grid, 'DataSnapshot', 'index_sims', 'true');
+                $this->put($ini, $grid, 'DataSnapshot', 'gridname', $this->quote($this->grid->name));
+                $this->put($ini, $grid, 'DataSnapshot', $service, $this->quote($register));
 
                 return;
             }
-            $ini->remove('Search', 'Module');
-            $ini->remove('Search', 'SearchURL');
-            $ini->remove('DataSnapshot', $service);
+            $ini->comment('Search', 'Module');
+            $ini->comment('Search', 'SearchURL');
+            $ini->comment('DataSnapshot', $service);
             // A simulator registered to another directory (2do...) keeps telling its snapshot to it
             if ($ini->keys('DataSnapshot', '/^DATA_SRV_/i') === []) {
-                $ini->remove('DataSnapshot', 'index_sims');
+                $ini->comment('DataSnapshot', 'index_sims');
             }
         });
         if ($on) {
@@ -152,33 +154,33 @@ final class Features
     }
 
     /**
-     * @param  array{error:?string,sims:list<string>,robust:bool,notes:list<string>} $result
-     * @return array{error:?string,sims:list<string>,robust:bool,notes:list<string>}
+     * @param  array{error:?string,sims:list<string>,grid:bool,robust:bool,notes:list<string>} $result
+     * @return array{error:?string,sims:list<string>,grid:bool,robust:bool,notes:list<string>}
      */
     private function economy(bool $on, string $money, string $prefix, array $result): array
     {
         $module = self::MONEY[$money] ?? self::MONEY['beta'];
-        $this->eachSimulator($result, function (Ini $ini) use ($on, $money, $module): void {
+        $this->eachFile($result, function (Ini $ini, bool $grid) use ($on, $money, $module): void {
             if (!$on) {
                 // OpenSimulator has the beta module when it is not told another one
-                $ini->remove('Economy', 'economymodule');
+                $ini->comment('Economy', 'economymodule');
                 if ($ini->get('Gloebit', 'Enabled') !== null) {
                     $ini->set('Gloebit', 'Enabled', 'false');
                 }
 
                 return;
             }
-            $ini->set('Economy', 'economymodule', $module);
+            $this->put($ini, $grid, 'Economy', 'economymodule', $module);
             if ($money === 'beta') {
-                $ini->set('Economy', 'SellEnabled', 'true');
+                $this->put($ini, $grid, 'Economy', 'SellEnabled', 'true');
                 if ($ini->get('Gloebit', 'Enabled') !== null) {
                     $ini->set('Gloebit', 'Enabled', 'false');
                 }
 
                 return;
             }
-            $ini->set('Gloebit', 'Enabled', 'true');
-            if ($ini->get('Gloebit', 'GLBEnvironment') === null) {
+            $this->put($ini, $grid, 'Gloebit', 'Enabled', 'true');
+            if (!$grid && $ini->get('Gloebit', 'GLBEnvironment') === null) {
                 $ini->set('Gloebit', 'GLBEnvironment', 'sandbox');
             }
         });
@@ -209,16 +211,16 @@ final class Features
     }
 
     /**
-     * @param  array{error:?string,sims:list<string>,robust:bool,notes:list<string>} $result
-     * @return array{error:?string,sims:list<string>,robust:bool,notes:list<string>}
+     * @param  array{error:?string,sims:list<string>,grid:bool,robust:bool,notes:list<string>} $result
+     * @return array{error:?string,sims:list<string>,grid:bool,robust:bool,notes:list<string>}
      */
     private function profiles(bool $on, array $result): array
     {
-        $this->eachSimulator($result, function (Ini $ini) use ($on): void {
+        $this->eachFile($result, function (Ini $ini, bool $grid) use ($on): void {
             if ($on) {
-                $ini->set('UserProfiles', 'ProfileServiceURL', '"${Const|BaseURL}:${Const|PublicPort}"');
+                $this->put($ini, $grid, 'UserProfiles', 'ProfileServiceURL', '"${Const|BaseURL}:${Const|PublicPort}"');
             } else {
-                $ini->remove('UserProfiles', 'ProfileServiceURL');
+                $ini->comment('UserProfiles', 'ProfileServiceURL');
             }
         });
         // The service is Robust's: its connector and its switch
@@ -233,24 +235,41 @@ final class Features
     }
 
     /**
-     * Edit the ini file of each simulator of the grid, and keep which ones changed.
+     * Edit the ini file of each simulator of the grid and the OpenSim.ini of the grid, and keep which ones changed.
      *
-     * @param array{error:?string,sims:list<string>,robust:bool,notes:list<string>} $result
-     * @param callable(Ini):void $edit
+     * @param array{error:?string,sims:list<string>,grid:bool,robust:bool,notes:list<string>} $result
+     * @param callable(Ini,bool):void $edit given the file and whether it is the OpenSim.ini of the grid
      */
-    private function eachSimulator(array &$result, callable $edit): void
+    private function eachFile(array &$result, callable $edit): void
     {
+        $general = "{$this->grid->dir}/OpenSim.ini";
+        if (is_file($general) && $this->edit($general, fn(Ini $ini) => $edit($ini, true))) {
+            $result['grid'] = true;
+        }
         foreach ($this->simulators() as $instance => $file) {
-            if ($this->edit($file, $edit)) {
+            if ($this->edit($file, fn(Ini $ini) => $edit($ini, false))) {
                 $result['sims'][] = $instance;
             }
         }
     }
 
     /**
+     * Set a setting in a file. In the OpenSim.ini of the grid, which the simulators do not read, only a setting that is there
+     * (or was, commented out) is changed: it is there for the helpers, which read it first, and it must say what the simulators
+     * say.
+     */
+    private function put(Ini $ini, bool $grid, string $section, string $key, string $value): void
+    {
+        if ($grid && !$ini->mentions($section, $key)) {
+            return;
+        }
+        $ini->set($section, $key, $value);
+    }
+
+    /**
      * Edit the Robust config of the grid, when it is on this machine.
      *
-     * @param array{error:?string,sims:list<string>,robust:bool,notes:list<string>} $result
+     * @param array{error:?string,sims:list<string>,grid:bool,robust:bool,notes:list<string>} $result
      * @param callable(Ini):void $edit
      */
     private function robust(callable $edit, array &$result): bool

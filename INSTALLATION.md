@@ -111,7 +111,7 @@ opensim disable <grid> search|economy|profiles
 - **economy**: the beta module of OpenSimulator (`economymodule = BetaGridLikeMoneyModule`, the sale of land and things on), or Gloebit (the module, the sandbox, the address of the economy in Robust, `currency.php` and `landtool.php` being the helpers'). The keys of your Gloebit application (`GLBKey`, `GLBSecret`, `GLBOwnerName`) are yours to write in `[Gloebit]`: there is no default key. `disable` gives back the module OpenSimulator has by default.
 - **profiles**: the profile service the simulators ask for the profiles and their classifieds (`[UserProfiles] ProfileServiceURL`), served by Robust (`[UserProfilesService]`).
 
-The simulators of a grid the setup makes already have the profiles, and the search when the grid has helpers. The commands say what to restart. They change those settings only: the rest of the files is yours, and `opensim setup` writes the settings it manages again.
+The simulators of a grid the setup makes already have the profiles, and the search when the grid has helpers. The commands write in the files of the simulators, and change what the `OpenSim.ini` of the grid already has of these settings (the helpers read it first: a registration there that points to `query.php` hides the search): a setting that is there is changed in place, `disable` comments it out, with its value, and `enable` puts it back. They say what to restart. They change those settings only: the rest of the files is yours, and `opensim setup` writes the settings it manages again.
 
 ## Firewall
 
