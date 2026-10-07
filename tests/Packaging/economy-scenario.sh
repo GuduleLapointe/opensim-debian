@@ -40,7 +40,16 @@ region2=$(sql "SELECT uuid FROM regions WHERE regionName='Sim1North'")
 secret2=$(sql "SELECT regionSecret FROM regions WHERE regionName='Sim1North'")
 home_region=99999999-0000-4000-8000-0000000000aa
 helper_url=https://localhost/helpers/currency.php
-script_key=
+# The key of the grid: the grid says none, so it is made of the password of its database, as the helpers read it
+cat >/tmp/helpers-key.php <<'KEY'
+<?php
+chdir('/usr/share/opensim-helpers');
+require 'includes/bootstrap.php';
+echo defined('CURRENCY_SCRIPT_KEY') ? CURRENCY_SCRIPT_KEY : '';
+KEY
+grid_key=$(OPENSIM_GRID=testgrid runuser -u www-data -- php /tmp/helpers-key.php)
+script_key=$grid_key
+check "the grid has a script key of its own, not the public default" "[ -n '$grid_key' ] && [ '$grid_key' != 1234567883789 ]"
 
 ts "economy: the site of the helpers, a region with a money module, two avatars in it"
 cp -p $opensim_ini /tmp/OpenSim.ini.economy
@@ -74,7 +83,7 @@ ts "economy: the key and the rate"
 mode '{"CURRENCY_SCRIPT_KEY": "key-of-the-grid", "CURRENCY_RATE": 10}'
 script_key=key-of-the-grid
 calls settings
-script_key=
+script_key=$grid_key
 mode '{}'
 
 ts "economy: with a money server in the simulators"

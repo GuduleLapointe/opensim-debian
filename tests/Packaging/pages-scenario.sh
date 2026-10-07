@@ -202,6 +202,8 @@ rm -rf /tmp/opensim-helpers-cache
 health_json() { get "$site/health?format=json" | php -r '$d = json_decode(stream_get_contents(STDIN), true); foreach ($d["groups"] as $g) { foreach ($g["rows"] as $r) { echo $g["title"], "|", $r["label"], "|", $r["url"], "|", $r["status"], "|", $r["level"], "\n"; } }'; }
 health_json >/tmp/health.txt
 check "health: a page for the addresses of the grid, in a browser" "get -A '$firefox' $site/health | grep -q 'health-table'"
+check "health: also with the other services, under the path of the helpers" "[ \"\$(curl -s -o /dev/null -w '%{http_code}' $site/helpers/health)\" = 200 ]"
+check "the menu of the top bar has the pages the site serves, the current one marked" "get -A '$firefox' $site/health | tr -d '\\n' | grep -q '<a href=\"/\">Home</a>.*href=\"/helpers/guide.php\">Destinations</a>.*<a href=\"/health\" aria-current=\"page\">Health</a>'"
 check "health: the login address is there, and answers" "grep -qE '^[^|]*\\|login\\|http://localhost:8002\\|[0-9]+\\|' /tmp/health.txt"
 check "health: an address that the grid info gives and nothing serves has no answer" "grep -qE '^[^|]*\\|economy\\|https://localhost[^|]*\\|no answer' /tmp/health.txt"
 check "health: an address that is not defined is there too, empty" "grep -E '\\|not defined\\|none$' /tmp/health.txt | grep -q ."
