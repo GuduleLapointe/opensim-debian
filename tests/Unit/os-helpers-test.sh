@@ -111,6 +111,7 @@ function test_oscountrealusers_from_a_screen_reads_the_rows_cut_at_80_columns() 
 	unset OSIM_REST_INI
 	simName=sim
 	osScreenExists() { return 0; }
+	osConsole() { :; }
 	osScreenOutput() { printf '\nRoot agents in region Sim1: 0 (root 0, child 2)\n'; }
 
 	assert_equals '0' "$(osCountRealUsers)"
@@ -131,4 +132,127 @@ function test_oscountrealusers_from_a_screen_reads_the_rows_cut_at_80_columns() 
 	osScreenOutput() { printf '\nRoot agents in region Sim1: 1 (root 1, child 0)\nAnn Lee 1111-truncated\n'; }
 	osCountRealUsers >/dev/null
 	assert_equals '1' "$?"
+}
+
+function test_oscountrealusers_asks_the_console_to_see_all_the_regions() {
+	eval "$(sed -n '/^osCountRealUsers()/,/^}/p' "$ROOT/libexec/os-helpers")"
+	OSIM_REST_INI=x
+	# The console is in the last region that came up: the lines sent say to change to root before listing the users
+	osRest() {
+		cat >"$WORK/asked"
+		printf '\nRoot agents in region Sim1: 0 (root 0, child 0)\n'
+	}
+	osCountRealUsers >/dev/null
+	assert_equals "change region root
+show users" "$(cat "$WORK/asked")"
+
+	unset OSIM_REST_INI
+	simName=sim
+	LOG=
+	osScreenExists() { return 0; }
+	osConsole() { LOG="$LOG|$2"; }
+	osScreenOutput() { printf '\nRoot agents in region Sim1: 0 (root 0, child 0)\n'; }
+	osCountRealUsers >/dev/null
+	assert_equals "|change region root" "$LOG"
+}
+
+# Two regions, one with a user: the HTTP port of the simulator tells how many agents each has
+fake_regions() {
+	mkdir -p "$WORK/regions"
+	printf '[Sim1]\nRegionUUID = 11111111-1111-4111-8111-111111111111\n' >"$WORK/regions/Sim1.ini"
+	printf '[Sim2]\nRegionUUID = "22222222-2222-4222-8222-222222222222"\n' >"$WORK/regions/Sim2.ini"
+	eval "$(sed -n '/^osExpandConst()/,/^}/p' "$ROOT/libexec/os-helpers")"
+	eval "$(sed -n '/^osCountUsersHttp()/,/^}/p' "$ROOT/libexec/os-helpers")"
+	crudget() {
+		case "$3" in
+		http_listener_port) echo 9110 ;;
+		regionload_regionsdir) echo "$WORK/regions" ;;
+		esac
+	}
+}
+
+function test_oscountusershttp_adds_the_agents_of_every_region() {
+	fake_regions
+	curl() {
+		case "$*" in
+		*monitorstats/11111111-1111-4111-8111-111111111111) echo '<data><AgentCountMonitor>1</AgentCountMonitor></data>' ;;
+		*monitorstats/22222222-2222-4222-8222-222222222222) echo '<data><AgentCountMonitor>2</AgentCountMonitor></data>' ;;
+		esac
+	}
+
+	assert_equals '3' "$(osCountUsersHttp x.ini)"
+}
+
+function test_oscountusershttp_fails_when_a_region_does_not_answer() {
+	fake_regions
+	curl() { case "$*" in *11111111*) echo '<data><AgentCountMonitor>0</AgentCountMonitor></data>' ;; *) return 22 ;; esac; }
+
+	osCountUsersHttp x.ini >/dev/null
+	assert_equals '1' "$?"
+}
+
+function test_oscountusershttp_fails_for_a_simulator_without_region_files() {
+	fake_regions
+	rm -f "$WORK"/regions/*.ini
+	curl() { echo '<data><AgentCountMonitor>0</AgentCountMonitor></data>'; }
+
+	osCountUsersHttp x.ini >/dev/null
+	assert_equals '1' "$?"
+}
+
+function test_oscountusers_takes_zero_from_the_http_port_without_asking_the_console() {
+	eval "$(sed -n '/^osCountUsers()/,/^}/p' "$ROOT/libexec/os-helpers")"
+	OS_USERS_INI=x.ini
+	osCountUsersHttp() { echo 0; }
+	osCountRealUsers() { echo "the console was asked" >&2; echo 5; }
+
+	assert_equals '0' "$(osCountUsers 2>&1)"
+}
+
+function test_oscountusers_asks_the_console_who_the_agents_are() {
+	eval "$(sed -n '/^osCountUsers()/,/^}/p' "$ROOT/libexec/os-helpers")"
+	OS_USERS_INI=x.ini
+	# An NPC is an agent for the simulator, not a user: the console says
+	osCountUsersHttp() { echo 1; }
+	osCountRealUsers() { echo 0; }
+
+	assert_equals '0' "$(osCountUsers)"
+}
+
+function test_oscountusers_counts_the_agents_when_the_console_does_not_answer() {
+	eval "$(sed -n '/^osCountUsers()/,/^}/p' "$ROOT/libexec/os-helpers")"
+	OS_USERS_INI=x.ini
+	osCountUsersHttp() { echo 2; }
+	osCountRealUsers() { return 1; }
+
+	assert_equals '2' "$(osCountUsers)"
+}
+
+function test_oscountusers_fails_when_nothing_answers() {
+	eval "$(sed -n '/^osCountUsers()/,/^}/p' "$ROOT/libexec/os-helpers")"
+	OS_USERS_INI=x.ini
+	osCountUsersHttp() { return 1; }
+	osCountRealUsers() { return 1; }
+
+	osCountUsers >/dev/null
+	assert_equals '1' "$?"
+}
+
+function test_a_silence_is_not_a_user_to_wait_for() {
+	eval "$(sed -n '/^osNobodyToWaitFor()/,/^}/p' "$ROOT/libexec/os-helpers")"
+
+	osCountUsers() { return 1; }
+	osNobodyToWaitFor
+	assert_equals '0' "$?"
+	assert_equals '1' "$OS_USERS_UNKNOWN"
+
+	osCountUsers() { echo 0; }
+	osNobodyToWaitFor
+	assert_equals '0' "$?"
+	assert_equals '' "$OS_USERS_UNKNOWN"
+
+	osCountUsers() { echo 2; }
+	osNobodyToWaitFor
+	assert_equals '1' "$?"
+	assert_equals '' "$OS_USERS_UNKNOWN"
 }

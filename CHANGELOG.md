@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+- fix: `opensim stop` counts the users of all the regions, and no longer waits when nothing answers
 - update: `opensim setup` checks it can use sudo for the system user before it asks anything
 - fix: the setup reads the files of a grid as the system user, a region added by a person no longer gets port 1
 - update: the helpers read the official settings (Robust.ini, OpenSim.ini), the setup copies none in `helpers.ini`

@@ -546,6 +546,7 @@ stopSim() {
 		fi
 		# Its remote console when it has one, else its screen session
 		osUseRest "$inifile"
+		OS_USERS_INI=$inifile
 
 		# Only a running region has users to warn
 		if [ "$stopType" = "OpenSim" ] && { [ -n "${OSIM_REST_INI:-}" ] && osInstanceRunning "$simName" "$inifile" || osScreenExists "$simName"; }; then
@@ -555,18 +556,24 @@ stopSim() {
 			[ $delay -eq 0 ] && warnings=0
 			# Nobody to warn: no reason to wait
 			nobody=0
-			if [ $warnings -gt 0 ] && osNoRealUsers; then
-				log "$simName: no user in its regions, stopping now"
+			if [ $warnings -gt 0 ] && osNobodyToWaitFor; then
+				if [ -n "${OS_USERS_UNKNOWN:-}" ]; then
+					log "$simName: no answer about its users, nobody can be warned, stopping now"
+				else
+					log "$simName: no user in its regions, stopping now"
+				fi
 				warnings=0
 				nobody=1
 			fi
+			# The console is in one region: the warnings are for all of them
+			[ $warnings -gt 0 ] && osConsole $simName "change region root"
 			[ $warnings -gt 0 ] && warnDelay=$(($delay / $warnings)) && log "$simName: warning its users, it stops in $delay seconds"
 			warn=0
 			while [ $warn -lt $warnings ]; do
 				remaining=$(($delay - $warn * $warnDelay))
 				osConsole $simName "alert Attention: this simulator will be stopped in $remaining seconds. Please teleport to another region to avoid being disconnected."
 				# The countdown is the time left before the shutdown, not before the next warning
-				osCountdown $warnDelay "Stopping $simName" $(($remaining - $warnDelay)) osNoRealUsers ||
+				osCountdown $warnDelay "Stopping $simName" $(($remaining - $warnDelay)) osNobodyToWaitFor ||
 					{
 						log "$simName: no user left in its regions, stopping now"
 						nobody=1

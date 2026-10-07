@@ -282,6 +282,9 @@ osScreenOutput() {
 # remote console in OSIM_REST_INI or its screen session), from `show users`: NPCs and
 # child agents are not counted. Says nothing, and fails, when it cannot tell.
 #
+# The console is in one region (the last one that came up), and `show users` only
+# lists that one: `change region root` first makes the console see all the regions.
+#
 # The rows are `Firstname Lastname Agent-ID Type Home`, the type being Root, Child,
 # NPC Root or NPC Child, the 72nd column on (a screen session cuts the lines at 80
 # columns: the type is still there, up to "NPC Root", unless the names are long). A
@@ -289,8 +292,9 @@ osScreenOutput() {
 osCountRealUsers() {
 	local out
 	if [ -n "${OSIM_REST_INI:-}" ]; then
-		out=$(osRest --ini "$OSIM_REST_INI" -- "show users" 2>/dev/null) || return 1
+		out=$(printf 'change region root\nshow users\n' | osRest --ini "$OSIM_REST_INI" - 2>/dev/null) || return 1
 	elif [ -n "${simName:-}" ] && osScreenExists "$simName"; then
+		osConsole "$simName" "change region root"
 		out=$(osScreenOutput "$simName" "show users") || return 1
 	else
 		return 1
@@ -312,10 +316,60 @@ osCountRealUsers() {
 	printf '%s\n' "$out" | grep -E "$uuid" | grep -vcE "$uuid[[:space:]]+(NPC|Child)" || true
 }
 
+# The root agents the regions of an instance have, as its simulator says on its own HTTP port, one request
+# per region (its UUID is in its file): a console busy with a long command, an archive being loaded, does not
+# stop it. NPCs are counted. Prints the total, fails when a region does not answer. Args: the config of the instance
+osCountUsersHttp() {
+	local ini=$1 port dir file uuid body count total=0 regions=0
+	port=$(crudget "$ini" Network http_listener_port 2>/dev/null) || return 1
+	dir=$(crudget "$ini" Startup regionload_regionsdir 2>/dev/null) || return 1
+	[ -n "$port" ] && [ -n "$dir" ] || return 1
+	dir=$(osExpandConst "$dir")
+	for file in "$dir"/*.ini; do
+		[ -f "$file" ] || continue
+		while read -r uuid; do
+			body=$(curl -s -m 5 "http://127.0.0.1:$port/monitorstats/$uuid") || return 1
+			count=$(sed -nE 's/.*<AgentCountMonitor>([0-9]+)<\/AgentCountMonitor>.*/\1/p' <<<"$body")
+			[ -n "$count" ] || return 1
+			total=$((total + count))
+			regions=$((regions + 1))
+		done < <(sed -nE 's/^[[:space:]]*RegionUUID[[:space:]]*=[[:space:]]*"?([0-9a-fA-F-]{36}).*/\1/p' "$file")
+	done
+	[ "$regions" -gt 0 ] || return 1
+	echo "$total"
+}
+
+# The real users in all the regions of the instance in OS_USERS_INI, whatever its console does: the simulator tells on
+# its HTTP port how many agents it has, none is none; some are asked to the console, which tells the users from the
+# NPCs, and when it does not answer they count. Fails when nothing answers.
+osCountUsers() {
+	local http=""
+	[ -z "${OS_USERS_INI:-}" ] || http=$(osCountUsersHttp "$OS_USERS_INI") || http=""
+	if [ "$http" = 0 ]; then
+		echo 0
+		return 0
+	fi
+	osCountRealUsers && return 0
+	[ -n "$http" ] || return 1
+	echo "$http"
+}
+
 # Succeeds when the simulator is known to have no real user left
 osNoRealUsers() {
 	local count
-	count=$(osCountRealUsers) || return 1
+	count=$(osCountUsers) || return 1
+	[ "$count" -eq 0 ]
+}
+
+# Succeeds when there is nobody to wait for: no user, or an instance that does not answer at all (an instance that does
+# not answer serves nobody, and waiting for people it cannot tell about would only keep the operator waiting)
+osNobodyToWaitFor() {
+	local count
+	count=$(osCountUsers) || {
+		OS_USERS_UNKNOWN=1
+		return 0
+	}
+	OS_USERS_UNKNOWN=
 	[ "$count" -eq 0 ]
 }
 
