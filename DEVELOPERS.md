@@ -12,6 +12,20 @@ It uses libraries `opensim-helpers`, `opensim-engine`, and `opensim-rest-php`. E
 - **opensim-kit** provides the whole environment setup and management. It uses own code and `opensim-helpers` (and therefore `opensim-engine` and `opensim-rest-php`).
 - **w4os WordPress plugin** is another implementation to provide management and web interface, that uses `opensim-helpers`.
 
+## Configuration files
+
+The folder of a grid (`/etc/opensim/grids/<grid>`) holds the configuration files of the OpenSim environment as the distributions ship them (Robust.HG.ini, OpenSim.ini, config-include/, MoneyServer.ini...), completed. They are shared by the OpenSim executables and the helpers: every setting keeps its name, its section and its file, the helpers read them there (with their `Include-` and `${Const|...}`), and what the helpers need that OpenSim has no place for is in `Helpers.ini`, `[Helpers]`.
+
+The setup makes them in layers, so that a setting new in a distribution is always taken, and nothing is lost:
+
+1. the file of the distribution (the `.example` of the core, `contrib/MoneyServer/*/MoneyServer.ini`), whole, never a selection of its settings;
+2. over it, what the grid already has in its file (its active settings, its own sections);
+3. over it, what the setup manages: the choices made in the wizard, written with `Ini::set`, which replaces the key, activates its example or adds it. What the setup only proposes (the welcome message) is set only when the grid has none.
+
+A simulator config has the setup's own template as its first layer. The previous file is kept beside the new one (`file~`) when it changes. Installing a package adds the files a grid lacks (`libexec/complete-grids.php`), it does not merge: the setup does.
+
+No secret has a default: the key of the currency (`MoneyScriptAccessKey` of `[MoneyServer]`) is made at random, once, by the setup; without it the helpers do not serve the currency.
+
 ## Packaging
 
 The packages are built with [nfpm](https://nfpm.goreleaser.com) and published to an apt repository with the tools of [build-tools](https://github.com/magicoli/build-tools) (`apt-package`, `apt-publish`), the repository being the one `APT_REPO_DIR` names in `.env`. Everything lives in `packaging/`, one definition per package:

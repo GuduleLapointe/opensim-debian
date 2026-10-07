@@ -209,6 +209,8 @@ check "health: the sections are named as in the ini files, and the settings by t
 check "health: the login address is there, and answers with its code" "grep -qE '^\\[GridInfoService\\]\\|login\\|http://localhost:8002/?\\|200\\|ok' /tmp/health.txt"
 check "health: the addresses are links" "get -A '$firefox' $site/health | grep -q '<a href=\"http://localhost:8002'"
 check "health: an address that nothing serves gives the code of the error, not a word" "grep -qE '^\\[GridInfoService\\]\\|economy\\|https://localhost[^|]*\\|cURL error [0-9]+\\|error' /tmp/health.txt"
+check "health: the key of the currency is there, said defined, never shown" "grep -q '^\\[MoneyServer\\]|MoneyScriptAccessKey||defined|ok$' /tmp/health.txt && ! grep -qE '[0-9a-f]{32}' /tmp/health.txt"
+check "the profile without a name is a bad request" "[ \"\$(status $site/profile)\" = 400 ]"
 check "health: an address that is not defined is there too, empty" "grep -E '\\|not defined\\|none$' /tmp/health.txt | grep -q ."
 check "health: the services of the helpers are there, with their address" "grep -q '^\\[Search\\]|SearchURL|https://localhost/helpers/query.php|' /tmp/health.txt && grep -q '|currency.php|https://localhost/' /tmp/health.txt"
 check "health: the database of Robust, named as in its section" "grep -q '^\\[DatabaseService\\]|ConnectionString||ok|ok$' /tmp/health.txt"
@@ -219,7 +221,8 @@ ini_set /etc/opensim/grids/testgrid/Robust.HG.ini GridInfoService partner "$site
 ini_set /etc/opensim/grids/testgrid/Robust.HG.ini GridInfoService elsewhere "$site/nothing-here"
 rm -rf /tmp/opensim-helpers-cache
 health_json >/tmp/health-more.txt
-check "health: an address of [GridInfoService] the helpers know nothing about is there, with its code" "grep -q '^\\[GridInfoService\\]|partner|$site/helpers/guide.php|200|ok' /tmp/health-more.txt && grep -q '^\\[GridInfoService\\]|elsewhere|$site/nothing-here|404|warn' /tmp/health-more.txt"
+check "health: an address of [GridInfoService] the helpers know nothing about is there, with its code" "grep -q '^\\[GridInfoService\\]|partner|$site/helpers/guide.php|200|ok' /tmp/health-more.txt && grep -q '^\\[GridInfoService\\]|elsewhere|$site/nothing-here|404|error' /tmp/health-more.txt"
+check "health: the profile is asked with the name of the owner of the grid, not the one of its services, and without any name" "grep -qE '^\\[GridInfoService\\]\\|web_profile_url\\|[^|]*/profile/Test\\.Owner\\|' /tmp/health-more.txt && grep -qE '^\\[GridInfoService\\]\\|web_profile_url\\|[^|]*/profile\\|' /tmp/health-more.txt && ! grep -q 'GRID.SERVICES' /tmp/health-more.txt"
 check "the address of the helpers itself answers with a public page of its own, what is under it that is not known does not" "[ \"\$(status $site/helpers)\" = 200 ] && ! get $site/helpers | grep -q health-table && get $site/helpers | grep -q 'OpenSimulator helpers' && [ \"\$(status $site/helpers/nothing)\" = 404 ]"
 cp -p /tmp/Robust.HG.ini.pages /etc/opensim/grids/testgrid/Robust.HG.ini
 cfg GuideSource /tmp/guide/destinations.txt
