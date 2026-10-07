@@ -13,6 +13,7 @@
 # A DLL only works with the OpenSimulator it was built for, unstable is the commit of upstream/opensim
 # OpenSimSearch 0.5 beta: the DLLs are built from modules/OpenSimSearch (the commit of the version) and kept in contrib/OpenSimSearch
 # until a release holds them (then a URL, its SHA256 and the name, as the older ones had)
+opensimsearch 0.9.2.2 0.5~beta.1+git20261007.f814162 1 contrib/OpenSimSearch/0.9.2.2/OpenSimSearch.Modules.dll
 opensimsearch 0.9.3.0 0.5~beta.1+git20261007.f814162 1 contrib/OpenSimSearch/0.9.3.0/OpenSimSearch.Modules.dll
 opensimsearch unstable 0.5~beta.1+git20261007.f814162 1 contrib/OpenSimSearch/unstable/OpenSimSearch.Modules.dll
 
