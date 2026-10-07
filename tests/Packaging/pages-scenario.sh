@@ -200,6 +200,7 @@ check "routes: without a word of the grid a service is at its default address" "
 ts "pages: the health page"
 rm -rf /tmp/opensim-helpers-cache
 health_json() { get "$site/health?format=json" | php -r '$d = json_decode(stream_get_contents(STDIN), true); foreach ($d["groups"] as $g) { foreach ($g["rows"] as $r) { echo $g["title"], "|", $r["label"], "|", $r["url"], "|", $r["status"], "|", $r["level"], "\n"; } }'; }
+health_files() { get "$site/health?format=json" | php -r '$d = json_decode(stream_get_contents(STDIN), true); foreach ($d["groups"] as $g) { foreach ($g["rows"] as $r) { echo $g["file"], "|", $g["title"], "|", $r["label"], "|", $r["tag"] ?? "", "\n"; } }'; }
 health_json >/tmp/health.txt
 check "health: a page for the addresses of the grid, in a browser" "get -A '$firefox' $site/health | grep -q 'health-table'"
 check "health: at its own address only, it is for who manages the grid" "[ \"\$(status $site/health)\" = 200 ] && [ \"\$(status $helpers/health)\" = 404 ]"
@@ -209,12 +210,12 @@ check "health: the sections are named as in the ini files, and the settings by t
 check "health: the login address is there, and answers with its code" "grep -qE '^\\[GridInfoService\\]\\|login\\|http://localhost:8002/?\\|200\\|ok' /tmp/health.txt"
 check "health: the addresses are links" "get -A '$firefox' $site/health | grep -q '<a href=\"http://localhost:8002'"
 check "health: an address that nothing serves gives the code of the error, not a word" "grep -qE '^\\[GridInfoService\\]\\|economy\\|https://localhost[^|]*\\|cURL error [0-9]+\\|error' /tmp/health.txt"
-check "health: the key of the currency is there, said defined, never shown" "grep -q '^\\[MoneyServer\\]|MoneyScriptAccessKey||defined|ok$' /tmp/health.txt && ! grep -qE '[0-9a-f]{32}' /tmp/health.txt"
+check "health: the key of the currency is there, said defined, never shown" "grep -q '^\\[MoneyServer\\]|MoneyScriptAccessKey||OK|ok$' /tmp/health.txt && ! grep -qE '[0-9a-f]{32}' /tmp/health.txt"
 check "the profile without a name is not a page: a teapot" "[ \"\$(status $site/profile)\" = 418 ]"
-check "health: an address that is not defined is there too, empty" "grep -E '\\|not defined\\|none$' /tmp/health.txt | grep -q ."
+check "health: an address that is not defined is there too, empty" "grep -E '\\|\\|\\|none$' /tmp/health.txt | grep -q ."
 check "health: the services of the helpers are there, with their address" "grep -qE 'query.php\\|https://localhost/helpers/query.php\\||SearchURL\\|https://localhost/helpers/query.php' /tmp/health.txt && grep -q '|currency.php|https://localhost/' /tmp/health.txt"
-check "health: the database of Robust, named as in its section" "grep -q '^\\[DatabaseService\\]|ConnectionString||ok|ok$' /tmp/health.txt"
-check "health: the guide has no source yet, and says so" "grep -q '^\\[Helpers\\]|GuideSource||not defined|none$' /tmp/health.txt"
+check "health: the database of Robust, named as in its section" "grep -q '^\\[DatabaseService\\]|ConnectionString||OK|ok$' /tmp/health.txt"
+check "health: the guide has no source yet, and says so" "grep -q '^\\[Helpers\\]|GuideSource|||none$' /tmp/health.txt"
 # Every address of [GridInfoService] is there, the ones the helpers do not serve too, with the answer where it leads
 cp -p /etc/opensim/grids/testgrid/Robust.HG.ini /tmp/Robust.HG.ini.pages
 ini_set /etc/opensim/grids/testgrid/Robust.HG.ini GridInfoService partner "$site/helpers/guide.php"
@@ -228,7 +229,7 @@ check "a page called with another method than GET is refused, with the methods i
 cp -p /tmp/Robust.HG.ini.pages /etc/opensim/grids/testgrid/Robust.HG.ini
 cfg GuideSource /tmp/guide/destinations.txt
 rm -rf /tmp/opensim-helpers-cache
-check "health: the guide source, once the grid gives one" "health_json | grep -q '^\\[Helpers\\]|GuideSource||ok|ok$'"
+check "health: the guide source, once the grid gives one" "health_json | grep -q '^\\[Helpers\\]|GuideSource||OK|ok$'"
 cp -p /tmp/Helpers.ini.pages $helpers_ini
 rm -rf /tmp/opensim-helpers-cache
 
@@ -247,9 +248,12 @@ ini_set /etc/opensim/grids/testgrid/OpenSim.ini Messaging OfflineMessageURL "$he
 ini_set /etc/opensim/grids/testgrid/OpenSim.ini DataSnapshot DATA_SRV_test "$helpers/register.php"
 rm -rf /tmp/opensim-helpers-cache
 health_json >/tmp/health-api.txt
-check "health: a service called with the wrong method must refuse (green), and answer a call that makes sense" "grep -q '^\\[Search\\]|SearchURL|$helpers/query.php|405|ok' /tmp/health-api.txt && grep -q '^\\[Search\\]|SearchURL|$helpers/query.php|200|ok' /tmp/health-api.txt"
+check "health: a service that answers a call is asked one that makes sense, and answers 200" "grep -q '^\\[Search\\]|SearchURL|$helpers/query.php|200|ok' /tmp/health-api.txt"
 check "health: an address that wants a call is refused when asked bare, and that is green" "grep -q '^\\[Messaging\\]|OfflineMessageURL|$helpers/offline.php|405|ok' /tmp/health-api.txt && grep -q '^\\[DataSnapshot\\]|DATA_SRV_test|$helpers/register.php|400|ok' /tmp/health-api.txt"
-check "health: the currency and the land services are checked the two ways" "[ \"\$(grep -c '|currency.php|' /tmp/health-api.txt)\" = 2 ] && [ \"\$(grep -c '|landtool.php|' /tmp/health-api.txt)\" = 2 ]"
+check "health: the currency and the land services are checked, once each" "[ \"\$(grep -c '|currency.php|' /tmp/health-api.txt)\" = 1 ] && [ \"\$(grep -c '|landtool.php|' /tmp/health-api.txt)\" = 1 ]"
+health_files >/tmp/health-files.txt
+check "health: by file of the config" "grep -q '^Robust.HG.ini|\\[GridInfoService\\]|' /tmp/health-files.txt && grep -q '^OpenSim.ini|\\[Search\\]|' /tmp/health-files.txt && grep -q '^MoneyServer.ini|\\[MoneyServer\\]|' /tmp/health-files.txt && grep -q '^Robust.HG.ini|\\[DatabaseService\\]|' /tmp/health-files.txt"
+check "health: the two SearchURL each in its own section, the web search of Robust and the API of OpenSim" "grep -q '^Robust.HG.ini|\\[GridInfoService\\]|SearchURL|Web search$' /tmp/health-files.txt && grep -q '^OpenSim.ini|\\[Search\\]|SearchURL|API$' /tmp/health-files.txt && [ \"\$(grep -c '|SearchURL|' /tmp/health-files.txt)\" = 2 ]"
 cp -p /tmp/OpenSim.ini.pages /etc/opensim/grids/testgrid/OpenSim.ini
 rm -rf /tmp/opensim-helpers-cache
 
