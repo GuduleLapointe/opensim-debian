@@ -1,4 +1,3 @@
-check "the address of the helpers itself answers with a public page of its own, what is under it that is not known does not" "[ \"\$(status $site/helpers)\" = 200 ] && ! get $site/helpers | grep -q health-table && get $site/helpers | grep -q 'OpenSimulator helpers' && [ \"\$(status $site/helpers/nothing)\" = 404 ]"
 #!/usr/bin/env bash
 # The pages and the small services of the helpers that are not the search, the offline messages or the economy, on the
 # grid of the scenario: the message of the day (motd.php), the destination guide (guide.php), the images of text
@@ -221,7 +220,7 @@ ini_set /etc/opensim/grids/testgrid/Robust.HG.ini GridInfoService elsewhere "$si
 rm -rf /tmp/opensim-helpers-cache
 health_json >/tmp/health-more.txt
 check "health: an address of [GridInfoService] the helpers know nothing about is there, with its code" "grep -q '^\\[GridInfoService\\]|partner|$site/helpers/guide.php|200|ok' /tmp/health-more.txt && grep -q '^\\[GridInfoService\\]|elsewhere|$site/nothing-here|404|warn' /tmp/health-more.txt"
-check "the address of the helpers itself answers, what is under it that is not known does not" "[ \"\$(status $site/helpers)\" = 200 ] && [ \"\$(status $site/helpers/nothing)\" = 404 ]"
+check "the address of the helpers itself answers with a public page of its own, what is under it that is not known does not" "[ \"\$(status $site/helpers)\" = 200 ] && ! get $site/helpers | grep -q health-table && get $site/helpers | grep -q 'OpenSimulator helpers' && [ \"\$(status $site/helpers/nothing)\" = 404 ]"
 cp -p /tmp/Robust.HG.ini.pages /etc/opensim/grids/testgrid/Robust.HG.ini
 cfg GuideSource /tmp/guide/destinations.txt
 rm -rf /tmp/opensim-helpers-cache
