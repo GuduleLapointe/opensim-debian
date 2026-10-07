@@ -204,15 +204,27 @@ health_json >/tmp/health.txt
 check "health: a page for the addresses of the grid, in a browser" "get -A '$firefox' $site/health | grep -q 'health-table'"
 check "health: also with the other services, under the path of the helpers" "[ \"\$(curl -s -o /dev/null -w '%{http_code}' $site/helpers/health)\" = 200 ]"
 check "the menu of the top bar has the pages the site serves, the current one marked" "get -A '$firefox' $site/health | tr -d '\\n' | grep -q '<a href=\"/\">Home</a>.*href=\"/helpers/guide.php\">Destinations</a>.*<a href=\"/health\" aria-current=\"page\">Health</a>'"
-check "health: the login address is there, and answers" "grep -qE '^[^|]*\\|login\\|http://localhost:8002\\|[0-9]+\\|' /tmp/health.txt"
-check "health: an address that the grid info gives and nothing serves has no answer" "grep -qE '^[^|]*\\|economy\\|https://localhost[^|]*\\|no answer' /tmp/health.txt"
+check "health: the sections are named as in the ini files, and the settings by their key" "grep -q '^\\[GridInfoService\\]|login|' /tmp/health.txt && grep -q '^\\[LoginService\\]|DestinationGuide|' /tmp/health.txt &&
+    grep -q '^\\[Search\\]|SearchURL|' /tmp/health.txt && grep -q '^\\[DataSnapshot\\]|DATA_SRV_' /tmp/health.txt && grep -q '^\\[Messaging\\]|OfflineMessageURL|' /tmp/health.txt"
+check "health: the login address is there, and answers with its code" "grep -qE '^\\[GridInfoService\\]\\|login\\|http://localhost:8002/?\\|200\\|ok' /tmp/health.txt"
+check "health: the addresses are links" "get -A '$firefox' $site/health | grep -q '<a href=\"http://localhost:8002'"
+check "health: an address that nothing serves gives the code of the error, not a word" "grep -qE '^\\[GridInfoService\\]\\|economy\\|https://localhost[^|]*\\|cURL error [0-9]+\\|error' /tmp/health.txt"
 check "health: an address that is not defined is there too, empty" "grep -E '\\|not defined\\|none$' /tmp/health.txt | grep -q ."
-check "health: the services of the helpers are there, with their address" "grep -q '|SearchURL|https://localhost/helpers/query.php|' /tmp/health.txt && grep -q '|currency.php|https://localhost/' /tmp/health.txt"
-check "health: what the install needs, the database of Robust in the first place" "grep -q '|Database of Robust||ok|ok$' /tmp/health.txt"
-check "health: the guide has no source yet, and says so" "grep -q '|Destination guide source||not defined|none$' /tmp/health.txt"
+check "health: the services of the helpers are there, with their address" "grep -q '^\\[Search\\]|SearchURL|https://localhost/helpers/query.php|' /tmp/health.txt && grep -q '|currency.php|https://localhost/' /tmp/health.txt"
+check "health: the database of Robust, named as in its section" "grep -q '^\\[DatabaseService\\]|ConnectionString||ok|ok$' /tmp/health.txt"
+check "health: the guide has no source yet, and says so" "grep -q '^\\[Helpers\\]|GuideSource||not defined|none$' /tmp/health.txt"
+# Every address of [GridInfoService] is there, the ones the helpers do not serve too, with the answer where it leads
+cp -p /etc/opensim/grids/testgrid/Robust.HG.ini /tmp/Robust.HG.ini.pages
+ini_set /etc/opensim/grids/testgrid/Robust.HG.ini GridInfoService partner "$site/helpers/guide.php"
+ini_set /etc/opensim/grids/testgrid/Robust.HG.ini GridInfoService elsewhere "$site/nothing-here"
+rm -rf /tmp/opensim-helpers-cache
+health_json >/tmp/health-more.txt
+check "health: an address of [GridInfoService] the helpers know nothing about is there, with its code" "grep -q '^\\[GridInfoService\\]|partner|$site/helpers/guide.php|200|ok' /tmp/health-more.txt && grep -q '^\\[GridInfoService\\]|elsewhere|$site/nothing-here|404|warn' /tmp/health-more.txt"
+check "the address of the helpers itself answers, what is under it that is not known does not" "[ \"\$(status $site/helpers)\" = 200 ] && [ \"\$(status $site/helpers/nothing)\" = 404 ]"
+cp -p /tmp/Robust.HG.ini.pages /etc/opensim/grids/testgrid/Robust.HG.ini
 cfg GuideSource /tmp/guide/destinations.txt
 rm -rf /tmp/opensim-helpers-cache
-check "health: the guide source, once the grid gives one" "health_json | grep -q '|Destination guide source||ok|ok$'"
+check "health: the guide source, once the grid gives one" "health_json | grep -q '^\\[Helpers\\]|GuideSource||ok|ok$'"
 cp -p /tmp/Helpers.ini.pages $helpers_ini
 rm -rf /tmp/opensim-helpers-cache
 

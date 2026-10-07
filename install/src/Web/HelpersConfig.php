@@ -89,9 +89,6 @@ final class HelpersConfig
         ;; ThemePath = "theme"
         ;; LogoURL = "https://example.org/logo.png"
         ;; MailSender = "no-reply@example.org"
-        ;; The secret that ties a quote of currency to its purchase: the MoneyServer one (MoneyScriptAccessKey) if the grid has it,
-        ;; else this one, else a key made of the password of the database
-        ;; ScriptKey = "a secret"
 
         INI;
     }

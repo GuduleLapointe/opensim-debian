@@ -79,11 +79,15 @@ sql "DROP TABLE IF EXISTS transactions; DROP TABLE IF EXISTS balances;
     CREATE TABLE transactions (sourceId char(36), destId char(36), amount int, flags int, aggregatePermInventory int, aggregatePermNextOwner int, description varchar(255), transactionType int, timeOccurred int, RegionGenerated char(36), ipGenerated varchar(64))"
 calls plain
 
-ts "economy: the key and the rate"
-mode '{"CURRENCY_SCRIPT_KEY": "key-of-the-grid", "CURRENCY_RATE": 10}'
+ts "economy: the key of the MoneyServer, in its own file, and the rate"
+# MoneyScriptAccessKey is read where the MoneyServer has it: [MoneyServer] of MoneyServer.ini, beside Robust.ini and OpenSim.ini
+printf '[MoneyServer]\nMoneyScriptAccessKey = "key-of-the-grid"\n' >/etc/opensim/grids/testgrid/MoneyServer.ini
+chown opensim:www-data /etc/opensim/grids/testgrid/MoneyServer.ini && chmod 640 /etc/opensim/grids/testgrid/MoneyServer.ini
+mode '{"CURRENCY_RATE": 10}'
 script_key=key-of-the-grid
 calls settings
 script_key=$grid_key
+rm -f /etc/opensim/grids/testgrid/MoneyServer.ini
 mode '{}'
 
 ts "economy: with a money server in the simulators"
