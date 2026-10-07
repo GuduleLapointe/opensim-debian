@@ -142,10 +142,14 @@ ts "search: the show in search box of a profile"
 profile=bbbbbbbb-0000-4000-8000-0000000000bb
 sql "DELETE FROM userprofile WHERE useruuid IN ('$profile', 'cccccccc-0000-4000-8000-0000000000cc')"
 sql "INSERT INTO userprofile (useruuid, profilePartner, profileAllowPublish, profileMaturePublish, profileURL, profileWantToMask, profileWantToText, profileSkillsMask, profileSkillsText, profileLanguages, profileImage, profileAboutText, profileFirstImage, profileFirstText) VALUES ('$profile', '$null_key', 0, 1, '', 0, '', 0, '', '', '$null_key', '', '$null_key', '')"
+# (the two avatars are in the grid, with their secure session, as Robust keeps it when they are connected)
+sql "DELETE FROM Presence WHERE UserID IN ('$profile', 'cccccccc-0000-4000-8000-0000000000cc')"
+sql "INSERT INTO Presence (UserID, RegionID, SessionID, SecureSessionID) VALUES ('$profile', '$null_key', 'dddddddd-0000-4000-8000-0000000000d1', 'eeeeeeee-0000-4000-8000-0000000000e1'), ('cccccccc-0000-4000-8000-0000000000cc', '$null_key', 'dddddddd-0000-4000-8000-0000000000d2', 'eeeeeeee-0000-4000-8000-0000000000e2')"
 queries publish
-check "profile box: the profile is published, not mature, as told" "[ \"\$(sql \"SELECT CONCAT(profileAllowPublish, profileMaturePublish) FROM userprofile WHERE useruuid='$profile'\")\" = 10 ]"
+check "profile box: the profile is published, not mature, as told, and not by a session that is not its avatar's" "[ \"\$(sql \"SELECT CONCAT(profileAllowPublish, profileMaturePublish) FROM userprofile WHERE useruuid='$profile'\")\" = 10 ]"
 check "profile box: no profile was made for an avatar that had none" "[ \"\$(sql \"SELECT COUNT(*) FROM userprofile WHERE useruuid='cccccccc-0000-4000-8000-0000000000cc'\")\" = 0 ]"
 sql "DELETE FROM userprofile WHERE useruuid='$profile'"
+sql "DELETE FROM Presence WHERE UserID IN ('$profile', 'cccccccc-0000-4000-8000-0000000000cc')"
 
 pkill -f 'php -S 127.0.0.1:8090' || true
 pkill -f 'php -S 127.0.0.1:9990' || true

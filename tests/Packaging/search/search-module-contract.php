@@ -9,7 +9,7 @@ declare(strict_types=1);
  */
 return [
     'AvatarPropertiesUpdate/avatar_publish_update' => [
-        'request' => ['allow_publish', 'avatar_id', 'mature_publish'],
+        'request' => ['allow_publish', 'avatar_id', 'mature_publish', 'secure_session_id'],
         'response' => [],
     ],
     'ClassifiedInfoRequest/classifieds_info_query' => [
