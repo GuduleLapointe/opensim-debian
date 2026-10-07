@@ -258,6 +258,7 @@ startSim() {
 
 		crudget $inifile Const 2>/dev/null || end $? "error reading launch section"
 		crudget $inifile Launch 2>/dev/null || end $? "error $? reading section Launch"
+		unset regionload_regionsdir
 		crudget $inifile Startup 2>/dev/null || end $? "error $? reading section Launch"
 
 		crudget $inifile Network 2>/dev/null || end $? "error $? reading section Launch"
@@ -314,6 +315,13 @@ startSim() {
 		# A region stops at once without libgdiplus (dynamic textures)
 		if [ "$ExecName" = "OpenSim" ] && [ "$runtime" = "dotnet" ] && [ "$(uname -s)" = "Linux" ] && ! osHasLibrary gdiplus; then
 			log 1 "$instance cannot start: the native library libgdiplus is missing. Install it with: sudo apt install libgdiplus (or sudo opensim install-dotnet)"
+			STARTFAILED=1
+			continue
+		fi
+
+		# A simulator needs a region: without one it waits for the answers of a first start, on a console nobody reads
+		if [ "$ExecName" = "OpenSim" ] && ! osHasRegion "${regionload_regionsdir:-}"; then
+			log 1 "$instance has no region to load (all disabled, or none yet): add one first, with opensim setup"
 			STARTFAILED=1
 			continue
 		fi

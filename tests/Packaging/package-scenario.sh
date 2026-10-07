@@ -457,6 +457,10 @@ rm -f /etc/opensim/opensim.d/testsim.ini
 source /test/person-scenario.sh
 [[ ${STOP_AFTER:-} != person ]] || { ts "done after the person: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"; exit $FAILED; }
 
+# A simulator without a region
+source /test/no-region-scenario.sh
+[[ ${STOP_AFTER:-} != no-region ]] || { ts "done after the simulator without a region: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"; exit $FAILED; }
+
 ts "remove the tools, grid started by the service"
 registered=$(sim_registered)
 systemctl restart opensim

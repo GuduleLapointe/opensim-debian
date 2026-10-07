@@ -113,6 +113,12 @@ final class NewSim
         $wasEnabled = SimState::isEnabled($etcRoot, $plan->slug);
         $running = $wasEnabled && Console::running(SimState::link($etcRoot, $plan->slug));
         $go = static fn(array $v): bool => ($v['apply'] ?? 'yes') === 'yes';
+        // A simulator without a region waits at its first start for the answers of a region to create, on a console nobody
+        // reads: it is not started before it has one
+        $hasRegion = $plan->createRegion || (glob("{$plan->regionsDir()}/*.ini") ?: []) !== [];
+        if (!$hasRegion) {
+            $this->ui->note(_('This simulator has no region yet: it is not started before it has one (Add region).'));
+        }
         // What to do once written is asked here, while the user is at the keyboard (writing may be done by another
         // process), with the confirmation of the plan
         $v = $this->ui->form(
@@ -136,7 +142,7 @@ final class NewSim
                     'label' => _('Start simulator now'),
                     'type' => 'confirm',
                     'default' => 'yes',
-                    'when' => static fn(array $v): bool => $go($v) && $v['enable'] === 'yes',
+                    'when' => static fn(array $v): bool => $go($v) && $v['enable'] === 'yes' && $hasRegion,
                 ],
                 [
                     'key' => 'warn',
@@ -154,7 +160,7 @@ final class NewSim
             return null;
         }
         $plan->enable = $v['enable'] === 'yes';
-        $plan->start = $plan->enable && $v['start'] === 'yes';
+        $plan->start = $plan->enable && ($v['start'] ?? 'no') === 'yes';
         $plan->warnUsers = $plan->start && $wasEnabled && $running && ($v['warn'] ?? 'no') === 'yes';
 
         $this->write($plan, $profile);
@@ -1166,22 +1172,17 @@ final class NewSim
             );
         };
 
-        // An accent is not refused, it is transliterated (Noël becomes Noel)
+        // A simulator made for a region is named after it, as the first of a grid is; a random name when the name of the
+        // region does not fit or is taken
         $defaultName =
             $simName ??
-            Slug::ascii(
-                trim(
-                    $firstSim
-                        ? ($region !== null
-                            ? $region['name']
-                            : self::FIRST)
-                        : RandomName::make(
-                            fn(string $v): ?string => $simNameProblem($v) ??
-                                (is_file("{$grid->dir}/sims/" . GridInfo::instanceName("{$grid->nick}_$v") . '.ini')
-                                    ? 'taken'
-                                    : null),
-                        ),
-                ),
+            SimName::suggest(
+                $region['name'] ?? null,
+                $firstSim ? self::FIRST : null,
+                fn(string $v): ?string => $simNameProblem($v) ??
+                    (is_file("{$grid->dir}/sims/" . GridInfo::instanceName("{$grid->nick}_$v") . '.ini')
+                        ? 'taken'
+                        : null),
             );
         $current = [];
         if ($simName !== null) {

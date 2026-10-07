@@ -224,7 +224,7 @@ describe('Hub simulator and region', function () {
             'Far [disabled]',
             'Sim1',
             'Sim1North',
-            'Add region',
+            'Add region in Sim One',
             'Configure sim',
             'Disable this simulator',
             'Back',

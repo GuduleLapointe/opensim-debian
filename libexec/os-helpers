@@ -326,6 +326,14 @@ osCountRealUsers() {
 	printf '%s\n' "$out" | grep -E "$uuid" | grep -vcE "$uuid[[:space:]]+(NPC|Child)" || true
 }
 
+# Whether a simulator has a region to load: a region file in its regions folder. One without waits at its first start for
+# the answers of a region to create, on a console nobody reads. A simulator that does not say where its regions are (one
+# made by hand, with its own Regions folder) is left alone. Args: its regions folder (regionload_regionsdir), as written
+osHasRegion() {
+	[ -n "${1:-}" ] || return 0
+	compgen -G "$(osExpandConst "$1")/*.ini" >/dev/null
+}
+
 # The root agents the regions of an instance have, as its simulator says on its own HTTP port, one request
 # per region (its UUID is in its file): a console busy with a long command, an archive being loaded, does not
 # stop it. NPCs are counted. Prints the total, fails when a region does not answer. Args: the config of the instance

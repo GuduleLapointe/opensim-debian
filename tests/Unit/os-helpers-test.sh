@@ -297,3 +297,30 @@ function test_osforcestop_stops_at_term_when_that_is_enough() {
 	assert_equals "-TERM" "$(tr '\n' ' ' <"$WORK/signals" | sed 's/ $//')"
 	assert_equals "gone" "$(builtin kill -0 "$pid" 2>/dev/null && echo alive || echo gone)"
 }
+
+function test_a_simulator_needs_an_enabled_region_to_start() {
+	eval "$(sed -n '/^osExpandConst()/,/^}/p' "$ROOT/libexec/os-helpers")"
+	eval "$(sed -n '/^osHasRegion()/,/^}/p' "$ROOT/libexec/os-helpers")"
+	Dir="$WORK/sim/regions"
+	mkdir -p "$Dir"
+
+	osHasRegion '${Const|Dir}'
+	assert_equals '1' "$?"
+
+	# A region that is disabled is not one to load
+	touch "$Dir/Region.ini.disabled"
+	osHasRegion '${Const|Dir}'
+	assert_equals '1' "$?"
+
+	touch "$Dir/Region.ini"
+	osHasRegion '${Const|Dir}'
+	assert_equals '0' "$?"
+}
+
+function test_a_simulator_that_does_not_say_where_its_regions_are_is_left_alone() {
+	eval "$(sed -n '/^osExpandConst()/,/^}/p' "$ROOT/libexec/os-helpers")"
+	eval "$(sed -n '/^osHasRegion()/,/^}/p' "$ROOT/libexec/os-helpers")"
+
+	osHasRegion ''
+	assert_equals '0' "$?"
+}

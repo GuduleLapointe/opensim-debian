@@ -12,7 +12,7 @@ use OpenSim\Installer\SetupFailed;
 // TEST_GRID: the grid, TEST_SIM: the simulator, TEST_REGION: its first region,
 // TEST_OWNER: an account of the grid for the estate (else the first one),
 // TEST_NEW_OWNER / TEST_NEW_OWNER_PASSWORD: an account to create instead,
-// TEST_START: start it, TEST_DB_PASSWORD: the database password (empty keeps
+// TEST_NO_REGION: no first region, TEST_START: start it, TEST_DB_PASSWORD: the database password (empty keeps
 // the one of the grid), TEST_ADMIN_USER / TEST_ADMIN_PASSWORD: an administrator
 // account of the database server. The retry after a database error is always
 // declined.
@@ -24,7 +24,7 @@ $answers = [
     'Start simulator' => (bool) getenv('TEST_START'),
     // The console: a screen session, or the remote one when TEST_CONSOLE=rest
     'Console of' => getenv('TEST_CONSOLE') ?: 'screen',
-    'Create the first region' => true,
+    'Create the first region' => !getenv('TEST_NO_REGION'),
     'Region name' => getenv('TEST_REGION') ?: $sim,
     'Enter the credentials' => (bool) getenv('TEST_ADMIN_USER'),
     'Administrator user' => getenv('TEST_ADMIN_USER') ?: 'root',

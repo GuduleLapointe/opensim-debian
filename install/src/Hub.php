@@ -390,7 +390,8 @@ final class Hub
             foreach ($regions as $name => $region) {
                 $options["region:$name"] = $this->ui->entity($name) . ($region['enabled'] ? '' : ' [disabled]');
             }
-            $options['addregion'] = _('Add region');
+            // In this simulator: not to be mistaken for the one of the grid, which asks where the region goes
+            $options['addregion'] = sprintf(_('Add region in %s'), $this->simName($nick, $slug));
             $options['reconfigure'] = _('Configure sim');
             $options['toggle'] = $enabled ? 'Disable this simulator' : 'Enable this simulator';
             $options['back'] = _('Back');

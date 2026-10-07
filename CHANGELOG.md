@@ -2,6 +2,9 @@
 
 ### Unreleased
 
+- fix: a simulator without a region is not started by the setup, and `opensim start` refuses it
+- update: the simulator made for a new region is named after it by default
+- update: the entry of a simulator's menu is `Add region in <simulator>`
 - update: `opensim stop` forces an instance still up 120 s after its shutdown (TERM, then KILL)
 - fix: `opensim stop` counts the users of all the regions, and no longer waits when nothing answers
 - update: `opensim setup` checks it can use sudo for the system user before it asks anything
