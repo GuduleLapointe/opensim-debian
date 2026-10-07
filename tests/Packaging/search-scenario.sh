@@ -120,7 +120,9 @@ opensim stop now testgrid_sim1 >/dev/null 2>&1
 opensim start testgrid_sim1 >/dev/null 2>&1
 wait_check 180 "it registers when it starts: its regions and its parcel shown in search are known" "[ \"\$(sql \"SELECT COUNT(*) FROM parcels WHERE parcelname='Sim1'\")\" = 1 ]"
 sim=$(sim_pid) # restarted: what the scenario compares it with later is this one
-check "it is in the register, its regions are known" "[ \"\$(sql \"SELECT COUNT(*) FROM hostsregister WHERE port=9000\")\" = 1 ] &&
+# (it registers while it starts, its second region is not loaded yet: it is read again 90 s later, by the job that reads the hosts
+# that are due, which parser.php is)
+wait_check 240 "it is in the register, its regions are known" "curl -s -m 60 -o /dev/null $helpers/parser.php; [ \"\$(sql \"SELECT COUNT(*) FROM hostsregister WHERE port=9000\")\" = 1 ] &&
     [ \"\$(sql \"SELECT GROUP_CONCAT(regionname ORDER BY regionname) FROM $regions WHERE url LIKE '%:9000/'\")\" = Sim1,Sim1North ]"
 check "the simulator tells only the parcel that has the flag, its other parcel is not told" "[ \"\$(sql \"SELECT GROUP_CONCAT(parcelname) FROM allparcels\")\" = Sim1 ]"
 queries sim
