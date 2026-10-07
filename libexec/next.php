@@ -84,7 +84,10 @@ if ($what === 'port') {
     ) {
         usage('MIN, COUNT and the ports given with -e are numbers');
     }
-    echo implode("\n", Ports::nextFree($min, $count, array_map('intval', $exclude))), "\n";
+    // What is taken is what the config files of this machine say, what listens here, and the ports of the regions the grids of
+    // this machine know, the ones of other machines too
+    $known = (new GridRegistry(new Database(new QuietUi())))->knownPorts((new Config())->profile());
+    echo implode("\n", Ports::nextFree($min, $count, array_merge(array_map('intval', $exclude), $known))), "\n";
     exit(0);
 }
 

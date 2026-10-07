@@ -1097,9 +1097,9 @@ final class NewSim
 
         // The ports of a simulator are a block of ten, the first free one from where the
         // simulators of the grid start (9000 for Robust on 8002), on this machine and among
-        // the regions the grid knows on the others: its HTTP port is the first one, the
+        // the regions the grids of this machine know on the others: its HTTP port is the first one, the
         // console is x4, the regions take the others
-        $foreign = (new GridRegistry($database))->ports($grid) ?? [];
+        $foreign = (new GridRegistry($database))->knownPorts($profile, $grid);
         $block = Ports::nextBlock(Ports::simulatorsFrom($grid->publicPort), $foreign);
         $consoleFor = static function (int $http): int {
             $base = Ports::simulatorBlock($http);

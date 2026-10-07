@@ -9,9 +9,12 @@ use OpenSim\Installer\Grid\GridFiles;
 /**
  * The next free ports, shared by the setup and `opensim next port`: a port is
  * "in use" if it appears (even commented) in any OpenSim config .ini under the
- * known roots — as InternalPort / PublicPort / PrivatePort / http_listener_port
- * / console_port — or if it is currently bound (netstat). next()/nextFree()
- * then return the first free port(s) at or above $min.
+ * known roots (every grid of the machine) — as InternalPort / PublicPort /
+ * PrivatePort / http_listener_port / console_port — if a socket of this machine
+ * listens on it (netstat), or if the caller says so: the regions the grids of
+ * this machine know on other machines (GridRegistry::knownPorts), which are no
+ * problem for this one but easier to maintain when every port is different.
+ * next()/nextFree() then return the first free port(s) at or above $min.
  *
  * The ports of an instance are a block of ten, the same wherever it runs, so an
  * instance can move to another machine without changing any port. The console

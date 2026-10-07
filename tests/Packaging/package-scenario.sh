@@ -309,6 +309,11 @@ check "opensim backup makes an archive of the grid with its configuration, its d
     f=\$(ls /var/lib/opensim/data/backups/admin/testgrid-*.tar.gz | head -1) && tar -tzf \$f | grep -q '^etc/grids/testgrid/Robust' &&
     tar -tzf \$f | grep -q '^db/testgrid_robust.sql.gz'"
 check "opensim next port gives a free port" "[ \"\$(opensim next port 9100)\" = 9100 ]"
+# A region another machine serves is in the registry of the grid: its ports are taken here too (no problem for this machine,
+# easier to maintain when every port is different)
+mysql testgrid_robust -e "CREATE TEMPORARY TABLE r SELECT * FROM regions LIMIT 1; UPDATE r SET uuid = 'aaaaaaaa-0000-4000-8000-0000000000cc', regionName = 'Elsewhere', regionHandle = 77, locX = 7000, locY = 7000, serverIP = '10.9.9.9', serverPort = 9700, serverHttpPort = 9701, serverURI = 'http://10.9.9.9:9701/'; INSERT INTO regions SELECT * FROM r"
+check "opensim next port skips the ports of the regions the grids know, served by another machine" "[ \"\$(opensim next port 9700 2 | tr '\\n' ' ')\" = '9702 9703 ' ]"
+mysql testgrid_robust -e "DELETE FROM regions WHERE uuid = 'aaaaaaaa-0000-4000-8000-0000000000cc'"
 # The ports of an instance are a block of ten, the same on any machine: Robust
 # 8002 public and 8003 private; the first simulator 9000, 9004 for its console
 # (kept, not enabled), its regions 9001 and 9002, in UDP

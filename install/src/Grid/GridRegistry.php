@@ -30,10 +30,45 @@ final class GridRegistry
             return null; // a grid of another machine: its database is not ours to read
         }
         $rows = $this->database->select($grid->databasePlan(), 'SELECT serverPort, serverURI FROM regions');
-        if ($rows === null) {
-            return null;
+
+        return $rows === null ? null : self::portsOf($rows);
+    }
+
+    /**
+     * Every port the grids of this machine know of the regions registered in them, the ones served by another machine too: they
+     * are no problem for this one, but keeping every port different makes the maintenance easier. The grid given is one of them
+     * even when it is not kept here.
+     *
+     * @param  array<string,string> $profile the setup of the user (EtcRoot)
+     * @return list<int>
+     */
+    public function knownPorts(array $profile, ?GridInfo $grid = null): array
+    {
+        $infos = [];
+        foreach (\OpenSim\Installer\Archive\Instances::grids((string) ($profile['EtcRoot'] ?? '')) as $nick) {
+            if (($info = GridInfo::load($profile, $nick)) !== null) {
+                $infos[$nick] = $info;
+            }
+        }
+        if ($grid !== null) {
+            $infos[$grid->nick] = $grid;
+        }
+        $ports = [];
+        foreach ($infos as $info) {
+            array_push($ports, ...($this->ports($info) ?? []));
         }
 
+        return array_values(array_unique($ports));
+    }
+
+    /**
+     * The ports in the rows of the registered regions (`serverPort`, tab, `serverURI`).
+     *
+     * @param  list<string> $rows
+     * @return list<int>
+     */
+    public static function portsOf(array $rows): array
+    {
         $ports = [];
         foreach ($rows as $row) {
             [$internal, $uri] = array_pad(explode("\t", $row), 2, '');
