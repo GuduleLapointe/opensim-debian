@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace OpenSim\Installer\Grid;
 
+use OpenSim\Installer\Ini;
+use OpenSim\Installer\TextFile;
+
 /**
  * Writes the config of a simulator and of its regions.
  *
@@ -138,11 +141,17 @@ final class SimConfig
     public function write(SimPlan $plan): string
     {
         $path = $plan->iniPath();
-        @mkdir(dirname($path), 0o755, true);
+        is_dir(dirname($path)) || mkdir(dirname($path), 0o755, true);
+        $text = $this->render($plan);
         if (is_file($path)) {
             @copy($path, "$path~");
+            // What the operator set stays (their other settings, their sections), what the setup manages is what it was asked
+            $ini = new Ini($text);
+            $ini->overlay(TextFile::read($path));
+            $ini->overlay($text);
+            $text = $ini->toString();
         }
-        file_put_contents($path, $this->render($plan));
+        file_put_contents($path, $text);
 
         return $path;
     }

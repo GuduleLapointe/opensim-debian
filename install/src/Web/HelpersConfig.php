@@ -17,39 +17,12 @@ final class HelpersConfig
 {
     public const FILE = 'Helpers.ini';
 
-    /** The file of the MoneyServer, beside Robust.ini and OpenSim.ini (it reads only its own config). */
-    public const MONEYSERVER_FILE = 'MoneyServer.ini';
-
     /** Where the helpers are, when the economy of the grid says nothing. */
     public const DEFAULT_PATH = '/helpers';
 
     public static function path(string $gridDir): string
     {
         return rtrim($gridDir, '/') . '/' . self::FILE;
-    }
-
-    public static function moneyServerPath(string $gridDir): string
-    {
-        return rtrim($gridDir, '/') . '/' . self::MONEYSERVER_FILE;
-    }
-
-    /**
-     * The MoneyServer.ini of a grid that has none: the secret key the helpers share with the MoneyServer (the server needs it
-     * too, so it is made here, at random, and written where both read it), as the MoneyServer names it and in its section.
-     * The rest of its settings are the MoneyServer's (contrib/MoneyServer in the kit has the whole file).
-     */
-    public static function moneyServerTemplate(string $key): string
-    {
-        return <<<INI
-        ;; MoneyServer.ini: the settings of the MoneyServer, in its own file beside Robust.ini and OpenSim.ini, with the
-        ;; conventions of the MoneyServer (see contrib/MoneyServer in the kit for the whole file).
-        ;; The key is the secret the helpers share with it, made by the setup: the helpers read it here, the server too.
-        ;; Every ini file of the grid may hold a secret: mode 640, group of the web server.
-
-        [MoneyServer]
-        MoneyScriptAccessKey = "$key"
-
-        INI;
     }
 
     /** The Robust config of a grid folder, empty when it has none. */

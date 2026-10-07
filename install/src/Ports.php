@@ -161,8 +161,12 @@ final class Ports
             if (!is_dir($root)) {
                 continue;
             }
+            // A folder this user cannot list (the backups, the caches of the system user in the data root) has no config of an
+            // instance to find: it is skipped, the folders of the configuration are all listable
             $it = new \RecursiveIteratorIterator(
                 new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::LEAVES_ONLY,
+                \RecursiveIteratorIterator::CATCH_GET_CHILD,
             );
             foreach ($it as $file) {
                 $path = $file->getPathname();

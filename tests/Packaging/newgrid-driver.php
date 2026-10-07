@@ -43,6 +43,7 @@ if (getenv('TEST_DB_HOST')) {
     $answers['Database host'] = getenv('TEST_DB_HOST');
 }
 
+// TEST_MODIFY=<nick>: change that grid, which exists, instead of making one
 // Start the grid when TEST_START is set (the setup started as root, as
 // in the packaged install)
 if (getenv('TEST_START')) {
@@ -51,7 +52,7 @@ if (getenv('TEST_START')) {
 
 try {
     for ($i = 0; $i < (int) (getenv('TEST_REPEAT') ?: 1); $i++) {
-        (new NewGrid(new ScriptedUi($answers)))->run(null);
+        (new NewGrid(new ScriptedUi($answers)))->run(getenv('TEST_MODIFY') ?: null);
     }
 } catch (SetupFailed) {
     echo "setup failed\n";

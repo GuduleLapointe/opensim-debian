@@ -63,6 +63,11 @@ case "$1" in
             adduser --system --group --home /var/lib/opensim --shell /bin/bash opensim
         fi
 
+        # The files a grid needs that it does not have yet (the key of the currency), added without the setup, as opensim
+        if [ -d /etc/opensim/grids ]; then
+            runuser -u opensim -- php /usr/share/opensim-tools/libexec/complete-grids.php || true
+        fi
+
         # The helpers read the ini files of each grid through the web server, and any of them may hold a password: readable by
         # its group only, when the machine has one (the setup does the same for the grids it writes)
         if getent group www-data >/dev/null 2>&1; then

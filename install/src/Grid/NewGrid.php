@@ -15,6 +15,7 @@ use OpenSim\Installer\Ui\InstallerUi;
 use OpenSim\Installer\Web\HelpersConfig;
 use OpenSim\Installer\Web\Services;
 use OpenSim\Installer\Web\Snippets;
+use OpenSim\Installer\Ini;
 
 /**
  * Configure (or reconfigure) one grid on top of an installed framework.
@@ -356,10 +357,10 @@ final class NewGrid
             file_put_contents($path, HelpersConfig::template());
             $this->ui->note(sprintf(_('Wrote %s'), $path));
         }
-        // The key the currency helpers share with a MoneyServer, made at random and written once, where both read it
-        $money = HelpersConfig::moneyServerPath($plan->gridDir);
-        if (!is_file($money)) {
-            file_put_contents($money, HelpersConfig::moneyServerTemplate(bin2hex(random_bytes(16))));
+        // The MoneyServer.ini, the original whole, with the key the currency helpers share with the MoneyServer (made at random once)
+        if (MoneyServerConfig::original() === null) {
+            $this->ui->warn(_('The original MoneyServer.ini is not in this install: the grid has none, and the currency is not served without its key.'));
+        } elseif (($money = MoneyServerConfig::write($plan->gridDir)) !== null) {
             $this->ui->note(sprintf(_('Wrote %s'), $money));
         }
 
@@ -393,18 +394,21 @@ final class NewGrid
         ];
         foreach ($files as $file) {
             $dest = "{$plan->etcDirectory}/$file";
-            if (is_file($dest)) {
-                TextFile::clean($dest); // local changes are kept, only the line endings are made Unix ones
+            $src = is_file("{$plan->binDir}/{$file}.example") ? "{$plan->binDir}/{$file}.example" : "{$plan->binDir}/$file";
+            if (!is_file($src)) {
+                is_file($dest) && TextFile::clean($dest);
                 continue;
             }
-            $src = is_file("{$plan->binDir}/{$file}.example")
-                ? "{$plan->binDir}/{$file}.example"
-                : "{$plan->binDir}/$file";
-            if (!is_file($src)) {
-                continue;
+            // The distribution, over it what the grid has set: a setting new in the distribution is there, what was chosen stays
+            $text = Ini::layered($src, is_file($dest) ? $dest : null)->toString();
+            if (is_file($dest)) {
+                if (TextFile::read($dest) === $text) {
+                    continue;
+                }
+                @copy($dest, "$dest~");
             }
             @mkdir(dirname($dest), 0o755, true);
-            TextFile::copy($src, $dest);
+            file_put_contents($dest, $text);
         }
         // Ready for the simulators that will join the grid
         (new GridShared())->prepare($plan->etcDirectory, $plan->binDir, $plan->enableHypergrid);

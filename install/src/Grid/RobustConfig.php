@@ -24,7 +24,11 @@ final class RobustConfig
 
     public function generate(GridPlan $plan): string
     {
-        $ini = Ini::load($this->example($plan));
+        // The distribution, over it what the grid has set (a setting new in the distribution is there, what the operator chose
+        // stays), over it what the setup manages
+        $current = is_file($plan->robustIni()) ? $plan->robustIni() : null;
+        $existing = $current === null ? null : Ini::load($current);
+        $ini = Ini::layered($this->example($plan), $current);
 
         $ini->merge([
             'Const' => [
@@ -58,13 +62,10 @@ final class RobustConfig
                 'MapTileDirectory' => $this->q('${Const|CacheDirectory}/maptiles'),
             ],
             'LibraryService' => [
-                'LibraryName' => $this->q("{$plan->gridName} Library"),
                 'DefaultLibrary' => $this->q('${Const|EtcDirectory}/inventory/Libraries.xml'),
             ],
             'LoginService' => [
                 'DestinationGuide' => $this->q('${Const|WebURL}/guide'),
-                // Shown to the user when logging in (<USERNAME> is replaced by the name of the avatar)
-                'WelcomeMessage' => $this->q("Welcome to {$plan->gridName}, <USERNAME>!"),
             ],
             'MapImageService' => [
                 'TilesStoragePath' => $this->q('${Const|DataDirectory}/maptiles'),
@@ -115,9 +116,22 @@ final class RobustConfig
             ]);
         }
 
-        // Enable user profiles (connector + service).
-        $ini->uncomment('UserProfilesServiceConnector');
-        $ini->set('UserProfilesService', 'Enabled', 'true');
+        // What the setup proposes, which the operator may change: set when the grid has nothing for it, never over what it has
+        $proposed = [
+            // Shown to the user when logging in (<USERNAME> is replaced by the name of the avatar)
+            ['LoginService', 'WelcomeMessage', $this->q("Welcome to {$plan->gridName}, <USERNAME>!")],
+            ['LibraryService', 'LibraryName', $this->q("{$plan->gridName} Library")],
+            // User profiles (connector + service)
+            ['UserProfilesService', 'Enabled', 'true'],
+        ];
+        foreach ($proposed as [$section, $key, $value]) {
+            if ($existing?->get($section, $key) === null) {
+                $ini->set($section, $key, $value);
+            }
+        }
+        if ($existing === null) {
+            $ini->uncomment('UserProfilesServiceConnector');
+        }
 
         return $ini->toString();
     }

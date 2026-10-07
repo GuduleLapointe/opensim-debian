@@ -22,5 +22,10 @@
 /core
 /etc
 /var
-# Add-on binaries for OpenSim 0.9.1 and 0.9.2 (Mono), used by no script
-/contrib
+# Add-on binaries for OpenSim 0.9.1 and 0.9.2 (Mono), used by no script. The original MoneyServer.ini stays: the setup makes the
+# one of a grid from it
+/contrib/Gloebit
+/contrib/README.md
+/contrib/MoneyServer/*/MoneyServer.exe
+/contrib/MoneyServer/*/MoneyServer.exe.config
+/contrib/MoneyServer/*/*.dll

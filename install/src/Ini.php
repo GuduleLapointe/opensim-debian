@@ -27,6 +27,52 @@ final class Ini
     }
 
     /**
+     * The configuration of a file in layers: the distribution (what the software ships, with every setting it has), over it
+     * what the operator already set in the file of the grid (active settings only), so that a new setting of the distribution
+     * is always there and what was chosen is kept. The setup lays its own choices over the result.
+     *
+     * @param ?string $distribution the file of the distribution, none starts from nothing
+     * @param ?string $existing     the file of the grid, none when it does not exist yet
+     */
+    public static function layered(?string $distribution, ?string $existing): self
+    {
+        $ini = self::load($distribution ?? '');
+        if ($existing !== null && is_file($existing)) {
+            $ini->overlay(TextFile::read($existing));
+        }
+
+        return $ini;
+    }
+
+    /**
+     * Lay the settings of a text over this one, in place: each active `key = value` is set in its section (replacing the key
+     * the section has, uncommenting its example, or added, the section being made when it is not there); the comments, the
+     * other keys and the order of this text stay. A key given twice in a section counts once, the first: OpenSimulator reads it
+     * that way.
+     */
+    public function overlay(string $text): void
+    {
+        $section = '';
+        $seen = [];
+        foreach (explode("\n", TextFile::unix($text)) as $line) {
+            if (preg_match('/^\s*\[(.+?)\]\s*$/', $line, $m)) {
+                $section = trim($m[1]);
+
+                continue;
+            }
+            if ($section === '' || !preg_match('/^\s*([^\s;#=][^=]*?)\s*=\s*(.*?)\s*$/', $line, $m)) {
+                continue;
+            }
+            $id = strtolower($section) . '|' . strtolower($m[1]);
+            if (isset($seen[$id])) {
+                continue;
+            }
+            $seen[$id] = true;
+            $this->set($section, $m[1], $m[2]);
+        }
+    }
+
+    /**
      * Set key = value in section (uncommenting an existing commented key).
      *
      * A key the section does not have goes after the last commented example of
@@ -70,7 +116,12 @@ final class Ini
             }
 
             if ($inTarget && preg_match($keyRe, $text)) {
-                $this->lines[$i] = $newLine;
+                // The value it already has is left as it is, with the way it is written; a new one takes the place of the line
+                // (or of its commented example) with the same indentation
+                if (preg_match('/^\s*' . preg_quote($key, '/') . '\s*=\s*(.*?)\s*$/', $text, $current) && trim($current[1]) === trim($value)) {
+                    return;
+                }
+                $this->lines[$i] = (preg_match('/^\s*/', $text, $indent) ? $indent[0] : '') . $newLine;
 
                 return;
             }

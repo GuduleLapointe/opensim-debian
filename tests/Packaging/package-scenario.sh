@@ -53,7 +53,8 @@ mysql -e "CREATE DATABASE testgrid_robust; CREATE USER opensim@localhost IDENTIF
     GRANT ALL ON testgrid_robust.* TO opensim@localhost;"
 (cd /var/lib/opensim && runuser -u opensim -- php /test/newgrid-driver.php | tail -1)
 check "grid enabled" "[ -L /etc/opensim/robust.d/testgrid.ini ]"
-check "the setup wrote a MoneyServer.ini with a key made at random, where the MoneyServer reads it, mode 640 for the group of the web server" "grep -qE '^MoneyScriptAccessKey = \"[0-9a-f]{32}\"' /etc/opensim/grids/testgrid/MoneyServer.ini &&
+check "the setup wrote the MoneyServer.ini of the original, whole, with a key made at random where the MoneyServer reads it, mode 640 for the group of the web server" "grep -qE '^MoneyScriptAccessKey = \"[0-9a-f]{32}\"' /etc/opensim/grids/testgrid/MoneyServer.ini &&
+    grep -q '^EnableForceTransfer' /etc/opensim/grids/testgrid/MoneyServer.ini && grep -q '^\[MoneyServer\]' /etc/opensim/grids/testgrid/MoneyServer.ini &&
     [ \"\$(stat -c '%a %U:%G' /etc/opensim/grids/testgrid/MoneyServer.ini)\" = '640 opensim:www-data' ]"
 check "the setup wrote the Helpers.ini of the grid, with what has no official place and nothing else" "grep -q '^\[Helpers\]' /etc/opensim/grids/testgrid/Helpers.ini &&
     ! grep -qiE '^ *(grid_name|login_uri|web_url|gridname|ConnectionString|\[robust_db\])' /etc/opensim/grids/testgrid/Helpers.ini"
@@ -118,6 +119,8 @@ check "existing account, wrong password: not recreated, can be tried again" "gre
 # create them: the administrator access is found, the creation fails
 useradd -m -s /bin/bash dbhelper
 mysql -e "CREATE USER dbhelper@localhost IDENTIFIED VIA unix_socket; GRANT SELECT ON mysql.* TO dbhelper@localhost"
+# The files of the grids belong to the system user: a person who runs the setup is allowed to use it, as an operator is
+echo 'dbhelper ALL=(opensim) NOPASSWD: ALL' >/etc/sudoers.d/dbhelper && chmod 440 /etc/sudoers.d/dbhelper
 TEST_DB_USER=deniedgrid_user wizard Deniedgrid "" dbhelper >/tmp/denied.out
 check "a creation that fails ends the setup, with the commands and an error code" "grep -q 'Could not create the user' /tmp/denied.out &&
     grep -q 'CREATE USER' /tmp/denied.out && ! grep -q 'Try again' /tmp/denied.out && grep -q 'setup failed' /tmp/denied.out &&
@@ -467,6 +470,10 @@ source /test/no-region-scenario.sh
 source /test/sim-name-scenario.sh
 [[ ${STOP_AFTER:-} != sim-name ]] || { ts "done after the name of the simulator: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"; exit $FAILED; }
 
+# Configuring a grid that exists keeps what the operator set
+source /test/configure-scenario.sh
+[[ ${STOP_AFTER:-} != configure ]] || { ts "done after configuring: $([ $FAILED = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"; exit $FAILED; }
+
 ts "remove the tools, grid started by the service"
 registered=$(sim_registered)
 systemctl restart opensim
@@ -481,7 +488,12 @@ check "the simulator stopped too" "[ -z '$(sim_pid)' ]"
 check "core kept" "[ -f /usr/share/opensim/0.9.3.0/bin/OpenSim.exe ]"
 
 ts "reinstall the tools"
+# A grid that lacks a file of the distribution gets it when the package is installed, without the setup
+money_key=$(grep -m1 '^MoneyScriptAccessKey' /etc/opensim/grids/testgrid/MoneyServer.ini)
+rm -f /etc/opensim/grids/testgrid/MoneyServer.ini
 apt_q install $tools
+check "installing the package adds the file a grid lacks, without the setup: MoneyServer.ini, with a key of its own, mode 640" "grep -qE '^MoneyScriptAccessKey = \"[0-9a-f]{32}\"' /etc/opensim/grids/testgrid/MoneyServer.ini &&
+    ! grep -qF '$money_key' /etc/opensim/grids/testgrid/MoneyServer.ini && [ \"\$(stat -c '%a %U:%G' /etc/opensim/grids/testgrid/MoneyServer.ini)\" = '640 opensim:www-data' ]"
 check "service enabled again" "systemctl -q is-enabled opensim"
 
 ts "remove the tools, grid started by hand"
