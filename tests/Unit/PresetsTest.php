@@ -173,3 +173,19 @@ describe('The simulator that joins a grid by a preset', function () {
     });
 });
 
+describe('The host scripts see as the one of the simulator', function () {
+    test('is the address of the machine the simulator runs on, never the host of the grid', function () {
+        $plan = new SimPlan();
+        $plan->baseHostname = 'hg.osgrid.org';
+        $plan->externalHost = 'play.example.org';
+
+        expect(SimConfig::lslHost($plan))
+            ->toBe('play.example.org')
+            ->and((new SimConfig())->render($plan))
+            ->toContain('ExternalHostNameForLSL = "play.example.org"')
+            ->not->toContain('ExternalHostNameForLSL = "hg.osgrid.org"')
+            // Without an address given, the name of the machine, not the one of the grid
+            ->and(SimConfig::lslHost(new SimPlan()))
+            ->not->toBe('hg.osgrid.org');
+    });
+});

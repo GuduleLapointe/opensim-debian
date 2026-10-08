@@ -65,7 +65,7 @@ final class SimConfig
                         ';console_port = ' . $plan->consolePort,
                     ]
                     : []),
-            'ExternalHostNameForLSL = "${Const|BaseHostname}"',
+            ...self::lslHost($plan) !== '' ? ['ExternalHostNameForLSL = "' . self::lslHost($plan) . '"'] : [],
             '',
             '[DatabaseService]',
             'StorageProvider = "OpenSim.Data.MySQL.dll"',
@@ -132,6 +132,22 @@ final class SimConfig
         }
 
         return $text;
+    }
+
+    /**
+     * The host the scripts of the simulator see as its own: the address of the machine it runs on, whatever the server of the
+     * grid (never the host of the grid). The address its regions announce when it is given, else the name of the machine; empty
+     * when the machine has no name of its own (OpenSimulator then takes the one of its regions).
+     */
+    public static function lslHost(SimPlan $plan): string
+    {
+        $host = trim($plan->externalHost);
+        if ($host !== '' && strcasecmp($host, 'SYSTEMIP') !== 0) {
+            return $host;
+        }
+        $name = (string) gethostname();
+
+        return in_array(strtolower($name), ['', 'localhost', 'localhost.localdomain'], true) ? '' : $name;
     }
 
     /**
