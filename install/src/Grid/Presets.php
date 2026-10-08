@@ -12,8 +12,12 @@ use OpenSim\Installer\TextFile;
  * (<etc>/grids/<grid>), holding only the files that have settings of that grid. Any file may be there, none is required.
  *
  * grids/ is for the grids configured on this machine, presets/ for the base of the grids that are elsewhere. The presets of
- * the kit are in /usr/share (share/presets); the simulator that joins a grid by a preset gets it copied into <etc>/presets,
- * where the simulators read it, and where the administrator can change it (not the point) or add their own presets.
+ * the kit are in /usr/share (share/presets). Joining a grid by a preset makes the folder <etc>/presets/<name> a complete one,
+ * as the bin folder of OpenSimulator the administrator knows, and usable without the kit: each ini of the distribution
+ * merged with the one of the preset (and what the administrator already set there), the same layers as every file the setup
+ * makes (see Ini::layered()), the same every time, so that a new setting of the distribution is always taken. The settings
+ * the preset gives to the simulators themselves come from its OpenSim.ini (settings()), and the services of the grid from its
+ * config-include, which the simulators include as they do for a grid of this machine.
  */
 final class Presets
 {
@@ -106,62 +110,107 @@ final class Presets
         ];
     }
 
-    /**
-     * The files of the preset that a simulator includes, in the folder of the machine (see install()), in the order they win.
-     * Only those the preset has.
-     *
-     * @return array<string,string> name of the include => path
-     */
-    public function files(string $name): array
+    /** The folder of a preset on the machine (<etc>/presets/<name>), where it is made complete and where the simulators read it. */
+    public function dir(string $name): string
     {
+        return "{$this->roots[0]}/$name";
+    }
+
+    /**
+     * Make the folder of the preset on the machine whole, by the procedure of the folder of any grid (GridShared::merge()):
+     * every file of the distribution merged with the same file of the preset of the kit and with what the machine already has,
+     * each file apart (an include stays an include), our corrections of the paths. The same every time, so a new setting of the
+     * distribution is always taken.
+     *
+     * @param  string $binDir the bin folder of the core, the distribution
+     * @return list<string> the files that changed
+     */
+    public function install(string $name, string $binDir, bool $hypergrid = true): array
+    {
+        if (!self::valid($name)) {
+            return [];
+        }
+        $dir = $this->dir($name);
+        $before = self::snapshot($dir);
+        $over = array_values(array_filter(array_map(static fn(string $root): string => "$root/$name", array_slice($this->roots, 1)), 'is_dir'));
+
+        // What is not an ini to merge: the library the simulators read, the other files of the preset of the kit
+        is_dir("$dir/inventory") || !is_dir("$binDir/inventory") || self::copyTree("$binDir/inventory", "$dir/inventory", false);
+        foreach ($over as $root) {
+            self::copyTree($root, $dir, true);
+        }
+        $extra = array_unique(array_merge(self::filesOf($dir), ...array_map(self::filesOf(...), $over)));
+        (new GridShared())->merge($dir, $binDir, $hypergrid, $over, $extra);
+        (new GridShared())->prepare($dir, $binDir, $hypergrid);
+
+        $after = self::snapshot($dir);
+
+        return array_keys(array_filter($after, static fn(string $hash, string $path): bool => ($before[$path] ?? null) !== $hash, ARRAY_FILTER_USE_BOTH));
+    }
+
+    /**
+     * What the preset gives to the simulators themselves: the settings of its OpenSim.ini that its distribution does not have
+     * or has with another value, as a text laid over the config of each simulator (the OpenSim.ini of the folder is a whole
+     * one, with the settings of a simulator on its own, it is not included).
+     */
+    public function settings(string $name, string $binDir): string
+    {
+        $path = $this->dir($name) . '/OpenSim.ini';
+        if (!is_file($path)) {
+            return '';
+        }
+        $default = is_file("$binDir/OpenSim.ini") ? "$binDir/OpenSim.ini" : (is_file("$binDir/OpenSim.ini.example") ? "$binDir/OpenSim.ini.example" : null);
+
+        return Ini::load($path)->differences(Ini::layered($default, null));
+    }
+
+    /** @return list<string> the ini files of a folder, relative paths */
+    private static function filesOf(string $dir): array
+    {
+        if (!is_dir($dir)) {
+            return [];
+        }
         $files = [];
-        foreach (['GridCommon' => 'config-include/GridCommon.ini', 'OpenSim' => 'OpenSim.ini'] as $include => $file) {
-            foreach ($this->roots as $root) {
-                if (self::valid($name) && is_file("$root/$name/$file")) {
-                    $files[$include] = "{$this->roots[0]}/$name/$file";
-                    break;
-                }
+        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS)) as $file) {
+            if ($file->isFile() && preg_match('/\.ini$/i', $file->getFilename()) === 1) {
+                $files[] = substr($file->getPathname(), strlen($dir) + 1);
             }
         }
 
         return $files;
     }
 
-    /**
-     * Copy a preset of the kit into the folder of the machine: every file it has that the machine does not (what is there is
-     * the administrator's, and a preset of their own has nothing to copy).
-     *
-     * @return list<string> the files written
-     */
-    public function install(string $name): array
+    /** @return array<string,string> path => hash of every file of a folder */
+    private static function snapshot(string $dir): array
     {
-        $written = [];
-        if (!self::valid($name)) {
-            return $written;
+        $files = [];
+        if (is_dir($dir)) {
+            foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS)) as $file) {
+                if ($file->isFile()) {
+                    $files[$file->getPathname()] = (string) md5_file($file->getPathname());
+                }
+            }
         }
-        foreach (array_slice($this->roots, 1) as $root) {
-            if (!is_dir("$root/$name")) {
+        ksort($files);
+
+        return $files;
+    }
+
+    /**
+     * Copy the files of a folder that another does not have (an ini is merged apart, not copied).
+     *
+     * @param bool $skipIni leave the ini files, which the merge makes
+     */
+    private static function copyTree(string $from, string $to, bool $skipIni): void
+    {
+        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($from, \FilesystemIterator::SKIP_DOTS)) as $file) {
+            $relative = substr($file->getPathname(), strlen($from) + 1);
+            if (!$file->isFile() || is_file("$to/$relative") || ($skipIni && preg_match('/\.ini$/i', $relative) === 1)) {
                 continue;
             }
-            $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator("$root/$name", \FilesystemIterator::SKIP_DOTS));
-            foreach ($files as $file) {
-                $relative = substr($file->getPathname(), strlen("$root/$name") + 1);
-                $dest = "{$this->roots[0]}/$name/$relative";
-                if (!$file->isFile() || is_file($dest)) {
-                    continue;
-                }
-                is_dir(dirname($dest)) || mkdir(dirname($dest), 0o755, true);
-                $copied = preg_match('/\.(ini|json|txt|conf|xml|config)$/i', $relative) === 1
-                    ? TextFile::copy($file->getPathname(), $dest)
-                    : copy($file->getPathname(), $dest);
-                if ($copied) {
-                    $written[] = $dest;
-                }
-            }
+            is_dir(dirname("$to/$relative")) || mkdir(dirname("$to/$relative"), 0o755, true);
+            copy($file->getPathname(), "$to/$relative");
         }
-        sort($written);
-
-        return $written;
     }
 
     private static function valid(string $name): bool

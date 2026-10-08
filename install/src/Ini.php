@@ -73,6 +73,42 @@ final class Ini
     }
 
     /**
+     * The active settings of this text that the other one does not have, or has with another value, as a text that overlay()
+     * takes: what a file adds to its base. A key given twice in a section counts once, the first.
+     */
+    public function differences(self $base): string
+    {
+        $section = '';
+        $seen = [];
+        $blocks = [];
+        foreach ($this->lines as $line) {
+            if (preg_match('/^\s*\[(.+?)\]\s*$/', $line, $m)) {
+                $section = trim($m[1]);
+
+                continue;
+            }
+            if ($section === '' || !preg_match('/^\s*([^\s;#=][^=]*?)\s*=\s*(.*?)\s*$/', $line, $m)) {
+                continue;
+            }
+            $id = strtolower($section) . '|' . strtolower($m[1]);
+            if (isset($seen[$id])) {
+                continue;
+            }
+            $seen[$id] = true;
+            $mine = trim($m[2], " \t\"");
+            if ($base->get($section, $m[1]) !== $mine) {
+                $blocks[$section][] = "{$m[1]} = {$m[2]}";
+            }
+        }
+        $text = '';
+        foreach ($blocks as $name => $lines) {
+            $text .= "[$name]\n" . implode("\n", $lines) . "\n\n";
+        }
+
+        return $text;
+    }
+
+    /**
      * Set key = value in section (uncommenting an existing commented key).
      *
      * A key the section does not have goes after the last commented example of
@@ -140,13 +176,17 @@ final class Ini
             return;
         }
 
-        // Target section is the last one and the key was absent: append.
+        // Target section is the last one and the key was absent: append, before the blank lines that end the file.
         if ($example !== null) {
             array_splice($this->lines, $example + 1, 0, [$newLine]);
 
             return;
         }
-        $this->lines[] = $newLine;
+        $at = count($this->lines);
+        while ($at > 0 && trim($this->lines[$at - 1]) === '') {
+            $at--;
+        }
+        array_splice($this->lines, $at, 0, [$newLine]);
     }
 
     /** Whether a section has a line that matches. */

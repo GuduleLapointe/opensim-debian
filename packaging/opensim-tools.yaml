@@ -89,6 +89,8 @@ contents:
     type: dir
   - dst: /etc/opensim/grids
     type: dir
+  - dst: /etc/opensim/presets
+    type: dir
   - dst: /etc/opensim/opensim.d
     type: dir
   - dst: /etc/opensim/robust.d

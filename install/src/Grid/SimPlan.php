@@ -22,8 +22,16 @@ final class SimPlan
     public ?array $remoteGrid = null;
     /** The preset the grid is joined by (see Presets), empty for a grid of this machine. */
     public string $preset = '';
-    /** The files of that preset the simulator includes, in the folder of the machine (Presets::files()). */
-    public array $presetFiles = [];
+    /** What the preset gives to the simulators themselves, a text laid over its config (Presets::settings()). */
+    public string $presetSettings = '';
+    /** The folder that holds the config-include of the simulator: the folder of its preset, else the one of its grid. */
+    public string $configDir = '';
+
+    /** Where its architecture files are (config-include). */
+    public function configDir(): string
+    {
+        return $this->configDir !== '' ? $this->configDir : $this->gridDir;
+    }
     /** What the regions announce as their address: a name or an address, or SYSTEMIP (the one of the machine). */
     public string $externalHost = 'SYSTEMIP';
     /** The core it runs from. */

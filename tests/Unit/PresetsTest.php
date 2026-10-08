@@ -53,58 +53,84 @@ describe('The presets', function () {
             ->toBeNull();
     });
 
-    test('are copied into the presets of the machine, which the simulators read: every file, what is there is kept', function () {
-        $kit = presets_root([
-            'osgrid/config-include/GridCommon.ini' => "[Hypergrid]\r\nGatekeeperURI = \"http://hg.osgrid.org:80\"\r\n",
-            'osgrid/OpenSim.ini' => "[Search]\nModule = OpenSimSearch\n",
-            'osgrid/Helpers.ini' => "[Helpers]\nGridInfoURL = x\n",
+    test('are made complete the same way every time: the distribution merged with the preset and with what the machine has', function () {
+        $bin = presets_root([
+            'OpenSim.ini.example' => "[Const]\n    BaseHostname = \"127.0.0.1\"\n[Search]\n    ;Module = \"BasicSearchModule\"\n    ; a comment of the distribution\n[Messaging]\n    OfflineMessageModule = \"Offline Message Module V2\"\n",
+            'OpenSimDefaults.ini' => "[Startup]\n    a = 1\n",
+            'config-include/GridCommon.ini.example' => "[DatabaseService]\n    Include-Storage = \"config-include/storage/SQLiteStandalone.ini\"\n[Hypergrid]\n    HomeURI = \"http://\${Const|BaseHostname}\"\n",
+            'config-include/GridHypergrid.ini' => "[Architecture]\n    Include-Common = \"config-include/GridCommon.ini\"\n",
         ]);
-        $mine = presets_root(['osgrid/OpenSim.ini' => "[Search]\nModule = Mine\n"]);
+        $kit = presets_root([
+            'osgrid/OpenSim.ini' => "[Search]\nModule = OpenSimSearch\n[Messaging]\nOfflineMessageURL = \"http://services.osgrid.org\"\n",
+            'osgrid/config-include/GridCommon.ini' => "[Hypergrid]\r\nHomeURI = \"http://hg.osgrid.org:80\"\r\n",
+            'osgrid/destinations.txt' => "Plaza|hop://x\n",
+        ]);
+        $mine = presets_root(['osgrid/OpenSim.ini' => "[Search]\nModule = Mine\n[Chat]\nsay_distance = 40\n"]);
         $presets = new Presets([$mine, $kit]);
 
-        // The files a simulator includes, where it will read them (the machine's), those the preset has
-        expect($presets->files('osgrid'))->toBe(['GridCommon' => "$mine/osgrid/config-include/GridCommon.ini", 'OpenSim' => "$mine/osgrid/OpenSim.ini"]);
+        $presets->install('osgrid', "$bin", true);
+        $merged = file_get_contents("$mine/osgrid/OpenSim.ini");
 
-        expect($presets->install('osgrid'))
-            ->toBe(["$mine/osgrid/Helpers.ini", "$mine/osgrid/config-include/GridCommon.ini"])
-            // Unix line endings, as every ini the setup writes
+        // The complete file of the distribution, with the preset's settings over it, the machine's others kept
+        expect($merged)
+            ->toContain('a comment of the distribution')
+            ->toContain('BaseHostname = "127.0.0.1"')
+            ->toContain('Module = OpenSimSearch')
+            ->toContain('OfflineMessageURL = "http://services.osgrid.org"')
+            ->toContain('say_distance = 40')
+            // The files of the distribution the preset has nothing for are there, and the ones that are not ini are copied
+            ->and(is_file("$mine/osgrid/OpenSimDefaults.ini"))
+            ->toBeTrue()
+            ->and(file_get_contents("$mine/osgrid/destinations.txt"))
+            ->toBe("Plaza|hop://x\n")
+            // The services of the grid take the place of the generic ones; the storage of the distribution would override the database
+            // of the simulator, and the includes are the ones of the folder
             ->and(file_get_contents("$mine/osgrid/config-include/GridCommon.ini"))
-            ->toBe("[Hypergrid]\nGatekeeperURI = \"http://hg.osgrid.org:80\"\n")
-            ->and(file_get_contents("$mine/osgrid/OpenSim.ini"))
-            ->toBe("[Search]\nModule = Mine\n")
-            // A second time changes nothing, and a preset of the machine alone has nothing to copy
-            ->and($presets->install('osgrid'))
+            ->toContain('HomeURI = "http://hg.osgrid.org:80"')
+            ->toMatch('/^;\\s*Include-Storage/m')
+            ->and(file_get_contents("$mine/osgrid/config-include/GridHypergrid.ini"))
+            ->toContain("Include-Common = \"$mine/osgrid/config-include/GridCommon.ini\"");
+
+        // The same again changes nothing, and a new setting of the distribution is taken
+        $first = $presets->install('osgrid', "$bin", true);
+        file_put_contents("$bin/OpenSimDefaults.ini", "[Startup]\n    a = 1\n    b = 2\n");
+        $presets->install('osgrid', "$bin", true);
+
+        expect($first)
             ->toBe([])
-            ->and((new Presets([$mine]))->install('osgrid'))
-            ->toBe([]);
+            ->and(file_get_contents("$mine/osgrid/OpenSimDefaults.ini"))
+            ->toContain('b = 2');
     });
 
-    test('have no file a simulator includes when they have none of them, and none when they do not exist', function () {
-        $root = presets_root(['speculoos/OpenSim.ini' => "[Search]\nModule = OpenSimSearch\n", 'osgrid/Helpers.ini' => "[Helpers]\n"]);
-        $presets = new Presets([$root]);
+    test('give the simulators what they add to the distribution, not the whole file', function () {
+        $bin = presets_root(['OpenSim.ini.example' => "[Const]\n    BaseHostname = \"127.0.0.1\"\n[Messaging]\n    OfflineMessageModule = \"Offline Message Module V2\"\n"]);
+        $kit = presets_root(['osgrid/OpenSim.ini' => "[Search]\nModule = OpenSimSearch\n[Messaging]\nOfflineMessageModule = \"Offline Message Module V2\"\nOfflineMessageURL = \"http://services.osgrid.org\"\n"]);
+        $mine = presets_root([]);
+        $presets = new Presets([$mine, $kit]);
+        $presets->install('osgrid', $bin, true);
 
-        expect($presets->files('speculoos'))
-            ->toBe(['OpenSim' => "$root/speculoos/OpenSim.ini"])
-            ->and($presets->files('osgrid'))
-            ->toBe([])
-            ->and($presets->files('nothing'))
-            ->toBe([]);
+        expect($presets->settings('osgrid', $bin))
+            ->toBe("[Messaging]\nOfflineMessageURL = \"http://services.osgrid.org\"\n\n[Search]\nModule = OpenSimSearch\n\n")
+            ->and($presets->settings('nothing', $bin))
+            ->toBe('');
     });
 
-    test('are included by the simulators that join the grid, after the architecture, so their settings win', function () {
+    test('are read by the simulators from their own folder: the architecture, and the settings laid over their config', function () {
         $plan = new SimPlan();
         $plan->gridDir = '/etc/opensim/grids/osgrid';
-        $plan->presetFiles = ['GridCommon' => '/etc/opensim/presets/osgrid/config-include/GridCommon.ini', 'OpenSim' => '/etc/opensim/presets/osgrid/OpenSim.ini'];
+        $plan->configDir = '/etc/opensim/presets/osgrid';
+        $plan->presetSettings = "[Search]\nModule = OpenSimSearch\n[UserProfiles]\nProfileServiceURL = \"http://services.osgrid.org\"\n";
         $text = (new SimConfig())->render($plan);
 
         expect($text)
-            ->toContain('Include-PresetGridCommon = "/etc/opensim/presets/osgrid/config-include/GridCommon.ini"')
-            ->toContain('Include-PresetOpenSim = "/etc/opensim/presets/osgrid/OpenSim.ini"')
-            ->and(strpos($text, 'Include-PresetGridCommon'))
-            ->toBeGreaterThan(strpos($text, 'Include-Architecture'))
-            // A simulator of a grid of this machine has none
+            ->toContain('Include-Architecture = "/etc/opensim/presets/osgrid/config-include/GridHypergrid.ini"')
+            ->toContain('Include-osslDefaultEnable = "/etc/opensim/presets/osgrid/config-include/osslDefaultEnable.ini"')
+            ->toContain('ProfileServiceURL = "http://services.osgrid.org"')
+            ->not->toContain('ProfileServiceURL = "${Const|BaseURL}')
+            // A simulator of a grid of this machine reads the folder of its grid
             ->and((new SimConfig())->render(new SimPlan()))
-            ->not->toContain('Include-Preset');
+            ->toContain('Include-Architecture = "/config-include/')
+            ->not->toContain('Module = OpenSimSearch');
     });
 });
 

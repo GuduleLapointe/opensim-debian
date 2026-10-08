@@ -459,10 +459,6 @@ final class NewSim
         if ($plan->remoteGrid !== null) {
             $this->ui->note(sprintf(_('Wrote %s'), (new GridConf())->writeRemote($plan->remoteGrid)));
         }
-        // The preset of the grid is copied to the machine, where the simulators read it
-        foreach ($plan->preset !== '' ? (new Presets([], $etcRoot))->install($plan->preset) : [] as $file) {
-            $this->ui->note(sprintf(_('Wrote %s, from the preset of the grid'), $file));
-        }
         $grid = GridInfo::load($profile, $plan->gridNick);
         if ($grid === null) {
             $this->ui->error(sprintf(_("Grid '%s' not found."), $plan->gridNick));
@@ -502,8 +498,18 @@ final class NewSim
             }
         }
 
-        foreach ((new GridShared())->prepare($plan->gridDir, $plan->binDir(), $plan->hypergrid) as $file) {
-            $this->ui->note(sprintf(_('Wrote %s'), $file));
+        if ($plan->preset !== '') {
+            // A grid joined by a preset: its folder in presets/ is made complete, the same way every time (the distribution
+            // merged with the preset), and the simulator reads it there
+            $presets = new Presets([], $etcRoot);
+            foreach ($presets->install($plan->preset, $plan->binDir(), $plan->hypergrid) as $file) {
+                $this->ui->note(sprintf(_('Wrote %s'), $file));
+            }
+            $plan->presetSettings = $presets->settings($plan->preset, $plan->binDir());
+        } else {
+            foreach ((new GridShared())->prepare($plan->gridDir, $plan->binDir(), $plan->hypergrid) as $file) {
+                $this->ui->note(sprintf(_('Wrote %s'), $file));
+            }
         }
         $this->ui->note(sprintf(_('Wrote %s'), (new SimConfig())->write($plan)));
         if ($plan->createRegion) {
@@ -522,7 +528,11 @@ final class NewSim
         SetupFile::record($plan->gridDir, static fn(array $data): array => SetupFile::withSim($data, $plan));
 
         $systemUser = $profile['SystemUser'] ?? '';
-        $this->giveToSystemUser($systemUser, [$plan->gridDir, $plan->dataDirectory, $plan->cacheDirectory], true);
+        $this->giveToSystemUser(
+            $systemUser,
+            array_filter([$plan->gridDir, $plan->preset !== '' ? $plan->configDir : '', $plan->dataDirectory, $plan->cacheDirectory]),
+            true,
+        );
         // The ini files may hold passwords and the web server reads them (the helpers): 640, the group of the web server
         GridFiles::protect($plan->gridDir);
 
@@ -1107,7 +1117,7 @@ final class NewSim
         $plan->remoteGrid = $grid->remote && !is_file("{$grid->dir}/{$grid->nick}.conf") ? $grid->describe() : null;
         // A grid joined by a preset: the simulators read the files of the preset, where they are
         $plan->preset = $grid->preset;
-        $plan->presetFiles = $grid->preset !== '' ? (new Presets([], $profile['EtcRoot']))->files($grid->preset) : [];
+        $plan->configDir = $grid->preset !== '' ? (new Presets([], $profile['EtcRoot']))->dir($grid->preset) : '';
 
         // The first simulator of a grid has the name of its landing region, that is its first region
         $firstSim = !$grid->remote && SimState::names($grid->dir) === [];

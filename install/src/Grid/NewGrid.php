@@ -383,34 +383,9 @@ final class NewGrid
 
     private function copyConfigInclude(GridPlan $plan): void
     {
-        $files = [
-            'OpenSimDefaults.ini',
-            'OpenSim.ini',
-            'config-include/GridHypergrid.ini',
-            'config-include/GridCommon.ini',
-            'config-include/FlotsamCache.ini',
-            'config-include/osslDefaultEnable.ini',
-            'config-include/osslEnable.ini',
-        ];
-        foreach ($files as $file) {
-            $dest = "{$plan->etcDirectory}/$file";
-            $src = is_file("{$plan->binDir}/{$file}.example") ? "{$plan->binDir}/{$file}.example" : "{$plan->binDir}/$file";
-            if (!is_file($src)) {
-                is_file($dest) && TextFile::clean($dest);
-                continue;
-            }
-            // The distribution, over it what the grid has set: a setting new in the distribution is there, what was chosen stays
-            $text = Ini::layered($src, is_file($dest) ? $dest : null)->toString();
-            if (is_file($dest)) {
-                if (TextFile::read($dest) === $text) {
-                    continue;
-                }
-                @copy($dest, "$dest~");
-            }
-            @mkdir(dirname($dest), 0o755, true);
-            file_put_contents($dest, $text);
-        }
-        // Ready for the simulators that will join the grid
+        // The distribution, over it what the grid has set: a setting new in the distribution is there, what was chosen stays
+        // (the same procedure as the folder of a preset), ready for the simulators that will join the grid
+        (new GridShared())->merge($plan->etcDirectory, $plan->binDir, $plan->enableHypergrid);
         (new GridShared())->prepare($plan->etcDirectory, $plan->binDir, $plan->enableHypergrid);
         $this->ui->note(_('Copied config-include defaults.'));
     }

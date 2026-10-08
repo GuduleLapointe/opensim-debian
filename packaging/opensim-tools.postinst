@@ -8,7 +8,7 @@ set -e
 
 conf=/etc/opensim/opensim.conf
 # The folders of the system layout, shipped by the package
-layout="/etc/opensim /etc/opensim/grids /etc/opensim/opensim.d /etc/opensim/robust.d
+layout="/etc/opensim /etc/opensim/grids /etc/opensim/presets /etc/opensim/opensim.d /etc/opensim/robust.d
     /var/lib/opensim /var/lib/opensim/data /var/log/opensim /var/cache/opensim"
 
 # One profile per release in /usr/share/opensim, added or removed with it.

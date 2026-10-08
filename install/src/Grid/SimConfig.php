@@ -21,7 +21,7 @@ final class SimConfig
 {
     public function render(SimPlan $plan): string
     {
-        $architecture = $plan->gridDir . '/config-include/' . ($plan->hypergrid ? 'GridHypergrid.ini' : 'Grid.ini');
+        $architecture = $plan->configDir() . '/config-include/' . ($plan->hypergrid ? 'GridHypergrid.ini' : 'Grid.ini');
         $slug = $plan->slug;
 
         $lines = [
@@ -112,7 +112,7 @@ final class SimConfig
             '',
             ';; OSSL is part of the standard config, as the grid sets it (its osslEnable.ini)',
             '[OSSL]',
-            'Include-osslDefaultEnable = "' . $plan->gridDir . '/config-include/osslDefaultEnable.ini"',
+            'Include-osslDefaultEnable = "' . $plan->configDir() . '/config-include/osslDefaultEnable.ini"',
             '',
             '[Estates]',
             'DefaultEstateName = "' . $plan->estateName . '"',
@@ -121,21 +121,17 @@ final class SimConfig
             '[Architecture]',
             'Include-Architecture = "' . $architecture . '"',
             '',
-            ...$plan->presetFiles !== []
-                ? [
-                    ';; The grid is joined by a preset: its files are read where they are, and win over what is above',
-                    '[Preset]',
-                    ...array_map(
-                        static fn(string $name, string $path): string => "Include-Preset$name = \"$path\"",
-                        array_keys($plan->presetFiles),
-                        $plan->presetFiles,
-                    ),
-                    '',
-                ]
-                : [],
         ];
 
-        return implode("\n", $lines);
+        $text = implode("\n", $lines);
+        if ($plan->presetSettings !== '') {
+            // The grid is joined by a preset: what it says for the simulators wins over what is above
+            $ini = new Ini($text);
+            $ini->overlay($plan->presetSettings);
+            $text = $ini->toString();
+        }
+
+        return $text;
     }
 
     /**
