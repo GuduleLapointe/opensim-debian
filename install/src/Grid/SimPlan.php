@@ -20,6 +20,10 @@ final class SimPlan
     public int $privatePort = 8003;
     /** The description of the grid when it is a remote one not kept yet (GridInfo::describe()). */
     public ?array $remoteGrid = null;
+    /** The preset the grid is joined by (see Presets), empty for a grid of this machine. */
+    public string $preset = '';
+    /** The files of that preset the simulator includes, in the folder of the machine (Presets::files()). */
+    public array $presetFiles = [];
     /** What the regions announce as their address: a name or an address, or SYSTEMIP (the one of the machine). */
     public string $externalHost = 'SYSTEMIP';
     /** The core it runs from. */

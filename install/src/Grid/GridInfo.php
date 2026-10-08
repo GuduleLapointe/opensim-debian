@@ -35,6 +35,8 @@ final class GridInfo
     public string $logsDirectory = '';
     /** A grid whose Robust is on another machine: only described here, to join it. */
     public bool $remote = false;
+    /** The preset of a remote grid (see Presets): the settings its simulators need, kept as an ini in its folder. */
+    public string $preset = '';
     /** A grid that is only planned, not made yet (the quick setup plans its first simulator before making anything). */
     public bool $planned = false;
     /** The helpers of the grid, when it has some: where they are on its web site (see helperUrl()). */
@@ -166,7 +168,7 @@ final class GridInfo
     /** @return array<string,string>|null the [Grid] of a description of a remote grid */
     private static function remoteValues(string $conf): ?array
     {
-        $grid = @parse_ini_file($conf, true, INI_SCANNER_RAW)['Grid'] ?? null;
+        $grid = is_file($conf) ? (@parse_ini_file($conf, true, INI_SCANNER_RAW) ?: [])['Grid'] ?? null : null;
         if (
             !is_array($grid) ||
             !in_array(strtolower(trim((string) ($grid['Remote'] ?? ''))), ['true', '1', 'yes'], true)
@@ -193,6 +195,7 @@ final class GridInfo
         $grid->name = $conf['GridName'] ?? ucfirst($nick);
         $grid->slug = $conf['slug'] ?? Slug::slug($grid->name);
         $grid->hypergrid = !in_array(strtolower($conf['Hypergrid'] ?? 'true'), ['false', '0', 'no'], true);
+        $grid->preset = $conf['Preset'] ?? '';
         $grid->baseHostname = $conf['BaseHostname'] ?? 'localhost';
         $grid->publicPort = (int) ($conf['PublicPort'] ?? 8002);
         $grid->privatePort = (int) ($conf['PrivatePort'] ?? 8003);
@@ -218,6 +221,7 @@ final class GridInfo
             'publicPort' => $this->publicPort,
             'privatePort' => $this->privatePort,
             'hypergrid' => $this->hypergrid,
+            'preset' => $this->preset,
             'dataDirectory' => $this->dataDirectory,
             'cacheDirectory' => $this->cacheDirectory,
             'logsDirectory' => $this->logsDirectory,

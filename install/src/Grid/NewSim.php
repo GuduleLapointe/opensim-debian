@@ -459,6 +459,10 @@ final class NewSim
         if ($plan->remoteGrid !== null) {
             $this->ui->note(sprintf(_('Wrote %s'), (new GridConf())->writeRemote($plan->remoteGrid)));
         }
+        // The preset of the grid is copied to the machine, where the simulators read it
+        foreach ($plan->preset !== '' ? (new Presets([], $etcRoot))->install($plan->preset) : [] as $file) {
+            $this->ui->note(sprintf(_('Wrote %s, from the preset of the grid'), $file));
+        }
         $grid = GridInfo::load($profile, $plan->gridNick);
         if ($grid === null) {
             $this->ui->error(sprintf(_("Grid '%s' not found."), $plan->gridNick));
@@ -930,49 +934,75 @@ final class NewSim
         $numeric = static fn(string $v): ?string => ctype_digit(trim($v)) ? null : _('Enter a port number.');
         $etcRoot = $profile['EtcRoot'];
 
-        $this->ui->note(
-            _(
-                'The simulator joins a grid whose Robust server runs on another machine (or in another container): it needs its address and its ports.',
-            ),
-        );
-        $v = $this->ui->form(
-            [
-                ['key' => 'address', 'label' => _('Address of the grid (host:port)'), 'validate' => $required],
+        // A grid there is a preset for is joined with what the preset says, nothing else to ask
+        $presets = new Presets([], $etcRoot);
+        $preset = '';
+        $known = $presets->names();
+        if ($known !== []) {
+            $options = [];
+            foreach ($known as $name => $gridName) {
+                $options[$name] = $gridName === $name ? $name : "$name ($gridName)";
+            }
+            $options['-'] = _('Another grid');
+            $preset = $this->ui->choose(_('Grid to join'), $options, '-');
+            $preset = $preset === '-' ? '' : $preset;
+        }
+        $described = $preset !== '' ? $presets->describe($preset) : null;
+        if ($described !== null) {
+            $v = [
+                'address' => "{$described['host']}:{$described['publicPort']}",
+                'name' => $described['name'],
+                'nick' => $described['nick'],
+                'private' => (string) $described['privatePort'],
+                'hypergrid' => $described['hypergrid'] ? 'yes' : 'no',
+            ];
+        } else {
+            $preset = '';
+            $this->ui->note(
+                _(
+                    'The simulator joins a grid whose Robust server runs on another machine (or in another container): it needs its address and its ports.',
+                ),
+            );
+            $v = $this->ui->form(
                 [
-                    'key' => 'name',
-                    'label' => _('Grid name'),
-                    'required' => false,
-                    'hint' => _('Empty: the grid tells it'),
+                    ['key' => 'address', 'label' => _('Address of the grid (host:port)'), 'validate' => $required],
+                    [
+                        'key' => 'name',
+                        'label' => _('Grid name'),
+                        'required' => false,
+                        'hint' => _('Empty: the grid tells it'),
+                    ],
+                    [
+                        'key' => 'nick',
+                        'label' => _('Grid nick (snake_case)'),
+                        'required' => false,
+                        'hint' => _('Empty: the grid tells it'),
+                    ],
+                    [
+                        'key' => 'private',
+                        'label' => _('Private port of the grid (only for its simulators, and this machine is one)'),
+                        'required' => false,
+                        'hint' => _('Empty: the public port plus one'),
+                        'validate' => $numeric,
+                    ],
+                    [
+                        'key' => 'hypergrid',
+                        'label' => _('Does the grid use Hypergrid?'),
+                        'type' => 'confirm',
+                        'default' => 'yes',
+                    ],
                 ],
-                [
-                    'key' => 'nick',
-                    'label' => _('Grid nick (snake_case)'),
-                    'required' => false,
-                    'hint' => _('Empty: the grid tells it'),
-                ],
-                [
-                    'key' => 'private',
-                    'label' => _('Private port of the grid (only for its simulators, and this machine is one)'),
-                    'required' => false,
-                    'hint' => _('Empty: the public port plus one'),
-                    'validate' => $numeric,
-                ],
-                [
-                    'key' => 'hypergrid',
-                    'label' => _('Does the grid use Hypergrid?'),
-                    'type' => 'confirm',
-                    'default' => 'yes',
-                ],
-            ],
-            _('Remote grid'),
-        );
+                _('Remote grid'),
+            );
+        }
         $address = trim($v['address']);
         $parts = parse_url(preg_match('#^https?://#', $address) ? $address : "http://$address") ?: [];
         $host = (string) ($parts['host'] ?? $address);
         $public = (int) ($parts['port'] ?? 8002);
 
-        $said = $this->gridSays($host, $public);
-        if ($said === []) {
+        // A preset says all that is needed, the grid is not asked
+        $said = $described !== null ? [] : $this->gridSays($host, $public);
+        if ($said === [] && $described === null) {
             $this->ui->warn(
                 sprintf(
                     _(
@@ -1015,6 +1045,7 @@ final class NewSim
 
         $grid = new GridInfo();
         $grid->remote = true;
+        $grid->preset = $preset;
         $grid->nick = $nick;
         $grid->name = $name;
         $grid->slug = Slug::slug($name);
@@ -1074,6 +1105,9 @@ final class NewSim
         $plan->logsDirectory = $grid->logsDirectory;
         // A remote grid not kept yet is written with the simulator
         $plan->remoteGrid = $grid->remote && !is_file("{$grid->dir}/{$grid->nick}.conf") ? $grid->describe() : null;
+        // A grid joined by a preset: the simulators read the files of the preset, where they are
+        $plan->preset = $grid->preset;
+        $plan->presetFiles = $grid->preset !== '' ? (new Presets([], $profile['EtcRoot']))->files($grid->preset) : [];
 
         // The first simulator of a grid has the name of its landing region, that is its first region
         $firstSim = !$grid->remote && SimState::names($grid->dir) === [];

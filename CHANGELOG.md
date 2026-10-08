@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+- new: presets of known grids (`speculoos`, `osgrid`): joining one asks nothing but the choice; the simulators read its files from `/etc/opensim/presets`
 - new: the setup writes the `MoneyServer.ini` of the grid from the original of the MoneyServer, whole, with a random `MoneyScriptAccessKey`
 - update: the setup reads the distribution, lays what the grid has over it, then its own choices: a new setting of the distribution is taken, what the operator set stays
 - fix: configuring a grid or a simulator that exists no longer removes the settings the operator added

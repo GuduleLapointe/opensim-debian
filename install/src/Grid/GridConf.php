@@ -35,6 +35,7 @@ final class GridConf
             "PublicPort = {$grid['publicPort']}",
             "PrivatePort = {$grid['privatePort']}",
             'Hypergrid = ' . ($grid['hypergrid'] ? 'true' : 'false'),
+            ...($grid['preset'] ?? '') !== '' ? ['Preset = ' . $grid['preset']] : [],
             'DataDirectory = "' . $grid['dataDirectory'] . '"',
             'CacheDirectory = "' . $grid['cacheDirectory'] . '"',
             'LogsDirectory = "' . $grid['logsDirectory'] . '"',

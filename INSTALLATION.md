@@ -78,6 +78,12 @@ Names are snake_case (`the_rapist`, not `therapist`): the nick of a grid and the
 
 On a machine that has no Robust of its own (a grid run elsewhere, on another host or in another container), `Add grid`, `Connect to an external grid`, needs no grid created first: it asks for the address of the grid and its public port, reads its name and nick from `get_grid_info`, asks for its private port (which only its simulators reach), and keeps that description under the nick of the grid for the next simulators (`/etc/opensim/grids/<nick>/<nick>.conf`). The estate of such a simulator is owned by an account of the grid that already exists, and the address the regions announce (the viewers connect to it) is asked, as `SYSTEMIP`, the first interface of the machine, is not the one of the world behind a NAT or in a container.
 
+#### A preset for a known grid
+
+`Connect to an external grid` first offers the grids the kit knows (`speculoos`, `osgrid`) and `Another grid`. A known grid is joined with nothing more to ask: its address and ports, and the settings its simulators need (its services, its offline messages, its search, its profiles, its groups, its economy), come from its preset.
+
+A preset is a folder with the structure of the folder of a grid, with only the files that have settings of that grid (`OpenSim.ini` for the simulators, `config-include/GridCommon.ini` for its services...). `/etc/opensim/grids` is for the grids configured on this machine, `/etc/opensim/presets` for the base of the grids that are elsewhere. The presets of the kit are in `/usr/share/opensim-tools/share/presets`; the first simulator that joins a grid by one gets it copied into `/etc/opensim/presets/<name>`, where the simulators read it (they include its files after their own config, so it wins). It can be changed there, which is not the point, and your own presets can be added there, a folder each.
+
 ### A setup in a file
 
 A setup can be described in a file, JSON or YAML (the example is `share/examples/setup.yaml`, in `/usr/share/opensim-tools/share/examples/`): the grid, its owner, its simulators and regions, and the accounts to make. `opensim import setup.yaml` brings it in: without `--apply` it tells what it would make, with `--apply` it makes it, with the questions of the wizard answered from the file. What the wizard does is kept in the folder of the grid, `setup.json` (readable by its owner only, it holds the database passwords), to make the same grid again.

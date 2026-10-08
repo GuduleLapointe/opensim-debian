@@ -121,6 +121,18 @@ final class SimConfig
             '[Architecture]',
             'Include-Architecture = "' . $architecture . '"',
             '',
+            ...$plan->presetFiles !== []
+                ? [
+                    ';; The grid is joined by a preset: its files are read where they are, and win over what is above',
+                    '[Preset]',
+                    ...array_map(
+                        static fn(string $name, string $path): string => "Include-Preset$name = \"$path\"",
+                        array_keys($plan->presetFiles),
+                        $plan->presetFiles,
+                    ),
+                    '',
+                ]
+                : [],
         ];
 
         return implode("\n", $lines);
