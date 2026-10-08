@@ -91,6 +91,11 @@ describe('The presets', function () {
             ->and(file_get_contents("$mine/osgrid/config-include/GridHypergrid.ini"))
             ->toContain("Include-Common = \"$mine/osgrid/config-include/GridCommon.ini\"");
 
+        // The defaults of the application are a copy of the distribution's, whatever the preset or the machine says
+        file_put_contents("$mine/osgrid/OpenSimDefaults.ini", "[Startup]\n    a = 99\n");
+        $presets->install('osgrid', "$bin", true);
+        expect(file_get_contents("$mine/osgrid/OpenSimDefaults.ini"))->toBe("[Startup]\n    a = 1\n");
+
         // The same again changes nothing, and a new setting of the distribution is taken
         $first = $presets->install('osgrid', "$bin", true);
         file_put_contents("$bin/OpenSimDefaults.ini", "[Startup]\n    a = 1\n    b = 2\n");

@@ -65,6 +65,17 @@ final class GridShared
 
                 continue;
             }
+            // The defaults of the application are its own: a copy, consulted and never changed
+            if ($file === 'OpenSimDefaults.ini' && $source !== null) {
+                $text = TextFile::read($source);
+                if (!is_file($dest) || TextFile::read($dest) !== $text) {
+                    is_dir(dirname($dest)) || mkdir(dirname($dest), 0o755, true);
+                    file_put_contents($dest, $text);
+                    $written[] = $dest;
+                }
+
+                continue;
+            }
             $ini = Ini::layered($source, is_file($dest) ? $dest : null);
             foreach ($layers as $root) {
                 $ini->overlay(TextFile::read("$root/$file"));
