@@ -147,13 +147,13 @@ check "people: nobody is found for a name nobody has" "[ \"\$(accounts Nobodyher
 ts "search: the show in search box of a profile"
 profile=bbbbbbbb-0000-4000-8000-0000000000bb
 sql "DELETE FROM UserAccounts WHERE PrincipalID = '$profile'"
-# (an account that is mature and has a flag of its own, 4, which the box does not touch)
-sql "INSERT INTO UserAccounts (PrincipalID, ScopeID, FirstName, LastName, Email, ServiceURLs, Created, UserLevel, UserFlags, UserTitle, active) VALUES ('$profile', '$null_key', 'Box', 'Tester', '', '', 0, 0, 6, '', 1)"
+# (an account that is age verified, 32, and identified, 4: flags the box does not touch)
+sql "INSERT INTO UserAccounts (PrincipalID, ScopeID, FirstName, LastName, Email, ServiceURLs, Created, UserLevel, UserFlags, UserTitle, active) VALUES ('$profile', '$null_key', 'Box', 'Tester', '', '', 0, 0, 36, '', 1)"
 # (the avatars are in the grid, with their secure session, as Robust keeps it when they are connected)
 sql "DELETE FROM Presence WHERE UserID IN ('$profile', 'cccccccc-0000-4000-8000-0000000000cc')"
 sql "INSERT INTO Presence (UserID, RegionID, SessionID, SecureSessionID) VALUES ('$profile', '$null_key', 'dddddddd-0000-4000-8000-0000000000d1', 'eeeeeeee-0000-4000-8000-0000000000e1'), ('cccccccc-0000-4000-8000-0000000000cc', '$null_key', 'dddddddd-0000-4000-8000-0000000000d2', 'eeeeeeee-0000-4000-8000-0000000000e2')"
 queries publish
-check "profile box: the account is shown in search, not mature, its own flag kept, as told and not by the session of another" "[ \"\$(sql \"SELECT UserFlags FROM UserAccounts WHERE PrincipalID='$profile'\")\" = 5 ]"
+check "profile box: the account is shown in search, its other flags kept (age verified, identified), as told and not by the session of another" "[ \"\$(sql \"SELECT UserFlags FROM UserAccounts WHERE PrincipalID='$profile'\")\" = 37 ]"
 check "profile box: no account was made for an avatar that had none" "[ \"\$(sql \"SELECT COUNT(*) FROM UserAccounts WHERE PrincipalID='cccccccc-0000-4000-8000-0000000000cc'\")\" = 0 ]"
 sql "DELETE FROM UserAccounts WHERE PrincipalID = '$profile'"
 sql "DELETE FROM Presence WHERE UserID IN ('$profile', 'cccccccc-0000-4000-8000-0000000000cc')"
