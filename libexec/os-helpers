@@ -373,10 +373,9 @@ osPortMapModule() {
 	crudget "$conf" Grid PortMappingModule 2>/dev/null | tr '[:upper:]' '[:lower:]'
 }
 
-# The ports of an instance, "port proto" per line, from opensim ports (the one source): the public ones, every one with "all"
+# The ports of an instance, "port proto" per line, exactly as opensim ports lists them (the one source)
 osPortMapPorts() {
-	php "$BASEDIR/libexec/ports.php" "$1" 2>/dev/null |
-		awk -v all="${2:-}" 'NR > 1 && (all != "" || $5 == "public") { print $3, $4 }'
+	php "$BASEDIR/libexec/ports.php" "$1" 2>/dev/null | awk 'NR > 1 { print $3, $4 }'
 }
 
 # "port proto" lines as 9000/tcp, 9001/udp
@@ -401,10 +400,10 @@ osPortMapRelease() {
 	[ -f "$state" ] || return 0
 	read -r module <"$state"
 	if declare -F "osPortMap_${module}_remove" >/dev/null; then
-		# What was mapped and every port the instance has now (a region added since, a console)
+		# What was mapped before and every port opensim ports lists now
 		list=$({
 			tail -n +2 "$state"
-			osPortMapPorts "$1" all
+			osPortMapPorts "$1"
 		} | sort -u -k1,1n -k2,2)
 		log "$1: closing ports $(osPortMapFormat <<<"$list") ($module)"
 		while read -r port proto; do
