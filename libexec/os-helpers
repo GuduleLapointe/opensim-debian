@@ -343,6 +343,13 @@ osHasRegion() {
 	compgen -G "$(osExpandConst "$1")/*.ini" >/dev/null
 }
 
+# Port mapping (NAT): a grid asks for it in the [Grid] of its config (<nick>.conf), as it does for its modules:
+#   PortMappingModule = upnpc
+#   PortMappingEnabled = true|false
+# A module is the functions osPortMap_<module>_init|add|remove|address. What an instance has mapped is kept in
+# <VarRoot>/portmap/<instance> (the module, then "port proto" per line): the start and the stop know at once what is
+# mapped, and call the module only to add or remove a mapping.
+
 # The grid config (<nick>.conf) of an instance config: the grid folder, or the one above its sims folder
 osGridConf() {
 	local dir
@@ -351,54 +358,86 @@ osGridConf() {
 	echo "$dir/$(basename "$dir").conf"
 }
 
-# Succeeds when the grid of an instance asks for UPnP ([Grid] Upnp = true in its config)
-osUpnpEnabled() {
-	local conf value
+# The file that tells what an instance has mapped
+osPortMapState() {
+	echo "${VarRoot:-$DataRoot}/portmap/$1"
+}
+
+# The module the grid of an instance uses, empty when port mapping is not enabled
+osPortMapModule() {
+	local conf enabled
 	conf=$(osGridConf "$1")
-	[ -f "$conf" ] || return 1
-	value=$(crudget "$conf" Grid Upnp 2>/dev/null | tr '[:upper:]' '[:lower:]')
-	[ "$value" = true ] || [ "$value" = yes ] || [ "$value" = 1 ]
+	[ -f "$conf" ] || return 0
+	enabled=$(crudget "$conf" Grid PortMappingEnabled 2>/dev/null | tr '[:upper:]' '[:lower:]')
+	case $enabled in true | yes | 1) ;; *) return 0 ;; esac
+	crudget "$conf" Grid PortMappingModule 2>/dev/null | tr '[:upper:]' '[:lower:]'
 }
 
 # The public ports of an instance, "port proto" per line (see opensim ports)
-osUpnpPorts() {
+osPortMapPorts() {
 	php "$BASEDIR/libexec/ports.php" "$1" 2>/dev/null | awk 'NR > 1 && $5 == "public" { print $3, $4 }'
 }
 
-# Map the public ports of an instance to this machine. Fails (nothing left mapped) when one cannot be.
-osUpnpMap() {
-	local lan port proto
+# Module upnpc (miniupnpc)
+osPortMap_upnpc_init() {
 	command -v upnpc >/dev/null 2>&1 || return 1
-	lan=$(upnpc -s 2>/dev/null | sed -n 's/^Local LAN ip address *: *//p' | head -1)
-	[ -n "$lan" ] || return 1
+	OS_PORTMAP_LAN=$(upnpc -s 2>/dev/null | sed -n 's/^Local LAN ip address *: *//p' | head -1)
+	[ -n "$OS_PORTMAP_LAN" ]
+}
+osPortMap_upnpc_add() { upnpc -a "$OS_PORTMAP_LAN" "$1" "$1" "$2" >/dev/null 2>&1; }
+osPortMap_upnpc_remove() { upnpc -d "$1" "$2" >/dev/null 2>&1; }
+osPortMap_upnpc_address() { external-ip 2>/dev/null; }
+
+# Remove the mappings an instance has, whatever the grid says now
+osPortMapRelease() {
+	local state module port proto
+	state=$(osPortMapState "$1")
+	[ -f "$state" ] || return 0
+	read -r module <"$state"
+	if declare -F "osPortMap_${module}_remove" >/dev/null; then
+		log "$1: closing its ports ($module)"
+		while read -r port proto; do
+			"osPortMap_${module}_remove" "$port" "$proto"
+		done < <(tail -n +2 "$state")
+	fi
+	rm -f "$state"
+}
+
+# Map the ports of an instance, unless they are as they should. Fails (nothing left mapped) when one cannot be.
+# Args: instance, module
+osPortMapEnsure() {
+	local instance=$1 module=$2 state ports port proto
+	declare -F "osPortMap_${module}_add" >/dev/null || {
+		log 1 "$instance: unknown port mapping module '$module'"
+		return 1
+	}
+	state=$(osPortMapState "$instance")
+	ports=$(osPortMapPorts "$instance")
+	[ -n "$ports" ] || return 1
+	[ -f "$state" ] && [ "$(head -1 "$state")" = "$module" ] && [ "$(tail -n +2 "$state")" = "$ports" ] && return 0
+	osPortMapRelease "$instance"
+	log "$instance: mapping its ports ($module), this can take a moment"
+	"osPortMap_${module}_init" || return 1
+	mkdir -p "$(dirname "$state")" && printf '%s\n' "$module" >"$state" || return 1
 	while read -r port proto; do
-		upnpc -a "$lan" "$port" "$port" "$proto" >/dev/null 2>&1 || {
-			osUpnpUnmap "$1"
+		if "osPortMap_${module}_add" "$port" "$proto"; then
+			echo "$port $proto" >>"$state"
+		else
+			osPortMapRelease "$instance"
 			return 1
-		}
-	done < <(osUpnpPorts "$1")
+		fi
+	done <<<"$ports"
 }
 
-# Remove the mappings of the public ports of an instance
-osUpnpUnmap() {
-	local port proto
-	while read -r port proto; do
-		upnpc -d "$port" "$proto" >/dev/null 2>&1
-	done < <(osUpnpPorts "$1")
-	return 0
-}
-
-# Succeeds when a simulator may use UPnP: its grid is on another machine, or its public port is mapped already
-# (a grid of this machine that could not open its ports leaves the simulators without). Robust has no prerequisite.
-osUpnpGridReady() {
-	local conf remote nick port proto
+# A simulator maps its ports when its grid does (the grid of another machine has no prerequisite). Args: ini, Robust|OpenSim
+osPortMapGridReady() {
+	local conf remote nick
 	[ "$2" = OpenSim ] || return 0
 	conf=$(osGridConf "$1")
 	remote=$(crudget "$conf" Grid Remote 2>/dev/null | tr '[:upper:]' '[:lower:]')
 	[ "$remote" = true ] && return 0
-	nick=$(basename "$(dirname "$conf")")
-	read -r port proto < <(osUpnpPorts "$nick" | head -1)
-	[ -n "$port" ] && upnpc -l 2>/dev/null | grep -qiE "$proto +$port->"
+	nick=$(basename "$(dirname "$conf")" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9][^a-z0-9]*/_/g')
+	[ -f "$(osPortMapState "$nick")" ]
 }
 
 # The address the regions of a folder announce
@@ -410,35 +449,38 @@ osSetExternalHost() {
 	done
 }
 
-# Before an instance starts, when its grid uses UPnP: open its ports, and give its regions the public address of this
-# machine, else SYSTEMIP when the ports could not be opened. Args: instance, its config, Robust|OpenSim, its regions folder
-osUpnpStart() {
-	local instance=$1 ini=$2 type=$3 regions=$4 host=
-	osUpnpEnabled "$ini" || return 0
-	if osUpnpGridReady "$ini" "$type" && osUpnpMap "$instance"; then
-		if [ "$type" != OpenSim ]; then
-			log "$instance: ports opened (UPnP)"
-			return 0
+# Before an instance starts: its ports mapped and its regions announcing the public address when its grid asks for
+# port mapping, else SYSTEMIP when it could not be done; what an earlier start mapped is removed when the grid no longer
+# asks for it. Args: instance, its config, Robust|OpenSim, its regions folder
+osPortMapStart() {
+	local instance=$1 ini=$2 type=$3 regions=$4 module host=
+	module=$(osPortMapModule "$ini")
+	if [ -z "$module" ]; then
+		if [ -f "$(osPortMapState "$instance")" ]; then
+			osPortMapRelease "$instance"
+			[ "$type" = OpenSim ] && osSetExternalHost "$regions" SYSTEMIP
 		fi
-		host=$(external-ip 2>/dev/null)
-		if [ -n "$host" ]; then
-			log "$instance: ports opened (UPnP), regions announce $host"
-		else
-			osUpnpUnmap "$instance"
-			log 1 "$instance: external address unknown, UPnP given up"
+		return 0
+	fi
+	if osPortMapGridReady "$ini" "$type" && osPortMapEnsure "$instance" "$module"; then
+		if [ "$type" = OpenSim ]; then
+			host=$("osPortMap_${module}_address")
+			[ -n "$host" ] || {
+				log 1 "$instance: public address unknown"
+				osPortMapRelease "$instance"
+			}
 		fi
 	else
-		log 1 "$instance: UPnP failed, starting without it"
+		log 1 "$instance: port mapping failed, starting without it"
+		osPortMapRelease "$instance"
 	fi
 	[ "$type" = OpenSim ] && osSetExternalHost "$regions" "${host:-SYSTEMIP}"
 	return 0
 }
 
-# After an instance stopped, when its grid uses UPnP: close its ports. Args: instance, its config
-osUpnpStop() {
-	osUpnpEnabled "$2" || return 0
-	osUpnpUnmap "$1"
-	log "$1: ports closed (UPnP)"
+# After an instance stopped: its mappings removed, whatever the grid says now. Args: instance
+osPortMapStop() {
+	osPortMapRelease "$1"
 }
 
 # The root agents the regions of an instance have, as its simulator says on its own HTTP port, one request
