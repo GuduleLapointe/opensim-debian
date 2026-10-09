@@ -373,9 +373,15 @@ osPortMapModule() {
 	crudget "$conf" Grid PortMappingModule 2>/dev/null | tr '[:upper:]' '[:lower:]'
 }
 
-# The public ports of an instance, "port proto" per line (see opensim ports)
+# The ports of an instance, "port proto" per line, from opensim ports (the one source): the public ones, every one with "all"
 osPortMapPorts() {
-	php "$BASEDIR/libexec/ports.php" "$1" 2>/dev/null | awk 'NR > 1 && $5 == "public" { print $3, $4 }'
+	php "$BASEDIR/libexec/ports.php" "$1" 2>/dev/null |
+		awk -v all="${2:-}" 'NR > 1 && (all != "" || $5 == "public") { print $3, $4 }'
+}
+
+# "port proto" lines as 9000/tcp, 9001/udp
+osPortMapFormat() {
+	awk '{ printf "%s%s/%s", (NR > 1 ? ", " : ""), $1, $2 } END { print "" }'
 }
 
 # Module upnpc (miniupnpc)
@@ -390,15 +396,20 @@ osPortMap_upnpc_address() { external-ip 2>/dev/null; }
 
 # Remove the mappings an instance has, whatever the grid says now
 osPortMapRelease() {
-	local state module port proto
+	local state module port proto list
 	state=$(osPortMapState "$1")
 	[ -f "$state" ] || return 0
 	read -r module <"$state"
 	if declare -F "osPortMap_${module}_remove" >/dev/null; then
-		log "$1: closing its ports ($module)"
+		# What was mapped and every port the instance has now (a region added since, a console)
+		list=$({
+			tail -n +2 "$state"
+			osPortMapPorts "$1" all
+		} | sort -u -k1,1n -k2,2)
+		log "$1: closing ports $(osPortMapFormat <<<"$list") ($module)"
 		while read -r port proto; do
-			"osPortMap_${module}_remove" "$port" "$proto"
-		done < <(tail -n +2 "$state")
+			[ -n "$port" ] && "osPortMap_${module}_remove" "$port" "$proto"
+		done <<<"$list"
 	fi
 	rm -f "$state"
 }
@@ -416,7 +427,7 @@ osPortMapEnsure() {
 	[ -n "$ports" ] || return 1
 	[ -f "$state" ] && [ "$(head -1 "$state")" = "$module" ] && [ "$(tail -n +2 "$state")" = "$ports" ] && return 0
 	osPortMapRelease "$instance"
-	log "$instance: mapping its ports ($module), this can take a moment"
+	log "$instance: mapping ports $(osPortMapFormat <<<"$ports") ($module), this can take a moment"
 	"osPortMap_${module}_init" || return 1
 	mkdir -p "$(dirname "$state")" && printf '%s\n' "$module" >"$state" || return 1
 	while read -r port proto; do
