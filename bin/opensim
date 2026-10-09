@@ -615,7 +615,7 @@ stopSim() {
 					log 1 "$simName still running after being killed"
 			fi
 		fi
-		osPortMapStop "$instance"
+		osPortMapStop "$instance" "$inifile"
 	done
 }
 
