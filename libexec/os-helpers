@@ -228,7 +228,10 @@ osWaitExit() {
 	local name=$1 pid=$2 seconds=$3 t=0 logfile last="" text
 	logfile=$(osLogOfPid "$pid")
 	while kill -0 "$pid" 2>/dev/null; do
-		[ $t -lt $((seconds * 2)) ] || { osStepEnd; return 1; }
+		[ $t -lt $((seconds * 2)) ] || {
+			osStepEnd
+			return 1
+		}
 		last=$(tail -n 1 "$logfile" 2>/dev/null | tr -d '\r' | sed -E 's/^[0-9-]+ [0-9:,.]+ +[A-Z]+ +//')
 		text="  Waiting for $name to stop"
 		[ -t 2 ] && text="$text ($((t / 2))s)"
@@ -268,7 +271,10 @@ osCountdown() {
 		since=$((since + tick))
 		if [ -n "$check" ] && [ $since -ge 5 ] && [ "$left" -gt 0 ]; then
 			since=0
-			if "$check"; then osStepEnd; return 1; fi
+			if "$check"; then
+				osStepEnd
+				return 1
+			fi
 		fi
 	done
 	osStepEnd
@@ -279,7 +285,10 @@ osCountdown() {
 osScreenOutput() {
 	local file out
 	file=$(mktemp "${TMPDIR:-/tmp}/osscreen.XXXXXX") || return 1
-	osConsoleLine "$1" "$2" || { rm -f "$file"; return 1; }
+	osConsoleLine "$1" "$2" || {
+		rm -f "$file"
+		return 1
+	}
 	sleep 2
 	screen -S "$1" -X hardcopy -h "$file" >/dev/null 2>&1
 	sleep 0.5
@@ -332,6 +341,104 @@ osCountRealUsers() {
 osHasRegion() {
 	[ -n "${1:-}" ] || return 0
 	compgen -G "$(osExpandConst "$1")/*.ini" >/dev/null
+}
+
+# The grid config (<nick>.conf) of an instance config: the grid folder, or the one above its sims folder
+osGridConf() {
+	local dir
+	dir=$(dirname "$(readlink -f "$1")")
+	[ "$(basename "$dir")" = sims ] && dir=$(dirname "$dir")
+	echo "$dir/$(basename "$dir").conf"
+}
+
+# Succeeds when the grid of an instance asks for UPnP ([Grid] Upnp = true in its config)
+osUpnpEnabled() {
+	local conf value
+	conf=$(osGridConf "$1")
+	[ -f "$conf" ] || return 1
+	value=$(crudget "$conf" Grid Upnp 2>/dev/null | tr '[:upper:]' '[:lower:]')
+	[ "$value" = true ] || [ "$value" = yes ] || [ "$value" = 1 ]
+}
+
+# The public ports of an instance, "port proto" per line (see opensim ports)
+osUpnpPorts() {
+	php "$BASEDIR/libexec/ports.php" "$1" 2>/dev/null | awk 'NR > 1 && $5 == "public" { print $3, $4 }'
+}
+
+# Map the public ports of an instance to this machine. Fails (nothing left mapped) when one cannot be.
+osUpnpMap() {
+	local lan port proto
+	command -v upnpc >/dev/null 2>&1 || return 1
+	lan=$(upnpc -s 2>/dev/null | sed -n 's/^Local LAN ip address *: *//p' | head -1)
+	[ -n "$lan" ] || return 1
+	while read -r port proto; do
+		upnpc -a "$lan" "$port" "$port" "$proto" >/dev/null 2>&1 || {
+			osUpnpUnmap "$1"
+			return 1
+		}
+	done < <(osUpnpPorts "$1")
+}
+
+# Remove the mappings of the public ports of an instance
+osUpnpUnmap() {
+	local port proto
+	while read -r port proto; do
+		upnpc -d "$port" "$proto" >/dev/null 2>&1
+	done < <(osUpnpPorts "$1")
+	return 0
+}
+
+# Succeeds when a simulator may use UPnP: its grid is on another machine, or its public port is mapped already
+# (a grid of this machine that could not open its ports leaves the simulators without). Robust has no prerequisite.
+osUpnpGridReady() {
+	local conf remote nick port proto
+	[ "$2" = OpenSim ] || return 0
+	conf=$(osGridConf "$1")
+	remote=$(crudget "$conf" Grid Remote 2>/dev/null | tr '[:upper:]' '[:lower:]')
+	[ "$remote" = true ] && return 0
+	nick=$(basename "$(dirname "$conf")")
+	read -r port proto < <(osUpnpPorts "$nick" | head -1)
+	[ -n "$port" ] && upnpc -l 2>/dev/null | grep -qiE "$proto +$port->"
+}
+
+# The address the regions of a folder announce
+osSetExternalHost() {
+	local file
+	for file in "$1"/*.ini; do
+		[ -f "$file" ] || continue
+		sed -i~ -E "s|^([[:blank:]]*ExternalHostName[[:blank:]]*=).*|\\1 $2|" "$file" && rm -f "$file~"
+	done
+}
+
+# Before an instance starts, when its grid uses UPnP: open its ports, and give its regions the public address of this
+# machine, else SYSTEMIP when the ports could not be opened. Args: instance, its config, Robust|OpenSim, its regions folder
+osUpnpStart() {
+	local instance=$1 ini=$2 type=$3 regions=$4 host=
+	osUpnpEnabled "$ini" || return 0
+	if osUpnpGridReady "$ini" "$type" && osUpnpMap "$instance"; then
+		if [ "$type" != OpenSim ]; then
+			log "$instance: ports opened (UPnP)"
+			return 0
+		fi
+		host=$(external-ip 2>/dev/null)
+		if [ -n "$host" ]; then
+			log "$instance: ports opened (UPnP), regions announce $host"
+		else
+			osUpnpUnmap "$instance"
+			log 1 "$instance: external address unknown, UPnP given up"
+		fi
+	else
+		log 1 "$instance: UPnP failed, starting without it"
+	fi
+	[ "$type" = OpenSim ] && osSetExternalHost "$regions" "${host:-SYSTEMIP}"
+	return 0
+}
+
+# After an instance stopped, when its grid uses UPnP: close its ports. Args: instance, its config
+osUpnpStop() {
+	osUpnpEnabled "$2" || return 0
+	osUpnpUnmap "$1"
+	log "$1: ports closed (UPnP)"
 }
 
 # The root agents the regions of an instance have, as its simulator says on its own HTTP port, one request
