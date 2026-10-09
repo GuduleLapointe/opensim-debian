@@ -12,6 +12,8 @@ It uses libraries `opensim-helpers`, `opensim-engine`, and `opensim-rest-php`. E
 - **opensim-kit** provides the whole environment setup and management. It uses own code and `opensim-helpers` (and therefore `opensim-engine` and `opensim-rest-php`).
 - **w4os WordPress plugin** is another implementation to provide management and web interface, that uses `opensim-helpers`.
 
+Where code and files go, and how the current layout is to move there, is in [REFACTORING.md](REFACTORING.md). New code is written at the place it describes.
+
 ## Configuration files
 
 The folder of a grid (`/etc/opensim/grids/<grid>`) holds the configuration files of the OpenSim environment as the distributions ship them (Robust.HG.ini, OpenSim.ini, config-include/, MoneyServer.ini...), completed. They are shared by the OpenSim executables and the helpers: every setting keeps its name, its section and its file, the helpers read them there (with their `Include-` and `${Const|...}`), and what the helpers need that OpenSim has no place for is in `Helpers.ini`, `[Helpers]`.
@@ -30,15 +32,15 @@ No secret has a default: the key of the currency (`MoneyScriptAccessKey` of `[Mo
 
 The packages are built with [nfpm](https://nfpm.goreleaser.com) and published to an apt repository with the tools of [build-tools](https://github.com/magicoli/build-tools) (`apt-package`, `apt-publish`), the repository being the one `APT_REPO_DIR` names in `.env`. Everything lives in `packaging/`, one definition per package:
 
-| Package                   | Definition              | Version                          | Content                                                                                                                                                            |
-| ------------------------- | ----------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `opensim-tools`           | `opensim-tools.yaml`    | git tag of this repository       | the tools, in `/usr/share/opensim-tools`, the `opensim` command, the service                                                                                       |
-| `opensim-<version>`       | `opensim-core.yaml`     | OpenSimulator release + revision | an OpenSimulator release, in `/usr/share/opensim/<version>`, for amd64 and arm64                                                                                   |
-| `opensim`                 | `opensim.yaml`          | same as the latest release       | metapackage, the latest release                                                                                                                                    |
-| `opensim-kit`             | `opensim-kit.yaml`      | git tag of this repository       | metapackage, the tools and the latest release                                                                                                                      |
-| `opensim-web`             | `opensim-web.yaml`      | git tag of this repository       | the placeholder site of a grid, in `/usr/share/opensim-web/html` (`share/web`)                                                                                     |
-| `opensim-unstable`        | `opensim-unstable.yaml` | source version, date and commit  | OpenSimulator built from the `upstream/opensim` submodule, in `/usr/share/opensim/unstable`                                                                        |
-| `opensim-<core>-<module>` | `opensim-<module>.yaml` | module version + revision        | a module for a release or `unstable`, in `/usr/share/opensim-modules/<core>/<module>`, not loaded until enabled                                                    |
+| Package                   | Definition              | Version                          | Content                                                                                                         |
+| ------------------------- | ----------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `opensim-tools`           | `opensim-tools.yaml`    | git tag of this repository       | the tools, in `/usr/share/opensim-tools`, the `opensim` command, the service                                    |
+| `opensim-<version>`       | `opensim-core.yaml`     | OpenSimulator release + revision | an OpenSimulator release, in `/usr/share/opensim/<version>`, for amd64 and arm64                                |
+| `opensim`                 | `opensim.yaml`          | same as the latest release       | metapackage, the latest release                                                                                 |
+| `opensim-kit`             | `opensim-kit.yaml`      | git tag of this repository       | metapackage, the tools and the latest release                                                                   |
+| `opensim-web`             | `opensim-web.yaml`      | git tag of this repository       | the placeholder site of a grid, in `/usr/share/opensim-web/html` (`share/web`)                                  |
+| `opensim-unstable`        | `opensim-unstable.yaml` | source version, date and commit  | OpenSimulator built from the `upstream/opensim` submodule, in `/usr/share/opensim/unstable`                     |
+| `opensim-<core>-<module>` | `opensim-<module>.yaml` | module version + revision        | a module for a release or `unstable`, in `/usr/share/opensim-modules/<core>/<module>`, not loaded until enabled |
 
 `opensim-helpers`, `opensim-engine` and `opensim-rest-php` are built and packaged by their own projects (`dev/build.sh` in each one): `opensim-tools` depends on them, and its `vendor/magicoli/` folder has links to their folders in `/usr/share` instead of copies (`packaging/siblings`). The tools and the releases install without each other. `opensim-tools` adds an install profile for each release in `/usr/share/opensim`, and removes it with the release, through a dpkg trigger.
 
