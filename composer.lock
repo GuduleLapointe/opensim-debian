@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3fa69b30f0a6444339c40160ec02d1e0",
+    "content-hash": "cae04a31d4bd15ea9ad392a3b9405c4c",
     "packages": [
         {
             "name": "laminas/laminas-escaper",
@@ -175,6 +175,76 @@
                 "source": "https://github.com/magicoli/bash-tools/tree/1.0.7"
             },
             "time": "2026-10-05T18:34:19+00:00"
+        },
+        {
+            "name": "magicoli/kick-inside",
+            "version": "0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/magicoli/kick-inside.git",
+                "reference": "f60871514cdec75bb346d3bf81061a6bec4150d8"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/magicoli/kick-inside/zipball/f60871514cdec75bb346d3bf81061a6bec4150d8",
+                "reference": "f60871514cdec75bb346d3bf81061a6bec4150d8",
+                "shasum": ""
+            },
+            "require": {
+                "ext-libxml": "*",
+                "ext-simplexml": "*",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "pestphp/pest": "^3.0"
+            },
+            "bin": [
+                "bin/kick-inside"
+            ],
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Magicoli\\KickInside\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "AGPL-3.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Olivier van Helden",
+                    "email": "olivier@van-helden.net"
+                }
+            ],
+            "description": "Pure PHP UPnP IGD port mapping (miniupnpc-like) without CLI dependencies.",
+            "keywords": [
+                "igd",
+                "nat",
+                "port-forwarding",
+                "port-mapping",
+                "ssdp",
+                "upnp"
+            ],
+            "support": {
+                "issues": "https://github.com/magicoli/kick-inside/issues",
+                "source": "https://github.com/magicoli/kick-inside/tree/0.1.0"
+            },
+            "funding": [
+                {
+                    "url": "https://www.buymeacoffee.com/magicoli",
+                    "type": "buy_me_a_coffee"
+                },
+                {
+                    "url": "https://magiiic.org/donate/",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/magicoli",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-10-10T21:55:35+00:00"
         },
         {
             "name": "magicoli/opensim-engine",
