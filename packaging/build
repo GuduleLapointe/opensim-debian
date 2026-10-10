@@ -9,11 +9,11 @@
 #   untouched.
 # opensim-core, opensim, opensim-kit: the OpenSimulator release of
 #   packaging/opensim-core.versions, the last one or OPENSIM_VERSION; for
-#   opensim-core, build/opensim-core from its tarball, downloaded into src/
+#   opensim-core, build/opensim-core from its tarball, downloaded into cache/downloads/
 #   and checked against its SHA256.
 # opensim-<module>: build/modules/<module>, the files of a module of
 #   packaging/opensim-modules.versions, for the release of opensim-core or
-#   MODULES_CORE (a release or unstable); downloads go to src/, checked
+#   MODULES_CORE (a release or unstable); downloads go to cache/downloads/, checked
 #   against their SHA256.
 # opensim-unstable: build/opensim-unstable, OpenSimulator built from the
 #   commit of the upstream/opensim submodule, in a .NET SDK container
@@ -98,16 +98,16 @@ fi
 
 if wants opensim-core; then
     tarball=opensim-$version.tar.gz
-    mkdir -p src
-    if [[ ! -f "src/$tarball" ]]; then
-        curl -fSL "$URL/$tarball" -o "src/$tarball.part"
-        mv "src/$tarball.part" "src/$tarball"
+    mkdir -p cache/downloads
+    if [[ ! -f "cache/downloads/$tarball" ]]; then
+        curl -fSL "$URL/$tarball" -o "cache/downloads/$tarball.part"
+        mv "cache/downloads/$tarball.part" "cache/downloads/$tarball"
     fi
-    (cd src && echo "$checksum  $tarball" | shasum -a 256 -c -)
+    (cd cache/downloads && echo "$checksum  $tarball" | shasum -a 256 -c -)
 
     rm -rf build/tarball
     mkdir -p build/tarball
-    tar -xzf "src/$tarball" --strip-components=1 -C build/tarball
+    tar -xzf "cache/downloads/$tarball" --strip-components=1 -C build/tarball
     distribution build/tarball build/opensim-core
     rm -rf build/tarball
     sed -e "s|@VERSION@|$version|g" -e "s|@SOURCE@|$URL/$tarball|" packaging/opensim-core.copyright >build/opensim-core.copyright
@@ -121,7 +121,7 @@ fi
 for module in $modules; do
     BUILD=build/modules/$module
     rm -rf "$BUILD"
-    mkdir -p "$BUILD" src
+    mkdir -p "$BUILD" cache/downloads
     found=
     while read -r _ _ line_version line_revision file checksum name; do
         # Kept apart: the last read, at the end, empties its variables
@@ -129,7 +129,7 @@ for module in $modules; do
         module_version=$line_version
         module_revision=$line_revision
         if [[ "$file" == http* ]]; then
-            cached=src/$(basename "$file")
+            cached=cache/downloads/$(basename "$file")
             if [[ ! -f "$cached" ]]; then
                 curl -fSL "$file" -o "$cached.part"
                 mv "$cached.part" "$cached"
