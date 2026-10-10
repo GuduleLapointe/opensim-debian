@@ -76,6 +76,7 @@
     },
     "autoload": {
         "psr-4": {
+            "OpenSimKit\\": "src/",
             "OpenSim\\Installer\\": "install/src/"
         },
         "files": [
