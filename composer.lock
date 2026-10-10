@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "196fe8a134721c302cd3974619574a58",
+    "content-hash": "3fa69b30f0a6444339c40160ec02d1e0",
     "packages": [
         {
             "name": "laminas/laminas-escaper",
@@ -69,16 +69,16 @@
         },
         {
             "name": "laravel/prompts",
-            "version": "v0.3.24",
+            "version": "v0.3.25",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/prompts.git",
-                "reference": "5d3cdef29e93ca3b62b1871359db3078cd99908b"
+                "reference": "21b7b49d60fcb700016dd27b582ae739c75de816"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/prompts/zipball/5d3cdef29e93ca3b62b1871359db3078cd99908b",
-                "reference": "5d3cdef29e93ca3b62b1871359db3078cd99908b",
+                "url": "https://api.github.com/repos/laravel/prompts/zipball/21b7b49d60fcb700016dd27b582ae739c75de816",
+                "reference": "21b7b49d60fcb700016dd27b582ae739c75de816",
                 "shasum": ""
             },
             "require": {
@@ -121,10 +121,9 @@
             ],
             "description": "Add beautiful and user-friendly forms to your command-line applications.",
             "support": {
-                "issues": "https://github.com/laravel/prompts/issues",
-                "source": "https://github.com/laravel/prompts/tree/v0.3.24"
+                "source": "https://github.com/laravel/prompts/tree/v0.3.25"
             },
-            "time": "2026-08-20T12:55:36+00:00"
+            "time": "2026-10-06T02:25:49+00:00"
         },
         {
             "name": "magicoli/bash-tools",
@@ -179,17 +178,11 @@
         },
         {
             "name": "magicoli/opensim-engine",
-            "version": "3.0.0-beta.4",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/GuduleLapointe/opensim-engine.git",
-                "reference": "e427f3899269c2c473052f56db3243cb7c2d0d9d"
-            },
+            "version": "3.x-dev",
             "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/GuduleLapointe/opensim-engine/zipball/e427f3899269c2c473052f56db3243cb7c2d0d9d",
-                "reference": "e427f3899269c2c473052f56db3243cb7c2d0d9d",
-                "shasum": ""
+                "type": "path",
+                "url": "../opensim-engine",
+                "reference": "147ac9dcba1d7587b085b9a4fe2344579694dc55"
             },
             "require": {
                 "ext-curl": "*",
@@ -203,13 +196,14 @@
                 "ext-session": "*",
                 "ext-simplexml": "*",
                 "laminas/laminas-escaper": "^2.12@stable",
-                "magicoli/opensim-rest-php": "^1.1.2",
+                "magicoli/opensim-rest-php": "@dev",
                 "php": ">=8.2",
                 "phpxmlrpc/phpxmlrpc": "^4.11"
             },
             "require-dev": {
                 "dealerdirect/phpcodesniffer-composer-installer": "^1.2",
-                "magicoli/bash-tools": "^1.0.6",
+                "magicoli/bash-tools": "^1.0.7",
+                "magicoli/build-tools": "^0.1.2",
                 "magicoli/pest-failure-summary": "^1.0",
                 "pestphp/pest": "^3.0",
                 "phpcompatibility/php-compatibility": "dev-develop",
@@ -220,17 +214,23 @@
             },
             "type": "library",
             "autoload": {
-                "files": [
-                    "includes/functions-escaping.php"
-                ],
                 "psr-4": {
                     "OpenSim\\Engine\\": "src/"
                 },
                 "classmap": [
-                    "class-oar.php"
+                    "class-oar.php",
+                    "class-health.php",
+                    "class-config.php"
+                ],
+                "files": [
+                    "includes/functions-escaping.php"
                 ]
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "scripts": {
+                "test": [
+                    "pest"
+                ]
+            },
             "license": [
                 "AGPL-3.0-or-later"
             ],
@@ -241,25 +241,18 @@
                 }
             ],
             "description": "OpenSimulator Engine - Framework-agnostic core functionality for OpenSim grids",
-            "support": {
-                "issues": "https://github.com/GuduleLapointe/opensim-engine/issues",
-                "source": "https://github.com/GuduleLapointe/opensim-engine/tree/3.0.0-beta.4"
-            },
-            "time": "2026-10-05T15:28:01+00:00"
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
         },
         {
             "name": "magicoli/opensim-helpers",
-            "version": "3.0.0-beta.4",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/GuduleLapointe/opensim-helpers.git",
-                "reference": "1b82e407cb6087053c1558b9cdcc977719602e15"
-            },
+            "version": "2.x-dev",
             "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/GuduleLapointe/opensim-helpers/zipball/1b82e407cb6087053c1558b9cdcc977719602e15",
-                "reference": "1b82e407cb6087053c1558b9cdcc977719602e15",
-                "shasum": ""
+                "type": "path",
+                "url": "../opensim-helpers",
+                "reference": "f1c62a6ef680333987e4a5372f8eda9d1c3bd97d"
             },
             "require": {
                 "ext-curl": "*",
@@ -272,15 +265,16 @@
                 "ext-pdo": "*",
                 "ext-session": "*",
                 "ext-simplexml": "*",
-                "magicoli/opensim-engine": "^3.0.0-beta.4",
-                "magicoli/opensim-rest-php": "^1.1.2",
+                "magicoli/opensim-engine": "@dev",
+                "magicoli/opensim-rest-php": "@dev",
                 "php": ">=8.2",
                 "phpxmlrpc/phpxmlrpc": "^4.11",
                 "twig/twig": "^3.8"
             },
             "require-dev": {
                 "dealerdirect/phpcodesniffer-composer-installer": "^1.2",
-                "magicoli/bash-tools": "^1.0.6",
+                "magicoli/bash-tools": "^1.0.7",
+                "magicoli/build-tools": "^0.1.2",
                 "magicoli/pest-failure-summary": "^1.0",
                 "pestphp/pest": "^3.0",
                 "phpcompatibility/php-compatibility": "dev-develop",
@@ -290,7 +284,11 @@
                 "ext-imagick": "textgen.php, the text images"
             },
             "type": "library",
-            "notification-url": "https://packagist.org/downloads/",
+            "scripts": {
+                "test": [
+                    "pest"
+                ]
+            },
             "license": [
                 "AGPL-3.0-or-later"
             ],
@@ -301,43 +299,18 @@
                 }
             ],
             "description": "Helpers needed to enable common functionalties like search, currency, events in OpenSimulator grids.",
-            "support": {
-                "issues": "https://github.com/GuduleLapointe/opensim-helpers/issues",
-                "source": "https://github.com/GuduleLapointe/opensim-helpers/tree/3.0.0-beta.4"
-            },
-            "funding": [
-                {
-                    "url": "https://www.buymeacoffee.com/speculoos.world",
-                    "type": "buy_me_a_coffee"
-                },
-                {
-                    "url": "https://magiiic.com/donate/project/?project=opensim-helpers",
-                    "type": "custom"
-                },
-                {
-                    "url": "https://github.com/GuduleLapointe",
-                    "type": "github"
-                },
-                {
-                    "url": "https://opencollective.com/speculoosworld",
-                    "type": "open_collective"
-                }
-            ],
-            "time": "2026-10-05T15:42:26+00:00"
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
         },
         {
             "name": "magicoli/opensim-rest-php",
-            "version": "1.1.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/GuduleLapointe/opensim-rest-php.git",
-                "reference": "eb5bb4c31576e655a196e976eb7622d8a1b95fab"
-            },
+            "version": "dev-opensim-kit",
             "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/GuduleLapointe/opensim-rest-php/zipball/eb5bb4c31576e655a196e976eb7622d8a1b95fab",
-                "reference": "eb5bb4c31576e655a196e976eb7622d8a1b95fab",
-                "shasum": ""
+                "type": "path",
+                "url": "../opensim-rest-php",
+                "reference": "9a4b5da1b9818f68c749057c8a4c7315f14c7946"
             },
             "require": {
                 "ext-curl": "*",
@@ -347,6 +320,8 @@
             },
             "require-dev": {
                 "dealerdirect/phpcodesniffer-composer-installer": "^1.2",
+                "magicoli/bash-tools": "^1.0.7",
+                "magicoli/build-tools": "^0.1.1",
                 "magicoli/pest-failure-summary": "^1.0",
                 "pestphp/pest": "^3.0",
                 "phpcompatibility/php-compatibility": "dev-develop",
@@ -358,7 +333,11 @@
                     "class-rest.php"
                 ]
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "scripts": {
+                "test": [
+                    "pest"
+                ]
+            },
             "license": [
                 "AGPL-3.0-or-later"
             ],
@@ -369,11 +348,10 @@
                 }
             ],
             "description": "OpenSimulator REST PHP library and command-line client",
-            "support": {
-                "issues": "https://github.com/GuduleLapointe/opensim-rest-php/issues",
-                "source": "https://github.com/GuduleLapointe/opensim-rest-php/tree/1.1.2"
-            },
-            "time": "2026-10-05T13:28:37+00:00"
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
         },
         {
             "name": "nubs/random-name-generator",
@@ -1384,16 +1362,16 @@
     "packages-dev": [
         {
             "name": "brianium/paratest",
-            "version": "v7.8.5",
+            "version": "v7.8.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/paratestphp/paratest.git",
-                "reference": "9b324c8fc319cf9728b581c7a90e1c8f6361c5e5"
+                "reference": "58988a27ede69f89a1dcc27a6af6b1e1c3936df0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/paratestphp/paratest/zipball/9b324c8fc319cf9728b581c7a90e1c8f6361c5e5",
-                "reference": "9b324c8fc319cf9728b581c7a90e1c8f6361c5e5",
+                "url": "https://api.github.com/repos/paratestphp/paratest/zipball/58988a27ede69f89a1dcc27a6af6b1e1c3936df0",
+                "reference": "58988a27ede69f89a1dcc27a6af6b1e1c3936df0",
                 "shasum": ""
             },
             "require": {
@@ -1401,27 +1379,27 @@
                 "ext-pcre": "*",
                 "ext-reflection": "*",
                 "ext-simplexml": "*",
-                "fidry/cpu-core-counter": "^1.3.0",
+                "fidry/cpu-core-counter": "^1.4.1",
                 "jean85/pretty-package-versions": "^2.1.1",
-                "php": "~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0",
+                "php": "~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0 || ~8.6.0",
                 "phpunit/php-code-coverage": "^11.0.12",
-                "phpunit/php-file-iterator": "^5.1.0",
+                "phpunit/php-file-iterator": "^5.1.1",
                 "phpunit/php-timer": "^7.0.1",
-                "phpunit/phpunit": "^11.5.46",
+                "phpunit/phpunit": "^11.5.56",
                 "sebastian/environment": "^7.2.1",
-                "symfony/console": "^6.4.22 || ^7.3.4 || ^8.0.3",
-                "symfony/process": "^6.4.20 || ^7.3.4 || ^8.0.3"
+                "symfony/console": "^6.4.22 || ^7.4.20 || ^8.1.8",
+                "symfony/process": "^6.4.20 || ^7.4.19 || ^8.1.7"
             },
             "require-dev": {
                 "doctrine/coding-standard": "^12.0.0",
                 "ext-pcov": "*",
                 "ext-posix": "*",
-                "phpstan/phpstan": "^2.1.33",
-                "phpstan/phpstan-deprecation-rules": "^2.0.3",
-                "phpstan/phpstan-phpunit": "^2.0.11",
-                "phpstan/phpstan-strict-rules": "^2.0.7",
-                "squizlabs/php_codesniffer": "^3.13.5",
-                "symfony/filesystem": "^6.4.13 || ^7.3.2 || ^8.0.1"
+                "phpstan/phpstan": "^2.2.16",
+                "phpstan/phpstan-deprecation-rules": "^2.0.5",
+                "phpstan/phpstan-phpunit": "^2.0.21",
+                "phpstan/phpstan-strict-rules": "^2.0.12",
+                "squizlabs/php_codesniffer": "^3.13.6",
+                "symfony/filesystem": "^6.4.13 || ^7.4.18 || ^8.1.6"
             },
             "bin": [
                 "bin/paratest",
@@ -1461,7 +1439,7 @@
             ],
             "support": {
                 "issues": "https://github.com/paratestphp/paratest/issues",
-                "source": "https://github.com/paratestphp/paratest/tree/v7.8.5"
+                "source": "https://github.com/paratestphp/paratest/tree/v7.8.6"
             },
             "funding": [
                 {
@@ -1473,7 +1451,7 @@
                     "type": "paypal"
                 }
             ],
-            "time": "2026-01-08T08:02:38+00:00"
+            "time": "2026-10-04T06:17:44+00:00"
         },
         {
             "name": "dealerdirect/phpcodesniffer-composer-installer",
@@ -5022,16 +5000,16 @@
         },
         {
             "name": "webmozart/assert",
-            "version": "2.4.1",
+            "version": "2.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/webmozarts/assert.git",
-                "reference": "2ccb7c2e821038c03a3e6e1700c570c158c55f70"
+                "reference": "8a163706bbcac613733dba03f51e13b5eb1bb819"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/webmozarts/assert/zipball/2ccb7c2e821038c03a3e6e1700c570c158c55f70",
-                "reference": "2ccb7c2e821038c03a3e6e1700c570c158c55f70",
+                "url": "https://api.github.com/repos/webmozarts/assert/zipball/8a163706bbcac613733dba03f51e13b5eb1bb819",
+                "reference": "8a163706bbcac613733dba03f51e13b5eb1bb819",
                 "shasum": ""
             },
             "require": {
@@ -5082,14 +5060,17 @@
             ],
             "support": {
                 "issues": "https://github.com/webmozarts/assert/issues",
-                "source": "https://github.com/webmozarts/assert/tree/2.4.1"
+                "source": "https://github.com/webmozarts/assert/tree/2.5.0"
             },
-            "time": "2026-06-15T15:31:57+00:00"
+            "time": "2026-10-05T23:14:19+00:00"
         }
     ],
     "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
+        "magicoli/opensim-engine": 20,
+        "magicoli/opensim-helpers": 20,
+        "magicoli/opensim-rest-php": 20,
         "phpcompatibility/php-compatibility": 20
     },
     "prefer-stable": true,
