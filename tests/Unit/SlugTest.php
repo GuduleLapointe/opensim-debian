@@ -3,7 +3,7 @@
 use OpenSim\Installer\Grid\GridInfo;
 use OpenSim\Installer\Grid\Slug;
 
-it('keeps the words apart, in snake_case', function (string $name, string $slug) {
+test('keeps the words apart, in snake_case', function (string $name, string $slug) {
     expect(Slug::slug($name))->toBe($slug)->and(Slug::nick($name))->toBe($slug);
 })->with([
     ['The Rapist', 'the_rapist'],
@@ -18,7 +18,7 @@ it('keeps the words apart, in snake_case', function (string $name, string $slug)
     ['  --Weird  name!! ', 'weird_name'],
 ]);
 
-it('gives the instances the same names', function () {
+test('gives the instances the same names', function () {
     expect(GridInfo::instanceName('The Rapist_Sim 1'))
         ->toBe('the_rapist_sim_1')
         ->and(GridInfo::instanceName('testgrid_sim1'))

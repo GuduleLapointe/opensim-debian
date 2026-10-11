@@ -205,7 +205,7 @@ describe('The import', function () {
 });
 
 describe('A password kept as Robust keeps it', function () {
-    it('is read from a list, with its salt', function () {
+    test('is read from a list, with its salt', function () {
         $hash = AccountWriter::passwordHash('secret', 'abc123');
         $list = AccountList::parse(
             (string) json_encode([
@@ -225,7 +225,7 @@ describe('A password kept as Robust keeps it', function () {
             ->toContain('password_hash');
     });
 
-    it('is written as it is, and the password is not made', function () {
+    test('is written as it is, and the password is not made', function () {
         $hash = AccountWriter::passwordHash('secret', 'abc123');
         $writer = new AccountWriter(fn() => '11111111-2222-3333-4444-555555555555', fn() => 1, fn() => 'randomsalt');
         $sql = $writer->statements('Ann', 'Lee', '', '', null, ['hash' => $hash, 'salt' => 'abc123'])['sql'];

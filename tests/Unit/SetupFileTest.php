@@ -1,6 +1,5 @@
 <?php
 
-
 use OpenSim\Installer\Grid\AccountList;
 use OpenSim\Installer\Grid\GridPlan;
 use OpenSim\Installer\Grid\SimPlan;
@@ -24,7 +23,7 @@ users:
   - { first: Cy, last: Doe, email: cy@example.org }
 YAML;
 
-it('reads a setup from YAML or from JSON', function () {
+test('reads a setup from YAML or from JSON', function () {
     $yaml = SetupFile::parse(SETUP_YAML);
     $json = SetupFile::parse(json_encode($yaml));
 
@@ -36,7 +35,7 @@ it('reads a setup from YAML or from JSON', function () {
         ->toBe(9003);
 });
 
-it('says what is missing', function () {
+test('says what is missing', function () {
     expect(fn() => SetupFile::parse("grid:\n  name: X\n"))->toThrow(
         InvalidArgumentException::class,
         'grid.database.user is required',
@@ -49,7 +48,7 @@ it('says what is missing', function () {
     expect(fn() => SetupFile::parse("- just\n- a list\n"))->toThrow(InvalidArgumentException::class);
 });
 
-it('requires no email', function () {
+test('requires no email', function () {
     $data = SetupFile::parse(SETUP_YAML);
 
     expect(SetupFile::problems($data))
@@ -58,7 +57,7 @@ it('requires no email', function () {
         ->toBeFalse();
 });
 
-it('gives the answers of the grid', function () {
+test('gives the answers of the grid', function () {
     $answers = SetupFile::gridAnswers(SetupFile::parse(SETUP_YAML));
 
     expect($answers['Grid name'])
@@ -75,7 +74,7 @@ it('gives the answers of the grid', function () {
         ->toBeFalse();
 });
 
-it('gives the answers of a simulator', function () {
+test('gives the answers of a simulator', function () {
     $data = SetupFile::parse(SETUP_YAML);
     $answers = SetupFile::simAnswers($data, 0);
 
@@ -96,7 +95,7 @@ it('gives the answers of a simulator', function () {
         ->toBe('Second Region');
 });
 
-it('answers the questions of the setup from it', function () {
+test('answers the questions of the setup from it', function () {
     $ui = new PresetUi(new QuietUi(), SetupFile::simAnswers(SetupFile::parse(SETUP_YAML), 0));
 
     expect($ui->text('Region name', 'Other'))
@@ -114,7 +113,7 @@ it('answers the questions of the setup from it', function () {
         ->toBe('Test Estate');
 });
 
-it('keeps what the setup did, to make it again', function () {
+test('keeps what the setup did, to make it again', function () {
     $grid = new GridPlan();
     $grid->gridName = 'Test Grid';
     $grid->gridNick = 'test_grid';
@@ -160,7 +159,7 @@ it('keeps what the setup did, to make it again', function () {
     expect(SetupFile::problems($data))->toBe([]);
 });
 
-it('writes the setup file of a grid for its owner only', function () {
+test('writes the setup file of a grid for its owner only', function () {
     $dir = test_tmp() . '/setup-' . uniqid();
     mkdir($dir);
     SetupFile::record($dir, static fn(array $d): array => $d + ['version' => 1]);
@@ -171,7 +170,7 @@ it('writes the setup file of a grid for its owner only', function () {
         ->toBe(['version' => 1]);
 });
 
-it('gives the users of a setup file to the bulk import', function () {
+test('gives the users of a setup file to the bulk import', function () {
     $list = AccountList::parse(SETUP_YAML, 'yaml');
 
     expect(array_column($list['accounts'], 'first'))

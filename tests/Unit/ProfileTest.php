@@ -1,6 +1,5 @@
 <?php
 
-
 use OpenSim\Installer\Config;
 
 function profileConf(): string
@@ -11,7 +10,7 @@ function profileConf(): string
     return "$dir/opensim.conf";
 }
 
-it('registers an install with its base directories', function () {
+test('registers an install with its base directories', function () {
     $file = profileConf();
     $config = new Config($file);
     $config->addProfile('osgrid', '/opt/osgrid/bin');
@@ -28,7 +27,7 @@ it('registers an install with its base directories', function () {
         ]);
 });
 
-it('keeps the default profile unless asked', function () {
+test('keeps the default profile unless asked', function () {
     $config = new Config(profileConf());
     $config->addProfile('one', '/a');
     $config->addProfile('two', '/b', '/b/etc', '/b/data');
@@ -39,7 +38,7 @@ it('keeps the default profile unless asked', function () {
     expect($config->defaultProfile())->toBe('three');
 });
 
-it('removes a profile but not the default one', function () {
+test('removes a profile but not the default one', function () {
     $config = new Config(profileConf());
     $config->addProfile('one', '/a');
     $config->addProfile('two', '/b');
@@ -52,11 +51,11 @@ it('removes a profile but not the default one', function () {
         ->toThrow(RuntimeException::class);
 });
 
-it('refuses a bad name', function () {
+test('refuses a bad name', function () {
     expect(fn() => (new Config(profileConf()))->addProfile('Defaults', '/a'))->toThrow(InvalidArgumentException::class);
 });
 
-it('runs from the command line', function () {
+test('runs from the command line', function () {
     $file = profileConf();
     $env = 'OPENSIM_CONF=' . escapeshellarg($file);
     $php = 'php ' . escapeshellarg(dirname(__DIR__, 2) . '/libexec/profile.php');

@@ -1,10 +1,9 @@
 <?php
 
-
 use OpenSim\Installer\Grid\SimConfig;
 use OpenSim\Installer\Grid\SimPlan;
 
-it('enables OSSL for the estate owner', function () {
+test('enables OSSL for the estate owner', function () {
     $plan = new SimPlan();
     $plan->simName = 'Alpha';
     $plan->gridName = 'Test';
@@ -14,7 +13,7 @@ it('enables OSSL for the estate owner', function () {
     expect($ini['OSSL']['Include-osslDefaultEnable'])->toContain('/config-include/osslDefaultEnable.ini');
 });
 
-it('has an initialization script', function () {
+test('has an initialization script', function () {
     $script = file_get_contents(
         dirname(__DIR__, 2) .
             '/share/ossl-scripts/fix-parcel-name-src/assets/14280bc4-6d8f-4d8f-839c-da2ab87e918b_script.lsl',
@@ -23,7 +22,7 @@ it('has an initialization script', function () {
     expect($script)->toContain('osSetParcelDetails')->toContain('PARCEL_DETAILS_NAME');
 });
 
-it('enables OSSL in a grid', function () {
+test('enables OSSL in a grid', function () {
     $bin = test_tmp() . '/ossl-' . uniqid();
     mkdir("$bin/config-include", 0777, true);
     file_put_contents(
@@ -47,7 +46,7 @@ it('enables OSSL in a grid', function () {
         ->toBeNull();
 });
 
-it('tells a sim the helpers URLs', function () {
+test('tells a sim the helpers URLs', function () {
     $plan = new SimPlan();
     $plan->simName = 'Alpha';
     $plan->gridNick = 'alpha-world';
@@ -68,7 +67,7 @@ it('tells a sim the helpers URLs', function () {
         ->toBe('Test');
 });
 
-it('writes nothing of them for a grid without helpers', function () {
+test('writes nothing of them for a grid without helpers', function () {
     $plan = new SimPlan();
     $plan->simName = 'Alpha';
     $plan->gridName = 'Test';
@@ -77,7 +76,7 @@ it('writes nothing of them for a grid without helpers', function () {
     expect($ini)->not->toHaveKey('Messaging')->and($ini['DataSnapshot'])->not->toHaveKey('DATA_SRV_Test');
 });
 
-it('names the data service after the grid: its nick, else its name, in PascalCase', function () {
+test('names the data service after the grid: its nick, else its name, in PascalCase', function () {
     $name = function (string $nick, string $gridName): string {
         $plan = new SimPlan();
         $plan->gridNick = $nick;

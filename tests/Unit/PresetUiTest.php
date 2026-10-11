@@ -1,6 +1,5 @@
 <?php
 
-
 use OpenSim\Installer\Setup\QuickSetup;
 use OpenSim\Installer\Ui\AsksForms;
 use OpenSim\Installer\Ui\InstallerUi;
@@ -66,14 +65,14 @@ function askingUi(array $answers): AskingUi
     return new AskingUi($answers);
 }
 
-it('does not ask the plan of a setup from a file', function () {
+test('does not ask the plan of a setup from a file', function () {
     $inner = askingUi([]);
     $ui = new PresetUi($inner, ['Apply this configuration' => true]);
 
     expect($ui->confirm("Apply this configuration to grid 'x'?", false))->toBeTrue()->and($inner->asked)->toBe([]);
 });
 
-it('asks every question to edit a setup', function () {
+test('asks every question to edit a setup', function () {
     $inner = askingUi([null, null]);
     $ui = new PresetUi($inner, ['Grid name' => 'Vonda'], [], true);
 
@@ -87,7 +86,7 @@ it('asks every question to edit a setup', function () {
         ->toBe(['Region name', 'Welcome']);
 });
 
-it('asks the database again after a failure', function () {
+test('asks the database again after a failure', function () {
     $inner = askingUi(['other']);
     $ui = new PresetUi($inner, []);
 
@@ -96,7 +95,7 @@ it('asks the database again after a failure', function () {
     expect($ui->text('Database user', 'opensim'))->toBe('other');
 });
 
-it('reads a login URI as host:port, with or without the scheme', function () {
+test('reads a login URI as host:port, with or without the scheme', function () {
     expect(QuickSetup::login('play.example.org:8002'))
         ->toBe(['play.example.org', 8002])
         ->and(QuickSetup::login(' http://vonda:8012/ '))
@@ -107,7 +106,7 @@ it('reads a login URI as host:port, with or without the scheme', function () {
         ->toBeNull();
 });
 
-it('answers what is also to be asked', function () {
+test('answers what is also to be asked', function () {
     // "Password of " asks the password of a database administrator; the password of the new account is not that
     $inner = askingUi([]);
     $ui = new PresetUi($inner, ['Password of the new account' => 'hunter22'], ['Password of ']);
@@ -115,7 +114,7 @@ it('answers what is also to be asked', function () {
     expect($ui->secret('Password of the new account'))->toBe('hunter22')->and($inner->asked)->toBe([]);
 });
 
-it('answers a form field by field', function () {
+test('answers a form field by field', function () {
     $ui = new PresetUi(askingUi([]), ['Console of' => 'screen', 'Start it' => false]);
     $v = $ui->form([
         [
