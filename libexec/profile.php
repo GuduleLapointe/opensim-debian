@@ -1,6 +1,5 @@
 #!/usr/bin/env php
 <?php
-
 /**
  * opensim profile: the installs the tools know about.
  *
@@ -17,9 +16,6 @@
 require dirname(__DIR__) . '/bootstrap.php';
 
 use OpenSim\Installer\Config;
-use OpenSim\Installer\I18n;
-
-I18n::init();
 
 const USAGE = "usage: opensim profile list | add NAME --core DIR [--etc DIR] [--data DIR] [--default] | default NAME | remove NAME\n";
 

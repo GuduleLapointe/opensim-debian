@@ -9,4 +9,4 @@ declare(strict_types=1);
 
 require __DIR__ . '/vendor/autoload.php';
 
-OpenSim\Installer\I18n::init();
+OpenSimKit\I18n\I18n::init();

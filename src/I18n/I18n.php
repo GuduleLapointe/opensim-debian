@@ -1,7 +1,6 @@
 <?php
 
-
-namespace OpenSim\Installer;
+namespace OpenSimKit\I18n;
 
 /**
  * The language of the setup: gettext, the domain `opensim-kit`, the catalogs in `locales/<lang>/LC_MESSAGES/` of the

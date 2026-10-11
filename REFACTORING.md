@@ -86,12 +86,8 @@ opensim-kit/
 │   └── portmapping.php              + start|stop <instance>
 │
 ├── src/                             OpenSimKit\ (PSR-4)
-│   ├── I18n.php                     ← install/src/I18n.php
-│   ├── PortMapping/                 +
-│   │   ├── PortMappingService.php
-│   │   ├── ModuleInterface.php      what a module does: prepare, open, close, address
-│   │   └── UpnpcModule.php          PortMappingModule = upnpc
-│   ├── Instance/                    running instances
+│   ├── √ I18n.php                     ← install/src/I18n.php
+│   ├── PortMapping/                 -> Deprecated, use magicoli│   ├── Instance/                    running instances
 │   │   ├── Actions.php              ← install/src
 │   │   ├── PendingRestarts.php      ← install/src
 │   │   └── Ports.php                ← install/src (blocks of ten)
