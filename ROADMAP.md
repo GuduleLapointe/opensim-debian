@@ -2,6 +2,7 @@
 
 ## Fixes
 
+- [ ] PRIRORITY: Refactor as a true PHP application, PSR-4, using consistant namespaces and classes, leaving the CLI only as a shortcut for main features.
 - [x] Separation of concern is not respected in child libraries. Each library must remain strictly independent and never rely on data, classes or concept defined in the apps/projects/libraries consuming it.
 - [x] The port-based location must only be used to set the initial center of the grild. Once it has been set, it is not overridable by the rule.
 - [x] Wrong syntax for `opensim load iar|oar` and `opensim save iar|oar`: action and save must stay together, `opensim save iar [instance]`, not `opensim save [instance] iar`
