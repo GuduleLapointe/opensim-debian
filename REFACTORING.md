@@ -86,7 +86,6 @@ opensim-kit/
 │   └── portmapping.php              + start|stop <instance>
 │
 ├── src/                             OpenSimKit\ (PSR-4)
-│   ├── engine.php                   ← install/engine.php
 │   ├── I18n.php                     ← install/src/I18n.php
 │   ├── PortMapping/                 +
 │   │   ├── PortMappingService.php
@@ -261,19 +260,19 @@ Kit classes that look like engine concerns, to reconcile one by one (rules above
 | `GridInfo` (Robust part), `GridState`, `GridRegistry`             | what a grid is, the regions it knows   | `OpenSim_Grid` (empty), `OpenSim_Config`                    |
 | `RobustGrid`, `LocationFinder`, `Places`                          | asking Robust, free places             | `OpenSim_Service`, `OpenSim_Robust`                         |
 | `SimState`, `RegionState`                                         | simulators and regions read from files | `OpenSim_Region` (database side), `OpenSim_Config`          |
-| `RegionFlags` | text form of `regions.flags` | methods of `Region` (`OpenSim_Region::match_flags()` today) |
+| `RegionFlags`                                                     | text form of `regions.flags`           | methods of `Region` (`OpenSim_Region::match_flags()` today) |
 | `InstancePorts`, `Ports`                                          | ports of a service                     | none yet (every service has ports)                          |
 | `AccountList`, `GridAccounts`, `AccountWriter`, `AccountImporter` | accounts of a grid                     | `OpenSim_Avatar` (after the words are defined)              |
 | `Ini`, `TextFile`                                                 | writing ini files in layers            | `OpenSim_Config` reads, nothing writes yet                  |
 
 The naming classes do not become classes of the engine either:
 
-| Kit class                                   | What it does                                          | Becomes                                                                     |
-| ------------------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------- |
-| `RandomName`                                | a name from an adjective and a noun that begin alike  | `RandomNameTrait`, `->randomName()`, used by any model                      |
-| `RegionName` (`problem`, `configKey`, `isIn`) | what a region name accepts, how Robust compares names | methods of `Region`                                                         |
-| `SimName`                                   | the name proposed for a simulator                     | a method of `Simulator`, using the trait                                    |
-| `Slug` (`slug`, `nick`, `ascii`)            | a name made into a snake_case identifier              | `slug()` and `transliterate()` of the case functions, no class              |
+| Kit class                                     | What it does                                          | Becomes                                                        |
+| --------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------- |
+| `RandomName`                                  | a name from an adjective and a noun that begin alike  | `RandomNameTrait`, `->randomName()`, used by any model         |
+| `RegionName` (`problem`, `configKey`, `isIn`) | what a region name accepts, how Robust compares names | methods of `Region`                                            |
+| `SimName`                                     | the name proposed for a simulator                     | a method of `Simulator`, using the trait                       |
+| `Slug` (`slug`, `nick`, `ascii`)              | a name made into a snake_case identifier              | `slug()` and `transliterate()` of the case functions, no class |
 
 The engine has a `pascal_case()` in `includes/functions.php`. It returns an empty string (`$$key`, and `$pascal_words` never filled), and nothing calls it: repair it in place, where it is, and write the others beside it with the behaviour of those of bash-tools (`words` splits on anything that is not a letter or a digit and on a lower to upper change, the case functions transliterate first). The apostrophe follows bash-tools: `transliterate` removes it ("Olivier's grid" is `oliviers_grid`), which is also what the slug of the kit does today.
 

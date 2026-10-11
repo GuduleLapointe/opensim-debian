@@ -79,10 +79,7 @@
         "psr-4": {
             "OpenSimKit\\": "src/",
             "OpenSim\\Installer\\": "install/src/"
-        },
-        "files": [
-            "install/engine.php"
-        ]
+        }
     },
     "prefer-stable": true,
     "suggest": {
