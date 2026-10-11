@@ -1,6 +1,5 @@
 #!/usr/bin/env php
 <?php
-declare(strict_types=1);
 
 /**
  * opensim ports: the ports the enabled instances listen on, with what each one
@@ -13,7 +12,7 @@ declare(strict_types=1);
  *                                             are published (default 127.0.0.1)
  */
 
-require __DIR__ . '/../vendor/autoload.php';
+require dirname(__DIR__) . '/bootstrap.php';
 
 use OpenSim\Installer\Config;
 use OpenSim\Installer\Grid\GridInfo;

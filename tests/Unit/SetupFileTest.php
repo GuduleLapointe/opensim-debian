@@ -1,6 +1,5 @@
 <?php
 
-declare(strict_types=1);
 
 use OpenSim\Installer\Grid\AccountList;
 use OpenSim\Installer\Grid\GridPlan;

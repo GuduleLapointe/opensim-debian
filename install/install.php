@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * OpenSim Debian — setup hub (PHP wizard).
  *
@@ -11,9 +9,7 @@ declare(strict_types=1);
  * frontend can reuse them later.
  */
 
-require __DIR__ . '/../vendor/autoload.php';
-
-OpenSim\Installer\I18n::init();
+require dirname(__DIR__) . '/bootstrap.php';
 
 use OpenSim\Installer\Actions;
 use OpenSim\Installer\Grid\GridPlan;

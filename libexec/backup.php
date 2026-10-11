@@ -1,6 +1,5 @@
 #!/usr/bin/env php
 <?php
-declare(strict_types=1);
 
 /**
  * opensim backup: what it takes to install the grids again as they are (see Backup), as the user of the instances.
@@ -14,7 +13,7 @@ declare(strict_types=1);
  *   --keep N      keep the N newest backups of the same kind, remove the older ones
  */
 
-require __DIR__ . '/../vendor/autoload.php';
+require dirname(__DIR__) . '/bootstrap.php';
 
 use OpenSim\Installer\Archive\Backup;
 use OpenSim\Installer\Archive\Rotation;

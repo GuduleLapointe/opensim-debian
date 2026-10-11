@@ -1,6 +1,5 @@
 #!/usr/bin/env php
 <?php
-declare(strict_types=1);
 
 /**
  * What a package that is installed adds to the grids it finds, without the setup: the files of the grid that are missing
@@ -8,7 +7,7 @@ declare(strict_types=1);
  * not touched: the setup does the merging.
  */
 
-require __DIR__ . '/../vendor/autoload.php';
+require dirname(__DIR__) . '/bootstrap.php';
 
 use OpenSim\Installer\Config;
 use OpenSim\Installer\Grid\MoneyServerConfig;
@@ -21,3 +20,4 @@ foreach (glob("$etcRoot/grids/*", GLOB_ONLYDIR) ?: [] as $dir) {
     }
     echo "opensim: wrote $made\n";
 }
+

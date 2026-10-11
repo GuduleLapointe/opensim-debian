@@ -1,6 +1,5 @@
 #!/usr/bin/env php
 <?php
-declare(strict_types=1);
 
 /**
  * The accounts of a list, made in the database of a grid. Run by `opensim import` (libexec/import.php), which is
@@ -18,7 +17,7 @@ declare(strict_types=1);
  * file (mode 600) and never on the screen.
  */
 
-require __DIR__ . '/../vendor/autoload.php';
+require dirname(__DIR__) . '/bootstrap.php';
 
 use OpenSim\Installer\Config;
 use OpenSim\Installer\Grid\AccountImporter;

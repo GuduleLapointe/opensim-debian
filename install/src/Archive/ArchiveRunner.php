@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace OpenSim\Installer\Archive;
 
 use OpenSim\Installer\Console;

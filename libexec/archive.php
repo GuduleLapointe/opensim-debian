@@ -1,7 +1,5 @@
 #!/usr/bin/env php
 <?php
-declare(strict_types=1);
-
 /**
  * opensim save|load iar|oar: the inventory and region archives, through the console of a running simulator (see
  * ArchiveRunner). Run as the user of the instances: it writes where they write.
@@ -12,7 +10,7 @@ declare(strict_types=1);
  *   opensim load oar [GRID [SIM|REGION]] [options] [FILE]
  */
 
-require __DIR__ . '/../vendor/autoload.php';
+require dirname(__DIR__) . '/bootstrap.php';
 
 use OpenSim\Installer\Archive\ArchiveRunner;
 use OpenSim\Installer\Config;

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace OpenSim\Installer;
 
 use OpenSim\Installer\Grid\GridState;

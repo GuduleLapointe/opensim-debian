@@ -1,6 +1,5 @@
 <?php
 
-declare(strict_types=1);
 
 /**
  * The presets of the grids a simulator can join: folders with the structure of the folder of a grid, any file of it optional,

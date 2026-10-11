@@ -1,6 +1,5 @@
 #!/usr/bin/env php
 <?php
-declare(strict_types=1);
 
 /**
  * opensim oar: OpenSimulator archives (see OpenSim_Oar of the engine).
@@ -14,7 +13,7 @@ declare(strict_types=1);
 // The engine classes refuse to run outside a project that uses them
 defined('OPENSIM_ENGINE') || define('OPENSIM_ENGINE', true);
 
-require __DIR__ . '/../vendor/autoload.php';
+require dirname(__DIR__) . '/bootstrap.php';
 
 const USAGE = "usage: opensim oar pack DIR [FILE] | info FILE | check FILE | unpack FILE [DIR]\n";
 

@@ -1,6 +1,5 @@
 #!/usr/bin/env php
 <?php
-declare(strict_types=1);
 
 /**
  * opensim enable|disable: enable or disable a grid or a simulator by the name of its instance, the
@@ -17,7 +16,7 @@ declare(strict_types=1);
  *   opensim enable|disable <grid> profiles
  */
 
-require __DIR__ . '/../vendor/autoload.php';
+require dirname(__DIR__) . '/bootstrap.php';
 
 use OpenSim\Installer\Actions;
 use OpenSim\Installer\Archive\Instances;
@@ -30,7 +29,8 @@ use OpenSim\Installer\Ui\QuietUi;
 
 $verb = $argv[1] ?? '';
 $names = array_slice($argv, 2);
-const USAGE = "usage: opensim enable|disable <instance>...\n" .
+const USAGE =
+    "usage: opensim enable|disable <instance>...\n" .
     "       opensim enable|disable <grid> search [<url prefix>]\n" .
     "       opensim enable|disable <grid> economy [beta|gloebit] [<url prefix>]\n" .
     "       opensim enable|disable <grid> profiles\n";
@@ -76,11 +76,14 @@ if (isset($names[1]) && Features::isFeature($names[1])) {
         exit(1);
     }
     $state = $verb . 'd';
-    $what = $feature . ($feature === Features::ECONOMY && $verb === 'enable' ? ' (' . ($options['money'] ?? 'beta') . ')' : '');
+    $what =
+        $feature .
+        ($feature === Features::ECONOMY && $verb === 'enable' ? ' (' . ($options['money'] ?? 'beta') . ')' : '');
     $touched = $result['sims'];
     if ($touched === [] && !$result['grid'] && !$result['robust']) {
         echo "nothing to change: $what is already $state for {$grid->nick}" .
-            ($features->simulators() === [] ? ' (the grid has no simulator on this machine)' : '') . "\n";
+            ($features->simulators() === [] ? ' (the grid has no simulator on this machine)' : '') .
+            "\n";
     } else {
         // What the simulators and Robust read at their start; the OpenSim.ini of the grid is read by the helpers each time
         $restart = $touched;
@@ -92,9 +95,13 @@ if (isset($names[1]) && Features::isFeature($names[1])) {
             $result['robust'] ? 'Robust' : null,
             $result['grid'] ? 'the OpenSim.ini of the grid' : null,
         ]);
-        $changed = count($parts) > 1 ? implode(', ', array_slice($parts, 0, -1)) . ' and ' . end($parts) : (string) reset($parts);
+        $changed =
+            count($parts) > 1
+                ? implode(', ', array_slice($parts, 0, -1)) . ' and ' . end($parts)
+                : (string) reset($parts);
         echo "$what $state for {$grid->nick}: $changed changed" .
-            ($restart === [] ? '' : ", restart to apply: opensim restart " . implode(' ', $restart)) . "\n";
+            ($restart === [] ? '' : ', restart to apply: opensim restart ' . implode(' ', $restart)) .
+            "\n";
     }
     foreach ($result['notes'] as $note) {
         echo "note: $note\n";

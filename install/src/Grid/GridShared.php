@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace OpenSim\Installer\Grid;
 
 use OpenSim\Installer\Ini;
@@ -61,7 +59,7 @@ final class GridShared
             $source = $this->source($binDir, $file);
             $layers = array_values(array_filter($over, static fn(string $root): bool => is_file("$root/$file")));
             if ($source === null && $layers === []) {
-                is_file($dest) && TextFile::clean($dest) && $written[] = $dest;
+                is_file($dest) && TextFile::clean($dest) && ($written[] = $dest);
 
                 continue;
             }
@@ -121,15 +119,18 @@ final class GridShared
         $include = "$dir/config-include";
         $patches = match ($file) {
             'config-include/GridHypergrid.ini', 'config-include/Grid.ini' => [
-                '/^(\s*Include-Common\s*=\s*)"?config-include\/GridCommon\.ini"?/m' => '$1"' . $include . '/GridCommon.ini"',
+                '/^(\s*Include-Common\s*=\s*)"?config-include\/GridCommon\.ini"?/m' =>
+                    '$1"' . $include . '/GridCommon.ini"',
             ],
             'config-include/GridCommon.ini' => [
                 '/^(\s*Include-Storage\s*=.*)$/m' => ';$1',
-                '/^(\s*Include-FlotsamCache\s*=\s*)"?config-include\/FlotsamCache\.ini"?/m' => '$1"' . $include . '/FlotsamCache.ini"',
+                '/^(\s*Include-FlotsamCache\s*=\s*)"?config-include\/FlotsamCache\.ini"?/m' =>
+                    '$1"' . $include . '/FlotsamCache.ini"',
                 '/^(\s*MapTileDirectory\s*=\s*)"?\.\/maptiles"?[ \t]*$/m' => '$1"${Const|CacheDirectory}/maptiles"',
             ],
             'config-include/osslDefaultEnable.ini' => [
-                '/^(\s*Include-osslEnable\s*=\s*)"?config-include\/osslEnable\.ini"?/m' => '$1"' . $include . '/osslEnable.ini"',
+                '/^(\s*Include-osslEnable\s*=\s*)"?config-include\/osslEnable\.ini"?/m' =>
+                    '$1"' . $include . '/osslEnable.ini"',
             ],
             'config-include/FlotsamCache.ini' => [
                 '/^(\s*CacheDirectory\s*=\s*)\.?\/?assetcache[ \t]*$/m' => '$1"${Const|CacheDirectory}/assetcache"',
@@ -139,10 +140,12 @@ final class GridShared
         // The assets and the library the folder has are read from it, not from the core
         if (str_starts_with($file, 'config-include/')) {
             if (is_file("$dir/assets/AssetSets.xml")) {
-                $patches['/^(\s*AssetLoaderArgs\s*=\s*)"?\.?\/?assets\/AssetSets\.xml"?[ \t]*$/m'] = '$1"' . $dir . '/assets/AssetSets.xml"';
+                $patches['/^(\s*AssetLoaderArgs\s*=\s*)"?\.?\/?assets\/AssetSets\.xml"?[ \t]*$/m'] =
+                    '$1"' . $dir . '/assets/AssetSets.xml"';
             }
             if (is_file("$dir/inventory/Libraries.xml")) {
-                $patches['/^(\s*DefaultLibrary\s*=\s*)"?\.?\/?inventory\/Libraries\.xml"?[ \t]*$/m'] = '$1"' . $dir . '/inventory/Libraries.xml"';
+                $patches['/^(\s*DefaultLibrary\s*=\s*)"?\.?\/?inventory\/Libraries\.xml"?[ \t]*$/m'] =
+                    '$1"' . $dir . '/inventory/Libraries.xml"';
             }
         }
 

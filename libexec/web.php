@@ -1,6 +1,5 @@
 #!/usr/bin/env php
 <?php
-declare(strict_types=1);
 
 /**
  * opensim web: the web side of a grid, the helpers (economy, search, offline messages) its viewers use.
@@ -17,7 +16,7 @@ declare(strict_types=1);
  * grid (see Web\HelpersConfig).
  */
 
-require __DIR__ . '/../vendor/autoload.php';
+require dirname(__DIR__) . '/bootstrap.php';
 
 use OpenSim\Installer\Config;
 use OpenSim\Installer\Grid\GridState;

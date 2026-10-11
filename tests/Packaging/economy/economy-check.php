@@ -11,7 +11,6 @@
  * and exits with 1 when one failed.
  */
 
-declare(strict_types=1);
 
 [, $group, $helpers] = $argv + [1 => '', 2 => ''];
 require dirname(__DIR__) . '/xmlrpc-lib.php';

@@ -1,6 +1,5 @@
 <?php
 
-declare(strict_types=1);
 
 /**
  * What the OpenSimSearch module sends to the web service and reads from its answers, from its source

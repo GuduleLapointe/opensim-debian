@@ -1,6 +1,5 @@
 <?php
 
-declare(strict_types=1);
 
 /**
  * What the OpenSimSearch module sends to the web service (query.php of the helpers) and reads in its answers, for each

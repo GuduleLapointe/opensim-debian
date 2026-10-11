@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 use OpenSim\Installer\Archive\ArchiveRunner;
 use OpenSim\Installer\Archive\Archives;
 use OpenSim\Installer\Archive\Backup;

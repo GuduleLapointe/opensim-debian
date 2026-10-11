@@ -1,7 +1,5 @@
 #!/usr/bin/env php
 <?php
-declare(strict_types=1);
-
 /**
  * opensim import: bring what a file holds into the install, a grid, its simulators, its accounts.
  *
@@ -19,7 +17,7 @@ declare(strict_types=1);
  * Nothing is written without --apply: what would be made is told.
  */
 
-require __DIR__ . '/../vendor/autoload.php';
+require dirname(__DIR__) . '/bootstrap.php';
 
 use OpenSim\Installer\Config;
 use OpenSim\Installer\Setup\SetupFile;

@@ -5,7 +5,6 @@
  * the callers (the search module of a simulator, the viewer) read it.
  */
 
-declare(strict_types=1);
 
 function check(string $label, bool $ok, string $detail = ''): void
 {

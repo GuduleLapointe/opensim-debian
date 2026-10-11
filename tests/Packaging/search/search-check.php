@@ -10,7 +10,6 @@
  * fixtures (collector-1-fixture.xml, collector-2-fixture.xml, search-tables-fixture.sql) put in the tables.
  */
 
-declare(strict_types=1);
 
 [, $group, $url] = $argv + [1 => '', 2 => ''];
 require dirname(__DIR__) . '/xmlrpc-lib.php';

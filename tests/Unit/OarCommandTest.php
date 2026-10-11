@@ -1,6 +1,5 @@
 <?php
 
-declare(strict_types=1);
 
 function oarCommand(string $args): array
 {

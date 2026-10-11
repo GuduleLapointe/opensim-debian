@@ -1,7 +1,5 @@
 #!/usr/bin/env php
 <?php
-declare(strict_types=1);
-
 /**
  * opensim next: the next free port or place, by the rules of the setup (the
  * same code, so that every script gives the same answer).
@@ -17,7 +15,7 @@ declare(strict_types=1);
  * -e can be given several times.
  */
 
-require __DIR__ . '/../vendor/autoload.php';
+require dirname(__DIR__) . '/bootstrap.php';
 
 use OpenSim\Installer\Config;
 use OpenSim\Installer\Grid\Database;

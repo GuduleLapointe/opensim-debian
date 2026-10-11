@@ -1,6 +1,5 @@
 <?php
 
-declare(strict_types=1);
 
 use OpenSim\Installer\Grid\SimConfig;
 use OpenSim\Installer\Grid\SimPlan;

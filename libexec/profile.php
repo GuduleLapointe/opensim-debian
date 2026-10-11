@@ -1,6 +1,5 @@
 #!/usr/bin/env php
 <?php
-declare(strict_types=1);
 
 /**
  * opensim profile: the installs the tools know about.
@@ -15,7 +14,7 @@ declare(strict_types=1);
  * the new grids: a grid that exists follows its own install.
  */
 
-require __DIR__ . '/../vendor/autoload.php';
+require dirname(__DIR__) . '/bootstrap.php';
 
 use OpenSim\Installer\Config;
 use OpenSim\Installer\I18n;

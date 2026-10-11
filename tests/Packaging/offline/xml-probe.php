@@ -5,8 +5,6 @@
  * documents of OpenSimulator have.
  */
 
-declare(strict_types=1);
-
 [, $file, $path] = $argv + [1 => '-', 2 => '/*'];
 $xml = $file === '-' ? stream_get_contents(STDIN) : file_get_contents($file);
 $xml = preg_replace('/\sxmlns(:\w+)?="[^"]*"/', '', (string) $xml);

@@ -1,6 +1,5 @@
 <?php
 
-declare(strict_types=1);
 
 it('translates through a compiled catalogue', function () {
     if (!shell_exec('command -v msgfmt') || !preg_match('/fr_FR\.utf-?8/i', (string) shell_exec('locale -a'))) {

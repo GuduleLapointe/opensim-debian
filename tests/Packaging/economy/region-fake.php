@@ -7,18 +7,18 @@
  *   php -S 127.0.0.1:8099 region-fake.php
  */
 
-declare(strict_types=1);
-
 require dirname(__DIR__) . '/xmlrpc-lib.php';
 
 $dir = '/tmp/fakeregion';
 @mkdir($dir);
-$db = new PDO('mysql:unix_socket=/run/mysqld/mysqld.sock;dbname=' . getenv('DB'), 'opensim', 'testpass', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$db = new PDO('mysql:unix_socket=/run/mysqld/mysqld.sock;dbname=' . getenv('DB'), 'opensim', 'testpass', [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+]);
 
 $dom = new DOMDocument();
 if (!@$dom->loadXML((string) file_get_contents('php://input'))) {
     http_response_code(400);
-    exit;
+    exit();
 }
 $xpath = new DOMXPath($dom);
 $method = (string) $xpath->evaluate('string(/methodCall/methodName)');
@@ -34,14 +34,22 @@ switch ($method) {
         $answer['balance'] = (int) $statement->fetchColumn();
         break;
     case 'AddBankerMoney':
-        $db->prepare('UPDATE balances SET balance = balance + ? WHERE user = ?')->execute([(int) ($params['amount'] ?? 0), $params['clientUUID'] ?? '']);
+        $db->prepare('UPDATE balances SET balance = balance + ? WHERE user = ?')->execute([
+            (int) ($params['amount'] ?? 0),
+            $params['clientUUID'] ?? '',
+        ]);
         break;
 }
 
 $members = '';
 foreach ($answer as $name => $value) {
     $type = is_bool($value) ? 'boolean' : (is_int($value) ? 'int' : 'string');
-    $members .= "<member><name>$name</name><value><$type>" . (is_bool($value) ? (int) $value : $value) . "</$type></value></member>";
+    $members .=
+        "<member><name>$name</name><value><$type>" .
+        (is_bool($value) ? (int) $value : $value) .
+        "</$type></value></member>";
 }
 header('Content-Type: text/xml');
-echo '<?xml version="1.0"?><methodResponse><params><param><value><struct>' . $members . '</struct></value></param></params></methodResponse>';
+echo '<?xml version="1.0"?><methodResponse><params><param><value><struct>' .
+    $members .
+    '</struct></value></param></params></methodResponse>';

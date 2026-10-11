@@ -7,7 +7,6 @@
  *   php image-probe.php FILE      prints: WIDTHxHEIGHT FORMAT background=R,G,B text=R,G,B ink=PERCENT
  */
 
-declare(strict_types=1);
 
 $image = new Imagick($argv[1] ?? '');
 $width = $image->getImageWidth();

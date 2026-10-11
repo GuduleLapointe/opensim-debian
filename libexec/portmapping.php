@@ -1,6 +1,5 @@
 #!/usr/bin/env php
 <?php
-declare(strict_types=1);
 
 /**
  * opensim portmapping: the port mapping of an instance, called by `opensim start` and `opensim stop`.

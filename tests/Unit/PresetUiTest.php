@@ -1,6 +1,5 @@
 <?php
 
-declare(strict_types=1);
 
 use OpenSim\Installer\Setup\QuickSetup;
 use OpenSim\Installer\Ui\AsksForms;

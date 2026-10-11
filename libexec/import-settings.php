@@ -1,6 +1,5 @@
 #!/usr/bin/env php
 <?php
-declare(strict_types=1);
 
 /**
  * The settings of a grid or of a simulator that was not made by the kit, ported without changing its files. Run by
@@ -21,7 +20,7 @@ declare(strict_types=1);
  * Nothing is enabled or started: compare, then `opensim enable <instance>`.
  */
 
-require __DIR__ . '/../vendor/autoload.php';
+require dirname(__DIR__) . '/bootstrap.php';
 
 use OpenSim\Installer\Actions;
 use OpenSim\Installer\Config;
